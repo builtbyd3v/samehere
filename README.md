@@ -1,36 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# samehere
 
-## Getting Started
+samehere is a verified student networking platform for engineering students who want real peer connections instead of recruiter noise. It uses .edu email verification as the access gate and Claude to power AI-driven peer matching based on student profiles.
 
-First, run the development server:
+**Status: in early development.** Project setup is in progress. The sections below describe the planned v1 scope and will be updated as features ship.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+**Live:** coming soon
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## The problem
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Engineering students don't have a dedicated space that combines verified peer identity, real community, and meaningful connection. LinkedIn is built for professionals, not students still learning. Discord servers are unstructured and easy to get lost in. samehere is built around student identity as the foundation, so the people you connect with are genuinely your peers.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## What is planned for v1
 
-## Learn More
+### Authentication and access
 
-To learn more about Next.js, take a look at the following resources:
+- .edu email verification as the platform's access gate
+- Supabase Auth handling sign up, sign in, and session persistence
+- Auth-gated routes so only verified students reach the app
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Student profiles
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Capture school, year, interests, and background
+- Editable profile that feeds into the matching system
 
-## Deploy on Vercel
+### AI peer matching
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Claude API compares student profiles and returns a match with reasoning
+- The core differentiating feature of the platform
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Social feed
+
+- Lightweight posting and engagement between students
+- Basic feed view on the authenticated dashboard
+
+## What is not implemented yet
+
+- Direct messaging between students
+- Student-ID-gated job board
+- Pro tier subscription and payment handling
+- Any of the v1 features listed above (project is still being scaffolded)
+
+## Tech stack
+
+### Client
+
+- Next.js
+- TypeScript
+- Tailwind CSS
+
+### Backend and data
+
+- Supabase (Postgres, Auth, Row Level Security)
+
+### AI
+
+- Claude through the Anthropic API
+
+### Hosting
+
+- Vercel
+
+## Why this project
+
+This is a personal portfolio project built to develop full-stack skills with a real product behind it, not a tutorial clone. The problem it solves is one I've run into directly as a self-taught, non-traditional CS student looking for peers at a similar stage.
+
+## Author
+
+Dev Goswami
+
+- Portfolio: https://builtbyd3v.com
+- LinkedIn: https://linkedin.com/in/builtbydev
