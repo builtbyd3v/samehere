@@ -33,6 +33,19 @@ Engineering students don't have a dedicated space that combines verified peer id
 - Lightweight posting and engagement between students
 - Basic feed view on the authenticated dashboard
 
+### Contribution tracker
+
+A GitHub-style activity heatmap displayed on every student profile showing daily engagement. Activity is tracked in tiers with quality gates to prevent low-effort gaming.
+
+| Action | Minimum requirement | Points |
+|---|---|---|
+| Profile update | Meaningful field updated (bio, skills, project — not avatar) | 1 |
+| Connection accepted | Mutual acceptance by both users | 2 |
+| Comment | 50+ characters | 3 |
+| Post published | 150+ characters | 5 |
+
+Each action type counts once per day. Daily square intensity reflects total points earned. Profile updates have a weekly cooldown. All minimums are enforced server-side.
+
 ## What is not implemented yet
 
 - Direct messaging between students
