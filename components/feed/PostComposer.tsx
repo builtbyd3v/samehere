@@ -3,7 +3,8 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { createPost, type ComposerState } from "@/app/(app)/feed/actions";
 
-const MIN = 150;
+// 150 chars earns a heatmap point — it does NOT gate posting.
+const POINT_AT = 150;
 
 export default function PostComposer() {
   const [state, formAction, pending] = useActionState<ComposerState, FormData>(createPost, {});
@@ -18,7 +19,7 @@ export default function PostComposer() {
     }
   }, [state.ok]);
 
-  const short = len > 0 && len < MIN;
+  const qualifies = len >= POINT_AT;
 
   return (
     <form ref={ref} action={formAction} className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
@@ -26,7 +27,6 @@ export default function PostComposer() {
         name="content"
         rows={4}
         required
-        minLength={MIN}
         onChange={(e) => setLen(e.target.value.trim().length)}
         placeholder="Share what you're building, learning, or figuring out…"
         className="w-full resize-y bg-transparent text-[15px] leading-relaxed text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
@@ -39,12 +39,16 @@ export default function PostComposer() {
       )}
 
       <div className="mt-3 flex items-center justify-between border-t border-[var(--border)] pt-3">
-        <span className={`text-xs ${short ? "text-[#c0392b] dark:text-[#e88]" : "text-[var(--ink-muted)]"}`}>
-          {len < MIN ? `${len} / ${MIN} min` : `${len} characters`}
+        <span className={`text-xs ${qualifies ? "text-[var(--blue)]" : "text-[var(--ink-muted)]"}`}>
+          {len === 0
+            ? `${POINT_AT}+ characters earns a point`
+            : qualifies
+              ? `${len} characters · earns a point`
+              : `${POINT_AT - len} more to earn a point`}
         </span>
         <button
           type="submit"
-          disabled={pending || len < MIN}
+          disabled={pending || len === 0}
           className="btn-inset rounded-md bg-[var(--ink)] px-4 py-1.5 text-sm font-medium text-[var(--canvas)] transition active:opacity-80 disabled:opacity-50"
         >
           {pending ? "Posting…" : "Post"}
