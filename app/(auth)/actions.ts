@@ -24,7 +24,10 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
   if (password.length < 8) return { error: "Password must be at least 8 characters." };
 
   const supabase = await createClient();
-  const origin = (await headers()).get("origin") ?? process.env.NEXT_PUBLIC_SITE_URL ?? "";
+  // Prefer the configured site URL over the request Origin header (which the
+  // client controls) for the confirmation link. Supabase's redirect allowlist
+  // is the real guard; this is defense in depth.
+  const origin = process.env.NEXT_PUBLIC_SITE_URL || (await headers()).get("origin") || "";
 
   const { error } = await supabase.auth.signUp({
     email,

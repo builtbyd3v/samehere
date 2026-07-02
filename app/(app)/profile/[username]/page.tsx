@@ -18,46 +18,41 @@ export default async function ProfilePage({
   const { username } = await params;
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, username, display_name, avatar_url, year, major, bio, goals, skills, is_private, heatmap_visibility")
-    .eq("username", username)
-    .maybeSingle();
+  // Wave 1: viewer identity and the profile are independent — fetch together.
+  const [{ data: { user } }, { data: profile }] = await Promise.all([
+    supabase.auth.getUser(),
+    supabase
+      .from("profiles")
+      .select("id, username, display_name, avatar_url, year, major, bio, goals, skills, is_private, heatmap_visibility")
+      .eq("username", username)
+      .maybeSingle(),
+  ]);
 
   if (!profile) notFound();
 
   const isOwner = user?.id === profile.id;
 
-  // School lives in profile_school; its RLS returns the row only when visible
-  // (owner, not hidden, or accepted follower). Null here == hidden or absent.
-  const { data: schoolRow } = await supabase
-    .from("profile_school")
-    .select("school")
-    .eq("profile_id", profile.id)
-    .maybeSingle();
-  const school = schoolRow?.school ?? null;
+  // Wave 2: school, counts, and the follow relationship all key off profile.id
+  // and don't depend on each other — run them in parallel.
+  //   - school: profile_school RLS returns the row only when visible (null == hidden)
+  //   - counts: definer function, so the follow graph itself stays private
+  //   - rel: drives private-account gating
+  const [schoolRes, countRes, relRes] = await Promise.all([
+    supabase.from("profile_school").select("school").eq("profile_id", profile.id).maybeSingle(),
+    supabase.rpc("get_profile_counts", { p_profile_id: profile.id }),
+    user && !isOwner
+      ? supabase
+          .from("follows")
+          .select("status")
+          .eq("follower_id", user.id)
+          .eq("following_id", profile.id)
+          .maybeSingle()
+      : Promise.resolve({ data: null as { status: string } | null }),
+  ]);
 
-  // Counts come from a definer function so the follow graph itself stays private.
-  const { data: countRows } = await supabase.rpc("get_profile_counts", {
-    p_profile_id: profile.id,
-  });
-  const counts = countRows?.[0] ?? { posts: 0, followers: 0, following: 0 };
-
-  // Relationship drives private-account gating.
-  let isAcceptedFollower = false;
-  if (user && !isOwner) {
-    const { data: rel } = await supabase
-      .from("follows")
-      .select("status")
-      .eq("follower_id", user.id)
-      .eq("following_id", profile.id)
-      .maybeSingle();
-    isAcceptedFollower = rel?.status === "accepted";
-  }
+  const school = schoolRes.data?.school ?? null;
+  const counts = countRes.data?.[0] ?? { posts: 0, followers: 0, following: 0 };
+  const isAcceptedFollower = relRes.data?.status === "accepted";
 
   const contentHidden = profile.is_private && !isOwner && !isAcceptedFollower;
   const canSeeHeatmap =

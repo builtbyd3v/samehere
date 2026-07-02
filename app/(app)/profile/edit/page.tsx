@@ -9,18 +9,16 @@ export default async function EditProfilePage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("username, display_name, year, major, bio, goals, skills, is_private, hide_school, heatmap_visibility")
-    .eq("id", user.id)
-    .single();
+  // Profile and school both key off user.id and are independent — fetch together.
+  const [{ data: profile }, { data: schoolRow }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("username, display_name, year, major, bio, goals, skills, is_private, hide_school, heatmap_visibility")
+      .eq("id", user.id)
+      .single(),
+    supabase.from("profile_school").select("school").eq("profile_id", user.id).maybeSingle(),
+  ]);
   if (!profile) redirect("/login");
-
-  const { data: schoolRow } = await supabase
-    .from("profile_school")
-    .select("school")
-    .eq("profile_id", user.id)
-    .maybeSingle();
 
   return <EditProfileForm initial={{ ...profile, school: schoolRow?.school ?? "" }} />;
 }
