@@ -1,5 +1,13 @@
 import Link from "next/link";
 
+// Shared select for feed queries (page + Load more) so the shape stays in sync
+// with FeedPost. Lives here, not in the "use server" actions file (which may
+// only export async functions).
+export const POST_SELECT =
+  "id, content, created_at, user_id, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, profile_school(school))";
+
+export const PAGE = 20;
+
 export type FeedPost = {
   id: string;
   content: string;

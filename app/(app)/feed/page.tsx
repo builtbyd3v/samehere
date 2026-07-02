@@ -1,8 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import PostComposer from "@/components/feed/PostComposer";
-import PostCard, { type FeedPost } from "@/components/feed/PostCard";
-
-const PAGE = 20;
+import PostCard, { POST_SELECT, PAGE, type FeedPost } from "@/components/feed/PostCard";
+import FeedLoadMore from "@/components/feed/FeedLoadMore";
 
 // The whole feed. posts RLS already filters to what the viewer may see
 // (public authors, own posts, or accepted-follow private authors), so a plain
@@ -12,9 +11,7 @@ export default async function FeedPage() {
 
   const { data: posts } = await supabase
     .from("posts")
-    .select(
-      "id, content, created_at, user_id, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, profile_school(school))"
-    )
+    .select(POST_SELECT)
     .order("created_at", { ascending: false })
     .limit(PAGE)
     .returns<FeedPost[]>();
@@ -31,9 +28,16 @@ export default async function FeedPage() {
             No posts yet. Be the first to share something.
           </p>
         ) : (
-          posts.map((post) => <PostCard key={post.id} post={post} />)
+          <>
+            {posts.map((post) => (
+              <PostCard key={post.id} post={post} />
+            ))}
+            <FeedLoadMore
+              cursor={posts[posts.length - 1].created_at}
+              hasMore={posts.length === PAGE}
+            />
+          </>
         )}
-        {/* TODO(Step 3): cursor pagination + Load more */}
       </section>
     </main>
   );

@@ -2,8 +2,24 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { POST_SELECT, PAGE, type FeedPost } from "@/components/feed/PostCard";
 
 export type ComposerState = { error?: string; ok?: boolean };
+
+// Next page for "Load more": posts strictly older than the cursor (created_at
+// of the last row shown). Keyset pagination — no OFFSET drift as new posts
+// arrive. RLS still restricts to visible posts.
+export async function loadMorePosts(cursor: string): Promise<FeedPost[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("posts")
+    .select(POST_SELECT)
+    .lt("created_at", cursor)
+    .order("created_at", { ascending: false })
+    .limit(PAGE)
+    .returns<FeedPost[]>();
+  return data ?? [];
+}
 
 const MIN = 150;
 const MAX = 5000;
