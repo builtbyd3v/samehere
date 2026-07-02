@@ -13,12 +13,12 @@ export default async function EditProfilePage() {
   const [{ data: profile }, { data: schoolRow }] = await Promise.all([
     supabase
       .from("profiles")
-      .select("username, display_name, year, major, bio, goals, skills, is_private, hide_school, heatmap_visibility")
+      .select("username, display_name, avatar_url, year, major, bio, goals, skills, is_private, hide_school, heatmap_visibility")
       .eq("id", user.id)
       .single(),
     supabase.from("profile_school").select("school").eq("profile_id", user.id).maybeSingle(),
   ]);
   if (!profile) redirect("/login");
 
-  return <EditProfileForm initial={{ ...profile, school: schoolRow?.school ?? "" }} />;
+  return <EditProfileForm initial={{ ...profile, id: user.id, school: schoolRow?.school ?? "" }} />;
 }
