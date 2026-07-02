@@ -1,0 +1,71 @@
+import Link from "next/link";
+
+export type FeedPost = {
+  id: string;
+  content: string;
+  created_at: string;
+  user_id: string;
+  author: {
+    username: string;
+    display_name: string | null;
+    avatar_url: string | null;
+    profile_school: { school: string | null } | null;
+  } | null;
+};
+
+// Compact relative time: 34s, 12m, 5h, 3d, then a date.
+function timeAgo(iso: string): string {
+  const s = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `${d}d`;
+  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+export default function PostCard({ post }: { post: FeedPost }) {
+  const a = post.author;
+  const name = a?.display_name ?? a?.username ?? "Unknown";
+  const school = a?.profile_school?.school ?? null;
+
+  return (
+    <article className="border-b border-[var(--border)] px-1 py-5">
+      <div className="flex items-center gap-2.5">
+        {a?.avatar_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={a.avatar_url} alt="" className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover" />
+        ) : (
+          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-sm font-semibold text-[var(--ink-muted)]">
+            {name.charAt(0).toUpperCase()}
+          </div>
+        )}
+
+        <div className="min-w-0 text-sm">
+          <div className="flex flex-wrap items-center gap-x-1.5">
+            {a ? (
+              <Link href={`/profile/${a.username}`} className="font-medium hover:underline">
+                {name}
+              </Link>
+            ) : (
+              <span className="font-medium">{name}</span>
+            )}
+            {a && <span className="text-[var(--ink-muted)]">@{a.username}</span>}
+          </div>
+          <p className="text-[var(--ink-muted)]">
+            {school ? `${school} · ` : ""}
+            <Link href={`/post/${post.id}`} className="hover:underline">{timeAgo(post.created_at)}</Link>
+          </p>
+        </div>
+      </div>
+
+      <Link href={`/post/${post.id}`} className="mt-3 block whitespace-pre-line text-[15px] leading-relaxed text-[var(--ink)]">
+        {post.content}
+      </Link>
+
+      {/* TODO(Phase 6): reactions (Like / SameHere / Repost / Bookmark) + comment count */}
+    </article>
+  );
+}
