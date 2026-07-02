@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isEduEmail, usernameError } from "@/lib/utils/validation";
 
 // Shared shape for useActionState on the auth forms.
-export type AuthState = { error?: string; ok?: boolean };
+export type AuthState = { error?: string; ok?: boolean; email?: string };
 
 // Signup: server-side gate on .edu + username + password, then Supabase creates
 // the user and (with email confirmations on) sends a confirmation link.
@@ -43,5 +43,5 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
     return { error: "That username may already be taken. Try another." };
   }
 
-  return { ok: true };
+  return { ok: true, email };
 }
