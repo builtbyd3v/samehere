@@ -1,6 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isEduEmail, usernameError } from "@/lib/utils/validation";
 
@@ -44,4 +45,24 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
   }
 
   return { ok: true, email };
+}
+
+// Login: email + password. On success redirects to the app home; the redirect
+// throws a control-flow exception, so nothing after it runs. Errors are kept
+// vague to avoid leaking which accounts exist, except the "confirm your email"
+// case, which is actionable.
+export async function logIn(_prev: AuthState, formData: FormData): Promise<AuthState> {
+  const email = String(formData.get("email") ?? "").trim();
+  const password = String(formData.get("password") ?? "");
+  if (!email || !password) return { error: "Enter your email and password." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) {
+    if (error.code === "email_not_confirmed")
+      return { error: "Confirm your email first — check your inbox for the link." };
+    return { error: "Invalid email or password." };
+  }
+
+  redirect("/dashboard");
 }
