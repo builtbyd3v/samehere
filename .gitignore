@@ -44,3 +44,10 @@ next-env.d.ts
 CLAUDE.md
 .claude
 AGENTS.md
+DESIGN.md
+
+# supabase (local CLI state)
+supabase/.temp
+supabase/.branches
+
+.remember
