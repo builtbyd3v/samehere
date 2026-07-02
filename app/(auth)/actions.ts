@@ -69,3 +69,10 @@ export async function logIn(_prev: AuthState, formData: FormData): Promise<AuthS
 
   redirect("/dashboard");
 }
+
+// Sign out and return to login. Used as a <form action> in the navbar.
+export async function signOut(): Promise<void> {
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect("/login");
+}
