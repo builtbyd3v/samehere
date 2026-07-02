@@ -1,1 +1,53 @@
 @import "tailwindcss";
+
+/* Lovable-style tokens (see DESIGN.md). Warm cream, charcoal, opacity grays, #eceae4 borders.
+   Blue is kept ONLY for the profile card + heatmap (per product decision). */
+:root {
+  color-scheme: light dark;
+  --canvas: #f7f4ed;
+  --surface: #f7f4ed;
+  --border: #eceae4;
+  --border-strong: rgba(28, 28, 28, 0.4);
+  --ink: #1c1c1c;
+  --ink-muted: #5f5f5d;
+  --ink-faint: rgba(28, 28, 28, 0.45);
+  --blue: #0075de;
+  --hm0: rgba(28, 28, 28, 0.06); --hm1: #bcd8f5; --hm2: #5fa0e8; --hm3: #0075de;
+}
+
+/* Dark theme — warm-derived from the light tokens (see DESIGN.md §Dark Theme).
+   Whole landing is var-driven, so overriding vars flips the page with no markup change.
+   Follows system preference now; add a .dark class + toggle when settings UI exists. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --canvas: #141310;
+    --surface: #1c1a16;
+    --border: rgba(247, 244, 237, 0.10);
+    --border-strong: rgba(247, 244, 237, 0.28);
+    --ink: #f2efe6;
+    --ink-muted: #a8a49a;
+    --ink-faint: rgba(242, 239, 230, 0.40);
+    --blue: #4f9fe8;
+    --hm0: rgba(247, 244, 237, 0.07); --hm1: #1e3a5f; --hm2: #2f6db0; --hm3: #4f9fe8;
+  }
+}
+
+/* signature inset shadow on dark buttons */
+.btn-inset {
+  box-shadow: rgba(255, 255, 255, 0.2) 0 0.5px 0 0 inset, rgba(0, 0, 0, 0.2) 0 0 0 0.5px inset, rgba(0, 0, 0, 0.05) 0 1px 2px 0;
+}
+
+@keyframes reveal {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .reveal {
+      opacity: 0;
+      animation: reveal both linear;
+      animation-timeline: view();
+      animation-range: entry 0% cover 30%;
+    }
+  }
+}
