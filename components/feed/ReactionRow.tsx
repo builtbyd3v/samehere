@@ -19,17 +19,19 @@ type Props = {
 };
 
 // All icons draw on the same 24x24 viewBox at 20px so they read the same size.
+// Thicker fully-rounded strokes give them a soft, consistent feel.
 const svg = "h-5 w-5";
-const stroke = { fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, viewBox: "0 0 24 24" };
+const stroke = { fill: "none", stroke: "currentColor", strokeWidth: 1.9, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, viewBox: "0 0 24 24" };
 // Filled icons flip to solid when active (Twitter/IG-style) for a clear on-state.
 const fillIf = (on?: boolean) => (on ? "currentColor" : "none");
 const IconHeart = ({ on }: { on?: boolean }) => (<svg className={svg} {...stroke} fill={fillIf(on)}><path d="M19 14c1.49-1.46 3-3.2 3-5.5A4.5 4.5 0 0 0 12 5.5 4.5 4.5 0 0 0 2 8.5c0 2.3 1.5 4.04 3 5.5l7 7Z" /></svg>);
-// Two overlapping rings = the signature "SameHere" reaction. Active fills each
-// ring translucently so the overlap doubles into a solid lens, not a blob.
+// Two people = the "SameHere" reaction (this is me too). Fills solid when active.
 const IconSame = ({ on }: { on?: boolean }) => (
-  <svg className={svg} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}>
-    <circle cx="9" cy="12" r="6.25" fill={on ? "currentColor" : "none"} fillOpacity={on ? 0.4 : undefined} />
-    <circle cx="15" cy="12" r="6.25" fill={on ? "currentColor" : "none"} fillOpacity={on ? 0.4 : undefined} />
+  <svg className={svg} {...stroke} fill={fillIf(on)}>
+    <circle cx="9" cy="8" r="3.6" />
+    <path d="M2.5 20v-1a6.5 6.5 0 0 1 13 0v1Z" />
+    <circle cx="17" cy="8.5" r="2.8" />
+    <path d="M16 13.4A5.5 5.5 0 0 1 21.5 19v1" />
   </svg>
 );
 const IconComment = () => (<svg className={svg} {...stroke}><path d="M21 15a2 2 0 0 1-2 2H8l-4 4V5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2Z" /></svg>);
