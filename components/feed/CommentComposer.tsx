@@ -28,6 +28,11 @@ export default function CommentComposer({ postId }: { postId: string }) {
         rows={3}
         required
         onChange={(e) => setLen(e.target.value.trim().length)}
+        // ⌘/Ctrl+Enter submits, matching the button's disabled rules.
+        onKeyDown={(e) => {
+          if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && !pending && len > 0)
+            e.currentTarget.form?.requestSubmit();
+        }}
         placeholder="Add a comment…"
         className="w-full resize-y bg-transparent text-[15px] leading-relaxed text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
       />
