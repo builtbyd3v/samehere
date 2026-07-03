@@ -79,6 +79,42 @@ export type Database = {
           },
         ]
       }
+      blocks: {
+        Row: {
+          blocked_id: string | null
+          blocker_id: string | null
+          created_at: string | null
+          id: string
+        }
+        Insert: {
+          blocked_id?: string | null
+          blocker_id?: string | null
+          created_at?: string | null
+          id?: string
+        }
+        Update: {
+          blocked_id?: string | null
+          blocker_id?: string | null
+          created_at?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blocks_blocked_id_fkey"
+            columns: ["blocked_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blocks_blocker_id_fkey"
+            columns: ["blocker_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookmarks: {
         Row: {
           created_at: string | null
@@ -185,6 +221,38 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "contribution_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feedback: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          id: string
+          message: string
+          user_id: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          message: string
+          user_id?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          message?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -385,6 +453,7 @@ export type Database = {
       reports: {
         Row: {
           created_at: string | null
+          detail: string | null
           id: string
           post_id: string | null
           reason: string | null
@@ -393,6 +462,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          detail?: string | null
           id?: string
           post_id?: string | null
           reason?: string | null
@@ -401,6 +471,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          detail?: string | null
           id?: string
           post_id?: string | null
           reason?: string | null
