@@ -8,7 +8,7 @@ import ReactionRow from "./ReactionRow";
 // ponytail: exposes every reactor's user_id to the client. Fine at v1 scale;
 // swap for a counts RPC if reaction volume or privacy ever matters.
 export const POST_SELECT =
-  "id, content, created_at, user_id, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, profile_school(school)), reactions(user_id, type)";
+  "id, content, created_at, user_id, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, is_private, profile_school(school)), reactions(user_id, type), reposts(user_id), bookmarks(user_id)";
 
 export const PAGE = 20;
 
@@ -21,9 +21,13 @@ export type FeedPost = {
     username: string;
     display_name: string | null;
     avatar_url: string | null;
+    is_private: boolean;
     profile_school: { school: string | null } | null;
   } | null;
   reactions: { user_id: string; type: string }[];
+  reposts: { user_id: string }[];
+  // Owner-only RLS: this only ever contains the viewer's own bookmark (0 or 1).
+  bookmarks: { user_id: string }[];
 };
 
 // Compact relative time: 34s, 12m, 5h, 3d, then a date.
@@ -82,12 +86,16 @@ export default function PostCard({ post, viewerId }: { post: FeedPost; viewerId:
       <ReactionRow
         postId={post.id}
         viewerId={viewerId}
+        authorPrivate={!!a?.is_private}
         like={r.filter((x) => x.type === "like").length}
         samehere={r.filter((x) => x.type === "samehere").length}
+        repost={post.reposts?.length ?? 0}
         mineLike={!!viewerId && r.some((x) => x.type === "like" && x.user_id === viewerId)}
         mineSamehere={!!viewerId && r.some((x) => x.type === "samehere" && x.user_id === viewerId)}
+        mineRepost={!!viewerId && (post.reposts ?? []).some((x) => x.user_id === viewerId)}
+        mineBookmark={(post.bookmarks ?? []).length > 0}
       />
-      {/* TODO(Phase 6): repost + bookmark + comment count */}
+      {/* TODO(Phase 6): comment count */}
     </article>
   );
 }
