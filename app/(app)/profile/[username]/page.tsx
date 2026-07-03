@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import FollowButton, { type FollowState } from "@/components/profile/FollowButton";
+import PostCard, { POST_SELECT, type FeedPost } from "@/components/feed/PostCard";
 
 const YEAR_LABEL: Record<string, string> = {
   freshman: "Freshman",
@@ -38,7 +39,9 @@ export default async function ProfilePage({
   //   - school: profile_school RLS returns the row only when visible (null == hidden)
   //   - counts: definer function, so the follow graph itself stays private
   //   - rel: drives private-account gating
-  const [schoolRes, countRes, relRes] = await Promise.all([
+  //   - posts: RLS returns them only if the viewer may see this author's posts,
+  //     so for a hidden private account this comes back empty automatically
+  const [schoolRes, countRes, relRes, postsRes] = await Promise.all([
     supabase.from("profile_school").select("school").eq("profile_id", profile.id).maybeSingle(),
     supabase.rpc("get_profile_counts", { p_profile_id: profile.id }),
     user && !isOwner
@@ -49,11 +52,20 @@ export default async function ProfilePage({
           .eq("following_id", profile.id)
           .maybeSingle()
       : Promise.resolve({ data: null as { status: string } | null }),
+    supabase
+      .from("posts")
+      .select(POST_SELECT)
+      .eq("user_id", profile.id)
+      .order("created_at", { ascending: false })
+      .limit(20)
+      .returns<FeedPost[]>(),
   ]);
 
+  const viewerId = user?.id ?? null;
   const school = schoolRes.data?.school ?? null;
   const counts = countRes.data?.[0] ?? { posts: 0, followers: 0, following: 0 };
   const isAcceptedFollower = relRes.data?.status === "accepted";
+  const posts = postsRes.data ?? [];
 
   const followState: FollowState =
     relRes.data?.status === "accepted" ? "following" : relRes.data?.status === "pending" ? "pending" : "none";
@@ -169,9 +181,12 @@ export default async function ProfilePage({
               Follow @{profile.username} to see their posts.
             </p>
           </div>
+        ) : posts.length === 0 ? (
+          <p className="py-10 text-center text-sm text-[var(--ink-muted)]">
+            {isOwner ? "You haven't posted yet." : `@${profile.username} hasn't posted yet.`}
+          </p>
         ) : (
-          // TODO(Phase 5): list this profile's posts
-          <p className="text-sm text-[var(--ink-muted)]">Posts coming in this build.</p>
+          posts.map((post) => <PostCard key={post.id} post={post} viewerId={viewerId} />)
         )}
       </section>
     </main>
