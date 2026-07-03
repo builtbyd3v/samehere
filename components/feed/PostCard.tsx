@@ -1,6 +1,7 @@
 import Link from "next/link";
 import ReactionRow from "./ReactionRow";
 import PostMediaGrid from "./PostMediaGrid";
+import DeletePostButton from "./DeletePostButton";
 import type { PostMedia } from "@/lib/media";
 
 // Shared select for feed queries (page + Load more) so the shape stays in sync
@@ -80,6 +81,10 @@ export default function PostCard({ post, viewerId }: { post: FeedPost; viewerId:
             {school ? `${school} · ` : ""}
             <Link href={`/post/${post.id}`} className="hover:underline">{timeAgo(post.created_at)}</Link>
           </p>
+        </div>
+
+        <div className="ml-auto">
+          <DeletePostButton postId={post.id} canDelete={viewerId === post.user_id} />
         </div>
       </div>
 

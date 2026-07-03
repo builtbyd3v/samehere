@@ -77,3 +77,24 @@ export async function createPost(_prev: ComposerState, formData: FormData): Prom
   revalidatePath("/feed");
   return { ok: true };
 }
+
+// Delete own post. RLS restricts the delete to the owner, so a non-owner's
+// call affects 0 rows — safe to run through the plain session client.
+// ponytail: best-effort media purge on delete; orphan sweep later if it matters.
+export async function deletePost(postId: string): Promise<void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const { data: row } = await supabase.from("posts").select("media").eq("id", postId).maybeSingle();
+  const paths = ((row?.media ?? []) as { path: string }[]).map((m) => m.path);
+  if (paths.length > 0) {
+    await supabase.storage.from("post-media").remove(paths);
+  }
+
+  await supabase.from("posts").delete().eq("id", postId);
+
+  revalidatePath("/feed");
+}

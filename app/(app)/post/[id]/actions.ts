@@ -38,3 +38,15 @@ export async function createComment(_prev: CommentState, formData: FormData): Pr
   revalidatePath(`/post/${postId}`);
   return { ok: true };
 }
+
+// Delete own comment. RLS owner-only delete — a non-owner's call affects 0 rows.
+// No revalidatePath: the post route is dynamic and the client refreshes itself.
+export async function deleteComment(commentId: string): Promise<void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  await supabase.from("comments").delete().eq("id", commentId);
+}

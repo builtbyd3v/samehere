@@ -5,12 +5,15 @@ import { POST_SELECT, type FeedPost } from "@/components/feed/PostCard";
 import ReactionRow from "@/components/feed/ReactionRow";
 import CommentComposer from "@/components/feed/CommentComposer";
 import PostMediaGrid from "@/components/feed/PostMediaGrid";
+import DeletePostButton from "@/components/feed/DeletePostButton";
+import DeleteCommentButton from "@/components/feed/DeleteCommentButton";
 import { attachSignedMedia } from "@/lib/media";
 
 type Comment = {
   id: string;
   content: string;
   created_at: string;
+  user_id: string;
   author: { username: string; display_name: string | null; avatar_url: string | null } | null;
 };
 
@@ -25,7 +28,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
     // Comments RLS mirrors post visibility, so this is empty if the post is hidden.
     supabase
       .from("comments")
-      .select("id, content, created_at, author:profiles!comments_user_id_fkey(username, display_name, avatar_url)")
+      .select("id, content, created_at, user_id, author:profiles!comments_user_id_fkey(username, display_name, avatar_url)")
       .eq("post_id", id)
       .order("created_at", { ascending: true })
       .returns<Comment[]>(),
@@ -71,6 +74,9 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
             {a && <span className="ml-1.5 text-sm text-[var(--ink-muted)]">@{a.username}</span>}
             <p className="text-sm text-[var(--ink-muted)]">{school ? `${school} · ` : ""}{when}</p>
           </div>
+          <div className="ml-auto">
+            <DeletePostButton postId={post.id} canDelete={viewerId === post.user_id} />
+          </div>
         </div>
 
         <p className="mt-5 whitespace-pre-line break-words text-[17px] leading-relaxed text-[var(--ink)]">
@@ -114,14 +120,17 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                     {cname.charAt(0).toUpperCase()}
                   </div>
                 )}
-                <div className="min-w-0">
-                  <div className="text-sm">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center text-sm">
                     {c.author ? (
                       <Link href={`/profile/${c.author.username}`} className="font-medium hover:underline">{cname}</Link>
                     ) : (
                       <span className="font-medium">{cname}</span>
                     )}
                     {c.author && <span className="ml-1.5 text-[var(--ink-muted)]">@{c.author.username}</span>}
+                    <div className="ml-auto">
+                      <DeleteCommentButton commentId={c.id} canDelete={viewerId === c.user_id} />
+                    </div>
                   </div>
                   <p className="mt-0.5 whitespace-pre-line break-words text-[15px] leading-relaxed">{c.content}</p>
                 </div>
