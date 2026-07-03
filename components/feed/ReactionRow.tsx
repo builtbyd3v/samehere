@@ -18,18 +18,18 @@ type Props = {
   mineBookmark: boolean;
 };
 
-const svg = "h-[18px] w-[18px]";
+// All icons draw on the same 24x24 viewBox at 20px so they read the same size.
+const svg = "h-5 w-5";
 const stroke = { fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, viewBox: "0 0 24 24" };
 // Filled icons flip to solid when active (Twitter/IG-style) for a clear on-state.
 const fillIf = (on?: boolean) => (on ? "currentColor" : "none");
 const IconHeart = ({ on }: { on?: boolean }) => (<svg className={svg} {...stroke} fill={fillIf(on)}><path d="M19 14c1.49-1.46 3-3.2 3-5.5A4.5 4.5 0 0 0 12 5.5 4.5 4.5 0 0 0 2 8.5c0 2.3 1.5 4.04 3 5.5l7 7Z" /></svg>);
-// Two overlapping rings = the signature "SameHere" reaction. Active state fills
-// each ring translucently so the overlap doubles into a solid lens (the "same"
-// intersection) instead of a blob.
+// Two overlapping rings = the signature "SameHere" reaction. Active fills each
+// ring translucently so the overlap doubles into a solid lens, not a blob.
 const IconSame = ({ on }: { on?: boolean }) => (
   <svg className={svg} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}>
-    <circle cx="9" cy="12" r="5.5" fill={on ? "currentColor" : "none"} fillOpacity={on ? 0.4 : undefined} />
-    <circle cx="15" cy="12" r="5.5" fill={on ? "currentColor" : "none"} fillOpacity={on ? 0.4 : undefined} />
+    <circle cx="9" cy="12" r="6.25" fill={on ? "currentColor" : "none"} fillOpacity={on ? 0.4 : undefined} />
+    <circle cx="15" cy="12" r="6.25" fill={on ? "currentColor" : "none"} fillOpacity={on ? 0.4 : undefined} />
   </svg>
 );
 const IconComment = () => (<svg className={svg} {...stroke}><path d="M21 15a2 2 0 0 1-2 2H8l-4 4V5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2Z" /></svg>);
@@ -49,46 +49,40 @@ export default function ReactionRow(props: Props) {
     mineRepost: props.mineRepost,
     mineBookmark: props.mineBookmark,
   });
-  const [busy, setBusy] = useState(false);
 
-  // reactions (like/samehere) live in one table keyed by type.
+  // Optimistic: flip local state first, then write; roll back on error. No global
+  // busy lock — each button acts independently (so clicking one never dims the
+  // others), and the tables' unique constraints keep rapid clicks safe.
+
   async function toggleReaction(type: "like" | "samehere") {
-    if (!viewerId || busy) return;
+    if (!viewerId) return;
     const mine = type === "like" ? s.mineLike : s.mineSamehere;
     const d = mine ? -1 : 1;
-    setBusy(true);
     setS((p) => (type === "like" ? { ...p, mineLike: !mine, like: p.like + d } : { ...p, mineSamehere: !mine, samehere: p.samehere + d }));
     const { error } = mine
       ? await supabase.from("reactions").delete().eq("post_id", postId).eq("user_id", viewerId).eq("type", type)
       : await supabase.from("reactions").insert({ post_id: postId, user_id: viewerId, type });
-    setBusy(false);
     if (error) setS((p) => (type === "like" ? { ...p, mineLike: mine, like: p.like - d } : { ...p, mineSamehere: mine, samehere: p.samehere - d }));
   }
 
-  // repost: blocked on private authors (RLS enforces; button is also disabled).
   async function toggleRepost() {
-    if (!viewerId || busy || authorPrivate) return;
+    if (!viewerId || authorPrivate) return;
     const mine = s.mineRepost;
     const d = mine ? -1 : 1;
-    setBusy(true);
     setS((p) => ({ ...p, mineRepost: !mine, repost: p.repost + d }));
     const { error } = mine
       ? await supabase.from("reposts").delete().eq("post_id", postId).eq("user_id", viewerId)
       : await supabase.from("reposts").insert({ post_id: postId, user_id: viewerId });
-    setBusy(false);
     if (error) setS((p) => ({ ...p, mineRepost: mine, repost: p.repost - d }));
   }
 
-  // bookmark: private, no count.
   async function toggleBookmark() {
-    if (!viewerId || busy) return;
+    if (!viewerId) return;
     const mine = s.mineBookmark;
-    setBusy(true);
     setS((p) => ({ ...p, mineBookmark: !mine }));
     const { error } = mine
       ? await supabase.from("bookmarks").delete().eq("post_id", postId).eq("user_id", viewerId)
       : await supabase.from("bookmarks").insert({ post_id: postId, user_id: viewerId });
-    setBusy(false);
     if (error) setS((p) => ({ ...p, mineBookmark: mine }));
   }
 
@@ -97,12 +91,12 @@ export default function ReactionRow(props: Props) {
 
   return (
     <div className="mt-3 flex items-center gap-5 text-[var(--ink-muted)]">
-      <button type="button" onClick={() => toggleReaction("like")} disabled={!viewerId || busy} aria-pressed={s.mineLike} aria-label={s.mineLike ? "Liked" : "Like"}
+      <button type="button" onClick={() => toggleReaction("like")} disabled={!viewerId} aria-pressed={s.mineLike} aria-label={s.mineLike ? "Liked" : "Like"}
         className={`${base} ${s.mineLike ? "text-[#f4245e]" : dim}`}>
         <IconHeart on={s.mineLike} />{s.like > 0 && <span>{s.like}</span>}
       </button>
 
-      <button type="button" onClick={() => toggleReaction("samehere")} disabled={!viewerId || busy} aria-pressed={s.mineSamehere} aria-label={s.mineSamehere ? "SameHere added" : "SameHere — this is me too"}
+      <button type="button" onClick={() => toggleReaction("samehere")} disabled={!viewerId} aria-pressed={s.mineSamehere} aria-label={s.mineSamehere ? "SameHere added" : "SameHere — this is me too"}
         className={`${base} ${s.mineSamehere ? "text-[var(--blue)]" : dim}`}>
         <IconSame on={s.mineSamehere} />{s.samehere > 0 && <span>{s.samehere}</span>}
       </button>
@@ -111,13 +105,13 @@ export default function ReactionRow(props: Props) {
         <IconComment />{commentCount > 0 && <span>{commentCount}</span>}
       </Link>
 
-      <button type="button" onClick={toggleRepost} disabled={!viewerId || busy || authorPrivate}
+      <button type="button" onClick={toggleRepost} disabled={!viewerId || authorPrivate}
         aria-pressed={s.mineRepost} aria-label={authorPrivate ? "Reposting is off for private accounts" : s.mineRepost ? "Reposted" : "Repost"} title={authorPrivate ? "Private posts can't be reposted" : undefined}
         className={`${base} ${s.mineRepost ? "text-[#00ba7c]" : dim}`}>
         <IconRepost />{s.repost > 0 && <span>{s.repost}</span>}
       </button>
 
-      <button type="button" onClick={toggleBookmark} disabled={!viewerId || busy} aria-pressed={s.mineBookmark} aria-label={s.mineBookmark ? "Bookmarked" : "Bookmark"}
+      <button type="button" onClick={toggleBookmark} disabled={!viewerId} aria-pressed={s.mineBookmark} aria-label={s.mineBookmark ? "Bookmarked" : "Bookmark"}
         className={`${base} ml-auto ${s.mineBookmark ? "text-[var(--blue)]" : dim}`}>
         <IconBookmark on={s.mineBookmark} />
       </button>
