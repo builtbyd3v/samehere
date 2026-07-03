@@ -5,6 +5,7 @@ import PostCard, { POST_SELECT, PAGE, type FeedPost } from "@/components/feed/Po
 import FeedLoadMore from "@/components/feed/FeedLoadMore";
 import FollowRequests, { type FollowRequest } from "@/components/profile/FollowRequests";
 import FollowButton from "@/components/profile/FollowButton";
+import UserBadges from "@/components/profile/UserBadges";
 import { attachSignedMedia } from "@/lib/media";
 import { scoreOverlap, type MatchSignal } from "@/lib/match";
 import { connectionPrompt } from "@/lib/connection-prompt";
@@ -105,7 +106,7 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
   const [{ data: requests }, { data: myFollows }, { data: viewerProfile }] = await Promise.all([
     supabase
       .from("follows")
-      .select("follower_id, requester:profiles!follows_follower_id_fkey(username, display_name, avatar_url)")
+      .select("follower_id, requester:profiles!follows_follower_id_fkey(username, display_name, avatar_url, is_pro, is_founder)")
       .eq("following_id", userId)
       .eq("status", "pending")
       .order("created_at", { ascending: false })
@@ -135,7 +136,7 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
       : Promise.resolve({ data: [] as FeedPost[] }),
     supabase
       .from("profiles")
-      .select("id, username, display_name, avatar_url, created_at, year, major, skills, goals, bio, profile_school(school)")
+      .select("id, username, display_name, avatar_url, created_at, year, major, skills, goals, bio, is_pro, is_founder, profile_school(school)")
       .not("id", "in", `(${excludeIds.join(",")})`)
       .order("created_at", { ascending: false })
       .limit(30),
@@ -210,6 +211,7 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
                     <Link href={`/profile/${s.username}`} className="font-medium hover:underline">
                       {name}
                     </Link>
+                    <UserBadges isPro={s.is_pro} isFounder={s.is_founder} />
                     <span className="ml-1.5 text-[var(--ink-muted)]">@{s.username}</span>
                     {s._prompt && (
                       <p className="mt-0.5 text-xs text-[var(--ink-muted)]">{s._prompt}</p>

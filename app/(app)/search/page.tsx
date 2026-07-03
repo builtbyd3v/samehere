@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import UserBadges from "@/components/profile/UserBadges";
 
 const input =
   "w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[15px] text-[var(--ink)] outline-none transition placeholder:text-[var(--ink-faint)] focus:border-[var(--border-strong)] focus:ring-2 focus:ring-[#3b82f6]/40";
@@ -9,6 +10,8 @@ type SearchResult = {
   username: string;
   display_name: string | null;
   avatar_url: string | null;
+  is_pro: boolean;
+  is_founder: boolean;
 };
 
 export default async function SearchPage({
@@ -33,7 +36,7 @@ export default async function SearchPage({
   const { data: results } = tokens.length
     ? await supabase
         .from("profiles")
-        .select("id, username, display_name, avatar_url")
+        .select("id, username, display_name, avatar_url, is_pro, is_founder")
         .or(orFilter)
         .limit(20)
         .returns<SearchResult[]>()
@@ -90,7 +93,10 @@ export default async function SearchPage({
                       </div>
                     )}
                     <div className="min-w-0 text-sm">
-                      <p className="font-medium">{name}</p>
+                      <p className="flex items-center gap-1.5 font-medium">
+                        {name}
+                        <UserBadges isPro={p.is_pro} isFounder={p.is_founder} />
+                      </p>
                       <p className="text-[var(--ink-muted)]">@{p.username}</p>
                     </div>
                   </Link>

@@ -19,6 +19,9 @@ export default function Navbar({ username }: { username: string | null }) {
           <Link href="/saved" className="text-[var(--ink-muted)] hover:text-[var(--ink)]">
             Saved
           </Link>
+          <Link href="/pro" className="text-[var(--ink-muted)] hover:text-[var(--ink)]">
+            Pro
+          </Link>
           {username && (
             <Link href={`/profile/${username}`} className="text-[var(--ink-muted)] hover:text-[var(--ink)]">
               Profile

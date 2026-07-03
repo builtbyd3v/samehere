@@ -296,10 +296,13 @@ export type Database = {
           heatmap_visibility: string
           hide_school: boolean
           id: string
+          is_founder: boolean
           is_private: boolean
+          is_pro: boolean
           major: string | null
           skills: string[] | null
           username: string
+          wants_pro: boolean
           year: string | null
         }
         Insert: {
@@ -311,10 +314,13 @@ export type Database = {
           heatmap_visibility?: string
           hide_school?: boolean
           id: string
+          is_founder?: boolean
           is_private?: boolean
+          is_pro?: boolean
           major?: string | null
           skills?: string[] | null
           username: string
+          wants_pro?: boolean
           year?: string | null
         }
         Update: {
@@ -326,10 +332,13 @@ export type Database = {
           heatmap_visibility?: string
           hide_school?: boolean
           id?: string
+          is_founder?: boolean
           is_private?: boolean
+          is_pro?: boolean
           major?: string | null
           skills?: string[] | null
           username?: string
+          wants_pro?: boolean
           year?: string | null
         }
         Relationships: []

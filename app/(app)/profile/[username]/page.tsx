@@ -5,6 +5,7 @@ import FollowButton, { type FollowState } from "@/components/profile/FollowButto
 import PostCard, { POST_SELECT, type FeedPost } from "@/components/feed/PostCard";
 import ContributionHeatmap, { type HeatmapDay } from "@/components/profile/ContributionHeatmap";
 import { attachSignedMedia } from "@/lib/media";
+import UserBadges from "@/components/profile/UserBadges";
 
 const YEAR_LABEL: Record<string, string> = {
   freshman: "Freshman",
@@ -27,7 +28,7 @@ export default async function ProfilePage({
     supabase.auth.getUser(),
     supabase
       .from("profiles")
-      .select("id, username, display_name, avatar_url, year, major, bio, goals, skills, is_private, heatmap_visibility")
+      .select("id, username, display_name, avatar_url, year, major, bio, goals, skills, is_private, heatmap_visibility, is_pro, is_founder")
       .eq("username", username)
       .maybeSingle(),
   ]);
@@ -104,9 +105,12 @@ export default async function ProfilePage({
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h1 className="truncate text-2xl font-semibold tracking-[-0.02em]">
-                {profile.display_name ?? profile.username}
-              </h1>
+              <div className="flex items-center gap-1.5">
+                <h1 className="truncate text-2xl font-semibold tracking-[-0.02em]">
+                  {profile.display_name ?? profile.username}
+                </h1>
+                <UserBadges isPro={profile.is_pro} isFounder={profile.is_founder} />
+              </div>
               <p className="text-[15px] text-[var(--ink-muted)]">@{profile.username}</p>
             </div>
 

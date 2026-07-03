@@ -2,6 +2,7 @@ import Link from "next/link";
 import ReactionRow from "./ReactionRow";
 import PostMediaGrid from "./PostMediaGrid";
 import DeletePostButton from "./DeletePostButton";
+import UserBadges from "@/components/profile/UserBadges";
 import type { PostMedia } from "@/lib/media";
 
 // Shared select for feed queries (page + Load more) so the shape stays in sync
@@ -11,7 +12,7 @@ import type { PostMedia } from "@/lib/media";
 // ponytail: exposes every reactor's user_id to the client. Fine at v1 scale;
 // swap for a counts RPC if reaction volume or privacy ever matters.
 export const POST_SELECT =
-  "id, content, created_at, user_id, media, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, is_private, profile_school(school)), reactions(user_id, type), reposts(user_id), bookmarks(user_id), comments(count)";
+  "id, content, created_at, user_id, media, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, is_private, is_pro, is_founder, profile_school(school)), reactions(user_id, type), reposts(user_id), bookmarks(user_id), comments(count)";
 
 export const PAGE = 20;
 
@@ -26,6 +27,8 @@ export type FeedPost = {
     display_name: string | null;
     avatar_url: string | null;
     is_private: boolean;
+    is_pro: boolean;
+    is_founder: boolean;
     profile_school: { school: string | null } | null;
   } | null;
   reactions: { user_id: string; type: string }[];
@@ -75,6 +78,7 @@ export default function PostCard({ post, viewerId }: { post: FeedPost; viewerId:
             ) : (
               <span className="font-medium">{name}</span>
             )}
+            {a && <UserBadges isPro={a.is_pro} isFounder={a.is_founder} />}
             {a && <span className="text-[var(--ink-muted)]">@{a.username}</span>}
           </div>
           <p className="text-[var(--ink-muted)]">

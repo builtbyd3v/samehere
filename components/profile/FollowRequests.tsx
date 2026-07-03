@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import UserBadges from "./UserBadges";
 
 export type FollowRequest = {
   follower_id: string;
-  requester: { username: string; display_name: string | null; avatar_url: string | null } | null;
+  requester: { username: string; display_name: string | null; avatar_url: string | null; is_pro: boolean; is_founder: boolean } | null;
 };
 
 export default function FollowRequests({ requests }: { requests: FollowRequest[] }) {
@@ -47,6 +48,7 @@ export default function FollowRequests({ requests }: { requests: FollowRequest[]
                 ) : (
                   <span className="font-medium">{name}</span>
                 )}
+                {r.requester && <UserBadges isPro={r.requester.is_pro} isFounder={r.requester.is_founder} />}
                 {r.requester && <span className="ml-1.5 text-[var(--ink-muted)]">@{r.requester.username}</span>}
               </div>
               <button type="button" onClick={() => act(r.follower_id, true)} disabled={busy === r.follower_id}
