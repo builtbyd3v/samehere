@@ -1,10 +1,14 @@
 import Link from "next/link";
+import ReactionRow from "./ReactionRow";
 
 // Shared select for feed queries (page + Load more) so the shape stays in sync
 // with FeedPost. Lives here, not in the "use server" actions file (which may
-// only export async functions).
+// only export async functions). reactions(user_id, type) is embedded so we can
+// derive counts + the viewer's own state in one round-trip.
+// ponytail: exposes every reactor's user_id to the client. Fine at v1 scale;
+// swap for a counts RPC if reaction volume or privacy ever matters.
 export const POST_SELECT =
-  "id, content, created_at, user_id, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, profile_school(school))";
+  "id, content, created_at, user_id, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, profile_school(school)), reactions(user_id, type)";
 
 export const PAGE = 20;
 
@@ -19,6 +23,7 @@ export type FeedPost = {
     avatar_url: string | null;
     profile_school: { school: string | null } | null;
   } | null;
+  reactions: { user_id: string; type: string }[];
 };
 
 // Compact relative time: 34s, 12m, 5h, 3d, then a date.
@@ -34,10 +39,11 @@ function timeAgo(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-export default function PostCard({ post }: { post: FeedPost }) {
+export default function PostCard({ post, viewerId }: { post: FeedPost; viewerId: string | null }) {
   const a = post.author;
   const name = a?.display_name ?? a?.username ?? "Unknown";
   const school = a?.profile_school?.school ?? null;
+  const r = post.reactions ?? [];
 
   return (
     <article className="border-b border-[var(--border)] px-1 py-5">
@@ -73,7 +79,15 @@ export default function PostCard({ post }: { post: FeedPost }) {
         {post.content}
       </Link>
 
-      {/* TODO(Phase 6): reactions (Like / SameHere / Repost / Bookmark) + comment count */}
+      <ReactionRow
+        postId={post.id}
+        viewerId={viewerId}
+        like={r.filter((x) => x.type === "like").length}
+        samehere={r.filter((x) => x.type === "samehere").length}
+        mineLike={!!viewerId && r.some((x) => x.type === "like" && x.user_id === viewerId)}
+        mineSamehere={!!viewerId && r.some((x) => x.type === "samehere" && x.user_id === viewerId)}
+      />
+      {/* TODO(Phase 6): repost + bookmark + comment count */}
     </article>
   );
 }

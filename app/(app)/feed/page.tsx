@@ -9,12 +9,16 @@ import FeedLoadMore from "@/components/feed/FeedLoadMore";
 export default async function FeedPage() {
   const supabase = await createClient();
 
-  const { data: posts } = await supabase
-    .from("posts")
-    .select(POST_SELECT)
-    .order("created_at", { ascending: false })
-    .limit(PAGE)
-    .returns<FeedPost[]>();
+  const [{ data: { user } }, { data: posts }] = await Promise.all([
+    supabase.auth.getUser(),
+    supabase
+      .from("posts")
+      .select(POST_SELECT)
+      .order("created_at", { ascending: false })
+      .limit(PAGE)
+      .returns<FeedPost[]>(),
+  ]);
+  const viewerId = user?.id ?? null;
 
   return (
     <main className="mx-auto max-w-2xl px-5 py-8">
@@ -30,11 +34,12 @@ export default async function FeedPage() {
         ) : (
           <>
             {posts.map((post) => (
-              <PostCard key={post.id} post={post} />
+              <PostCard key={post.id} post={post} viewerId={viewerId} />
             ))}
             <FeedLoadMore
               cursor={posts[posts.length - 1].created_at}
               hasMore={posts.length === PAGE}
+              viewerId={viewerId}
             />
           </>
         )}

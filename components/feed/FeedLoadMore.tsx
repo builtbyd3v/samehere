@@ -7,7 +7,15 @@ import { loadMorePosts } from "@/app/(app)/feed/actions";
 // Appends older pages below the server-rendered first page. Holds its own
 // cursor (created_at of the last row it has) and hides itself when a short
 // page comes back.
-export default function FeedLoadMore({ cursor, hasMore }: { cursor: string; hasMore: boolean }) {
+export default function FeedLoadMore({
+  cursor,
+  hasMore,
+  viewerId,
+}: {
+  cursor: string;
+  hasMore: boolean;
+  viewerId: string | null;
+}) {
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [next, setNext] = useState<string>(cursor);
   const [more, setMore] = useState(hasMore);
@@ -25,7 +33,7 @@ export default function FeedLoadMore({ cursor, hasMore }: { cursor: string; hasM
   return (
     <>
       {posts.map((post) => (
-        <PostCard key={post.id} post={post} />
+        <PostCard key={post.id} post={post} viewerId={viewerId} />
       ))}
       {more && (
         <button

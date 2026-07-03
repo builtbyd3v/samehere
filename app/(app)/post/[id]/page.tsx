@@ -2,16 +2,22 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { POST_SELECT, type FeedPost } from "@/components/feed/PostCard";
+import ReactionRow from "@/components/feed/ReactionRow";
 
 export default async function PostPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
 
-  // RLS returns the row only if the viewer may see it; anything else -> 404.
-  const { data } = await supabase.from("posts").select(POST_SELECT).eq("id", id).maybeSingle();
+  const [{ data: { user } }, { data }] = await Promise.all([
+    supabase.auth.getUser(),
+    // RLS returns the row only if the viewer may see it; anything else -> 404.
+    supabase.from("posts").select(POST_SELECT).eq("id", id).maybeSingle(),
+  ]);
   const post = data as FeedPost | null;
   if (!post) notFound();
 
+  const viewerId = user?.id ?? null;
+  const r = post.reactions ?? [];
   const a = post.author;
   const name = a?.display_name ?? a?.username ?? "Unknown";
   const school = a?.profile_school?.school ?? null;
@@ -53,7 +59,15 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
           {post.content}
         </p>
 
-        {/* TODO(Phase 6): reactions row (Like / SameHere / Repost / Bookmark) */}
+        <ReactionRow
+          postId={post.id}
+          viewerId={viewerId}
+          like={r.filter((x) => x.type === "like").length}
+          samehere={r.filter((x) => x.type === "samehere").length}
+          mineLike={!!viewerId && r.some((x) => x.type === "like" && x.user_id === viewerId)}
+          mineSamehere={!!viewerId && r.some((x) => x.type === "samehere" && x.user_id === viewerId)}
+        />
+        {/* TODO(Phase 6): repost + bookmark */}
       </article>
 
       {/* TODO(Phase 6): comment composer (50-char min) + comment thread */}
