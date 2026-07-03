@@ -21,13 +21,20 @@ export default async function SearchPage({
   // ponytail: ILIKE scan; add a pg_trgm index if it slows. School search deferred
   // (school lives in RLS'd profile_school).
   const safe = q.replace(/[,()*%\\]/g, "").trim();
+  // Match ANY whitespace token across username/display_name, so "Ara Babigian"
+  // still finds "ara". Cap tokens to keep the OR bounded.
+  // ponytail: any-token match is a bit noisy; tighten to AND-ranked if results get spammy.
+  const tokens = safe.split(/\s+/).filter(Boolean).slice(0, 5);
+  const orFilter = tokens
+    .flatMap((t) => [`username.ilike.%${t}%`, `display_name.ilike.%${t}%`])
+    .join(",");
 
   const supabase = await createClient();
-  const { data: results } = safe
+  const { data: results } = tokens.length
     ? await supabase
         .from("profiles")
         .select("id, username, display_name, avatar_url")
-        .or(`username.ilike.%${safe}%,display_name.ilike.%${safe}%`)
+        .or(orFilter)
         .limit(20)
         .returns<SearchResult[]>()
     : { data: [] as SearchResult[] };
