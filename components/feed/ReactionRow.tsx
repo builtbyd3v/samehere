@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -10,6 +11,7 @@ type Props = {
   like: number;
   samehere: number;
   repost: number;
+  commentCount: number;
   mineLike: boolean;
   mineSamehere: boolean;
   mineRepost: boolean;
@@ -21,11 +23,12 @@ const stroke = { fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeL
 const IconHeart = () => (<svg className={svg} {...stroke}><path d="M19 14c1.49-1.46 3-3.2 3-5.5A4.5 4.5 0 0 0 12 5.5 4.5 4.5 0 0 0 2 8.5c0 2.3 1.5 4.04 3 5.5l7 7Z" /></svg>);
 // Two overlapping rings = the signature "SameHere" reaction.
 const IconSame = () => (<svg className={svg} fill="none" stroke="currentColor" strokeWidth={1.6} viewBox="0 0 24 24"><circle cx="9" cy="12" r="5.5" /><circle cx="15" cy="12" r="5.5" /></svg>);
+const IconComment = () => (<svg className={svg} {...stroke}><path d="M21 15a2 2 0 0 1-2 2H8l-4 4V5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2Z" /></svg>);
 const IconRepost = () => (<svg className={svg} {...stroke}><path d="M17 2l4 4-4 4" /><path d="M3 11V9a4 4 0 0 1 4-4h14" /><path d="M7 22l-4-4 4-4" /><path d="M21 13v2a4 4 0 0 1-4 4H3" /></svg>);
 const IconBookmark = () => (<svg className={svg} {...stroke}><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z" /></svg>);
 
 export default function ReactionRow(props: Props) {
-  const { postId, viewerId, authorPrivate } = props;
+  const { postId, viewerId, authorPrivate, commentCount } = props;
   const [supabase] = useState(createClient);
   const [s, setS] = useState({
     like: props.like,
@@ -93,6 +96,10 @@ export default function ReactionRow(props: Props) {
         className={`${base} ${s.mineSamehere ? "text-[var(--blue)]" : dim}`}>
         <IconSame />{s.samehere > 0 && <span>{s.samehere}</span>}
       </button>
+
+      <Link href={`/post/${postId}`} aria-label="Comments" className={`${base} ${dim}`}>
+        <IconComment />{commentCount > 0 && <span>{commentCount}</span>}
+      </Link>
 
       <button type="button" onClick={toggleRepost} disabled={!viewerId || busy || authorPrivate}
         aria-pressed={s.mineRepost} aria-label={authorPrivate ? "Reposting is off for private accounts" : "Repost"} title={authorPrivate ? "Private posts can't be reposted" : undefined}
