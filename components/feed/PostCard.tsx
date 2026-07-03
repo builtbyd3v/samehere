@@ -80,7 +80,7 @@ export default function PostCard({ post, viewerId }: { post: FeedPost; viewerId:
         </div>
       </div>
 
-      <Link href={`/post/${post.id}`} className="mt-3 block whitespace-pre-line text-[15px] leading-relaxed text-[var(--ink)]">
+      <Link href={`/post/${post.id}`} className="mt-3 block whitespace-pre-line break-words text-[15px] leading-relaxed text-[var(--ink)]">
         {post.content}
       </Link>
 

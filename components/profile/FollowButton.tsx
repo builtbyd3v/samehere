@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 export type FollowState = "none" | "pending" | "following";
 
 export default function FollowButton({ targetId, initial }: { targetId: string; initial: FollowState }) {
   const [supabase] = useState(createClient);
+  const router = useRouter();
   const [state, setState] = useState<FollowState>(initial);
   const [busy, setBusy] = useState(false);
 
@@ -16,7 +18,10 @@ export default function FollowButton({ targetId, initial }: { targetId: string; 
     setBusy(true);
     const { data, error } = await supabase.rpc("request_follow", { p_target: targetId });
     setBusy(false);
-    if (!error) setState(data === "accepted" ? "following" : "pending");
+    if (!error) {
+      setState(data === "accepted" ? "following" : "pending");
+      router.refresh();
+    }
   }
 
   // Unfollow or cancel a pending request — both are just deleting our own row
@@ -25,7 +30,10 @@ export default function FollowButton({ targetId, initial }: { targetId: string; 
     setBusy(true);
     const { error } = await supabase.from("follows").delete().eq("following_id", targetId);
     setBusy(false);
-    if (!error) setState("none");
+    if (!error) {
+      setState("none");
+      router.refresh();
+    }
   }
 
   if (state === "none") {

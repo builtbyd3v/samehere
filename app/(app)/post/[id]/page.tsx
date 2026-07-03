@@ -70,7 +70,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
           </div>
         </div>
 
-        <p className="mt-5 whitespace-pre-line text-[17px] leading-relaxed text-[var(--ink)]">
+        <p className="mt-5 whitespace-pre-line break-words text-[17px] leading-relaxed text-[var(--ink)]">
           {post.content}
         </p>
 
@@ -118,7 +118,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                     )}
                     {c.author && <span className="ml-1.5 text-[var(--ink-muted)]">@{c.author.username}</span>}
                   </div>
-                  <p className="mt-0.5 whitespace-pre-line text-[15px] leading-relaxed">{c.content}</p>
+                  <p className="mt-0.5 whitespace-pre-line break-words text-[15px] leading-relaxed">{c.content}</p>
                 </div>
               </div>
             );
