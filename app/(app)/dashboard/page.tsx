@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import FollowRequests, { type FollowRequest } from "@/components/profile/FollowRequests";
 
 // Stub — the real dashboard (followed-user feed + suggested users) is Phase 9.
 // Exists now so login's redirect target resolves instead of 404ing.
@@ -8,18 +9,30 @@ export default async function DashboardPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const { data: profile } = user
-    ? await supabase.from("profiles").select("username, display_name").eq("id", user.id).single()
-    : { data: null };
+
+  const [{ data: profile }, { data: requests }] = user
+    ? await Promise.all([
+        supabase.from("profiles").select("username, display_name").eq("id", user.id).single(),
+        supabase
+          .from("follows")
+          .select("follower_id, requester:profiles!follows_follower_id_fkey(username, display_name, avatar_url)")
+          .eq("following_id", user.id)
+          .eq("status", "pending")
+          .order("created_at", { ascending: false })
+          .returns<FollowRequest[]>(),
+      ])
+    : [{ data: null }, { data: null }];
 
   return (
     <main className="mx-auto max-w-2xl px-5 py-10">
       <h1 className="text-2xl font-semibold tracking-[-0.02em]">
         Welcome back{profile ? `, ${profile.display_name ?? profile.username}` : ""}.
       </h1>
-      <p className="mt-2 text-[15px] text-[var(--ink-muted)]">
+      <p className="mt-2 mb-8 text-[15px] text-[var(--ink-muted)]">
         Your dashboard is coming together. {/* TODO(Phase 9): followed-user feed + suggested users */}
       </p>
+
+      {requests && <FollowRequests requests={requests} />}
 
       <div className="mt-6 flex flex-wrap gap-3">
         {profile && (

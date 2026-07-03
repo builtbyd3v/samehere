@@ -1,0 +1,66 @@
+"use client";
+
+import Link from "next/link";
+import { useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+
+export type FollowRequest = {
+  follower_id: string;
+  requester: { username: string; display_name: string | null; avatar_url: string | null } | null;
+};
+
+export default function FollowRequests({ requests }: { requests: FollowRequest[] }) {
+  const [supabase] = useState(createClient);
+  const [list, setList] = useState(requests);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  // accept_follow / reject_follow are definer functions — only the target
+  // (auth.uid() = following_id) can act on a pending request.
+  async function act(followerId: string, accept: boolean) {
+    setBusy(followerId);
+    const { error } = await supabase.rpc(accept ? "accept_follow" : "reject_follow", { p_follower: followerId });
+    setBusy(null);
+    if (!error) setList((l) => l.filter((r) => r.follower_id !== followerId));
+  }
+
+  if (list.length === 0) return null;
+
+  return (
+    <section className="mb-8">
+      <h2 className="mb-3 text-sm font-medium">Follow requests</h2>
+      <div className="space-y-2">
+        {list.map((r) => {
+          const name = r.requester?.display_name ?? r.requester?.username ?? "Unknown";
+          return (
+            <div key={r.follower_id} className="flex items-center gap-3 rounded-lg border border-[var(--border)] p-3">
+              {r.requester?.avatar_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={r.requester.avatar_url} alt="" className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover" />
+              ) : (
+                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-sm font-semibold text-[var(--ink-muted)]">
+                  {name.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div className="min-w-0 flex-1 text-sm">
+                {r.requester ? (
+                  <Link href={`/profile/${r.requester.username}`} className="font-medium hover:underline">{name}</Link>
+                ) : (
+                  <span className="font-medium">{name}</span>
+                )}
+                {r.requester && <span className="ml-1.5 text-[var(--ink-muted)]">@{r.requester.username}</span>}
+              </div>
+              <button type="button" onClick={() => act(r.follower_id, true)} disabled={busy === r.follower_id}
+                className="btn-inset rounded-md bg-[var(--ink)] px-3 py-1.5 text-sm font-medium text-[var(--canvas)] transition active:opacity-80 disabled:opacity-50">
+                Accept
+              </button>
+              <button type="button" onClick={() => act(r.follower_id, false)} disabled={busy === r.follower_id}
+                className="rounded-md border border-[var(--border-strong)] px-3 py-1.5 text-sm font-medium transition active:opacity-80 disabled:opacity-50">
+                Reject
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
