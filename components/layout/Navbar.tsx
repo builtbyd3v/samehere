@@ -28,6 +28,11 @@ export default function Navbar({ username }: { username: string | null }) {
               Profile
             </Link>
           )}
+          {username && (
+            <Link href="/settings" className="text-[var(--ink-muted)] hover:text-[var(--ink)]">
+              Settings
+            </Link>
+          )}
           {username && <FeedbackButton />}
           <form action={signOut}>
             <button type="submit" className="text-[var(--ink-muted)] hover:text-[var(--ink)]">

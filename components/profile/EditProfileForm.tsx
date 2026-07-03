@@ -161,26 +161,6 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
           <p className={hint}>Comma-separated. Up to 20.</p>
         </div>
 
-        {/* Preferences */}
-        <fieldset className="mb-5 space-y-3 border-t border-[var(--border)] pt-5">
-          <label className="flex items-center gap-2.5 text-sm">
-            <input type="checkbox" name="is_private" defaultChecked={initial.is_private} className="h-4 w-4" />
-            <span>Private account <span className="text-[var(--ink-muted)]">— require approval to follow</span></span>
-          </label>
-          <label className="flex items-center gap-2.5 text-sm">
-            <input type="checkbox" name="hide_school" defaultChecked={initial.hide_school} className="h-4 w-4" />
-            <span>Hide school <span className="text-[var(--ink-muted)]">— from people who don&apos;t follow you</span></span>
-          </label>
-          <div>
-            <label htmlFor="heatmap_visibility" className={label}>Heatmap visibility</label>
-            <select id="heatmap_visibility" name="heatmap_visibility"
-              defaultValue={initial.heatmap_visibility} className={field}>
-              <option value="public">Everyone</option>
-              <option value="followers">Followers only</option>
-            </select>
-          </div>
-        </fieldset>
-
         <button type="submit" disabled={pending}
           className="btn-inset w-full rounded-md bg-[var(--ink)] px-4 py-2.5 text-[15px] font-medium text-[var(--canvas)] transition active:opacity-80 disabled:opacity-60">
           {pending ? "Saving…" : "Save profile"}

@@ -22,7 +22,6 @@ export async function updateProfile(_prev: EditState, formData: FormData): Promi
   const str = (k: string, max: number) => String(formData.get(k) ?? "").trim().slice(0, max);
 
   const yearRaw = str("year", 20);
-  const hvRaw = str("heatmap_visibility", 20);
 
   const updates = {
     display_name: str("display_name", 50) || null,
@@ -30,9 +29,6 @@ export async function updateProfile(_prev: EditState, formData: FormData): Promi
     bio: str("bio", 500) || null,
     goals: str("goals", 500) || null,
     year: YEARS.includes(yearRaw) ? yearRaw : null,
-    heatmap_visibility: hvRaw === "followers" ? "followers" : "public",
-    is_private: formData.get("is_private") === "on",
-    hide_school: formData.get("hide_school") === "on",
     skills: parseSkills(String(formData.get("skills") ?? "")),
   };
 
