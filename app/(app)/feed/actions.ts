@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { POST_SELECT, PAGE, type FeedPost } from "@/components/feed/PostCard";
 import { attachSignedMedia } from "@/lib/media";
+import { aiEnabled, generateText } from "@/lib/ai";
 
 export type ComposerState = { error?: string; ok?: boolean };
 
@@ -76,6 +77,46 @@ export async function createPost(_prev: ComposerState, formData: FormData): Prom
 
   revalidatePath("/feed");
   return { ok: true };
+}
+
+const NUDGE_FALLBACKS = [
+  "What did you build or fix today?",
+  "What are you stuck on right now?",
+  "Share one thing you learned this week.",
+  "What are you working toward this semester?",
+  "What's a small win from today?",
+];
+
+function randomFallback(): string {
+  return NUDGE_FALLBACKS[Math.floor(Math.random() * NUDGE_FALLBACKS.length)];
+}
+
+// On-demand composer writing prompt. Metered via use_ai_quota; always falls
+// back to a static prompt (AI off, over quota, or call failed) so this never
+// throws and always returns something usable.
+// ponytail: static fallback list covers AI-off/over-quota; on-demand only, so no quota burn on render.
+export async function composerNudge(): Promise<string> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return randomFallback();
+
+  if (aiEnabled()) {
+    const { data: allowed } = await supabase.rpc("use_ai_quota", {
+      p_kind: "composer_nudge",
+      p_cap: 3,
+    });
+    if (allowed) {
+      const text = await generateText(
+        "Give one short writing prompt — a question — that inspires a student to post about what they're building, learning, or struggling with. One sentence, no preamble, no quotes.",
+        "Give me one prompt."
+      );
+      if (text) return text;
+    }
+  }
+
+  return randomFallback();
 }
 
 // Delete own post. RLS restricts the delete to the owner, so a non-owner's

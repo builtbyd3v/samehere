@@ -1,7 +1,7 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
-import { createPost, type ComposerState } from "@/app/(app)/feed/actions";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
+import { createPost, composerNudge, type ComposerState } from "@/app/(app)/feed/actions";
 import { createClient } from "@/lib/supabase/client";
 
 // 150 chars earns a heatmap point — it does NOT gate posting.
@@ -17,11 +17,14 @@ type Picked = { file: File; type: "image" | "video"; url: string };
 export default function PostComposer() {
   const [state, formAction, pending] = useActionState<ComposerState, FormData>(createPost, {});
   const ref = useRef<HTMLFormElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [len, setLen] = useState(0);
   const [files, setFiles] = useState<Picked[]>([]);
   const [mediaErr, setMediaErr] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [supabase] = useState(createClient);
+  const [hint, setHint] = useState<string | null>(null);
+  const [nudging, startNudge] = useTransition();
 
   // Latest files for the unmount-only revoke below (avoids a [files]-dep effect
   // that would revoke still-shown previews on every add).
@@ -72,6 +75,23 @@ export default function PostComposer() {
     ]);
   }
 
+  function onNudge() {
+    startNudge(async () => {
+      const prompt = await composerNudge();
+      setHint(prompt);
+    });
+  }
+
+  function useHint() {
+    if (!hint) return;
+    if (textareaRef.current) {
+      textareaRef.current.value = hint;
+      textareaRef.current.focus();
+    }
+    setLen(hint.trim().length);
+    setHint(null);
+  }
+
   function removeFile(i: number) {
     setFiles((prev) => {
       URL.revokeObjectURL(prev[i].url);
@@ -114,7 +134,17 @@ export default function PostComposer() {
 
   return (
     <form ref={ref} onSubmit={onSubmit} className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
+      {hint && (
+        <button
+          type="button"
+          onClick={useHint}
+          className="mb-2 block w-full text-left text-xs italic text-[var(--ink-muted)] hover:underline"
+        >
+          {hint} <span className="not-italic">(click to use)</span>
+        </button>
+      )}
       <textarea
+        ref={textareaRef}
         name="content"
         rows={4}
         required
@@ -171,6 +201,14 @@ export default function PostComposer() {
             />
             Add media
           </label>
+          <button
+            type="button"
+            onClick={onNudge}
+            disabled={nudging}
+            className="text-xs text-[var(--ink-muted)] underline disabled:opacity-50"
+          >
+            {nudging ? "Thinking…" : "Need an idea?"}
+          </button>
         </div>
         <button
           type="submit"
