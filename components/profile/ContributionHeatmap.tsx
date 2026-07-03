@@ -8,6 +8,7 @@
 // v1 is a fixed 52-week grid.
 
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 
 export type HeatmapDay = { day: string; points: number; breakdown: Record<string, number> };
 type Cell = { date: string; points: number; breakdown: Record<string, number>; future: boolean };
@@ -101,12 +102,12 @@ export default function ContributionHeatmap({ data }: { data: HeatmapDay[] }) {
               {/* Month labels — one per column whose first day starts a new month. */}
               <div className="flex gap-[3px]">
                 {cols.map((col, i) => {
-                  const prevMonth = i > 0 ? cols[i - 1][0].date.slice(0, 7) : null;
-                  const thisMonth = col[0].date.slice(0, 7);
+                  const prevMonth = i > 0 ? cols[i - 1][6].date.slice(0, 7) : null;
+                  const thisMonth = col[6].date.slice(0, 7);
                   const isNewMonth = thisMonth !== prevMonth;
                   return (
                     <div key={i} className="h-[14px] w-[14px] text-[11px] whitespace-nowrap text-[var(--ink-faint)]">
-                      {isNewMonth ? MONTH_LABEL.format(new Date(col[0].date)) : null}
+                      {isNewMonth ? MONTH_LABEL.format(new Date(col[6].date)) : null}
                     </div>
                   );
                 })}
@@ -144,24 +145,27 @@ export default function ContributionHeatmap({ data }: { data: HeatmapDay[] }) {
         <span>More</span>
       </div>
 
-      {hovered && (
-        <div
-          style={{ position: "fixed", left: clampedX, top: hovered.y - 12 }}
-          className="pointer-events-none z-50 -translate-x-1/2 -translate-y-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1.5 text-xs whitespace-nowrap shadow"
-        >
-          <p className="font-medium text-[var(--ink)]">{fmtDate.format(new Date(hovered.cell.date))}</p>
-          <p className="text-[var(--ink-muted)]">
-            {hovered.cell.points === 0
-              ? "No contributions"
-              : `${hovered.cell.points} ${hovered.cell.points === 1 ? "point" : "points"}`}
-          </p>
-          {Object.entries(hovered.cell.breakdown).map(([action, pts]) => (
-            <p key={action} className="text-[var(--ink-muted)]">
-              {(ACTION_LABEL[action] ?? action) + ` +${pts}`}
+      {hovered &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            style={{ position: "fixed", left: clampedX, top: hovered.y - 12 }}
+            className="pointer-events-none z-50 -translate-x-1/2 -translate-y-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1.5 text-xs whitespace-nowrap shadow"
+          >
+            <p className="font-medium text-[var(--ink)]">{fmtDate.format(new Date(hovered.cell.date))}</p>
+            <p className="text-[var(--ink-muted)]">
+              {hovered.cell.points === 0
+                ? "No contributions"
+                : `${hovered.cell.points} ${hovered.cell.points === 1 ? "point" : "points"}`}
             </p>
-          ))}
-        </div>
-      )}
+            {Object.entries(hovered.cell.breakdown).map(([action, pts]) => (
+              <p key={action} className="text-[var(--ink-muted)]">
+                {(ACTION_LABEL[action] ?? action) + ` +${pts}`}
+              </p>
+            ))}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
