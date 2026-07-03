@@ -13,14 +13,20 @@ export type ComposerState = { error?: string; ok?: boolean };
 // arrive. RLS still restricts to visible posts.
 export async function loadMorePosts(cursor: string): Promise<FeedPost[]> {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("posts")
-    .select(POST_SELECT)
-    .lt("created_at", cursor)
-    .order("created_at", { ascending: false })
-    .limit(PAGE)
-    .returns<FeedPost[]>();
-  return data ? await attachSignedMedia(supabase, data) : [];
+  // ponytail: app-side filter post-fetch, not RLS on posts — mirrors the first page in feed/page.tsx.
+  const [{ data }, { data: blockedIds }] = await Promise.all([
+    supabase
+      .from("posts")
+      .select(POST_SELECT)
+      .lt("created_at", cursor)
+      .order("created_at", { ascending: false })
+      .limit(PAGE)
+      .returns<FeedPost[]>(),
+    supabase.rpc("get_blocked_ids"),
+  ]);
+  const blocked = new Set(blockedIds ?? []);
+  const filtered = data?.filter((p) => !blocked.has(p.user_id)) ?? [];
+  return await attachSignedMedia(supabase, filtered);
 }
 
 const MAX = 5000;

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import FollowButton, { type FollowState } from "@/components/profile/FollowButton";
+import BlockButton from "@/components/profile/BlockButton";
 import PostCard, { POST_SELECT, type FeedPost } from "@/components/feed/PostCard";
 import ContributionHeatmap, { type HeatmapDay } from "@/components/profile/ContributionHeatmap";
 import { attachSignedMedia } from "@/lib/media";
@@ -44,7 +45,7 @@ export default async function ProfilePage({
   //   - rel: drives private-account gating
   //   - posts: RLS returns them only if the viewer may see this author's posts,
   //     so for a hidden private account this comes back empty automatically
-  const [schoolRes, countRes, relRes, postsRes, heatRes] = await Promise.all([
+  const [schoolRes, countRes, relRes, postsRes, heatRes, blockedIdsRes, myBlockRes] = await Promise.all([
     supabase.from("profile_school").select("school").eq("profile_id", profile.id).maybeSingle(),
     supabase.rpc("get_profile_counts", { p_profile_id: profile.id }),
     user && !isOwner
@@ -63,6 +64,12 @@ export default async function ProfilePage({
       .limit(20)
       .returns<FeedPost[]>(),
     supabase.rpc("get_heatmap", { p_profile_id: profile.id }),
+    // Block facts in either direction — only readable through this definer fn (blocks RLS is owner-only).
+    user && !isOwner ? supabase.rpc("get_blocked_ids") : Promise.resolve({ data: [] as string[] }),
+    // Whether the viewer specifically is the blocker (drives Block vs Unblock label).
+    user && !isOwner
+      ? supabase.from("blocks").select("id").eq("blocker_id", user.id).eq("blocked_id", profile.id).maybeSingle()
+      : Promise.resolve({ data: null as { id: string } | null }),
   ]);
 
   const viewerId = user?.id ?? null;
@@ -73,11 +80,13 @@ export default async function ProfilePage({
   // breakdown comes back from the RPC as Json; it's always an object keyed by
   // action_type at write time (log_contribution), so the cast is safe here.
   const heatmap = (heatRes.data ?? []) as HeatmapDay[];
+  const isBlocked = !!(blockedIdsRes.data ?? []).includes(profile.id);
+  const amIBlocking = !!myBlockRes.data;
 
   const followState: FollowState =
     relRes.data?.status === "accepted" ? "following" : relRes.data?.status === "pending" ? "pending" : "none";
 
-  const contentHidden = profile.is_private && !isOwner && !isAcceptedFollower;
+  const contentHidden = (profile.is_private && !isOwner && !isAcceptedFollower) || isBlocked;
   const canSeeHeatmap =
     isOwner || isAcceptedFollower || profile.heatmap_visibility === "public";
 
@@ -122,7 +131,10 @@ export default async function ProfilePage({
                 Edit profile
               </Link>
             ) : user ? (
-              <FollowButton targetId={profile.id} initial={followState} />
+              <div className="flex shrink-0 items-center gap-3">
+                {!isBlocked && <FollowButton targetId={profile.id} initial={followState} />}
+                <BlockButton targetId={profile.id} initialBlocked={amIBlocking} />
+              </div>
             ) : null}
           </div>
 
@@ -183,7 +195,14 @@ export default async function ProfilePage({
 
       {/* Content: posts, or private notice */}
       <section className="mt-8 border-t border-[var(--border)] pt-6">
-        {contentHidden ? (
+        {isBlocked ? (
+          <div className="rounded-xl border border-[var(--border)] p-8 text-center">
+            <p className="font-medium">Posts unavailable</p>
+            <p className="mt-1.5 text-sm text-[var(--ink-muted)]">
+              You and @{profile.username} aren&apos;t able to see each other&apos;s posts.
+            </p>
+          </div>
+        ) : contentHidden ? (
           <div className="rounded-xl border border-[var(--border)] p-8 text-center">
             <p className="font-medium">This account is private</p>
             <p className="mt-1.5 text-sm text-[var(--ink-muted)]">

@@ -537,6 +537,8 @@ export type Database = {
     }
     Functions: {
       accept_follow: { Args: { p_follower: string }; Returns: undefined }
+      block_user: { Args: { target: string }; Returns: undefined }
+      get_blocked_ids: { Args: never; Returns: string[] }
       get_heatmap: {
         Args: { p_profile_id: string }
         Returns: {

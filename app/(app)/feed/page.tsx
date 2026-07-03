@@ -67,13 +67,19 @@ export default async function FeedPage({
 // ponytail: Latest = global recency; becomes a personalized "For You" once Phase 12 AI ranking lands.
 async function LatestTab({ viewerId }: { viewerId: string | null }) {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("posts")
-    .select(POST_SELECT)
-    .order("created_at", { ascending: false })
-    .limit(PAGE)
-    .returns<FeedPost[]>();
-  const posts = data ? await attachSignedMedia(supabase, data) : null;
+  // ponytail: app-side filter post-fetch, not RLS on posts.
+  const [{ data }, { data: blockedIds }] = await Promise.all([
+    supabase
+      .from("posts")
+      .select(POST_SELECT)
+      .order("created_at", { ascending: false })
+      .limit(PAGE)
+      .returns<FeedPost[]>(),
+    viewerId ? supabase.rpc("get_blocked_ids") : Promise.resolve({ data: [] as string[] }),
+  ]);
+  const blocked = new Set(blockedIds ?? []);
+  const filtered = data?.filter((p) => !blocked.has(p.user_id));
+  const posts = filtered ? await attachSignedMedia(supabase, filtered) : null;
 
   return (
     <section className="mt-6">
@@ -103,7 +109,7 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
 
   const supabase = await createClient();
 
-  const [{ data: requests }, { data: myFollows }, { data: viewerProfile }] = await Promise.all([
+  const [{ data: requests }, { data: myFollows }, { data: viewerProfile }, { data: blockedIds }] = await Promise.all([
     supabase
       .from("follows")
       .select("follower_id, requester:profiles!follows_follower_id_fkey(username, display_name, avatar_url, is_pro, is_founder)")
@@ -117,10 +123,14 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
       .select("year, major, skills, goals, bio, profile_school(school)")
       .eq("id", userId)
       .single(),
+    // ponytail: app-side filter post-fetch, not RLS on posts.
+    supabase.rpc("get_blocked_ids"),
   ]);
+  const blocked = new Set(blockedIds ?? []);
+  const visibleRequests = (requests ?? []).filter((r) => !blocked.has(r.follower_id));
 
   const acceptedIds = (myFollows ?? []).filter((f) => f.status === "accepted").map((f) => f.following_id);
-  const excludeIds = [userId, ...(myFollows ?? []).map((f) => f.following_id)]; // never empty (has me)
+  const excludeIds = [userId, ...blocked, ...(myFollows ?? []).map((f) => f.following_id)]; // never empty (has me)
 
   // ponytail: Following feed is first-page only; add cursor load-more if it grows.
   // ponytail: followed users' own posts only; reposts-in-feed deferred.
@@ -185,7 +195,7 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
 
   return (
     <section className="mt-6">
-      {requests && requests.length > 0 && <FollowRequests requests={requests} />}
+      {visibleRequests.length > 0 && <FollowRequests requests={visibleRequests} />}
 
       {suggested && suggested.length > 0 && (
         <section className="mb-8">
