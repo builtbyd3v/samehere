@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import FollowButton, { type FollowState } from "@/components/profile/FollowButton";
 
 const YEAR_LABEL: Record<string, string> = {
   freshman: "Freshman",
@@ -54,6 +55,9 @@ export default async function ProfilePage({
   const counts = countRes.data?.[0] ?? { posts: 0, followers: 0, following: 0 };
   const isAcceptedFollower = relRes.data?.status === "accepted";
 
+  const followState: FollowState =
+    relRes.data?.status === "accepted" ? "following" : relRes.data?.status === "pending" ? "pending" : "none";
+
   const contentHidden = profile.is_private && !isOwner && !isAcceptedFollower;
   const canSeeHeatmap =
     isOwner || isAcceptedFollower || profile.heatmap_visibility === "public";
@@ -95,15 +99,9 @@ export default async function ProfilePage({
               >
                 Edit profile
               </Link>
-            ) : (
-              // TODO(Phase 7): real follow button (following | pending | follow)
-              <button
-                type="button"
-                className="btn-inset shrink-0 rounded-md bg-[var(--ink)] px-3 py-1.5 text-sm font-medium text-[var(--canvas)] transition active:opacity-80"
-              >
-                Follow
-              </button>
-            )}
+            ) : user ? (
+              <FollowButton targetId={profile.id} initial={followState} />
+            ) : null}
           </div>
 
           {meta && <p className="mt-1.5 text-sm text-[var(--ink-muted)]">{meta}</p>}

@@ -388,6 +388,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_follow: { Args: { p_follower: string }; Returns: undefined }
       get_heatmap: {
         Args: { p_profile_id: string }
         Returns: {
@@ -407,6 +408,8 @@ export type Database = {
         Args: { p_action_type: string; p_metadata?: Json }
         Returns: undefined
       }
+      reject_follow: { Args: { p_follower: string }; Returns: undefined }
+      request_follow: { Args: { p_target: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
