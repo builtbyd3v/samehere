@@ -394,6 +394,7 @@ export type Database = {
         Returns: {
           day: string
           points: number
+          breakdown: Json
         }[]
       }
       get_profile_counts: {

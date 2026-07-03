@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import FollowButton, { type FollowState } from "@/components/profile/FollowButton";
 import PostCard, { POST_SELECT, type FeedPost } from "@/components/feed/PostCard";
+import ContributionHeatmap, { type HeatmapDay } from "@/components/profile/ContributionHeatmap";
 
 const YEAR_LABEL: Record<string, string> = {
   freshman: "Freshman",
@@ -41,7 +42,7 @@ export default async function ProfilePage({
   //   - rel: drives private-account gating
   //   - posts: RLS returns them only if the viewer may see this author's posts,
   //     so for a hidden private account this comes back empty automatically
-  const [schoolRes, countRes, relRes, postsRes] = await Promise.all([
+  const [schoolRes, countRes, relRes, postsRes, heatRes] = await Promise.all([
     supabase.from("profile_school").select("school").eq("profile_id", profile.id).maybeSingle(),
     supabase.rpc("get_profile_counts", { p_profile_id: profile.id }),
     user && !isOwner
@@ -59,6 +60,7 @@ export default async function ProfilePage({
       .order("created_at", { ascending: false })
       .limit(20)
       .returns<FeedPost[]>(),
+    supabase.rpc("get_heatmap", { p_profile_id: profile.id }),
   ]);
 
   const viewerId = user?.id ?? null;
@@ -66,6 +68,9 @@ export default async function ProfilePage({
   const counts = countRes.data?.[0] ?? { posts: 0, followers: 0, following: 0 };
   const isAcceptedFollower = relRes.data?.status === "accepted";
   const posts = postsRes.data ?? [];
+  // breakdown comes back from the RPC as Json; it's always an object keyed by
+  // action_type at write time (log_contribution), so the cast is safe here.
+  const heatmap = (heatRes.data ?? []) as HeatmapDay[];
 
   const followState: FollowState =
     relRes.data?.status === "accepted" ? "following" : relRes.data?.status === "pending" ? "pending" : "none";
@@ -138,14 +143,14 @@ export default async function ProfilePage({
 
       {/* Bio + goals */}
       {profile.bio && (
-        <p className="mt-6 whitespace-pre-line text-[15px] leading-relaxed">{profile.bio}</p>
+        <p className="mt-6 whitespace-pre-line break-words text-[15px] leading-relaxed">{profile.bio}</p>
       )}
       {profile.goals && (
         <div className="mt-5">
           <h2 className="text-xs font-medium uppercase tracking-wide text-[var(--ink-muted)]">
             Goals
           </h2>
-          <p className="mt-1.5 whitespace-pre-line text-[15px] leading-relaxed">{profile.goals}</p>
+          <p className="mt-1.5 whitespace-pre-line break-words text-[15px] leading-relaxed">{profile.goals}</p>
         </div>
       )}
 
@@ -165,10 +170,9 @@ export default async function ProfilePage({
 
       {/* Heatmap slot (Phase 8) */}
       {canSeeHeatmap && (
-        <section className="mt-8 rounded-xl border border-[var(--border)] p-6">
-          <h2 className="text-sm font-medium">Contribution heatmap</h2>
-          {/* TODO(Phase 8): render <ContributionHeatmap> via get_heatmap(profile.id) */}
-          <p className="mt-2 text-sm text-[var(--ink-muted)]">Coming in this build.</p>
+        <section className="relative left-1/2 mt-8 w-[92vw] max-w-[920px] -translate-x-1/2 rounded-xl border border-[var(--border)] p-6">
+          <h2 className="mb-4 text-sm font-medium">Contribution heatmap</h2>
+          <ContributionHeatmap data={heatmap} />
         </section>
       )}
 
