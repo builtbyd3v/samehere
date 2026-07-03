@@ -13,6 +13,14 @@ const COPY = {
     headline: "You're not the only one.",
     sub: "Verified .edu only. Takes a minute.",
   },
+  forgot: {
+    headline: "Locked out?",
+    sub: "We'll send a link to get you back in.",
+  },
+  updatePassword: {
+    headline: "New password.",
+    sub: "Almost back in.",
+  },
 } as const;
 
 type Props = {

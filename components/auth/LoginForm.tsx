@@ -46,8 +46,9 @@ export default function LoginForm() {
         </div>
 
         <p className="mb-5 text-xs text-[var(--ink-muted)]">
-          Forgot password?{" "}
-          <span className="text-[var(--ink-faint)]">Coming soon</span>
+          <Link href="/forgot-password" className="text-[var(--ink)] underline">
+            Forgot password?
+          </Link>
         </p>
 
         <button type="submit" disabled={pending} className={authSubmit}>
