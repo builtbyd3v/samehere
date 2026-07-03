@@ -13,8 +13,14 @@ export default function Navbar({ username }: { username: string | null }) {
           <Link href="/feed" className="text-[var(--ink-muted)] hover:text-[var(--ink)]">
             Feed
           </Link>
+          <Link href="/search" className="text-[var(--ink-muted)] hover:text-[var(--ink)]">
+            Search
+          </Link>
           <Link href="/dashboard" className="text-[var(--ink-muted)] hover:text-[var(--ink)]">
             Dashboard
+          </Link>
+          <Link href="/saved" className="text-[var(--ink-muted)] hover:text-[var(--ink)]">
+            Saved
           </Link>
           {username && (
             <Link href={`/profile/${username}`} className="text-[var(--ink-muted)] hover:text-[var(--ink)]">
