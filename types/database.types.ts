@@ -14,6 +14,71 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_connection_prompts: {
+        Row: {
+          candidate_id: string
+          created_at: string
+          prompt: string
+          viewer_id: string
+        }
+        Insert: {
+          candidate_id: string
+          created_at?: string
+          prompt: string
+          viewer_id: string
+        }
+        Update: {
+          candidate_id?: string
+          created_at?: string
+          prompt?: string
+          viewer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_connection_prompts_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_connection_prompts_viewer_id_fkey"
+            columns: ["viewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_usage: {
+        Row: {
+          count: number
+          date: string
+          kind: string
+          user_id: string
+        }
+        Insert: {
+          count?: number
+          date?: string
+          kind: string
+          user_id: string
+        }
+        Update: {
+          count?: number
+          date?: string
+          kind?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookmarks: {
         Row: {
           created_at: string | null
@@ -414,6 +479,10 @@ export type Database = {
       }
       reject_follow: { Args: { p_follower: string }; Returns: undefined }
       request_follow: { Args: { p_target: string }; Returns: string }
+      use_ai_quota: {
+        Args: { p_cap: number; p_kind: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

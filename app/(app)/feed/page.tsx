@@ -6,6 +6,8 @@ import FeedLoadMore from "@/components/feed/FeedLoadMore";
 import FollowRequests, { type FollowRequest } from "@/components/profile/FollowRequests";
 import FollowButton from "@/components/profile/FollowButton";
 import { attachSignedMedia } from "@/lib/media";
+import { scoreOverlap, type MatchSignal } from "@/lib/match";
+import { connectionPrompt } from "@/lib/connection-prompt";
 
 // Twitter-style feed: Latest (global recency) and Following (followed users'
 // posts + follow requests + suggested users — formerly the dashboard). Only
@@ -100,7 +102,7 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
 
   const supabase = await createClient();
 
-  const [{ data: requests }, { data: myFollows }] = await Promise.all([
+  const [{ data: requests }, { data: myFollows }, { data: viewerProfile }] = await Promise.all([
     supabase
       .from("follows")
       .select("follower_id, requester:profiles!follows_follower_id_fkey(username, display_name, avatar_url)")
@@ -109,6 +111,11 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
       .order("created_at", { ascending: false })
       .returns<FollowRequest[]>(),
     supabase.from("follows").select("following_id, status").eq("follower_id", userId),
+    supabase
+      .from("profiles")
+      .select("year, major, skills, goals, bio, profile_school(school)")
+      .eq("id", userId)
+      .single(),
   ]);
 
   const acceptedIds = (myFollows ?? []).filter((f) => f.status === "accepted").map((f) => f.following_id);
@@ -116,7 +123,7 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
 
   // ponytail: Following feed is first-page only; add cursor load-more if it grows.
   // ponytail: followed users' own posts only; reposts-in-feed deferred.
-  const [{ data: followFeed }, { data: suggested }] = await Promise.all([
+  const [{ data: followFeed }, { data: suggestedPool }] = await Promise.all([
     acceptedIds.length
       ? supabase
           .from("posts")
@@ -128,12 +135,52 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
       : Promise.resolve({ data: [] as FeedPost[] }),
     supabase
       .from("profiles")
-      .select("id, username, display_name, avatar_url")
+      .select("id, username, display_name, avatar_url, created_at, year, major, skills, goals, bio, profile_school(school)")
       .not("id", "in", `(${excludeIds.join(",")})`)
       .order("created_at", { ascending: false })
-      .limit(5),
+      .limit(30),
   ]);
   const feedPosts = followFeed ? await attachSignedMedia(supabase, followFeed) : null;
+
+  // ponytail: rank a 30-row recency pool; widen only if suggestions feel stale.
+  const viewerSignal: MatchSignal = {
+    year: viewerProfile?.year ?? null,
+    major: viewerProfile?.major ?? null,
+    skills: viewerProfile?.skills ?? null,
+    goals: viewerProfile?.goals ?? null,
+    bio: viewerProfile?.bio ?? null,
+    school: viewerProfile?.profile_school?.school ?? null,
+  };
+  const suggested = (suggestedPool ?? [])
+    .map((s) => ({
+      ...s,
+      _score: scoreOverlap(viewerSignal, {
+        year: s.year,
+        major: s.major,
+        skills: s.skills,
+        goals: s.goals,
+        bio: s.bio,
+        school: s.profile_school?.school ?? null,
+      }),
+    }))
+    .sort((a, b) => b._score - a._score || ((a.created_at ?? "") < (b.created_at ?? "") ? 1 : -1))
+    .slice(0, 5);
+
+  const prompts = await Promise.all(
+    suggested.map((s) =>
+      connectionPrompt(supabase, userId, viewerSignal, {
+        id: s.id,
+        name: s.display_name ?? s.username,
+        year: s.year,
+        major: s.major,
+        skills: s.skills,
+        goals: s.goals,
+        bio: s.bio,
+        school: s.profile_school?.school ?? null,
+      })
+    )
+  );
+  const suggestedWithPrompt = suggested.map((s, i) => ({ ...s, _prompt: prompts[i] }));
 
   return (
     <section className="mt-6">
@@ -143,7 +190,7 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
         <section className="mb-8">
           <h2 className="mb-3 text-sm font-medium">People to follow</h2>
           <div className="space-y-2">
-            {suggested.map((s) => {
+            {suggestedWithPrompt.map((s) => {
               const name = s.display_name ?? s.username;
               return (
                 <div key={s.id} className="flex items-center gap-3 rounded-lg border border-[var(--border)] p-3">
@@ -164,7 +211,9 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
                       {name}
                     </Link>
                     <span className="ml-1.5 text-[var(--ink-muted)]">@{s.username}</span>
-                    {/* TODO(Phase 12): AI connection prompt — one sentence on why to follow */}
+                    {s._prompt && (
+                      <p className="mt-0.5 text-xs text-[var(--ink-muted)]">{s._prompt}</p>
+                    )}
                   </div>
                   <FollowButton targetId={s.id} initial="none" />
                 </div>
