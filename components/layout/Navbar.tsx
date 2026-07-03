@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { signOut } from "@/app/(auth)/actions";
+import FeedbackButton from "@/components/feedback/FeedbackButton";
 
 // Server component — logout is a form action, links are plain, so no client JS.
 export default function Navbar({ username }: { username: string | null }) {
@@ -27,6 +28,7 @@ export default function Navbar({ username }: { username: string | null }) {
               Profile
             </Link>
           )}
+          {username && <FeedbackButton />}
           <form action={signOut}>
             <button type="submit" className="text-[var(--ink-muted)] hover:text-[var(--ink)]">
               Log out
