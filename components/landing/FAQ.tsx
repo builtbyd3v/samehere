@@ -14,7 +14,7 @@ const h2 = "text-[36px] font-semibold leading-[1.1] tracking-[-0.025em] md:text-
 
 export default function FAQ() {
   return (
-    <section className="mx-auto max-w-3xl px-5 py-20">
+    <section id="faq" className="scroll-mt-[5.5rem] mx-auto max-w-3xl px-5 py-20">
       <Reveal>
         <h2 className={h2}>Questions.</h2>
       </Reveal>

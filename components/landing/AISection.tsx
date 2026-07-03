@@ -9,7 +9,7 @@ const h2 = "text-[36px] font-semibold leading-[1.1] tracking-[-0.03em] md:text-[
 
 export default function AISection() {
   return (
-    <section id="ai" className="mx-auto max-w-[1200px] px-5 py-20">
+    <section id="ai" className="scroll-mt-[5.5rem] mx-auto max-w-[1200px] px-5 py-20">
       <Reveal>
         <h2 className={`max-w-[18ch] text-balance ${h2}`}>AI that helps you connect.</h2>
         <p className="mt-4 max-w-[48ch] text-base leading-relaxed text-[var(--ink-muted)]">

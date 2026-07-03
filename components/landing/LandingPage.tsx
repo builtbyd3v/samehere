@@ -1,3 +1,4 @@
+import CanvasGradient from "./CanvasGradient";
 import LandingNav from "./LandingNav";
 import Hero from "./Hero";
 import LandingProfileDemo from "./LandingProfileDemo";
@@ -9,7 +10,8 @@ import LandingFooter from "./LandingFooter";
 
 export default function LandingPage() {
   return (
-    <main className="min-h-[100dvh] bg-[var(--canvas)] text-[var(--ink)]">
+    <main id="top" className="relative min-h-[100dvh] bg-[var(--canvas)] pt-3 text-[var(--ink)]">
+      <CanvasGradient />
       <LandingNav />
       <Hero />
       <LandingProfileDemo />

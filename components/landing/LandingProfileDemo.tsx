@@ -14,7 +14,7 @@ export default function LandingProfileDemo() {
   const meta = [p.school, p.year, p.major].filter(Boolean).join(" · ") || p.role;
 
   return (
-    <section id="features" className="border-y border-[var(--border)]">
+    <section id="features" className="scroll-mt-[5.5rem] border-y border-[var(--border)]">
       <div className="mx-auto max-w-2xl px-5 py-20">
         <Reveal>
           <h2 className={`text-balance ${h2}`}>Your profile, not your résumé.</h2>

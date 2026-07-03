@@ -9,15 +9,8 @@ export default function Hero() {
   const reduce = useReducedMotion();
 
   return (
-    <section className="relative overflow-hidden">
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-[min(100%,720px)] opacity-[0.5]"
-        style={{
-          background:
-            "radial-gradient(50% 70% at 20% 0%, rgba(255,150,120,0.12), transparent 60%), radial-gradient(45% 65% at 85% 5%, rgba(120,170,255,0.1), transparent 55%)",
-        }}
-      />
-      <div className="relative mx-auto flex min-h-[calc(100dvh-4rem)] max-w-[1200px] flex-col justify-center gap-14 px-5 py-16 md:py-20 lg:flex-row lg:items-center lg:gap-16 lg:py-24">
+    <section className="relative">
+      <div className="relative mx-auto flex min-h-[calc(100dvh-5.5rem)] max-w-[1200px] flex-col justify-center gap-14 px-5 py-10 md:py-16 lg:flex-row lg:items-center lg:gap-16 lg:py-20">
         <div className="lg:max-w-[52%]">
           <motion.h1
             className="text-balance text-[44px] font-semibold leading-[1.02] tracking-[-0.03em] sm:text-[56px] md:text-[64px] lg:text-[72px] lg:tracking-[-0.04em]"

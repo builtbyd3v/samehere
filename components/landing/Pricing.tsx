@@ -31,7 +31,7 @@ export default function Pricing() {
   const reduce = useReducedMotion();
 
   return (
-    <section id="pricing" className="mx-auto max-w-[1200px] px-5 py-20">
+    <section id="pricing" className="scroll-mt-[5.5rem] mx-auto max-w-[1200px] px-5 py-20">
       <Reveal>
         <h2 className={`text-balance ${h2}`}>Free for every verified student.</h2>
         <p className="mt-4 max-w-[48ch] text-base leading-relaxed text-[var(--ink-muted)]">
