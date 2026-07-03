@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import PrivacyForm from "@/components/settings/PrivacyForm";
 import ChangePasswordForm from "@/components/settings/ChangePasswordForm";
+import DeleteAccountSection from "@/components/settings/DeleteAccountSection";
 import { unblockUser } from "./actions";
 
 type BlockedRow = {
@@ -18,7 +19,7 @@ export default async function SettingsPage() {
   if (!user) redirect("/login");
 
   const [{ data: profile }, { data: blocks }] = await Promise.all([
-    supabase.from("profiles").select("is_private, hide_school, heatmap_visibility").eq("id", user.id).single(),
+    supabase.from("profiles").select("username, is_private, hide_school, heatmap_visibility").eq("id", user.id).single(),
     supabase
       .from("blocks")
       .select("blocked_id, blocked:profiles!blocks_blocked_id_fkey(username, display_name, avatar_url)")
@@ -76,6 +77,10 @@ export default async function SettingsPage() {
           </ul>
         )}
       </section>
+
+      <div className="mt-10">
+        <DeleteAccountSection username={profile.username} />
+      </div>
     </main>
   );
 }
