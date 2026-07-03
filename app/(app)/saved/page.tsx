@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import PostCard, { POST_SELECT, type FeedPost } from "@/components/feed/PostCard";
+import { attachSignedMedia } from "@/lib/media";
 
 export default async function SavedPage() {
   const supabase = await createClient();
@@ -17,7 +18,8 @@ export default async function SavedPage() {
 
   // posts RLS re-checks visibility on the embed, so a post that became
   // invisible/deleted comes back null and is filtered out here.
-  const posts = (rows ?? []).map((r) => r.post).filter((p): p is FeedPost => !!p);
+  const rawPosts = (rows ?? []).map((r) => r.post).filter((p): p is FeedPost => !!p);
+  const posts = await attachSignedMedia(supabase, rawPosts);
 
   return (
     <main className="mx-auto max-w-2xl px-5 py-8">

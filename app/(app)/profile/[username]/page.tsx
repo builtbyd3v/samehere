@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import FollowButton, { type FollowState } from "@/components/profile/FollowButton";
 import PostCard, { POST_SELECT, type FeedPost } from "@/components/feed/PostCard";
 import ContributionHeatmap, { type HeatmapDay } from "@/components/profile/ContributionHeatmap";
+import { attachSignedMedia } from "@/lib/media";
 
 const YEAR_LABEL: Record<string, string> = {
   freshman: "Freshman",
@@ -67,7 +68,7 @@ export default async function ProfilePage({
   const school = schoolRes.data?.school ?? null;
   const counts = countRes.data?.[0] ?? { posts: 0, followers: 0, following: 0 };
   const isAcceptedFollower = relRes.data?.status === "accepted";
-  const posts = postsRes.data ?? [];
+  const posts = await attachSignedMedia(supabase, postsRes.data ?? []);
   // breakdown comes back from the RPC as Json; it's always an object keyed by
   // action_type at write time (log_contribution), so the cast is safe here.
   const heatmap = (heatRes.data ?? []) as HeatmapDay[];

@@ -2,27 +2,118 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import { createPost, type ComposerState } from "@/app/(app)/feed/actions";
+import { createClient } from "@/lib/supabase/client";
 
 // 150 chars earns a heatmap point — it does NOT gate posting.
 const POINT_AT = 150;
+
+const MAX_FILES = 4;
+const MAX_IMAGE = 8 * 1024 * 1024;
+const MAX_VIDEO = 100 * 1024 * 1024;
+const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif", "video/mp4", "video/webm"];
+
+type Picked = { file: File; type: "image" | "video"; url: string };
 
 export default function PostComposer() {
   const [state, formAction, pending] = useActionState<ComposerState, FormData>(createPost, {});
   const ref = useRef<HTMLFormElement>(null);
   const [len, setLen] = useState(0);
+  const [files, setFiles] = useState<Picked[]>([]);
+  const [mediaErr, setMediaErr] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [supabase] = useState(createClient);
+
+  // Latest files for the unmount-only revoke below (avoids a [files]-dep effect
+  // that would revoke still-shown previews on every add).
+  const filesRef = useRef(files);
+  filesRef.current = files;
 
   // Reset the form and counter after a successful post.
   useEffect(() => {
     if (state.ok) {
       ref.current?.reset();
       setLen(0);
+      files.forEach((f) => URL.revokeObjectURL(f.url));
+      setFiles([]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.ok]);
+
+  // Revoke object URLs on unmount only.
+  useEffect(() => () => filesRef.current.forEach((f) => URL.revokeObjectURL(f.url)), []);
 
   const qualifies = len >= POINT_AT;
 
+  function onPickFiles(e: React.ChangeEvent<HTMLInputElement>) {
+    const picked = Array.from(e.target.files ?? []);
+    e.target.value = ""; // allow re-picking the same file after an error
+    if (picked.length === 0) return;
+
+    if (files.length + picked.length > MAX_FILES) {
+      return setMediaErr(`Up to ${MAX_FILES} files per post.`);
+    }
+    for (const file of picked) {
+      if (!ALLOWED.includes(file.type)) {
+        return setMediaErr("Only jpg, png, webp, gif, mp4, or webm files.");
+      }
+      const isImage = file.type.startsWith("image/");
+      if (isImage && file.size > MAX_IMAGE) return setMediaErr("Images must be under 8 MB.");
+      if (!isImage && file.size > MAX_VIDEO) return setMediaErr("Videos must be under 100 MB.");
+    }
+
+    setMediaErr(null);
+    setFiles((prev) => [
+      ...prev,
+      ...picked.map((file) => ({
+        file,
+        type: (file.type.startsWith("image/") ? "image" : "video") as "image" | "video",
+        url: URL.createObjectURL(file),
+      })),
+    ]);
+  }
+
+  function removeFile(i: number) {
+    setFiles((prev) => {
+      URL.revokeObjectURL(prev[i].url);
+      return prev.filter((_, idx) => idx !== i);
+    });
+  }
+
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+
+    if (files.length > 0) {
+      setUploading(true);
+      setMediaErr(null);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        setUploading(false);
+        return setMediaErr("You must be logged in.");
+      }
+
+      const media: { path: string; type: "image" | "video" }[] = [];
+      for (const { file, type } of files) {
+        const ext = file.name.includes(".") ? file.name.split(".").pop() : file.type.split("/")[1];
+        const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("post-media").upload(path, file);
+        if (upErr) {
+          setUploading(false);
+          return setMediaErr("Media upload failed. Try again.");
+        }
+        media.push({ path, type });
+      }
+      setUploading(false);
+      formData.set("media", JSON.stringify(media));
+    }
+
+    formAction(formData);
+  }
+
   return (
-    <form ref={ref} action={formAction} className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
+    <form ref={ref} onSubmit={onSubmit} className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
       <textarea
         name="content"
         rows={4}
@@ -32,26 +123,61 @@ export default function PostComposer() {
         className="w-full resize-y bg-transparent text-[15px] leading-relaxed text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
       />
 
-      {state.error && (
+      {files.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {files.map((f, i) => (
+            <div key={f.url} className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md border border-[var(--border)]">
+              {f.type === "image" ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={f.url} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <video src={f.url} className="h-full w-full object-cover" />
+              )}
+              <button
+                type="button"
+                onClick={() => removeFile(i)}
+                aria-label="Remove"
+                className="absolute right-0.5 top-0.5 grid h-5 w-5 place-items-center rounded-full bg-black/60 text-xs text-white"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {(state.error || mediaErr) && (
         <p role="alert" className="mt-2 text-sm text-[#c0392b] dark:text-[#e88]">
-          {state.error}
+          {mediaErr ?? state.error}
         </p>
       )}
 
       <div className="mt-3 flex items-center justify-between border-t border-[var(--border)] pt-3">
-        <span className={`text-xs ${qualifies ? "text-[var(--blue)]" : "text-[var(--ink-muted)]"}`}>
-          {len === 0
-            ? `${POINT_AT}+ characters earns a point`
-            : qualifies
-              ? `${len} characters · earns a point`
-              : `${POINT_AT - len} more to earn a point`}
-        </span>
+        <div className="flex items-center gap-3">
+          <span className={`text-xs ${qualifies ? "text-[var(--blue)]" : "text-[var(--ink-muted)]"}`}>
+            {len === 0
+              ? `${POINT_AT}+ characters earns a point`
+              : qualifies
+                ? `${len} characters · earns a point`
+                : `${POINT_AT - len} more to earn a point`}
+          </span>
+          <label className="cursor-pointer text-xs font-medium text-[var(--ink-muted)] underline">
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm"
+              multiple
+              onChange={onPickFiles}
+              className="hidden"
+            />
+            Add media
+          </label>
+        </div>
         <button
           type="submit"
-          disabled={pending || len === 0}
+          disabled={pending || uploading || len === 0}
           className="btn-inset rounded-md bg-[var(--ink)] px-4 py-1.5 text-sm font-medium text-[var(--canvas)] transition active:opacity-80 disabled:opacity-50"
         >
-          {pending ? "Posting…" : "Post"}
+          {uploading ? "Uploading…" : pending ? "Posting…" : "Post"}
         </button>
       </div>
     </form>

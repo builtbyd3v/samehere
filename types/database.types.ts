@@ -171,18 +171,21 @@ export type Database = {
           content: string
           created_at: string | null
           id: string
+          media: Json
           user_id: string | null
         }
         Insert: {
           content: string
           created_at?: string | null
           id?: string
+          media?: Json
           user_id?: string | null
         }
         Update: {
           content?: string
           created_at?: string | null
           id?: string
+          media?: Json
           user_id?: string | null
         }
         Relationships: [
@@ -392,9 +395,9 @@ export type Database = {
       get_heatmap: {
         Args: { p_profile_id: string }
         Returns: {
+          breakdown: Json
           day: string
           points: number
-          breakdown: Json
         }[]
       }
       get_profile_counts: {

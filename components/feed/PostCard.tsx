@@ -1,5 +1,7 @@
 import Link from "next/link";
 import ReactionRow from "./ReactionRow";
+import PostMediaGrid from "./PostMediaGrid";
+import type { PostMedia } from "@/lib/media";
 
 // Shared select for feed queries (page + Load more) so the shape stays in sync
 // with FeedPost. Lives here, not in the "use server" actions file (which may
@@ -8,7 +10,7 @@ import ReactionRow from "./ReactionRow";
 // ponytail: exposes every reactor's user_id to the client. Fine at v1 scale;
 // swap for a counts RPC if reaction volume or privacy ever matters.
 export const POST_SELECT =
-  "id, content, created_at, user_id, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, is_private, profile_school(school)), reactions(user_id, type), reposts(user_id), bookmarks(user_id), comments(count)";
+  "id, content, created_at, user_id, media, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, is_private, profile_school(school)), reactions(user_id, type), reposts(user_id), bookmarks(user_id), comments(count)";
 
 export const PAGE = 20;
 
@@ -17,6 +19,7 @@ export type FeedPost = {
   content: string;
   created_at: string;
   user_id: string;
+  media: PostMedia[];
   author: {
     username: string;
     display_name: string | null;
@@ -83,6 +86,7 @@ export default function PostCard({ post, viewerId }: { post: FeedPost; viewerId:
       <Link href={`/post/${post.id}`} className="mt-3 block whitespace-pre-line break-words text-[15px] leading-relaxed text-[var(--ink)]">
         {post.content}
       </Link>
+      {post.media?.length ? <PostMediaGrid media={post.media} /> : null}
 
       <ReactionRow
         postId={post.id}

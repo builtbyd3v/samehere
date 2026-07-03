@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { POST_SELECT, type FeedPost } from "@/components/feed/PostCard";
 import ReactionRow from "@/components/feed/ReactionRow";
 import CommentComposer from "@/components/feed/CommentComposer";
+import PostMediaGrid from "@/components/feed/PostMediaGrid";
+import { attachSignedMedia } from "@/lib/media";
 
 type Comment = {
   id: string;
@@ -28,8 +30,9 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
       .order("created_at", { ascending: true })
       .returns<Comment[]>(),
   ]);
-  const post = data as FeedPost | null;
-  if (!post) notFound();
+  const raw = data as FeedPost | null;
+  if (!raw) notFound();
+  const [post] = await attachSignedMedia(supabase, [raw]);
 
   const viewerId = user?.id ?? null;
   const r = post.reactions ?? [];
@@ -73,6 +76,8 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
         <p className="mt-5 whitespace-pre-line break-words text-[17px] leading-relaxed text-[var(--ink)]">
           {post.content}
         </p>
+
+        {post.media?.length ? <PostMediaGrid media={post.media} /> : null}
 
         <ReactionRow
           postId={post.id}

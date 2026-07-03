@@ -5,6 +5,7 @@ import PostCard, { POST_SELECT, PAGE, type FeedPost } from "@/components/feed/Po
 import FeedLoadMore from "@/components/feed/FeedLoadMore";
 import FollowRequests, { type FollowRequest } from "@/components/profile/FollowRequests";
 import FollowButton from "@/components/profile/FollowButton";
+import { attachSignedMedia } from "@/lib/media";
 
 // Twitter-style feed: Latest (global recency) and Following (followed users'
 // posts + follow requests + suggested users — formerly the dashboard). Only
@@ -63,12 +64,13 @@ export default async function FeedPage({
 // ponytail: Latest = global recency; becomes a personalized "For You" once Phase 12 AI ranking lands.
 async function LatestTab({ viewerId }: { viewerId: string | null }) {
   const supabase = await createClient();
-  const { data: posts } = await supabase
+  const { data } = await supabase
     .from("posts")
     .select(POST_SELECT)
     .order("created_at", { ascending: false })
     .limit(PAGE)
     .returns<FeedPost[]>();
+  const posts = data ? await attachSignedMedia(supabase, data) : null;
 
   return (
     <section className="mt-6">
@@ -131,6 +133,7 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
       .order("created_at", { ascending: false })
       .limit(5),
   ]);
+  const feedPosts = followFeed ? await attachSignedMedia(supabase, followFeed) : null;
 
   return (
     <section className="mt-6">
@@ -171,9 +174,9 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
         </section>
       )}
 
-      {followFeed && followFeed.length > 0 ? (
+      {feedPosts && feedPosts.length > 0 ? (
         <div>
-          {followFeed.map((post) => (
+          {feedPosts.map((post) => (
             <PostCard key={post.id} post={post} viewerId={viewerId} />
           ))}
         </div>

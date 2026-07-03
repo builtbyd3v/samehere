@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { POST_SELECT, PAGE, type FeedPost } from "@/components/feed/PostCard";
+import { attachSignedMedia } from "@/lib/media";
 
 export type ComposerState = { error?: string; ok?: boolean };
 
@@ -18,7 +19,7 @@ export async function loadMorePosts(cursor: string): Promise<FeedPost[]> {
     .order("created_at", { ascending: false })
     .limit(PAGE)
     .returns<FeedPost[]>();
-  return data ?? [];
+  return data ? await attachSignedMedia(supabase, data) : [];
 }
 
 const MAX = 5000;
@@ -39,7 +40,33 @@ export async function createPost(_prev: ComposerState, formData: FormData): Prom
   if (content.length === 0) return { error: "Write something first." };
   if (content.length > MAX) return { error: `Posts are capped at ${MAX} characters.` };
 
-  const { error } = await supabase.from("posts").insert({ user_id: user.id, content });
+  // Media paths come from the client (already uploaded to storage) — untrusted
+  // JSON, so re-validate shape + that each path is scoped to this user's folder.
+  let media: { path: string; type: "image" | "video" }[] = [];
+  const rawMedia = formData.get("media");
+  if (typeof rawMedia === "string" && rawMedia.length > 0) {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(rawMedia);
+    } catch {
+      return { error: "Invalid media." };
+    }
+    if (!Array.isArray(parsed) || parsed.length > 4) return { error: "Invalid media." };
+    for (const item of parsed) {
+      if (
+        typeof item !== "object" ||
+        item === null ||
+        typeof (item as { path?: unknown }).path !== "string" ||
+        !(item as { path: string }).path.startsWith(`${user.id}/`) ||
+        ((item as { type?: unknown }).type !== "image" && (item as { type?: unknown }).type !== "video")
+      ) {
+        return { error: "Invalid media." };
+      }
+    }
+    media = parsed as { path: string; type: "image" | "video" }[];
+  }
+
+  const { error } = await supabase.from("posts").insert({ user_id: user.id, content, media });
   if (error) return { error: "Could not publish your post. Try again." };
 
   await supabase.rpc("log_contribution", {
