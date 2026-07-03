@@ -6,8 +6,12 @@ import { Figtree } from "next/font/google";
 const figtree = Figtree({ subsets: ["latin"], weight: ["400", "500", "600"] });
 
 export const metadata: Metadata = {
-  title: "samehere — the network for verified students",
-  description: "A network for verified college students. Coming soon.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://samehere.app"),
+  title: {
+    default: "samehere — the network for verified students",
+    template: "%s · samehere",
+  },
+  description: "A network for verified college students.",
 };
 
 export default function RootLayout({

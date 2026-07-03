@@ -40,3 +40,17 @@ export const IconBookmark = ({ on }: { on?: boolean }) => (
     <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z" />
   </svg>
 );
+
+/** Pro member badge — blue bolt beside display name */
+export const IconBolt = ({ className = "h-4 w-4" }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
+    <path d="M13 2 4.5 13.5H11l-1 8.5L19.5 10H13V2Z" />
+  </svg>
+);
+
+/** Founder badge — first 100 signed-up users */
+export const IconCrown = ({ className = "h-4 w-4" }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
+    <path d="M3 8l4.5 3.2L12 5l4.5 6.2L21 8l-1.6 10.4a1 1 0 0 1-1 .6H5.6a1 1 0 0 1-1-.6L3 8Z" />
+  </svg>
+);

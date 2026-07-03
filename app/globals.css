@@ -11,6 +11,7 @@
   --ink: #1c1c1c;
   --ink-muted: #5f5f5d;
   --ink-faint: rgba(28, 28, 28, 0.45);
+  --featured-surface: rgba(28, 28, 28, 0.04);
   --blue: #0075de;
   --hm0: rgba(28, 28, 28, 0.06); --hm1: #bcd8f5; --hm2: #5fa0e8; --hm3: #0075de;
 }
@@ -27,12 +28,13 @@
     --ink: #f2efe6;
     --ink-muted: #a8a49a;
     --ink-faint: rgba(242, 239, 230, 0.40);
+    --featured-surface: rgba(247, 244, 237, 0.06);
     --blue: #4f9fe8;
     --hm0: rgba(247, 244, 237, 0.07); --hm1: #1e3a5f; --hm2: #2f6db0; --hm3: #4f9fe8;
   }
 }
 
-/* signature inset shadow on dark buttons */
+/* signature inset shadow on dark buttons — bg stays charcoal in both themes */
 .btn-inset {
   box-shadow: rgba(255, 255, 255, 0.2) 0 0.5px 0 0 inset, rgba(0, 0, 0, 0.2) 0 0 0 0.5px inset, rgba(0, 0, 0, 0.05) 0 1px 2px 0;
 }
