@@ -4,14 +4,9 @@ import PostMediaGrid from "./PostMediaGrid";
 import PostMenu from "./PostMenu";
 import UserBadges from "@/components/profile/UserBadges";
 import AvatarImage from "@/components/ui/AvatarImage";
+import MentionText from "@/components/ui/MentionText";
 import type { PostMedia } from "@/lib/media";
 
-// Shared select for feed queries (page + Load more) so the shape stays in sync
-// with FeedPost. Lives here, not in the "use server" actions file (which may
-// only export async functions). reactions(user_id, type) is embedded so we can
-// derive counts + the viewer's own state in one round-trip.
-// ponytail: exposes every reactor's user_id to the client. Fine at v1 scale;
-// swap for a counts RPC if reaction volume or privacy ever matters.
 export const POST_SELECT =
   "id, content, created_at, user_id, media, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, is_private, is_pro, is_founder, profile_school(school)), reactions(user_id, type), reposts(user_id), bookmarks(user_id), comments(count)";
 
@@ -57,9 +52,9 @@ function Avatar({
 }: {
   author: NonNullable<FeedPost["author"]>;
   name: string;
-  size?: "md" | "lg";
+  size?: "sm" | "md" | "lg";
 }) {
-  const dim = size === "lg" ? "h-11 w-11" : "h-10 w-10";
+  const dim = size === "lg" ? "h-11 w-11" : size === "sm" ? "h-8 w-8" : "h-10 w-10";
   const inner = author.avatar_url ? (
     <AvatarImage src={author.avatar_url} alt="" className={`${dim} rounded-full border border-[var(--border)] object-cover`} />
   ) : (
@@ -70,11 +65,29 @@ function Avatar({
     </div>
   );
 
+  if (size === "sm") return <div className="shrink-0">{inner}</div>;
+
   return (
     <Link href={`/profile/${author.username}`} className="shrink-0 transition hover:opacity-85">
       {inner}
     </Link>
   );
+}
+
+function PostBody({ content, linked, postId }: { content: string; linked: boolean; postId: string }) {
+  const inner = (
+    <span className="max-w-[65ch] whitespace-pre-line break-words text-[16px] leading-[1.55] text-[var(--ink)]">
+      <MentionText>{content}</MentionText>
+    </span>
+  );
+  if (linked) {
+    return (
+      <Link href={`/post/${postId}`} className="mt-3 block hover:opacity-95">
+        {inner}
+      </Link>
+    );
+  }
+  return <div className="mt-3">{inner}</div>;
 }
 
 export default function PostCard({
@@ -84,41 +97,27 @@ export default function PostCard({
 }: {
   post: FeedPost;
   viewerId: string | null;
-  variant?: "feed" | "profile";
+  variant?: "feed" | "profile" | "detail" | "embedded";
 }) {
   const a = post.author;
   const name = a?.display_name ?? a?.username ?? "Unknown";
   const school = a?.profile_school?.school ?? null;
   const r = post.reactions ?? [];
-  const onProfile = variant === "profile";
+  const embedded = variant === "embedded";
+  const detail = variant === "detail";
+  const linked = !embedded && !detail;
+
+  const shell = embedded
+    ? "rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3"
+    : "rounded-xl border border-[var(--border)] bg-[var(--surface-post)] p-4 sm:p-5";
 
   return (
-    <article className="rounded-xl border border-[var(--border)] bg-[var(--surface-post)] p-4 sm:p-5">
-      {onProfile ? (
-        <div>
-          <div className="flex items-center justify-between gap-2">
-            <Link
-              href={`/post/${post.id}`}
-              className="text-[13px] text-[var(--ink-muted)] hover:text-[var(--ink)] hover:underline"
-            >
-              {timeAgo(post.created_at)}
-            </Link>
-            {a && (
-              <PostMenu postId={post.id} authorId={post.user_id} authorUsername={a.username} viewerId={viewerId} />
-            )}
-          </div>
-          <Link
-            href={`/post/${post.id}`}
-            className="mt-2 block max-w-[65ch] whitespace-pre-line break-words text-[16px] leading-[1.55] text-[var(--ink)]"
-          >
-            {post.content}
-          </Link>
-        </div>
-      ) : (
-        <div className="flex gap-3 sm:gap-4">
-          {a ? <Avatar author={a} name={name} /> : null}
+    <article className={shell}>
+      <div className={`flex gap-3 ${embedded ? "" : "sm:gap-4"}`}>
+        {a ? <Avatar author={a} name={name} size={embedded ? "sm" : "md"} /> : null}
 
-          <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1">
+          {!embedded && (
             <div className="flex items-start gap-2">
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
@@ -136,43 +135,52 @@ export default function PostCard({
                   {school && a && <span className="mx-1 text-[var(--ink-faint)]">·</span>}
                   {school && <span>{school}</span>}
                   {(a || school) && <span className="mx-1 text-[var(--ink-faint)]">·</span>}
-                  <Link href={`/post/${post.id}`} className="hover:text-[var(--ink)] hover:underline">
-                    {timeAgo(post.created_at)}
-                  </Link>
+                  {linked ? (
+                    <Link href={`/post/${post.id}`} className="hover:text-[var(--ink)] hover:underline">
+                      {timeAgo(post.created_at)}
+                    </Link>
+                  ) : (
+                    <time dateTime={post.created_at}>{timeAgo(post.created_at)}</time>
+                  )}
                 </p>
               </div>
 
-              {a && (
+              {a && !embedded && (
                 <PostMenu postId={post.id} authorId={post.user_id} authorUsername={a.username} viewerId={viewerId} />
               )}
             </div>
+          )}
 
-            <Link
-              href={`/post/${post.id}`}
-              className="mt-3 block max-w-[65ch] whitespace-pre-line break-words text-[16px] leading-[1.55] text-[var(--ink)]"
-            >
-              {post.content}
-            </Link>
-          </div>
+          {embedded && a && (
+            <p className="mb-2 text-[13px] text-[var(--ink-muted)]">
+              <span className="font-medium text-[var(--ink)]">{name}</span>
+              <span className="mx-1">@{a.username}</span>
+            </p>
+          )}
+
+          <PostBody content={post.content} linked={linked} postId={post.id} />
         </div>
+      </div>
+
+      {post.media?.length ? <PostMediaGrid media={post.media} compact={embedded} /> : null}
+
+      {!embedded && (
+        <ReactionRow
+          postId={post.id}
+          post={post}
+          viewerId={viewerId}
+          authorPrivate={!!a?.is_private}
+          like={r.filter((x) => x.type === "like").length}
+          samehere={r.filter((x) => x.type === "samehere").length}
+          repost={post.reposts?.length ?? 0}
+          commentCount={post.comments?.[0]?.count ?? 0}
+          mineLike={!!viewerId && r.some((x) => x.type === "like" && x.user_id === viewerId)}
+          mineSamehere={!!viewerId && r.some((x) => x.type === "samehere" && x.user_id === viewerId)}
+          mineRepost={!!viewerId && (post.reposts ?? []).some((x) => x.user_id === viewerId)}
+          mineBookmark={(post.bookmarks ?? []).length > 0}
+          hideComments={detail}
+        />
       )}
-
-      {post.media?.length ? <PostMediaGrid media={post.media} compact={onProfile} /> : null}
-
-      <ReactionRow
-        postId={post.id}
-        viewerId={viewerId}
-        authorPrivate={!!a?.is_private}
-        like={r.filter((x) => x.type === "like").length}
-        samehere={r.filter((x) => x.type === "samehere").length}
-        repost={post.reposts?.length ?? 0}
-        commentCount={post.comments?.[0]?.count ?? 0}
-        mineLike={!!viewerId && r.some((x) => x.type === "like" && x.user_id === viewerId)}
-        mineSamehere={!!viewerId && r.some((x) => x.type === "samehere" && x.user_id === viewerId)}
-        mineRepost={!!viewerId && (post.reposts ?? []).some((x) => x.user_id === viewerId)}
-        mineBookmark={(post.bookmarks ?? []).length > 0}
-        compact={onProfile}
-      />
     </article>
   );
 }
