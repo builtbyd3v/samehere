@@ -7,6 +7,7 @@ import DeleteCommentButton from "@/components/feed/DeleteCommentButton";
 import UserBadges from "@/components/profile/UserBadges";
 import AvatarImage from "@/components/ui/AvatarImage";
 import MentionText from "@/components/ui/MentionText";
+import ProfileHoverLink from "@/components/profile/ProfileHoverLink";
 import { attachSignedMedia } from "@/lib/media";
 
 type Comment = {
@@ -59,8 +60,20 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
             const cname = c.author?.display_name ?? c.author?.username ?? "Unknown";
             return (
               <div key={c.id} className="flex gap-3">
-                {c.author?.avatar_url ? (
-                  <AvatarImage src={c.author.avatar_url} alt="" className="h-8 w-8 shrink-0 rounded-full border border-[var(--border)] object-cover" />
+                {c.author ? (
+                  <ProfileHoverLink
+                    href={`/profile/${c.author.username}`}
+                    username={c.author.username}
+                    className="shrink-0"
+                  >
+                    {c.author.avatar_url ? (
+                      <AvatarImage src={c.author.avatar_url} alt="" className="h-8 w-8 rounded-full border border-[var(--border)] object-cover" />
+                    ) : (
+                      <div className="grid h-8 w-8 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-xs font-semibold text-[var(--ink-muted)]">
+                        {cname.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                  </ProfileHoverLink>
                 ) : (
                   <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-xs font-semibold text-[var(--ink-muted)]">
                     {cname.charAt(0).toUpperCase()}
@@ -69,9 +82,13 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-x-1.5 text-sm">
                     {c.author ? (
-                      <Link href={`/profile/${c.author.username}`} className="font-medium hover:underline">
+                      <ProfileHoverLink
+                        href={`/profile/${c.author.username}`}
+                        username={c.author.username}
+                        className="font-medium hover:underline"
+                      >
                         {cname}
-                      </Link>
+                      </ProfileHoverLink>
                     ) : (
                       <span className="font-medium">{cname}</span>
                     )}

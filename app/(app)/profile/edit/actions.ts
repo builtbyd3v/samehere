@@ -2,6 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { aiEnabled, generateText } from "@/lib/ai";
+import { fallbackProfileNudge, getProfileGaps } from "@/lib/profile-completion";
 
 const YEARS = ["freshman", "sophomore", "junior", "senior", "grad"];
 
@@ -52,6 +54,56 @@ export async function updateProfile(_prev: EditState, formData: FormData): Promi
     .single();
 
   redirect(`/profile/${prof?.username ?? ""}`);
+}
+
+// On-demand profile-completion nudge. Metered via use_ai_quota; static fallback
+// when AI is off, over quota, or the call fails.
+export async function profileNudge(): Promise<string> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return fallbackProfileNudge([]);
+
+  const [{ data: profile }, { data: schoolRow }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("display_name, avatar_url, year, major, bio, goals, skills")
+      .eq("id", user.id)
+      .single(),
+    supabase.from("profile_school").select("school").eq("profile_id", user.id).maybeSingle(),
+  ]);
+
+  const gaps = getProfileGaps({
+    display_name: profile?.display_name ?? null,
+    avatar_url: profile?.avatar_url ?? null,
+    school: schoolRow?.school ?? "",
+    year: profile?.year ?? null,
+    major: profile?.major ?? null,
+    bio: profile?.bio ?? null,
+    goals: profile?.goals ?? null,
+    skills: profile?.skills ?? null,
+  });
+
+  if (gaps.length === 0) return fallbackProfileNudge([]);
+
+  if (aiEnabled()) {
+    const { data: allowed } = await supabase.rpc("use_ai_quota", {
+      p_kind: "profile_nudge",
+      p_cap: 3,
+    });
+    if (allowed) {
+      const missing = gaps.map((g) => g.replace("_", " ")).join(", ");
+      const text = await generateText(
+        "Give one short, specific tip for a student to improve their social profile. One sentence. Mention which field to fill. No greeting, no quotes.",
+        `Missing or weak fields: ${missing}.`,
+        100,
+      );
+      if (text) return text;
+    }
+  }
+
+  return fallbackProfileNudge(gaps);
 }
 
 // "a, b, a , ,c" -> ["a","b","c"], trimmed, de-duped, capped.

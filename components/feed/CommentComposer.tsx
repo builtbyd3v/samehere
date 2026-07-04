@@ -4,6 +4,7 @@ import { useActionState, useCallback, useEffect, useRef, useState, useTransition
 import { createComment, type CommentState } from "@/app/(app)/post/[id]/actions";
 import { useSubmitShortcut } from "@/lib/useSubmitShortcut";
 import { submitShortcutLabel } from "@/lib/keyboard";
+import MentionTextarea from "@/components/ui/MentionTextarea";
 
 const POINT_AT = 50;
 
@@ -12,6 +13,7 @@ export default function CommentComposer({ postId }: { postId: string }) {
   const [, startSubmit] = useTransition();
   const ref = useRef<HTMLFormElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [content, setContent] = useState("");
   const [len, setLen] = useState(0);
   const [shortcutLabel, setShortcutLabel] = useState("");
 
@@ -20,6 +22,7 @@ export default function CommentComposer({ postId }: { postId: string }) {
   useEffect(() => {
     if (state.ok) {
       ref.current?.reset();
+      setContent("");
       setLen(0);
     }
   }, [state.ok]);
@@ -36,14 +39,20 @@ export default function CommentComposer({ postId }: { postId: string }) {
   return (
     <form ref={ref} action={formAction} className="rounded-xl border border-[var(--border)] bg-[var(--canvas)] p-4">
       <input type="hidden" name="post_id" value={postId} />
-      <textarea
-        ref={textareaRef}
+      <MentionTextarea
+        textareaRef={textareaRef}
         name="content"
         rows={3}
         required
-        onChange={(e) => setLen(e.target.value.trim().length)}
+        value={content}
+        onChange={(v) => {
+          setContent(v);
+          setLen(v.trim().length);
+        }}
         placeholder={
-          shortcutLabel ? `Add a comment… (${shortcutLabel} to post)` : "Add a comment…"
+          shortcutLabel
+            ? `Add a comment… Type @ to mention (${shortcutLabel} to post)`
+            : "Add a comment… Type @ to mention"
         }
         className="w-full resize-y bg-transparent text-[15px] leading-relaxed text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
       />

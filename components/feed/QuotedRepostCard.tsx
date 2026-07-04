@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import AvatarImage from "@/components/ui/AvatarImage";
 import MentionText from "@/components/ui/MentionText";
 import PostCard, { type FeedPost } from "@/components/feed/PostCard";
+import ProfileHoverLink from "@/components/profile/ProfileHoverLink";
 import UserBadges from "@/components/profile/UserBadges";
 
 export type QuotedRepost = {
@@ -33,18 +33,20 @@ export default function QuotedRepostCard({
   return (
     <article className="rounded-xl border border-[var(--border)] bg-[var(--surface-post)] p-4 sm:p-5">
       <div className="flex gap-3">
-        {r.avatar_url ? (
-          <AvatarImage src={r.avatar_url} alt="" className="h-10 w-10 shrink-0 rounded-full border border-[var(--border)] object-cover" />
-        ) : (
-          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-sm font-semibold text-[var(--ink-muted)]">
-            {name.charAt(0).toUpperCase()}
-          </div>
-        )}
+        <ProfileHoverLink href={`/profile/${r.username}`} username={r.username} className="shrink-0">
+          {r.avatar_url ? (
+            <AvatarImage src={r.avatar_url} alt="" className="h-10 w-10 rounded-full border border-[var(--border)] object-cover" />
+          ) : (
+            <div className="grid h-10 w-10 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-sm font-semibold text-[var(--ink-muted)]">
+              {name.charAt(0).toUpperCase()}
+            </div>
+          )}
+        </ProfileHoverLink>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-1.5">
-            <Link href={`/profile/${r.username}`} className="font-semibold hover:underline">
+            <ProfileHoverLink href={`/profile/${r.username}`} username={r.username} className="font-semibold hover:underline">
               {name}
-            </Link>
+            </ProfileHoverLink>
             <UserBadges isPro={r.is_pro} isFounder={r.is_founder} />
             <span className="text-[13px] text-[var(--ink-muted)]">@{r.username}</span>
             <span className="text-[13px] text-[var(--ink-faint)]">· reposted</span>

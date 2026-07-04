@@ -1,7 +1,6 @@
 import Link from "next/link";
 import NavMenu from "./NavMenu";
-import ThemeToggle from "@/components/ui/ThemeToggle";
-import { IconBolt } from "@/components/icons";
+import { IconBolt, IconMail } from "@/components/icons";
 
 // Server component — top-level stays plain links (no client JS); the avatar
 // dropdown is the one client island (NavMenu).
@@ -32,7 +31,15 @@ export default function Navbar({
           )}
         </div>
         <div className="flex items-center gap-3 text-sm">
-          <ThemeToggle compact />
+          {username && (
+            <Link
+              href="/messages"
+              title="Messages"
+              className="grid h-9 w-9 place-items-center rounded-full text-[var(--ink-muted)] transition hover:bg-[var(--featured-surface)] hover:text-[var(--ink)]"
+            >
+              <IconMail />
+            </Link>
+          )}
           {!isPro && (
             <Link href="/pro" className="font-medium text-[var(--blue)] transition hover:opacity-80">
               Join Pro

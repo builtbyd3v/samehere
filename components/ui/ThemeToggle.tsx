@@ -8,26 +8,8 @@ const OPTIONS: { value: Theme; label: string }[] = [
   { value: "system", label: "System" },
 ];
 
-export default function ThemeToggle({ compact = false }: { compact?: boolean }) {
+export default function ThemeToggle() {
   const { theme, setTheme } = useTheme();
-
-  if (compact) {
-    const cycle = () => {
-      const order: Theme[] = ["light", "dark", "system"];
-      setTheme(order[(order.indexOf(theme) + 1) % order.length]);
-    };
-    return (
-      <button
-        type="button"
-        onClick={cycle}
-        className="rounded-md px-2 py-1 text-xs text-[var(--ink-muted)] transition hover:bg-[var(--featured-surface)] hover:text-[var(--ink)]"
-        title={`Theme: ${theme}`}
-        aria-label={`Theme: ${theme}. Click to change.`}
-      >
-        {theme === "dark" ? "Dark" : theme === "light" ? "Light" : "Auto"}
-      </button>
-    );
-  }
 
   return (
     <div className="inline-flex gap-0.5 rounded-full border border-[var(--border)] p-0.5" role="group" aria-label="Theme">

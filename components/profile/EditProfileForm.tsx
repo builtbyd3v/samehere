@@ -5,6 +5,7 @@ import { useActionState, useState } from "react";
 import { updateProfile, type EditState } from "@/app/(app)/profile/edit/actions";
 import { createClient } from "@/lib/supabase/client";
 import AvatarImage from "@/components/ui/AvatarImage";
+import ProfileNudgePanel from "@/components/profile/ProfileNudgePanel";
 
 export type EditInitial = {
   id: string;
@@ -85,6 +86,19 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
         </Link>
       </div>
 
+      <ProfileNudgePanel
+        profile={{
+          display_name: initial.display_name,
+          avatar_url: avatarUrl,
+          school: initial.school,
+          year: initial.year,
+          major: initial.major,
+          bio: initial.bio,
+          goals: initial.goals,
+          skills: initial.skills,
+        }}
+      />
+
       <form action={formAction} className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6">
         {state.error && (
           <p role="alert" className="mb-5 rounded-md border border-[var(--border-strong)] px-3 py-2 text-sm">
@@ -106,7 +120,10 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
             </div>
           )}
           <div>
-            <label className="inline-block cursor-pointer rounded-md border border-[var(--border-strong)] px-3 py-1.5 text-sm font-medium transition active:opacity-80">
+            <label
+              id="avatar-upload"
+              className="inline-block cursor-pointer rounded-md border border-[var(--border-strong)] px-3 py-1.5 text-sm font-medium transition active:opacity-80"
+            >
               <input type="file" accept="image/*" onChange={onAvatar} disabled={avatarBusy} className="hidden" />
               {avatarBusy ? "Uploading…" : "Change avatar"}
             </label>

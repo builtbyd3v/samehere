@@ -5,6 +5,7 @@ import PostMenu from "./PostMenu";
 import UserBadges from "@/components/profile/UserBadges";
 import AvatarImage from "@/components/ui/AvatarImage";
 import MentionText from "@/components/ui/MentionText";
+import ProfileHoverLink from "@/components/profile/ProfileHoverLink";
 import PostBodyLink from "./PostBodyLink";
 import type { PostMedia } from "@/lib/media";
 
@@ -69,9 +70,9 @@ function Avatar({
   if (size === "sm") return <div className="shrink-0">{inner}</div>;
 
   return (
-    <Link href={`/profile/${author.username}`} className="shrink-0 transition hover:opacity-85">
+    <ProfileHoverLink href={`/profile/${author.username}`} username={author.username} className="shrink-0 transition hover:opacity-85">
       {inner}
-    </Link>
+    </ProfileHoverLink>
   );
 }
 
@@ -119,9 +120,13 @@ export default function PostCard({
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
                   {a ? (
-                    <Link href={`/profile/${a.username}`} className="font-semibold text-[var(--ink)] hover:underline">
+                    <ProfileHoverLink
+                      href={`/profile/${a.username}`}
+                      username={a.username}
+                      className="font-semibold text-[var(--ink)] hover:underline"
+                    >
                       {name}
-                    </Link>
+                    </ProfileHoverLink>
                   ) : (
                     <span className="font-semibold">{name}</span>
                   )}

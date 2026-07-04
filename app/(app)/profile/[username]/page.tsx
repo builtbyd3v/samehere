@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import FollowButton, { type FollowState } from "@/components/profile/FollowButton";
+import type { FollowState } from "@/components/profile/FollowButton";
+import ProfileActions from "@/components/profile/ProfileActions";
 import BlockButton from "@/components/profile/BlockButton";
 import PostCard, { POST_SELECT, type FeedPost } from "@/components/feed/PostCard";
 import ContributionHeatmap, { type HeatmapDay } from "@/components/profile/ContributionHeatmap";
@@ -158,19 +159,14 @@ export default async function ProfilePage({
                 <p className="mt-0.5 text-[15px] text-[var(--ink-muted)]">@{profile.username}</p>
               </div>
 
-              {isOwner ? (
+              {isOwner && (
                 <Link
                   href="/profile/edit"
                   className="shrink-0 rounded-full border border-[var(--border-strong)] px-4 py-1.5 text-sm font-medium transition hover:bg-[var(--featured-surface)] active:opacity-80"
                 >
                   Edit profile
                 </Link>
-              ) : user ? (
-                <div className="flex shrink-0 items-center gap-2">
-                  {!isBlocked && <FollowButton targetId={profile.id} initial={followState} />}
-                  <BlockButton targetId={profile.id} initialBlocked={amIBlocking} />
-                </div>
-              ) : null}
+              )}
             </div>
 
             {metaParts.length > 0 && (
@@ -182,6 +178,18 @@ export default async function ProfilePage({
               <Stat value={Number(counts.followers)} label="followers" />
               <Stat value={Number(counts.following)} label="following" />
             </div>
+
+            {!isOwner && user && (
+              <div className="mt-5 border-t border-[var(--border)] pt-5">
+                <ProfileActions
+                  username={profile.username}
+                  targetId={profile.id}
+                  followState={followState}
+                  blocked={isBlocked}
+                  amIBlocking={amIBlocking}
+                />
+              </div>
+            )}
           </div>
         </div>
 
@@ -210,6 +218,12 @@ export default async function ProfilePage({
                 {s}
               </span>
             ))}
+          </div>
+        )}
+
+        {!isOwner && user && (!isBlocked || amIBlocking) && (
+          <div className="mt-5 flex justify-end border-t border-[var(--border)] pt-4">
+            <BlockButton targetId={profile.id} initialBlocked={amIBlocking} />
           </div>
         )}
       </section>

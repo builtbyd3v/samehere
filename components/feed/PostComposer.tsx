@@ -5,6 +5,7 @@ import { createPost, composerNudge, type ComposerState } from "@/app/(app)/feed/
 import { createClient } from "@/lib/supabase/client";
 import { useSubmitShortcut } from "@/lib/useSubmitShortcut";
 import { submitShortcutLabel } from "@/lib/keyboard";
+import MentionTextarea from "@/components/ui/MentionTextarea";
 
 // 150 chars earns a heatmap point — it does NOT gate posting.
 const POINT_AT = 150;
@@ -21,6 +22,7 @@ export default function PostComposer() {
   const ref = useRef<HTMLFormElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [len, setLen] = useState(0);
+  const [content, setContent] = useState("");
   const [files, setFiles] = useState<Picked[]>([]);
   const [mediaErr, setMediaErr] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -39,6 +41,7 @@ export default function PostComposer() {
   useEffect(() => {
     if (state.ok) {
       ref.current?.reset();
+      setContent("");
       setLen(0);
       files.forEach((f) => URL.revokeObjectURL(f.url));
       setFiles([]);
@@ -90,10 +93,8 @@ export default function PostComposer() {
 
   function useHint() {
     if (!hint) return;
-    if (textareaRef.current) {
-      textareaRef.current.value = hint;
-      textareaRef.current.focus();
-    }
+    setContent(hint);
+    textareaRef.current?.focus();
     setLen(hint.trim().length);
     setHint(null);
   }
@@ -153,16 +154,20 @@ export default function PostComposer() {
           {hint} <span className="not-italic">(click to use)</span>
         </button>
       )}
-      <textarea
-        ref={textareaRef}
+      <MentionTextarea
+        textareaRef={textareaRef}
         name="content"
         rows={4}
         required
-        onChange={(e) => setLen(e.target.value.trim().length)}
+        value={content}
+        onChange={(v) => {
+          setContent(v);
+          setLen(v.trim().length);
+        }}
         placeholder={
           shortcutLabel
-            ? `Share what you're building, learning, or figuring out… (${shortcutLabel} to post)`
-            : "Share what you're building, learning, or figuring out…"
+            ? `Share what you're building… Type @ to mention (${shortcutLabel} to post)`
+            : "Share what you're building… Type @ to mention"
         }
         className="w-full resize-y bg-transparent text-[16px] leading-[1.55] text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
       />

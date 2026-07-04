@@ -25,6 +25,9 @@ export default function NavMenu({ username, avatarUrl }: { username: string; ava
         )
       }
     >
+      <Link href="/messages" className={itemClass}>
+        Messages
+      </Link>
       <Link href={`/profile/${username}`} className={itemClass}>
         Profile
       </Link>

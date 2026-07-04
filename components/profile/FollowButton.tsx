@@ -6,7 +6,17 @@ import { createClient } from "@/lib/supabase/client";
 
 export type FollowState = "none" | "pending" | "following";
 
-export default function FollowButton({ targetId, initial }: { targetId: string; initial: FollowState }) {
+export default function FollowButton({
+  targetId,
+  initial,
+  variant = "default",
+  className = "",
+}: {
+  targetId: string;
+  initial: FollowState;
+  variant?: "default" | "pill";
+  className?: string;
+}) {
   const [supabase] = useState(createClient);
   const router = useRouter();
   const [state, setState] = useState<FollowState>(initial);
@@ -36,19 +46,28 @@ export default function FollowButton({ targetId, initial }: { targetId: string; 
     }
   }
 
+  const shape = variant === "pill" ? "rounded-full px-4 py-2" : "rounded-md px-3 py-1.5";
+
   if (state === "none") {
     return (
-      <button type="button" onClick={follow} disabled={busy}
-        className="btn-inset shrink-0 rounded-md bg-[var(--ink)] px-3 py-1.5 text-sm font-medium text-[var(--canvas)] transition active:opacity-80 disabled:opacity-50">
+      <button
+        type="button"
+        onClick={follow}
+        disabled={busy}
+        className={`btn-inset bg-[var(--ink)] text-sm font-medium text-[var(--canvas)] transition active:opacity-80 disabled:opacity-50 ${shape} ${className}`}
+      >
         Follow
       </button>
     );
   }
 
-  // pending or following — both actions remove the row. Label differs.
   return (
-    <button type="button" onClick={remove} disabled={busy}
-      className="group shrink-0 rounded-md border border-[var(--border-strong)] px-3 py-1.5 text-sm font-medium transition active:opacity-80 disabled:opacity-50">
+    <button
+      type="button"
+      onClick={remove}
+      disabled={busy}
+      className={`group border border-[var(--border-strong)] text-sm font-medium transition active:opacity-80 disabled:opacity-50 ${shape} ${className}`}
+    >
       {state === "pending" ? "Requested" : (
         <>
           <span className="group-hover:hidden">Following</span>

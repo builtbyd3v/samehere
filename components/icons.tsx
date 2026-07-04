@@ -68,3 +68,10 @@ export const IconCompose = () => (
     <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
   </svg>
 );
+
+export const IconMail = () => (
+  <svg className={cls} {...s}>
+    <path d="M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z" />
+    <path d="m22 8-10 6L2 8" />
+  </svg>
+);

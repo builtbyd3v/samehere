@@ -8,7 +8,15 @@ import ConfirmDialog from "@/components/ui/ConfirmDialog";
 // Low-key secondary control — Block/Unblock live next to FollowButton, not
 // competing with it visually. block_user (definer) also wipes any follow both
 // ways; unblock is a plain RLS delete of our own blocks row (mirrors FollowButton's unfollow).
-export default function BlockButton({ targetId, initialBlocked }: { targetId: string; initialBlocked: boolean }) {
+export default function BlockButton({
+  targetId,
+  initialBlocked,
+  className,
+}: {
+  targetId: string;
+  initialBlocked: boolean;
+  className?: string;
+}) {
   const [supabase] = useState(createClient);
   const router = useRouter();
   const [blocked, setBlocked] = useState(initialBlocked);
@@ -41,7 +49,10 @@ export default function BlockButton({ targetId, initialBlocked }: { targetId: st
         type="button"
         onClick={() => (blocked ? unblock() : setConfirmOpen(true))}
         disabled={busy}
-        className="shrink-0 text-sm text-[var(--ink-muted)] underline-offset-2 transition hover:underline active:opacity-80 disabled:opacity-50"
+        className={
+          className ??
+          "shrink-0 text-sm text-[#c0392b] underline-offset-2 transition hover:underline active:opacity-80 disabled:opacity-50 dark:text-[#e88]"
+        }
       >
         {blocked ? "Unblock" : "Block"}
       </button>

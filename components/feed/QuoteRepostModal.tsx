@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import PostCard, { type FeedPost } from "@/components/feed/PostCard";
-import { isSubmitShortcut, submitShortcutLabel } from "@/lib/keyboard";
+import MentionTextarea from "@/components/ui/MentionTextarea";
+import { submitShortcutLabel } from "@/lib/keyboard";
+import { useSubmitShortcut } from "@/lib/useSubmitShortcut";
 
 export default function QuoteRepostModal({
   post,
@@ -52,6 +54,8 @@ export default function QuoteRepostModal({
     onClose();
   }, [text, supabase, post.id, viewerId, onDone, onClose]);
 
+  useSubmitShortcut(ref, submit, open && !busy && text.trim().length > 0);
+
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {
@@ -70,18 +74,12 @@ export default function QuoteRepostModal({
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-lg font-semibold">Quote repost</h2>
-        <textarea
-          ref={ref}
+        <MentionTextarea
+          textareaRef={ref}
           rows={3}
           value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => {
-            if (isSubmitShortcut(e)) {
-              e.preventDefault();
-              submit();
-            }
-          }}
-          placeholder="Add your take…"
+          onChange={setText}
+          placeholder="Add your take… Type @ to mention"
           className="mt-3 w-full resize-y bg-transparent text-[16px] leading-[1.55] text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
         />
         {shortcutLabel && (

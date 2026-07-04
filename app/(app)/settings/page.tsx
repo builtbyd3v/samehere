@@ -6,6 +6,7 @@ import ChangePasswordForm from "@/components/settings/ChangePasswordForm";
 import DeleteAccountSection from "@/components/settings/DeleteAccountSection";
 import AvatarImage from "@/components/ui/AvatarImage";
 import ThemeToggle from "@/components/ui/ThemeToggle";
+import ComingSoonFeatures from "@/components/settings/ComingSoonFeatures";
 import { unblockUser } from "./actions";
 
 type BlockedRow = {
@@ -49,6 +50,8 @@ export default async function SettingsPage() {
         <h2 className="mb-4 text-lg font-semibold">Account</h2>
         <ChangePasswordForm />
       </section>
+
+      <ComingSoonFeatures />
 
       <section className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6">
         <h2 className="mb-4 text-lg font-semibold">Blocked users</h2>

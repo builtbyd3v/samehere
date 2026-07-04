@@ -115,6 +115,139 @@ export type Database = {
           },
         ]
       }
+      conversation_members: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          last_read_at: string | null
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          last_read_at?: string | null
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          last_read_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_members_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversations: {
+        Row: {
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      dm_pairs: {
+        Row: {
+          conversation_id: string
+          user_a: string
+          user_b: string
+        }
+        Insert: {
+          conversation_id: string
+          user_a: string
+          user_b: string
+        }
+        Update: {
+          conversation_id?: string
+          user_a?: string
+          user_b?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dm_pairs_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: true
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dm_pairs_user_a_fkey"
+            columns: ["user_a"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dm_pairs_user_b_fkey"
+            columns: ["user_b"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookmarks: {
         Row: {
           created_at: string | null
@@ -550,6 +683,16 @@ export type Database = {
           points: number
         }[]
       }
+      get_dm_peer: {
+        Args: { p_conversation_id: string }
+        Returns: {
+          peer_avatar_url: string | null
+          peer_display_name: string | null
+          peer_id: string
+          peer_username: string
+        }[]
+      }
+      get_or_create_dm: { Args: { p_recipient: string }; Returns: string }
       get_profile_counts: {
         Args: { p_profile_id: string }
         Returns: {
@@ -558,10 +701,25 @@ export type Database = {
           posts: number
         }[]
       }
+      list_dm_inbox: {
+        Args: never
+        Returns: {
+          conversation_id: string
+          last_message: string
+          last_message_at: string
+          last_sender_id: string | null
+          peer_avatar_url: string | null
+          peer_display_name: string | null
+          peer_id: string
+          peer_username: string
+          unread_count: number
+        }[]
+      }
       log_contribution: {
         Args: { p_action_type: string; p_metadata?: Json }
         Returns: undefined
       }
+      mark_dm_read: { Args: { p_conversation_id: string }; Returns: undefined }
       reject_follow: { Args: { p_follower: string }; Returns: undefined }
       request_follow: { Args: { p_target: string }; Returns: string }
       use_ai_quota: {
