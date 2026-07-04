@@ -4,9 +4,11 @@ import { useActionState, useCallback, useEffect, useRef, useState, useTransition
 import { createComment, type CommentState } from "@/app/(app)/post/[id]/actions";
 import { useSubmitShortcut } from "@/lib/useSubmitShortcut";
 import { submitShortcutLabel } from "@/lib/keyboard";
+import { TEXT_LIMITS } from "@/lib/utils/validation";
 import MentionTextarea from "@/components/ui/MentionTextarea";
 
 const POINT_AT = 50;
+const MAX = TEXT_LIMITS.comment;
 
 export default function CommentComposer({ postId }: { postId: string }) {
   const [state, formAction, pending] = useActionState<CommentState, FormData>(createComment, {});
@@ -44,6 +46,7 @@ export default function CommentComposer({ postId }: { postId: string }) {
         name="content"
         rows={3}
         required
+        maxLength={MAX}
         value={content}
         onChange={(v) => {
           setContent(v);
@@ -64,16 +67,22 @@ export default function CommentComposer({ postId }: { postId: string }) {
       )}
 
       <div className="mt-3 flex items-center justify-between border-t border-[var(--border)] pt-3">
-        <span className={`text-xs ${qualifies ? "text-[var(--blue)]" : "text-[var(--ink-muted)]"}`}>
+        <span
+          className={`text-xs ${
+            len >= MAX ? "text-[#c0392b] dark:text-[#e88]" : qualifies ? "text-[var(--blue)]" : "text-[var(--ink-muted)]"
+          }`}
+        >
           {len === 0
             ? `${POINT_AT}+ characters earns a point`
-            : qualifies
-              ? `${len} characters · earns a point`
-              : `${POINT_AT - len} more to earn a point`}
+            : len >= MAX
+              ? `${len}/${MAX}`
+              : qualifies
+                ? `${len}/${MAX} · earns a point`
+                : `${len}/${MAX} · ${POINT_AT - len} more to earn a point`}
         </span>
         <button
           type="submit"
-          disabled={pending || len === 0}
+          disabled={pending || len === 0 || len > MAX}
           className="btn-inset rounded-md bg-[var(--ink)] px-4 py-1.5 text-sm font-medium text-[var(--canvas)] transition active:opacity-80 disabled:opacity-50"
         >
           {pending ? "Posting…" : "Comment"}

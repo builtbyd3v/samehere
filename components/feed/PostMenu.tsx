@@ -9,8 +9,7 @@ import Modal from "@/components/ui/Modal";
 import { ReportForm } from "./ReportForm";
 import { deletePost } from "@/app/(app)/feed/actions";
 
-const itemClass = "block w-full px-3 py-1.5 text-left text-sm text-[var(--ink)] hover:bg-[var(--canvas)]";
-const dangerClass = "block w-full px-3 py-1.5 text-left text-sm text-[#c0392b] hover:bg-[var(--canvas)] dark:text-[#e88]";
+import { menuDangerClass, menuItemClass } from "@/lib/ui/menu-styles";
 
 // Post ⋯ menu — replaces the old standalone ReportButton + DeletePostButton
 // action-row pair. Own post: copy link, delete. Other's post: copy link,
@@ -54,20 +53,20 @@ export default function PostMenu({
   return (
     <>
       <Menu trigger={<span aria-hidden>⋯</span>} align="end">
-        <button type="button" onClick={copyLink} className={itemClass}>
+        <button type="button" onClick={copyLink} className={menuItemClass}>
           {copied ? "Copied" : "Copy link"}
         </button>
         {isOwn ? (
-          <button type="button" onClick={() => setConfirmDelete(true)} className={dangerClass}>
+          <button type="button" onClick={() => setConfirmDelete(true)} className={menuDangerClass}>
             Delete
           </button>
         ) : (
           viewerId && (
             <>
-              <button type="button" onClick={() => setReportOpen(true)} className={itemClass}>
+              <button type="button" onClick={() => setReportOpen(true)} className={menuItemClass}>
                 Report
               </button>
-              <button type="button" onClick={() => setConfirmBlock(true)} className={dangerClass}>
+              <button type="button" onClick={() => setConfirmBlock(true)} className={menuDangerClass}>
                 Block @{authorUsername}
               </button>
             </>

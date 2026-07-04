@@ -75,3 +75,23 @@ export const IconMail = () => (
     <path d="m22 8-10 6L2 8" />
   </svg>
 );
+
+export const IconBell = () => (
+  <svg className={cls} {...s}>
+    <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+  </svg>
+);
+
+export const IconSend = () => (
+  <svg className="h-4 w-4" {...s}>
+    <path d="m22 2-7 20-4-9-9-4Z" />
+    <path d="M22 2 11 13" />
+  </svg>
+);
+
+export const IconChevronLeft = () => (
+  <svg className="h-4 w-4" {...s}>
+    <path d="m15 6-6 6 6 6" />
+  </svg>
+);

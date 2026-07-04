@@ -1,6 +1,7 @@
 "use client";
 
 import Reveal from "./Reveal";
+import { landingH2 } from "@/lib/landing/styles";
 
 const FAQ_ITEMS = [
   ["Is samehere free?", "Yes. Free for every verified student. Core features are never gated."],
@@ -10,13 +11,11 @@ const FAQ_ITEMS = [
   ["What is Pro?", "Optional upgrades: expanded AI usage, a badge, heatmap export, and advanced search. Billing comes later at $4.99/mo or $29.99/yr."],
 ] as const;
 
-const h2 = "text-[36px] font-semibold leading-[1.1] tracking-[-0.025em] md:text-[48px] md:tracking-[-0.03em]";
-
 export default function FAQ() {
   return (
     <section id="faq" className="scroll-mt-[5.5rem] mx-auto max-w-3xl px-5 py-20">
       <Reveal>
-        <h2 className={h2}>Questions.</h2>
+        <h2 className={landingH2}>Questions.</h2>
       </Reveal>
       <Reveal className="mt-8 divide-y divide-[var(--border)] border-y border-[var(--border)]" delay={0.08}>
         {FAQ_ITEMS.map(([q, a]) => (

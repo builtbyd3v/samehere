@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { TEXT_LIMITS, textLimitError } from "@/lib/utils/validation";
 
 export async function startDmWithUsername(username: string) {
   const supabase = await createClient();
@@ -38,7 +39,7 @@ export type MessageUserResult = {
 };
 
 export async function searchUsersForMessage(query: string): Promise<MessageUserResult[]> {
-  const q = query.trim();
+  const q = query.trim().slice(0, TEXT_LIMITS.dmUserSearch);
   if (q.length < 1) return [];
 
   const supabase = await createClient();
@@ -69,8 +70,10 @@ export async function sendMessage(
   formData: FormData,
 ): Promise<SendMessageState> {
   const conversationId = String(formData.get("conversation_id") ?? "");
-  const content = String(formData.get("content") ?? "").trim().slice(0, 2000);
+  const content = String(formData.get("content") ?? "").trim();
   if (!conversationId || !content) return { error: "Message cannot be empty." };
+  const limitErr = textLimitError("Messages", TEXT_LIMITS.message, content.length);
+  if (limitErr) return { error: limitErr };
 
   const supabase = await createClient();
   const {
@@ -88,5 +91,18 @@ export async function sendMessage(
 
   revalidatePath(`/messages/${conversationId}`);
   revalidatePath("/messages");
+  revalidatePath("/", "layout");
   return { ok: true };
+}
+
+export async function markDmRead(conversationId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  await supabase.rpc("mark_dm_read", { p_conversation_id: conversationId });
+  revalidatePath("/", "layout");
+  revalidatePath("/messages");
 }

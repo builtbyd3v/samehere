@@ -4,10 +4,9 @@ import ContributionHeatmap from "@/components/profile/ContributionHeatmap";
 import { IconBolt, IconCrown } from "@/components/icons";
 import { buildDemoHeatmap, DEMO_PROFILE } from "@/lib/landing/demo-data";
 import Reveal from "./Reveal";
+import { landingH2 } from "@/lib/landing/styles";
 
 const heatmap = buildDemoHeatmap(DEMO_PROFILE.username);
-
-const h2 = "text-[36px] font-semibold leading-[1.1] tracking-[-0.03em] md:text-[48px] md:tracking-[-0.03em]";
 
 export default function LandingProfileDemo() {
   const p = DEMO_PROFILE;
@@ -17,7 +16,7 @@ export default function LandingProfileDemo() {
     <section id="features" className="scroll-mt-[5.5rem] border-y border-[var(--border)]">
       <div className="mx-auto max-w-2xl px-5 py-20">
         <Reveal>
-          <h2 className={`text-balance ${h2}`}>Your profile, not your résumé.</h2>
+          <h2 className={`text-balance ${landingH2}`}>Your profile, not your résumé.</h2>
           <p className="mt-4 max-w-[42ch] text-base leading-relaxed text-[var(--ink-muted)]">
             Skills, goals, and a contribution heatmap that tracks real activity — posts, comments, and connections.
           </p>

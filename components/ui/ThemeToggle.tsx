@@ -19,7 +19,7 @@ export default function ThemeToggle() {
           type="button"
           onClick={() => setTheme(o.value)}
           aria-pressed={theme === o.value}
-          className={`rounded-full px-2.5 py-1 text-xs transition ${
+          className={`cursor-pointer rounded-full px-2.5 py-1 text-xs transition ${
             theme === o.value
               ? "bg-[var(--featured-surface)] font-medium text-[var(--ink)]"
               : "text-[var(--ink-muted)] hover:text-[var(--ink)]"

@@ -11,7 +11,7 @@ import { createPortal } from "react-dom";
 export type HeatmapDay = { day: string; points: number; breakdown: Record<string, number> };
 type Cell = { date: string; points: number; breakdown: Record<string, number>; future: boolean };
 
-// Blue heatmap ramp — same tokens as ProfileShowcase.
+// Blue heatmap ramp — same tokens as landing demo.
 const CELL = ["bg-[var(--hm0)]", "bg-[var(--hm1)]", "bg-[var(--hm2)]", "bg-[var(--hm3)]"];
 const level = (p: number) => (p === 0 ? 0 : p <= 3 ? 1 : p <= 7 ? 2 : 3);
 

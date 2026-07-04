@@ -393,6 +393,61 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          actor_id: string
+          created_at: string
+          id: string
+          post_id: string | null
+          reaction_type: string | null
+          read: boolean
+          type: string
+          user_id: string
+        }
+        Insert: {
+          actor_id: string
+          created_at?: string
+          id?: string
+          post_id?: string | null
+          reaction_type?: string | null
+          read?: boolean
+          type: string
+          user_id: string
+        }
+        Update: {
+          actor_id?: string
+          created_at?: string
+          id?: string
+          post_id?: string | null
+          reaction_type?: string | null
+          read?: boolean
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       follows: {
         Row: {
           created_at: string | null
@@ -683,6 +738,8 @@ export type Database = {
           points: number
         }[]
       }
+      get_dm_unread_total: { Args: never; Returns: number }
+      get_notification_unread_total: { Args: never; Returns: number }
       get_dm_peer: {
         Args: { p_conversation_id: string }
         Returns: {
@@ -715,11 +772,27 @@ export type Database = {
           unread_count: number
         }[]
       }
+      list_notifications: {
+        Args: { p_limit?: number }
+        Returns: {
+          actor_avatar_url: string | null
+          actor_display_name: string | null
+          actor_id: string
+          actor_username: string
+          created_at: string
+          id: string
+          post_id: string | null
+          reaction_type: string | null
+          read: boolean
+          type: string
+        }[]
+      }
       log_contribution: {
         Args: { p_action_type: string; p_metadata?: Json }
         Returns: undefined
       }
       mark_dm_read: { Args: { p_conversation_id: string }; Returns: undefined }
+      mark_all_notifications_read: { Args: never; Returns: undefined }
       reject_follow: { Args: { p_follower: string }; Returns: undefined }
       request_follow: { Args: { p_target: string }; Returns: string }
       use_ai_quota: {

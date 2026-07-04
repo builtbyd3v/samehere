@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { TEXT_LIMITS } from "@/lib/utils/validation";
 
 const REASONS = ["Spam", "Harassment", "Hate speech", "Sexual content", "Self-harm", "Other"];
 
@@ -25,7 +26,7 @@ export function ReportForm({ postId, viewerId }: { postId: string; viewerId: str
     const supabase = createClient();
     const { error: err } = await supabase
       .from("reports")
-      .insert({ post_id: postId, reporter_id: viewerId, reason, detail: detail.trim() || null });
+      .insert({ post_id: postId, reporter_id: viewerId, reason, detail: detail.trim().slice(0, TEXT_LIMITS.reportDetail) || null });
     setPending(false);
     if (err) {
       setError("Couldn't submit. Try again.");
@@ -52,7 +53,7 @@ export function ReportForm({ postId, viewerId }: { postId: string; viewerId: str
         onChange={(e) => setDetail(e.target.value)}
         placeholder="Optional details"
         rows={3}
-        maxLength={500}
+        maxLength={TEXT_LIMITS.reportDetail}
         className="w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
       />
       {error && <p role="alert" className="text-sm text-[#c0392b] dark:text-[#e88]">{error}</p>}

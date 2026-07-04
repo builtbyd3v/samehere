@@ -61,6 +61,14 @@
   }
 }
 
+/* Interactive affordance — links already default to pointer in most browsers */
+button:not(:disabled),
+[type="button"]:not(:disabled),
+[type="submit"]:not(:disabled),
+summary {
+  cursor: pointer;
+}
+
 /* signature inset shadow on dark buttons — bg stays charcoal in both themes */
 .btn-inset {
   box-shadow: rgba(255, 255, 255, 0.2) 0 0.5px 0 0 inset, rgba(0, 0, 0, 0.2) 0 0 0 0.5px inset, rgba(0, 0, 0, 0.05) 0 1px 2px 0;

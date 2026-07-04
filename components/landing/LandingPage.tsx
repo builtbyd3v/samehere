@@ -1,5 +1,4 @@
-import CanvasGradient from "./CanvasGradient";
-import LandingNav from "./LandingNav";
+import CanvasGradient from "./CanvasGradient";import LandingNav from "./LandingNav";
 import Hero from "./Hero";
 import LandingProfileDemo from "./LandingProfileDemo";
 import AISection from "./AISection";
@@ -14,8 +13,7 @@ export default function LandingPage() {
       <CanvasGradient />
       <LandingNav />
       <Hero />
-      <LandingProfileDemo />
-      <AISection />
+      <LandingProfileDemo />      <AISection />
       <Pricing />
       <FAQ />
       <CtaBand />

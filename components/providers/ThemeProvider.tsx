@@ -51,6 +51,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     return () => mq.removeEventListener("change", onChange);
   }, [theme]);
 
+  // Leaving the app shell — drop forced classes so public pages follow system CSS.
+  useEffect(() => {
+    return () => {
+      document.documentElement.classList.remove("light", "dark");
+    };
+  }, []);
+
   const setTheme = useCallback((t: Theme) => {
     localStorage.setItem(STORAGE_KEY, t);
     setThemeState(t);

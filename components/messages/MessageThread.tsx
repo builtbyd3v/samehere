@@ -1,5 +1,6 @@
 import Link from "next/link";
 import AvatarImage from "@/components/ui/AvatarImage";
+import { IconChevronLeft } from "@/components/icons";
 import { formatMessageTime, type DmMessage } from "@/lib/messages";
 
 export default function MessageThread({
@@ -11,28 +12,30 @@ export default function MessageThread({
 }) {
   if (messages.length === 0) {
     return (
-      <p className="px-4 py-8 text-center text-sm text-[var(--ink-muted)]">
-        Say hello — your message stays between you two.
+      <p className="px-5 py-16 text-center text-sm text-[var(--ink-muted)]">
+        No messages yet. Say hello.
       </p>
     );
   }
 
   return (
-    <div className="flex flex-col gap-3 p-4">
+    <div className="flex flex-col gap-4 px-4 py-5 sm:px-5">
       {messages.map((m) => {
         const mine = m.sender_id === viewerId;
         return (
           <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
-            <div
-              className={`max-w-[min(85%,28rem)] rounded-2xl px-3.5 py-2.5 text-[15px] leading-relaxed ${
-                mine
-                  ? "bg-[var(--ink)] text-[var(--canvas)]"
-                  : "border border-[var(--border)] bg-[var(--surface-card)] text-[var(--ink)]"
-              }`}
-            >
-              <p className="whitespace-pre-wrap break-words">{m.content}</p>
+            <div className={`max-w-[min(82%,24rem)] ${mine ? "items-end" : "items-start"} flex flex-col`}>
+              <div
+                className={`whitespace-pre-wrap break-words px-3.5 py-2.5 text-[15px] leading-relaxed ${
+                  mine
+                    ? "rounded-2xl rounded-br-md bg-[var(--ink)] text-[var(--canvas)]"
+                    : "rounded-2xl rounded-bl-md border border-[var(--border)] bg-[var(--surface-post)] text-[var(--ink)]"
+                }`}
+              >
+                {m.content}
+              </div>
               <time
-                className={`mt-1 block text-[10px] ${mine ? "text-[var(--canvas)]/70" : "text-[var(--ink-faint)]"}`}
+                className="mt-1 px-1 text-[11px] text-[var(--ink-faint)]"
                 dateTime={m.created_at}
               >
                 {formatMessageTime(m.created_at)}
@@ -55,11 +58,18 @@ export function MessageThreadHeader({
   avatarUrl: string | null;
 }) {
   return (
-    <div className="flex items-center gap-3 border-b border-[var(--border)] bg-[var(--surface-card)] px-4 py-3">
-      <Link href="/messages" className="text-sm text-[var(--ink-muted)] hover:underline sm:hidden">
-        ← Back
+    <header className="flex shrink-0 items-center gap-2 border-b border-[var(--border)] bg-[var(--surface-card)] px-3 py-2.5 sm:px-4">
+      <Link
+        href="/messages"
+        className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-[var(--ink-muted)] transition hover:bg-[var(--featured-surface)] hover:text-[var(--ink)]"
+        aria-label="Back to inbox"
+      >
+        <IconChevronLeft />
       </Link>
-      <Link href={`/profile/${username}`} className="flex min-w-0 flex-1 items-center gap-2.5 hover:opacity-85">
+      <Link
+        href={`/profile/${username}`}
+        className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg px-1 py-1 transition hover:bg-[var(--featured-surface)]"
+      >
         {avatarUrl ? (
           <AvatarImage src={avatarUrl} alt="" className="h-9 w-9 rounded-full border border-[var(--border)] object-cover" />
         ) : (
@@ -68,10 +78,10 @@ export function MessageThreadHeader({
           </div>
         )}
         <div className="min-w-0">
-          <p className="truncate font-semibold text-[var(--ink)]">{displayName}</p>
+          <p className="truncate text-[15px] font-semibold text-[var(--ink)]">{displayName}</p>
           <p className="truncate text-xs text-[var(--ink-muted)]">@{username}</p>
         </div>
       </Link>
-    </div>
+    </header>
   );
 }

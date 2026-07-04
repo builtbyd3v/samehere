@@ -1,6 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import MessageComposer from "@/components/messages/MessageComposer";
+import MessageMarkRead from "@/components/messages/MessageMarkRead";
+import MessageScrollArea from "@/components/messages/MessageScrollArea";
 import MessageThread, { MessageThreadHeader } from "@/components/messages/MessageThread";
 import type { DmMessage } from "@/lib/messages";
 
@@ -9,7 +11,6 @@ type MessageRow = {
   sender_id: string;
   content: string;
   created_at: string;
-  sender: { username: string; display_name: string | null; avatar_url: string | null } | null;
 };
 
 type PeerRow = {
@@ -31,21 +32,19 @@ export default async function MessageThreadPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: peerRows } = await supabase.rpc("get_dm_peer", { p_conversation_id: id });
+  const [{ data: peerRows }, { data: messageRows }] = await Promise.all([
+    supabase.rpc("get_dm_peer", { p_conversation_id: id }),
+    supabase
+      .from("messages")
+      .select("id, sender_id, content, created_at")
+      .eq("conversation_id", id)
+      .order("created_at", { ascending: true })
+      .limit(200)
+      .returns<MessageRow[]>(),
+  ]);
+
   const peer = (peerRows as PeerRow[] | null)?.[0];
   if (!peer) notFound();
-
-  const { data: messageRows } = await supabase
-    .from("messages")
-    .select(
-      "id, sender_id, content, created_at, sender:profiles!messages_sender_id_fkey(username, display_name, avatar_url)",
-    )
-    .eq("conversation_id", id)
-    .order("created_at", { ascending: true })
-    .limit(200)
-    .returns<MessageRow[]>();
-
-  await supabase.rpc("mark_dm_read", { p_conversation_id: id });
 
   const displayName = peer.peer_display_name ?? peer.peer_username;
   const messages: DmMessage[] = (messageRows ?? []).map((m) => ({
@@ -53,20 +52,25 @@ export default async function MessageThreadPage({
     sender_id: m.sender_id,
     content: m.content,
     created_at: m.created_at,
-    sender: m.sender,
+    sender: null,
   }));
 
   return (
-    <main className="mx-auto flex min-h-[calc(100dvh-3.5rem)] max-w-2xl flex-col">
-      <MessageThreadHeader
-        username={peer.peer_username}
-        displayName={displayName}
-        avatarUrl={peer.peer_avatar_url}
-      />
-      <div className="flex-1 overflow-y-auto bg-[var(--canvas)]">
-        <MessageThread messages={messages} viewerId={user.id} />
-      </div>
-      <MessageComposer conversationId={id} />
+    <main className="mx-auto flex min-h-[calc(100dvh-3.5rem)] max-w-2xl flex-col px-4 py-4 sm:px-5 sm:py-6">
+      <MessageMarkRead conversationId={id} />
+      <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface-card)]">
+        <MessageThreadHeader
+          username={peer.peer_username}
+          displayName={displayName}
+          avatarUrl={peer.peer_avatar_url}
+        />
+        <div className="min-h-0 flex-1 overflow-y-auto bg-[var(--canvas)]">
+          <MessageScrollArea messageCount={messages.length}>
+            <MessageThread messages={messages} viewerId={user.id} />
+          </MessageScrollArea>
+        </div>
+        <MessageComposer conversationId={id} />
+      </section>
     </main>
   );
 }

@@ -1,0 +1,6 @@
+/** Dropdown menu row — links and buttons share the same hit target + pointer. */
+export const menuItemClass =
+  "block w-full cursor-pointer px-3 py-1.5 text-left text-sm text-[var(--ink)] hover:bg-[var(--canvas)]";
+
+export const menuDangerClass =
+  "block w-full cursor-pointer px-3 py-1.5 text-left text-sm text-[#c0392b] hover:bg-[var(--canvas)] dark:text-[#e88]";

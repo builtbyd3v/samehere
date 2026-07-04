@@ -1,11 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import PostCard, { type FeedPost } from "@/components/feed/PostCard";
 import MentionTextarea from "@/components/ui/MentionTextarea";
 import { submitShortcutLabel } from "@/lib/keyboard";
 import { useSubmitShortcut } from "@/lib/useSubmitShortcut";
+import { TEXT_LIMITS } from "@/lib/utils/validation";
+
+const MAX = TEXT_LIMITS.quoteRepost;
 
 export default function QuoteRepostModal({
   post,
@@ -26,6 +30,7 @@ export default function QuoteRepostModal({
   const [shortcutLabel, setShortcutLabel] = useState("");
   const [supabase] = useState(createClient);
   const ref = useRef<HTMLTextAreaElement>(null);
+  const router = useRouter();
 
   useEffect(() => {
     if (open) {
@@ -40,19 +45,27 @@ export default function QuoteRepostModal({
   const submit = useCallback(async () => {
     const quote = text.trim();
     if (!quote) return setError("Write something for your quote.");
-    if (quote.length > 500) return setError("Quotes are capped at 500 characters.");
+    if (quote.length > MAX) return setError(`Quotes are capped at ${MAX} characters.`);
     setBusy(true);
     setError(null);
+
+    // Unique (post_id, user_id): replace a plain repost row before inserting quote.
+    await supabase.from("reposts").delete().eq("post_id", post.id).eq("user_id", viewerId);
+
     const { error: err } = await supabase.from("reposts").insert({
       post_id: post.id,
       user_id: viewerId,
       quote_text: quote,
     });
     setBusy(false);
-    if (err) return setError("Could not quote-repost. Try again.");
+    if (err) {
+      console.error("quote repost failed:", err.message);
+      return setError("Could not quote-repost. Try again.");
+    }
     onDone();
     onClose();
-  }, [text, supabase, post.id, viewerId, onDone, onClose]);
+    router.refresh();
+  }, [text, supabase, post.id, viewerId, onDone, onClose, router]);
 
   useSubmitShortcut(ref, submit, open && !busy && text.trim().length > 0);
 
@@ -77,11 +90,17 @@ export default function QuoteRepostModal({
         <MentionTextarea
           textareaRef={ref}
           rows={3}
+          maxLength={MAX}
           value={text}
           onChange={setText}
           placeholder="Add your take… Type @ to mention"
           className="mt-3 w-full resize-y bg-transparent text-[16px] leading-[1.55] text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
         />
+        {text.length > 0 && (
+          <p className={`mt-1 text-xs ${text.length >= MAX ? "text-[#c0392b] dark:text-[#e88]" : "text-[var(--ink-faint)]"}`}>
+            {text.length}/{MAX}
+          </p>
+        )}
         {shortcutLabel && (
           <p className="mt-1 text-xs text-[var(--ink-faint)]">{shortcutLabel} to post</p>
         )}
@@ -107,7 +126,7 @@ export default function QuoteRepostModal({
           <button
             type="button"
             onClick={submit}
-            disabled={busy || !text.trim()}
+            disabled={busy || !text.trim() || text.trim().length > MAX}
             className="btn-inset rounded-md bg-[var(--ink)] px-4 py-1.5 text-sm font-medium text-[var(--canvas)] disabled:opacity-50"
           >
             {busy ? "Posting…" : "Quote repost"}

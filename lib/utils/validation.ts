@@ -25,3 +25,20 @@ export function usernameError(username: string): string | null {
   if (RESERVED_USERNAMES.has(username)) return "That username is reserved.";
   return null;
 }
+
+/** Character caps for user-generated text. Enforce server-side; mirror in UI maxLength. */
+export const TEXT_LIMITS = {
+  post: 280,
+  comment: 280,
+  message: 2000,
+  quoteRepost: 500,
+  feedback: 1000,
+  reportDetail: 500,
+  searchQuery: 100,
+  dmUserSearch: 80,
+} as const;
+
+export function textLimitError(label: string, max: number, length: number): string | null {
+  if (length > max) return `${label} are capped at ${max} characters.`;
+  return null;
+}

@@ -1,17 +1,20 @@
 import Link from "next/link";
 import NavMenu from "./NavMenu";
-import { IconBolt, IconMail } from "@/components/icons";
+import NavIconBadge from "./NavIconBadge";
+import { IconBell, IconBolt, IconMail } from "@/components/icons";
 
-// Server component — top-level stays plain links (no client JS); the avatar
-// dropdown is the one client island (NavMenu).
 export default function Navbar({
   username,
   avatarUrl,
   isPro,
+  dmUnread,
+  notificationUnread,
 }: {
   username: string | null;
   avatarUrl: string | null;
   isPro: boolean;
+  dmUnread: number;
+  notificationUnread: number;
 }) {
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--canvas)]/80 backdrop-blur">
@@ -30,22 +33,22 @@ export default function Navbar({
             </Link>
           )}
         </div>
-        <div className="flex items-center gap-3 text-sm">
+        <div className="flex items-center gap-1.5 text-sm sm:gap-2">
           {username && (
-            <Link
-              href="/messages"
-              title="Messages"
-              className="grid h-9 w-9 place-items-center rounded-full text-[var(--ink-muted)] transition hover:bg-[var(--featured-surface)] hover:text-[var(--ink)]"
-            >
-              <IconMail />
-            </Link>
+            <>
+              <NavIconBadge href="/messages" title="Messages" count={dmUnread}>
+                <IconMail />
+              </NavIconBadge>
+              <NavIconBadge href="/notifications" title="Notifications" count={notificationUnread}>
+                <IconBell />
+              </NavIconBadge>
+            </>
           )}
           {!isPro && (
             <Link href="/pro" className="font-medium text-[var(--blue)] transition hover:opacity-80">
               Join Pro
             </Link>
           )}
-          {/* notifications bell slots in here next (Phase 14) */}
           {username && <NavMenu username={username} avatarUrl={avatarUrl} />}
         </div>
       </nav>

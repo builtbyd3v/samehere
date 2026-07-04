@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { POST_SELECT, PAGE, type FeedPost } from "@/components/feed/PostCard";
 import { attachSignedMedia } from "@/lib/media";
 import { aiEnabled, generateText } from "@/lib/ai";
+import { TEXT_LIMITS, textLimitError } from "@/lib/utils/validation";
 
 export type ComposerState = { error?: string; ok?: boolean };
 
@@ -29,7 +30,7 @@ export async function loadMorePosts(cursor: string): Promise<FeedPost[]> {
   return await attachSignedMedia(supabase, filtered);
 }
 
-const MAX = 5000;
+const MAX = TEXT_LIMITS.post;
 
 // Create a post. Any non-empty content is allowed — the 150-char threshold only
 // decides whether it earns a heatmap point, not whether it can be posted. Insert
@@ -45,7 +46,8 @@ export async function createPost(_prev: ComposerState, formData: FormData): Prom
 
   const content = String(formData.get("content") ?? "").trim();
   if (content.length === 0) return { error: "Write something first." };
-  if (content.length > MAX) return { error: `Posts are capped at ${MAX} characters.` };
+  const limitErr = textLimitError("Posts", MAX, content.length);
+  if (limitErr) return { error: limitErr };
 
   // Media paths come from the client (already uploaded to storage) — untrusted
   // JSON, so re-validate shape + that each path is scoped to this user's folder.

@@ -2,10 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { TEXT_LIMITS, textLimitError } from "@/lib/utils/validation";
 
 export type CommentState = { error?: string; ok?: boolean };
 
-const MAX = 2000;
+const MAX = TEXT_LIMITS.comment;
 
 // Create a comment. Any non-empty length is allowed; 50 chars only decides the
 // heatmap point (gated inside log_contribution). Insert goes through the session
@@ -25,7 +26,8 @@ export async function createComment(_prev: CommentState, formData: FormData): Pr
   const content = String(formData.get("content") ?? "").trim();
   if (!postId) return { error: "Missing post." };
   if (content.length === 0) return { error: "Write something first." };
-  if (content.length > MAX) return { error: `Comments are capped at ${MAX} characters.` };
+  const limitErr = textLimitError("Comments", MAX, content.length);
+  if (limitErr) return { error: limitErr };
 
   const { error } = await supabase.from("comments").insert({ post_id: postId, user_id: user.id, content });
   if (error) return { error: "Could not post your comment. Try again." };

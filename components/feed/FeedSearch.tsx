@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import UserBadges from "@/components/profile/UserBadges";
 import AvatarImage from "@/components/ui/AvatarImage";
+import { TEXT_LIMITS } from "@/lib/utils/validation";
 
 const input =
   "w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[15px] text-[var(--ink)] outline-none transition placeholder:text-[var(--ink-faint)] focus:border-[var(--border-strong)] focus:ring-2 focus:ring-[#3b82f6]/40";
@@ -16,7 +17,7 @@ type SearchResult = {
 };
 
 async function searchProfiles(q: string): Promise<SearchResult[]> {
-  const safe = q.replace(/[,()*%\\]/g, "").trim();
+  const safe = q.replace(/[,()*%\\]/g, "").trim().slice(0, TEXT_LIMITS.searchQuery);
   const tokens = safe.split(/\s+/).filter(Boolean).slice(0, 5);
   if (!tokens.length) return [];
 
@@ -43,6 +44,7 @@ export function FeedSearchForm({ q, tab }: { q: string; tab: string }) {
       <input
         name="q"
         defaultValue={q}
+        maxLength={TEXT_LIMITS.searchQuery}
         placeholder="Search students by name or username"
         className={input}
         autoFocus

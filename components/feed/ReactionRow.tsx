@@ -219,7 +219,13 @@ export default function ReactionRow(props: Props) {
           viewerId={viewerId}
           open={quoteOpen}
           onClose={() => setQuoteOpen(false)}
-          onDone={() => setS((p) => ({ ...p, repost: p.repost + 1, mineRepost: true }))}
+          onDone={() =>
+            setS((p) => ({
+              ...p,
+              mineRepost: true,
+              repost: p.mineRepost ? p.repost : p.repost + 1,
+            }))
+          }
         />
       )}
     </>

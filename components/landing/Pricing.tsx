@@ -1,12 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import Reveal from "./Reveal";
 import { IconBolt, IconCrown } from "@/components/icons";
+import { landingCard, landingH2 } from "@/lib/landing/styles";
 import { signupCta } from "./cta";
-
 const FREE_FEATURES = [
   "Verified .edu signup",
   "Profiles, feed, and reactions",
@@ -22,18 +21,15 @@ const PRO_FEATURES: { label: string; icon?: "bolt" }[] = [
   { label: "Advanced search filters" },
 ];
 
-const card =
-  "flex h-full flex-col rounded-xl border border-[var(--border)] bg-[var(--surface)] p-8";
-const h2 = "text-[36px] font-semibold leading-[1.1] tracking-[-0.03em] md:text-[48px] md:tracking-[-0.03em]";
+const card = `flex h-full flex-col ${landingCard}`;
 
 export default function Pricing() {
-  const [joined, setJoined] = useState(false);
   const reduce = useReducedMotion();
 
   return (
     <section id="pricing" className="scroll-mt-[5.5rem] mx-auto max-w-[1200px] px-5 py-20">
       <Reveal>
-        <h2 className={`text-balance ${h2}`}>Free for every verified student.</h2>
+        <h2 className={`text-balance ${landingH2}`}>Free for every verified student.</h2>
         <p className="mt-4 max-w-[48ch] text-base leading-relaxed text-[var(--ink-muted)]">
           Posting, following, and private accounts are never paywalled. Pro is optional, coming soon.
         </p>
@@ -98,19 +94,10 @@ export default function Pricing() {
               ))}
             </ul>
             <div className="mt-8">
-              {joined ? (
-                <p className="text-sm text-[var(--ink-muted)]">
-                  You&apos;re on the list. We&apos;ll email you when Pro opens.
-                </p>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setJoined(true)}
-                  className={signupCta}
-                >
-                  Join waitlist
-                </button>
-              )}
+              <Link href="/signup" className={signupCta}>
+                Join waitlist
+              </Link>
+              <p className="mt-2 text-xs text-[var(--ink-faint)]">Sign up free, then opt in from Pro settings.</p>
             </div>
           </motion.div>
         </Reveal>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { signupCtaSm } from "./cta";
+
 const LINKS = [
   { href: "#features", id: "features", label: "Profiles" },
   { href: "#ai", id: "ai", label: "AI" },

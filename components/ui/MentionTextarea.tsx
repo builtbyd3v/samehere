@@ -13,6 +13,7 @@ type Props = {
   rows?: number;
   name?: string;
   required?: boolean;
+  maxLength?: number;
   placeholder?: string;
   className?: string;
 };
@@ -24,6 +25,7 @@ export default function MentionTextarea({
   rows = 4,
   name,
   required,
+  maxLength,
   placeholder,
   className,
 }: Props) {
@@ -102,6 +104,7 @@ export default function MentionTextarea({
         name={name}
         rows={rows}
         required={required}
+        maxLength={maxLength}
         value={value}
         placeholder={placeholder}
         className={className}
