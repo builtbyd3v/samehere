@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import PostCard, { type FeedPost } from "@/components/feed/PostCard";
+import { isSubmitShortcut, submitShortcutLabel } from "@/lib/keyboard";
 
 export default function QuoteRepostModal({
   post,
@@ -20,6 +21,7 @@ export default function QuoteRepostModal({
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [shortcutLabel, setShortcutLabel] = useState("");
   const [supabase] = useState(createClient);
   const ref = useRef<HTMLTextAreaElement>(null);
 
@@ -30,6 +32,8 @@ export default function QuoteRepostModal({
       ref.current?.focus();
     }
   }, [open]);
+
+  useEffect(() => setShortcutLabel(submitShortcutLabel()), []);
 
   const submit = useCallback(async () => {
     const quote = text.trim();
@@ -72,7 +76,7 @@ export default function QuoteRepostModal({
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+            if (isSubmitShortcut(e)) {
               e.preventDefault();
               submit();
             }
@@ -80,7 +84,9 @@ export default function QuoteRepostModal({
           placeholder="Add your take…"
           className="mt-3 w-full resize-y bg-transparent text-[16px] leading-[1.55] text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
         />
-        <p className="mt-1 text-xs text-[var(--ink-faint)]">⌘/Ctrl + Enter to post</p>
+        {shortcutLabel && (
+          <p className="mt-1 text-xs text-[var(--ink-faint)]">{shortcutLabel} to post</p>
+        )}
 
         <div className="mt-4 pointer-events-none opacity-90">
           <PostCard post={post} viewerId={viewerId} variant="embedded" />

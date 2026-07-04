@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, type RefObject } from "react";
+import { isSubmitShortcut } from "@/lib/keyboard";
 
-/** Cmd/Ctrl + Enter submits the nearest form from a textarea ref. */
+/** Platform submit shortcut: ⌘+Enter on Mac, Ctrl+Enter elsewhere. */
 export function useSubmitShortcut(
   ref: RefObject<HTMLTextAreaElement | null>,
   onSubmit: () => void,
@@ -13,7 +14,7 @@ export function useSubmitShortcut(
     if (!el || !enabled) return;
 
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key !== "Enter" || !(e.metaKey || e.ctrlKey)) return;
+      if (!isSubmitShortcut(e)) return;
       e.preventDefault();
       onSubmit();
     }

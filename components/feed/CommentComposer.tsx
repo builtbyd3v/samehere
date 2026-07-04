@@ -3,6 +3,7 @@
 import { useActionState, useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { createComment, type CommentState } from "@/app/(app)/post/[id]/actions";
 import { useSubmitShortcut } from "@/lib/useSubmitShortcut";
+import { submitShortcutLabel } from "@/lib/keyboard";
 
 const POINT_AT = 50;
 
@@ -12,6 +13,9 @@ export default function CommentComposer({ postId }: { postId: string }) {
   const ref = useRef<HTMLFormElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [len, setLen] = useState(0);
+  const [shortcutLabel, setShortcutLabel] = useState("");
+
+  useEffect(() => setShortcutLabel(submitShortcutLabel()), []);
 
   useEffect(() => {
     if (state.ok) {
@@ -38,7 +42,9 @@ export default function CommentComposer({ postId }: { postId: string }) {
         rows={3}
         required
         onChange={(e) => setLen(e.target.value.trim().length)}
-        placeholder="Add a comment… (⌘/Ctrl + Enter to post)"
+        placeholder={
+          shortcutLabel ? `Add a comment… (${shortcutLabel} to post)` : "Add a comment…"
+        }
         className="w-full resize-y bg-transparent text-[15px] leading-relaxed text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
       />
 

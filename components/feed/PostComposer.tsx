@@ -4,6 +4,7 @@ import { useActionState, useEffect, useRef, useState, useTransition } from "reac
 import { createPost, composerNudge, type ComposerState } from "@/app/(app)/feed/actions";
 import { createClient } from "@/lib/supabase/client";
 import { useSubmitShortcut } from "@/lib/useSubmitShortcut";
+import { submitShortcutLabel } from "@/lib/keyboard";
 
 // 150 chars earns a heatmap point — it does NOT gate posting.
 const POINT_AT = 150;
@@ -25,6 +26,7 @@ export default function PostComposer() {
   const [uploading, setUploading] = useState(false);
   const [supabase] = useState(createClient);
   const [hint, setHint] = useState<string | null>(null);
+  const [shortcutLabel, setShortcutLabel] = useState("");
   const [nudging, startNudge] = useTransition();
   const [, startSubmit] = useTransition();
 
@@ -46,6 +48,8 @@ export default function PostComposer() {
 
   // Revoke object URLs on unmount only.
   useEffect(() => () => filesRef.current.forEach((f) => URL.revokeObjectURL(f.url)), []);
+
+  useEffect(() => setShortcutLabel(submitShortcutLabel()), []);
 
   const qualifies = len >= POINT_AT;
 
@@ -155,7 +159,11 @@ export default function PostComposer() {
         rows={4}
         required
         onChange={(e) => setLen(e.target.value.trim().length)}
-        placeholder="Share what you're building, learning, or figuring out… (⌘/Ctrl + Enter to post)"
+        placeholder={
+          shortcutLabel
+            ? `Share what you're building, learning, or figuring out… (${shortcutLabel} to post)`
+            : "Share what you're building, learning, or figuring out…"
+        }
         className="w-full resize-y bg-transparent text-[16px] leading-[1.55] text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
       />
 

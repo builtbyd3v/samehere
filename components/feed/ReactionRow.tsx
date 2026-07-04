@@ -28,14 +28,16 @@ type Props = {
 export const action =
   "inline-flex min-h-9 items-center gap-1.5 rounded-full px-2.5 text-[13px] font-medium transition hover:bg-[var(--featured-surface)] disabled:opacity-40";
 
+const inactive = "text-[var(--ink-muted)] hover:bg-[var(--featured-surface)] hover:text-[var(--ink)]";
+
 export const likeColor = (on: boolean) =>
-  on ? "bg-[var(--featured-surface)] text-[#f4245e]" : "text-[#f4245e]/60 hover:text-[#f4245e]";
+  on ? "bg-[var(--featured-surface)] text-[#f4245e]" : inactive;
 export const sameColor = (on: boolean) =>
-  on ? "bg-[var(--featured-surface)] text-[var(--blue)]" : "text-[var(--blue)]/60 hover:text-[var(--blue)]";
+  on ? "bg-[var(--featured-surface)] text-[var(--blue)]" : inactive;
 export const repostColor = (on: boolean) =>
-  on ? "bg-[var(--featured-surface)] text-[#00ba7c]" : "text-[#00ba7c]/60 hover:text-[#00ba7c]";
+  on ? "bg-[var(--featured-surface)] text-[#00ba7c]" : inactive;
 export const bookmarkColor = (on: boolean) =>
-  on ? "bg-[var(--featured-surface)] text-[var(--blue)]" : "text-[var(--ink-muted)] hover:text-[var(--blue)]";
+  on ? "bg-[var(--featured-surface)] text-[var(--blue)]" : inactive;
 export const commentColor = "text-[var(--ink-muted)] hover:text-[var(--ink)]";
 
 function ActionButton({
