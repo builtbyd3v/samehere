@@ -10,10 +10,12 @@ export default function Menu({
   trigger,
   children,
   align = "end",
+  variant = "default",
 }: {
   trigger: React.ReactNode;
   children: React.ReactNode;
   align?: "start" | "end";
+  variant?: "default" | "avatar";
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -41,7 +43,11 @@ export default function Menu({
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="grid h-7 w-7 place-items-center rounded-full text-[var(--ink-muted)] transition hover:bg-[var(--surface)] hover:text-[var(--ink)]"
+        className={
+          variant === "avatar"
+            ? "h-8 w-8 shrink-0 overflow-hidden rounded-full border border-[var(--border)] transition hover:opacity-90"
+            : "grid h-7 w-7 place-items-center rounded-full text-[var(--ink-muted)] transition hover:bg-[var(--surface)] hover:text-[var(--ink)]"
+        }
       >
         {trigger}
       </button>
