@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { createPost, composerNudge, type ComposerState } from "@/app/(app)/feed/actions";
 import { createClient } from "@/lib/supabase/client";
+import { useSubmitShortcut } from "@/lib/useSubmitShortcut";
 
 // 150 chars earns a heatmap point — it does NOT gate posting.
 const POINT_AT = 150;
@@ -135,6 +136,8 @@ export default function PostComposer() {
     });
   }
 
+  useSubmitShortcut(textareaRef, () => ref.current?.requestSubmit(), !pending && !uploading && len > 0);
+
   return (
     <form ref={ref} onSubmit={onSubmit} className="rounded-xl border border-[var(--border)] bg-[var(--surface-card)] p-4 sm:p-5">
       {hint && (
@@ -152,7 +155,7 @@ export default function PostComposer() {
         rows={4}
         required
         onChange={(e) => setLen(e.target.value.trim().length)}
-        placeholder="Share what you're building, learning, or figuring out…"
+        placeholder="Share what you're building, learning, or figuring out… (⌘/Ctrl + Enter to post)"
         className="w-full resize-y bg-transparent text-[16px] leading-[1.55] text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
       />
 

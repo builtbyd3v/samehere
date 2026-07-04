@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -24,6 +25,42 @@ function Stat({ value, label }: { value: number; label: string }) {
       <span className="text-[var(--ink-muted)]">{label}</span>
     </span>
   );
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ username: string }>;
+}): Promise<Metadata> {
+  const { username } = await params;
+  const supabase = await createClient();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("display_name, bio, avatar_url")
+    .eq("username", username)
+    .maybeSingle();
+
+  if (!profile) return { title: "Profile not found" };
+
+  const name = profile.display_name ?? username;
+  const description = profile.bio?.slice(0, 160) ?? `${name} (@${username}) on samehere`;
+
+  return {
+    title: `${name} (@${username})`,
+    description,
+    openGraph: {
+      title: `${name} on samehere`,
+      description,
+      type: "profile",
+      ...(profile.avatar_url ? { images: [{ url: profile.avatar_url, alt: name }] } : {}),
+    },
+    twitter: {
+      card: "summary",
+      title: `${name} on samehere`,
+      description,
+      ...(profile.avatar_url ? { images: [profile.avatar_url] } : {}),
+    },
+  };
 }
 
 export default async function ProfilePage({
