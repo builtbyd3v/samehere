@@ -8,6 +8,7 @@ import PostMediaGrid from "@/components/feed/PostMediaGrid";
 import PostMenu from "@/components/feed/PostMenu";
 import DeleteCommentButton from "@/components/feed/DeleteCommentButton";
 import UserBadges from "@/components/profile/UserBadges";
+import AvatarImage from "@/components/ui/AvatarImage";
 import { attachSignedMedia } from "@/lib/media";
 
 type Comment = {
@@ -57,24 +58,25 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
       <article className="mt-5">
         <div className="flex items-center gap-3">
           {a?.avatar_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={a.avatar_url} alt="" className="h-11 w-11 shrink-0 rounded-full border border-[var(--border)] object-cover" />
+            <AvatarImage src={a.avatar_url} alt="" className="h-11 w-11 shrink-0 rounded-full border border-[var(--border)] object-cover" />
           ) : (
             <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--surface)] font-semibold text-[var(--ink-muted)]">
               {name.charAt(0).toUpperCase()}
             </div>
           )}
-          <div className="min-w-0">
-            {a ? (
-              <Link href={`/profile/${a.username}`} className="font-medium hover:underline">
-                {name}
-              </Link>
-            ) : (
-              <span className="font-medium">{name}</span>
-            )}
-            {a && <UserBadges isPro={a.is_pro} isFounder={a.is_founder} />}
-            {a && <span className="ml-1.5 text-sm text-[var(--ink-muted)]">@{a.username}</span>}
-            <p className="text-sm text-[var(--ink-muted)]">{school ? `${school} · ` : ""}{when}</p>
+          <div className="min-w-0 text-sm">
+            <div className="flex flex-wrap items-center gap-x-1.5">
+              {a ? (
+                <Link href={`/profile/${a.username}`} className="font-medium hover:underline">
+                  {name}
+                </Link>
+              ) : (
+                <span className="font-medium">{name}</span>
+              )}
+              {a && <UserBadges isPro={a.is_pro} isFounder={a.is_founder} />}
+              {a && <span className="text-[var(--ink-muted)]">@{a.username}</span>}
+            </div>
+            <p className="text-[var(--ink-muted)]">{school ? `${school} · ` : ""}{when}</p>
           </div>
           {a && (
             <div className="ml-auto">
@@ -117,22 +119,21 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
             return (
               <div key={c.id} className="flex gap-3">
                 {c.author?.avatar_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={c.author.avatar_url} alt="" className="h-8 w-8 shrink-0 rounded-full border border-[var(--border)] object-cover" />
+                  <AvatarImage src={c.author.avatar_url} alt="" className="h-8 w-8 shrink-0 rounded-full border border-[var(--border)] object-cover" />
                 ) : (
                   <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-xs font-semibold text-[var(--ink-muted)]">
                     {cname.charAt(0).toUpperCase()}
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center text-sm">
+                  <div className="flex flex-wrap items-center gap-x-1.5 text-sm">
                     {c.author ? (
                       <Link href={`/profile/${c.author.username}`} className="font-medium hover:underline">{cname}</Link>
                     ) : (
                       <span className="font-medium">{cname}</span>
                     )}
                     {c.author && <UserBadges isPro={c.author.is_pro} isFounder={c.author.is_founder} />}
-                    {c.author && <span className="ml-1.5 text-[var(--ink-muted)]">@{c.author.username}</span>}
+                    {c.author && <span className="text-[var(--ink-muted)]">@{c.author.username}</span>}
                     <div className="ml-auto">
                       <DeleteCommentButton commentId={c.id} canDelete={viewerId === c.user_id} />
                     </div>

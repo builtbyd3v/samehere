@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import UserBadges from "./UserBadges";
+import AvatarImage from "@/components/ui/AvatarImage";
 
 export type FollowRequest = {
   follower_id: string;
@@ -27,29 +28,37 @@ export default function FollowRequests({ requests }: { requests: FollowRequest[]
   if (list.length === 0) return null;
 
   return (
-    <section className="mb-8">
-      <h2 className="mb-3 text-sm font-medium">Follow requests</h2>
-      <div className="space-y-2">
+    <section className="rounded-xl border border-[var(--border)] bg-[var(--surface-card)] p-4 sm:p-5">
+      <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">Follow requests</h2>
+      <div className="flex flex-col gap-2">
         {list.map((r) => {
           const name = r.requester?.display_name ?? r.requester?.username ?? "Unknown";
           return (
-            <div key={r.follower_id} className="flex items-center gap-3 rounded-lg border border-[var(--border)] p-3">
+            <div
+              key={r.follower_id}
+              className="flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3"
+            >
               {r.requester?.avatar_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={r.requester.avatar_url} alt="" className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover" />
+                <AvatarImage
+                  src={r.requester.avatar_url}
+                  alt=""
+                  className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover"
+                />
               ) : (
                 <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-sm font-semibold text-[var(--ink-muted)]">
                   {name.charAt(0).toUpperCase()}
                 </div>
               )}
               <div className="min-w-0 flex-1 text-sm">
-                {r.requester ? (
-                  <Link href={`/profile/${r.requester.username}`} className="font-medium hover:underline">{name}</Link>
-                ) : (
-                  <span className="font-medium">{name}</span>
-                )}
-                {r.requester && <UserBadges isPro={r.requester.is_pro} isFounder={r.requester.is_founder} />}
-                {r.requester && <span className="ml-1.5 text-[var(--ink-muted)]">@{r.requester.username}</span>}
+                <div className="flex flex-wrap items-center gap-x-1.5">
+                  {r.requester ? (
+                    <Link href={`/profile/${r.requester.username}`} className="font-medium hover:underline">{name}</Link>
+                  ) : (
+                    <span className="font-medium">{name}</span>
+                  )}
+                  {r.requester && <UserBadges isPro={r.requester.is_pro} isFounder={r.requester.is_founder} />}
+                  {r.requester && <span className="text-[var(--ink-muted)]">@{r.requester.username}</span>}
+                </div>
               </div>
               <button type="button" onClick={() => act(r.follower_id, true)} disabled={busy === r.follower_id}
                 className="btn-inset rounded-md bg-[var(--ink)] px-3 py-1.5 text-sm font-medium text-[var(--canvas)] transition active:opacity-80 disabled:opacity-50">
