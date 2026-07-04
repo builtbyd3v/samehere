@@ -6,8 +6,13 @@
   color-scheme: light dark;
   --canvas: #f7f4ed;
   --surface: #f7f4ed;
-  --border: #eceae4;
-  --border-strong: rgba(28, 28, 28, 0.4);
+  --surface-raised: #fcfbf8;
+  /* Posts: clean white on cream canvas (light). Cards: warm lift for identity/composer. */
+  --surface-post: #ffffff;
+  --surface-card: #f0ece4;
+  /* Opacity-based on charcoal — reads clearer on cream than #eceae4 alone */
+  --border: rgba(28, 28, 28, 0.14);
+  --border-strong: rgba(28, 28, 28, 0.32);
   --ink: #1c1c1c;
   --ink-muted: #5f5f5d;
   --ink-faint: rgba(28, 28, 28, 0.45);
@@ -23,6 +28,9 @@
   :root {
     --canvas: #141310;
     --surface: #1c1a16;
+    --surface-raised: #232018;
+    --surface-post: #26231f;
+    --surface-card: #1c1a16;
     --border: rgba(247, 244, 237, 0.10);
     --border-strong: rgba(247, 244, 237, 0.28);
     --ink: #f2efe6;
