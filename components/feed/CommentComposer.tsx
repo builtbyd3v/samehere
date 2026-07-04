@@ -1,14 +1,16 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { createComment, type CommentState } from "@/app/(app)/post/[id]/actions";
+import { useSubmitShortcut } from "@/lib/useSubmitShortcut";
 
-// 50 chars earns a heatmap point — it does NOT gate commenting.
 const POINT_AT = 50;
 
 export default function CommentComposer({ postId }: { postId: string }) {
   const [state, formAction, pending] = useActionState<CommentState, FormData>(createComment, {});
+  const [, startSubmit] = useTransition();
   const ref = useRef<HTMLFormElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [len, setLen] = useState(0);
 
   useEffect(() => {
@@ -18,17 +20,25 @@ export default function CommentComposer({ postId }: { postId: string }) {
     }
   }, [state.ok]);
 
+  const submit = useCallback(() => {
+    if (!ref.current || pending || len === 0) return;
+    startSubmit(() => formAction(new FormData(ref.current!)));
+  }, [formAction, pending, len]);
+
+  useSubmitShortcut(textareaRef, submit, !pending && len > 0);
+
   const qualifies = len >= POINT_AT;
 
   return (
-    <form ref={ref} action={formAction} className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
+    <form ref={ref} action={formAction} className="rounded-xl border border-[var(--border)] bg-[var(--canvas)] p-4">
       <input type="hidden" name="post_id" value={postId} />
       <textarea
+        ref={textareaRef}
         name="content"
         rows={3}
         required
         onChange={(e) => setLen(e.target.value.trim().length)}
-        placeholder="Add a comment…"
+        placeholder="Add a comment… (⌘/Ctrl + Enter to post)"
         className="w-full resize-y bg-transparent text-[15px] leading-relaxed text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
       />
 

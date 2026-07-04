@@ -1,14 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { POST_SELECT, type FeedPost } from "@/components/feed/PostCard";
-import ReactionRow from "@/components/feed/ReactionRow";
+import PostCard, { POST_SELECT, type FeedPost } from "@/components/feed/PostCard";
 import CommentComposer from "@/components/feed/CommentComposer";
-import PostMediaGrid from "@/components/feed/PostMediaGrid";
-import PostMenu from "@/components/feed/PostMenu";
 import DeleteCommentButton from "@/components/feed/DeleteCommentButton";
 import UserBadges from "@/components/profile/UserBadges";
 import AvatarImage from "@/components/ui/AvatarImage";
+import MentionText from "@/components/ui/MentionText";
 import { attachSignedMedia } from "@/lib/media";
 
 type Comment = {
@@ -25,9 +23,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
 
   const [{ data: { user } }, { data }, { data: comments }] = await Promise.all([
     supabase.auth.getUser(),
-    // RLS returns the row only if the viewer may see it; anything else -> 404.
     supabase.from("posts").select(POST_SELECT).eq("id", id).maybeSingle(),
-    // Comments RLS mirrors post visibility, so this is empty if the post is hidden.
     supabase
       .from("comments")
       .select("id, content, created_at, user_id, author:profiles!comments_user_id_fkey(username, display_name, avatar_url, is_pro, is_founder)")
@@ -40,74 +36,19 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
   const [post] = await attachSignedMedia(supabase, [raw]);
 
   const viewerId = user?.id ?? null;
-  const r = post.reactions ?? [];
-  const a = post.author;
-  const name = a?.display_name ?? a?.username ?? "Unknown";
-  const school = a?.profile_school?.school ?? null;
-  const when = new Date(post.created_at).toLocaleString(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
 
   return (
-    <main className="mx-auto max-w-2xl px-5 py-8">
+    <main className="mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8">
       <Link href="/feed" className="text-sm text-[var(--ink-muted)] hover:underline">
         ← Feed
       </Link>
 
-      <article className="mt-5">
-        <div className="flex items-center gap-3">
-          {a?.avatar_url ? (
-            <AvatarImage src={a.avatar_url} alt="" className="h-11 w-11 shrink-0 rounded-full border border-[var(--border)] object-cover" />
-          ) : (
-            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--surface)] font-semibold text-[var(--ink-muted)]">
-              {name.charAt(0).toUpperCase()}
-            </div>
-          )}
-          <div className="min-w-0 text-sm">
-            <div className="flex flex-wrap items-center gap-x-1.5">
-              {a ? (
-                <Link href={`/profile/${a.username}`} className="font-medium hover:underline">
-                  {name}
-                </Link>
-              ) : (
-                <span className="font-medium">{name}</span>
-              )}
-              {a && <UserBadges isPro={a.is_pro} isFounder={a.is_founder} />}
-              {a && <span className="text-[var(--ink-muted)]">@{a.username}</span>}
-            </div>
-            <p className="text-[var(--ink-muted)]">{school ? `${school} · ` : ""}{when}</p>
-          </div>
-          {a && (
-            <div className="ml-auto">
-              <PostMenu postId={post.id} authorId={post.user_id} authorUsername={a.username} viewerId={viewerId} />
-            </div>
-          )}
-        </div>
+      <div className="mt-4">
+        <PostCard post={post} viewerId={viewerId} variant="detail" />
+      </div>
 
-        <p className="mt-5 whitespace-pre-line break-words text-[17px] leading-relaxed text-[var(--ink)]">
-          {post.content}
-        </p>
-
-        {post.media?.length ? <PostMediaGrid media={post.media} /> : null}
-
-        <ReactionRow
-          postId={post.id}
-          viewerId={viewerId}
-          authorPrivate={!!a?.is_private}
-          like={r.filter((x) => x.type === "like").length}
-          samehere={r.filter((x) => x.type === "samehere").length}
-          repost={post.reposts?.length ?? 0}
-          commentCount={comments?.length ?? 0}
-          mineLike={!!viewerId && r.some((x) => x.type === "like" && x.user_id === viewerId)}
-          mineSamehere={!!viewerId && r.some((x) => x.type === "samehere" && x.user_id === viewerId)}
-          mineRepost={!!viewerId && (post.reposts ?? []).some((x) => x.user_id === viewerId)}
-          mineBookmark={(post.bookmarks ?? []).length > 0}
-        />
-      </article>
-
-      <section className="mt-8 border-t border-[var(--border)] pt-6">
-        <h2 className="mb-4 text-sm font-medium">
+      <section className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--surface-card)] p-4 sm:p-5">
+        <h2 className="mb-4 text-sm font-semibold text-[var(--ink)]">
           {comments && comments.length > 0 ? `${comments.length} comments` : "Comments"}
         </h2>
 
@@ -121,14 +62,16 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                 {c.author?.avatar_url ? (
                   <AvatarImage src={c.author.avatar_url} alt="" className="h-8 w-8 shrink-0 rounded-full border border-[var(--border)] object-cover" />
                 ) : (
-                  <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-xs font-semibold text-[var(--ink-muted)]">
+                  <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-xs font-semibold text-[var(--ink-muted)]">
                     {cname.charAt(0).toUpperCase()}
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-x-1.5 text-sm">
                     {c.author ? (
-                      <Link href={`/profile/${c.author.username}`} className="font-medium hover:underline">{cname}</Link>
+                      <Link href={`/profile/${c.author.username}`} className="font-medium hover:underline">
+                        {cname}
+                      </Link>
                     ) : (
                       <span className="font-medium">{cname}</span>
                     )}
@@ -138,7 +81,9 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                       <DeleteCommentButton commentId={c.id} canDelete={viewerId === c.user_id} />
                     </div>
                   </div>
-                  <p className="mt-0.5 whitespace-pre-line break-words text-[15px] leading-relaxed">{c.content}</p>
+                  <p className="mt-0.5 whitespace-pre-line break-words text-[15px] leading-[1.55]">
+                    <MentionText>{c.content}</MentionText>
+                  </p>
                 </div>
               </div>
             );
