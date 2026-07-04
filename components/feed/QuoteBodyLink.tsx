@@ -2,13 +2,13 @@
 
 import { useRouter } from "next/navigation";
 
-/** Opens the post on click, but leaves nested <a> (e.g. @mentions) alone. */
-export default function PostBodyLink({
-  postId,
+/** Opens the quote repost on click, but leaves nested <a> (e.g. @mentions) alone. */
+export default function QuoteBodyLink({
+  quoteId,
   children,
-  className = "mt-3 block cursor-pointer hover:opacity-95",
+  className = "mt-2 block cursor-pointer hover:opacity-95",
 }: {
-  postId: string;
+  quoteId: string;
   children: React.ReactNode;
   className?: string;
 }) {
@@ -20,13 +20,13 @@ export default function PostBodyLink({
       tabIndex={0}
       onClick={(e) => {
         if ((e.target as HTMLElement).closest("a")) return;
-        router.push(`/post/${postId}`);
+        router.push(`/quote/${quoteId}`);
       }}
       onKeyDown={(e) => {
         if (e.key !== "Enter" && e.key !== " ") return;
         if ((e.target as HTMLElement).closest("a")) return;
         e.preventDefault();
-        router.push(`/post/${postId}`);
+        router.push(`/quote/${quoteId}`);
       }}
       className={className}
     >

@@ -78,7 +78,7 @@ function Avatar({
 
 function PostBody({ content, linked, postId }: { content: string; linked: boolean; postId: string }) {
   const inner = (
-    <span className="max-w-[65ch] whitespace-pre-line break-words text-[16px] leading-[1.55] text-[var(--ink)]">
+    <span className={`max-w-[65ch] whitespace-pre-line break-words text-[16px] leading-[1.55] text-[var(--ink)] ${linked ? "" : "block"}`}>
       <MentionText>{content}</MentionText>
     </span>
   );
@@ -92,10 +92,12 @@ export default function PostCard({
   post,
   viewerId,
   variant = "feed",
+  embeddedLinked = false,
 }: {
   post: FeedPost;
   viewerId: string | null;
   variant?: "feed" | "profile" | "detail" | "embedded";
+  embeddedLinked?: boolean;
 }) {
   const a = post.author;
   const name = a?.display_name ?? a?.username ?? "Unknown";
@@ -109,7 +111,7 @@ export default function PostCard({
     ? "rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3"
     : "rounded-xl border border-[var(--border)] bg-[var(--surface-post)] p-4 sm:p-5";
 
-  return (
+  const body = (
     <article className={shell}>
       <div className={`flex gap-3 ${embedded ? "" : "sm:gap-4"}`}>
         {a ? <Avatar author={a} name={name} size={embedded ? "sm" : "md"} /> : null}
@@ -185,4 +187,14 @@ export default function PostCard({
       )}
     </article>
   );
+
+  if (embedded && embeddedLinked) {
+    return (
+      <PostBodyLink postId={post.id} className="block cursor-pointer hover:opacity-95">
+        {body}
+      </PostBodyLink>
+    );
+  }
+
+  return body;
 }

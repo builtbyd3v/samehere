@@ -6,8 +6,11 @@ import type { FollowState } from "@/components/profile/FollowButton";
 import ProfileActions from "@/components/profile/ProfileActions";
 import BlockButton from "@/components/profile/BlockButton";
 import PostCard, { POST_SELECT, type FeedPost } from "@/components/feed/PostCard";
+import FeedTimeline from "@/components/feed/FeedTimeline";
 import ContributionHeatmap, { type HeatmapDay } from "@/components/profile/ContributionHeatmap";
 import { attachSignedMedia } from "@/lib/media";
+import { fetchQuotedReposts } from "@/lib/feed-quotes";
+import { mergeFeedTimeline } from "@/lib/feed-timeline";
 import UserBadges from "@/components/profile/UserBadges";
 import AvatarImage from "@/components/ui/AvatarImage";
 
@@ -86,7 +89,7 @@ export default async function ProfilePage({
   const isOwner = user?.id === profile.id;
   const displayName = profile.display_name ?? profile.username;
 
-  const [schoolRes, countRes, relRes, postsRes, heatRes, blockedIdsRes, myBlockRes] = await Promise.all([
+  const [schoolRes, countRes, relRes, postsRes, quotesRes, heatRes, blockedIdsRes, myBlockRes] = await Promise.all([
     supabase.from("profile_school").select("school").eq("profile_id", profile.id).maybeSingle(),
     supabase.rpc("get_profile_counts", { p_profile_id: profile.id }),
     user && !isOwner
@@ -104,6 +107,7 @@ export default async function ProfilePage({
       .order("created_at", { ascending: false })
       .limit(20)
       .returns<FeedPost[]>(),
+    fetchQuotedReposts(supabase, { userIds: [profile.id], limit: 20 }),
     supabase.rpc("get_heatmap", { p_profile_id: profile.id }),
     user && !isOwner ? supabase.rpc("get_blocked_ids") : Promise.resolve({ data: [] as string[] }),
     user && !isOwner
@@ -124,6 +128,7 @@ export default async function ProfilePage({
     relRes.data?.status === "accepted" ? "following" : relRes.data?.status === "pending" ? "pending" : "none";
 
   const contentHidden = (profile.is_private && !isOwner && !isAcceptedFollower) || isBlocked;
+  const timeline = contentHidden ? [] : mergeFeedTimeline(posts, quotesRes).slice(0, 20);
   const canSeeHeatmap = isOwner || isAcceptedFollower || profile.heatmap_visibility === "public";
 
   const metaParts = [
@@ -252,7 +257,7 @@ export default async function ProfilePage({
               Follow @{profile.username} to see their posts.
             </p>
           </div>
-        ) : posts.length === 0 ? (
+        ) : timeline.length === 0 ? (
           <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-card)] px-6 py-12 text-center">
             <p className="text-sm text-[var(--ink-muted)]">
               {isOwner ? "You have not posted yet." : `@${profile.username} has not posted yet.`}
@@ -260,9 +265,7 @@ export default async function ProfilePage({
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            {posts.map((post) => (
-              <PostCard key={post.id} post={post} viewerId={viewerId} />
-            ))}
+            <FeedTimeline items={timeline} viewerId={viewerId} />
           </div>
         )}
       </section>

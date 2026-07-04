@@ -1,15 +1,21 @@
 "use client";
 
+import Link from "next/link";
 import AvatarImage from "@/components/ui/AvatarImage";
 import MentionText from "@/components/ui/MentionText";
-import PostCard, { type FeedPost } from "@/components/feed/PostCard";
+import PostCard from "@/components/feed/PostCard";
 import ProfileHoverLink from "@/components/profile/ProfileHoverLink";
 import UserBadges from "@/components/profile/UserBadges";
+import ReactionRow from "@/components/feed/ReactionRow";
+import QuoteBodyLink from "@/components/feed/QuoteBodyLink";
+import QuoteMenu from "@/components/feed/QuoteMenu";
+import type { FeedPost } from "@/components/feed/PostCard";
 
 export type QuotedRepost = {
   id: string;
   quote_text: string;
   created_at: string;
+  reposter_id: string;
   reposter: {
     username: string;
     display_name: string | null;
@@ -18,17 +24,39 @@ export type QuotedRepost = {
     is_founder: boolean;
   };
   original: FeedPost;
+  reactions: { user_id: string; type: string }[];
+  bookmarks: { user_id: string }[];
+  comments: { count: number }[];
 };
+
+function timeAgo(iso: string): string {
+  const s = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `${d}d`;
+  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
 
 export default function QuotedRepostCard({
   item,
   viewerId,
+  variant = "feed",
 }: {
   item: QuotedRepost;
   viewerId: string | null;
+  variant?: "feed" | "detail";
 }) {
   const r = item.reposter;
   const name = r.display_name ?? r.username;
+  const detail = variant === "detail";
+  const linked = !detail;
+  const reactions = item.reactions ?? [];
+  const original = item.original;
+  const authorPrivate = !!original.author?.is_private;
 
   return (
     <article className="rounded-xl border border-[var(--border)] bg-[var(--surface-post)] p-4 sm:p-5">
@@ -43,20 +71,68 @@ export default function QuotedRepostCard({
           )}
         </ProfileHoverLink>
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-1.5">
-            <ProfileHoverLink href={`/profile/${r.username}`} username={r.username} className="font-semibold hover:underline">
-              {name}
-            </ProfileHoverLink>
-            <UserBadges isPro={r.is_pro} isFounder={r.is_founder} />
-            <span className="text-[13px] text-[var(--ink-muted)]">@{r.username}</span>
-            <span className="text-[13px] text-[var(--ink-faint)]">· reposted</span>
+          <div className="flex items-start gap-2">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-x-1.5">
+                <ProfileHoverLink href={`/profile/${r.username}`} username={r.username} className="font-semibold hover:underline">
+                  {name}
+                </ProfileHoverLink>
+                <UserBadges isPro={r.is_pro} isFounder={r.is_founder} />
+                <span className="text-[13px] text-[var(--ink-muted)]">@{r.username}</span>
+                <span className="text-[13px] text-[var(--ink-faint)]">·</span>
+                {linked ? (
+                  <Link href={`/quote/${item.id}`} className="text-[13px] text-[var(--ink-faint)] hover:text-[var(--ink)] hover:underline">
+                    {timeAgo(item.created_at)}
+                  </Link>
+                ) : (
+                  <time dateTime={item.created_at} className="text-[13px] text-[var(--ink-faint)]">
+                    {timeAgo(item.created_at)}
+                  </time>
+                )}
+              </div>
+            </div>
+            <QuoteMenu
+              quoteId={item.id}
+              quoteText={item.quote_text}
+              reposterId={item.reposter_id}
+              reposterUsername={r.username}
+              originalPostId={original.id}
+              viewerId={viewerId}
+            />
           </div>
-          <p className="mt-2 max-w-[65ch] whitespace-pre-line break-words text-[16px] leading-[1.55]">
-            <MentionText>{item.quote_text}</MentionText>
-          </p>
+
+          {linked ? (
+            <QuoteBodyLink quoteId={item.id}>
+              <p className="max-w-[65ch] whitespace-pre-line break-words text-[16px] leading-[1.55]">
+                <MentionText>{item.quote_text}</MentionText>
+              </p>
+            </QuoteBodyLink>
+          ) : (
+            <p className="mt-2 max-w-[65ch] whitespace-pre-line break-words text-[16px] leading-[1.55]">
+              <MentionText>{item.quote_text}</MentionText>
+            </p>
+          )}
+
           <div className="mt-3">
-            <PostCard post={item.original} viewerId={viewerId} variant="embedded" />
+            <PostCard post={original} viewerId={viewerId} variant="embedded" embeddedLinked />
           </div>
+
+          <ReactionRow
+            quoteId={item.id}
+            postId={original.id}
+            post={original}
+            viewerId={viewerId}
+            authorPrivate={authorPrivate}
+            like={reactions.filter((x) => x.type === "like").length}
+            samehere={reactions.filter((x) => x.type === "samehere").length}
+            repost={original.reposts?.length ?? 0}
+            commentCount={item.comments?.[0]?.count ?? 0}
+            mineLike={!!viewerId && reactions.some((x) => x.type === "like" && x.user_id === viewerId)}
+            mineSamehere={!!viewerId && reactions.some((x) => x.type === "samehere" && x.user_id === viewerId)}
+            mineRepost={!!viewerId && (original.reposts ?? []).some((x) => x.user_id === viewerId)}
+            mineBookmark={!!viewerId && (item.bookmarks ?? []).some((x) => x.user_id === viewerId)}
+            hideComments={detail}
+          />
         </div>
       </div>
     </article>

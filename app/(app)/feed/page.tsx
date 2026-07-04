@@ -14,8 +14,9 @@ import FeedTabs from "@/components/feed/FeedTabs";
 import AvatarImage from "@/components/ui/AvatarImage";
 import EmptyState from "@/components/ui/EmptyState";
 import OnboardingChecklist from "@/components/feed/OnboardingChecklist";
-import QuotedRepostCard, { type QuotedRepost } from "@/components/feed/QuotedRepostCard";
+import FeedTimeline from "@/components/feed/FeedTimeline";
 import { mergeFeedTimeline } from "@/lib/feed-timeline";
+import { fetchQuotedReposts } from "@/lib/feed-quotes";
 import { FeedSearchForm, FeedSearchResults } from "@/components/feed/FeedSearch";
 
 // Twitter-style feed: Latest (global recency) and Following (followed users'
@@ -82,7 +83,6 @@ export default async function FeedPage({
 // ponytail: Latest = global recency; becomes a personalized "For You" once Phase 12 AI ranking lands.
 async function LatestTab({ viewerId }: { viewerId: string | null }) {
   const supabase = await createClient();
-  // ponytail: app-side filter post-fetch, not RLS on posts.
   const [{ data }, { data: blockedIds }] = await Promise.all([
     supabase
       .from("posts")
@@ -94,11 +94,15 @@ async function LatestTab({ viewerId }: { viewerId: string | null }) {
   ]);
   const blocked = new Set(blockedIds ?? []);
   const filtered = data?.filter((p) => !blocked.has(p.user_id));
-  const posts = filtered ? await attachSignedMedia(supabase, filtered) : null;
+  const [posts, quotes] = await Promise.all([
+    filtered ? attachSignedMedia(supabase, filtered) : Promise.resolve(null),
+    fetchQuotedReposts(supabase, { limit: PAGE, blockedIds: blocked }),
+  ]);
+  const timeline = posts ? mergeFeedTimeline(posts, quotes).slice(0, PAGE) : [];
 
   return (
     <section className="flex flex-col gap-3">
-      {!posts || posts.length === 0 ? (
+      {timeline.length === 0 ? (
         <EmptyState
           title="Nothing here yet"
           description="Be the first to share what you are building or figuring out."
@@ -106,12 +110,10 @@ async function LatestTab({ viewerId }: { viewerId: string | null }) {
         />
       ) : (
         <>
-          {posts.map((post) => (
-            <PostCard key={post.id} post={post} viewerId={viewerId} />
-          ))}
+          <FeedTimeline items={timeline} viewerId={viewerId} />
           <FeedLoadMore
-            cursor={posts[posts.length - 1].created_at}
-            hasMore={posts.length === PAGE}
+            cursor={timeline[timeline.length - 1].created_at}
+            hasMore={timeline.length === PAGE}
             viewerId={viewerId}
           />
         </>
@@ -151,7 +153,9 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
 
   // ponytail: Following feed is first-page only; add cursor load-more if it grows.
   // ponytail: followed users' own posts only; reposts-in-feed deferred.
-  const [{ data: followFeed }, { data: quoteRows }, { data: suggestedPool }] = await Promise.all([
+  const quoteAuthorIds = [userId, ...acceptedIds].filter((id): id is string => !!id);
+
+  const [{ data: followFeed }, quotes, { data: suggestedPool }] = await Promise.all([
     acceptedIds.length
       ? supabase
           .from("posts")
@@ -161,17 +165,11 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
           .limit(PAGE)
           .returns<FeedPost[]>()
       : Promise.resolve({ data: [] as FeedPost[] }),
-    acceptedIds.length
-      ? supabase
-          .from("reposts")
-          .select(
-            `id, quote_text, created_at, user_id, reposter:profiles!reposts_user_id_fkey(username, display_name, avatar_url, is_pro, is_founder), post:posts(${POST_SELECT})`,
-          )
-          .in("user_id", acceptedIds)
-          .not("quote_text", "is", null)
-          .order("created_at", { ascending: false })
-          .limit(PAGE)
-      : Promise.resolve({ data: [] as { id: string; quote_text: string; created_at: string; reposter: QuotedRepost["reposter"]; post: FeedPost | null }[] }),
+    fetchQuotedReposts(supabase, {
+      userIds: quoteAuthorIds,
+      limit: PAGE,
+      blockedIds: blocked,
+    }),
     supabase
       .from("profiles")
       .select("id, username, display_name, avatar_url, created_at, year, major, skills, goals, bio, is_pro, is_founder, profile_school(school)")
@@ -180,24 +178,7 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
       .limit(30),
   ]);
   const feedPosts = followFeed ? await attachSignedMedia(supabase, followFeed) : null;
-
-  const quotePosts = (quoteRows ?? [])
-    .filter((r): r is typeof r & { post: FeedPost; quote_text: string; reposter: QuotedRepost["reposter"] } => !!r.post && !!r.quote_text && !!r.reposter)
-    .map((r) => r.post);
-  const quotesWithMedia = quotePosts.length ? await attachSignedMedia(supabase, quotePosts) : [];
-  const mediaByPostId = new Map(quotesWithMedia.map((p) => [p.id, p]));
-
-  const quotes: QuotedRepost[] = (quoteRows ?? [])
-    .filter((r) => r.post && r.quote_text && r.reposter)
-    .map((r) => ({
-      id: r.id,
-      quote_text: r.quote_text!,
-      created_at: r.created_at!,
-      reposter: r.reposter!,
-      original: mediaByPostId.get(r.post!.id) ?? (r.post as FeedPost),
-    }));
-
-  const timeline = feedPosts ? mergeFeedTimeline(feedPosts, quotes).slice(0, PAGE) : [];
+  const timeline = feedPosts || quotes.length ? mergeFeedTimeline(feedPosts ?? [], quotes).slice(0, PAGE) : [];
 
   // ponytail: rank a 30-row recency pool; widen only if suggestions feel stale.
   const viewerSignal: MatchSignal = {
@@ -287,13 +268,7 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
 
       {timeline.length > 0 ? (
         <div className="flex flex-col gap-3">
-          {timeline.map((item) =>
-            item.kind === "post" ? (
-              <PostCard key={item.post.id} post={item.post} viewerId={viewerId} />
-            ) : (
-              <QuotedRepostCard key={item.quote.id} item={item.quote} viewerId={viewerId} />
-            ),
-          )}
+          <FeedTimeline items={timeline} viewerId={viewerId} />
         </div>
       ) : (
         <EmptyState

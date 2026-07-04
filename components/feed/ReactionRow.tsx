@@ -10,6 +10,7 @@ import type { FeedPost } from "./PostCard";
 
 type Props = {
   postId: string;
+  quoteId?: string;
   post?: FeedPost;
   viewerId: string | null;
   authorPrivate: boolean;
@@ -71,8 +72,11 @@ function ActionButton({
 }
 
 export default function ReactionRow(props: Props) {
-  const { postId, post, viewerId, authorPrivate, commentCount, compact = false, hideComments = false } = props;
+  const { postId, quoteId, post, viewerId, authorPrivate, commentCount, compact = false, hideComments = false } = props;
   const [supabase] = useState(createClient);
+  const targetCol = quoteId ? ("repost_id" as const) : ("post_id" as const);
+  const targetId = quoteId ?? postId;
+  const commentsHref = quoteId ? `/quote/${quoteId}` : `/post/${postId}`;
   const [quoteOpen, setQuoteOpen] = useState(false);
   const [repostMenu, setRepostMenu] = useState(false);
   const [s, setS] = useState({
@@ -95,8 +99,12 @@ export default function ReactionRow(props: Props) {
         : { ...p, mineSamehere: !mine, samehere: p.samehere + d },
     );
     const { error } = mine
-      ? await supabase.from("reactions").delete().eq("post_id", postId).eq("user_id", viewerId).eq("type", type)
-      : await supabase.from("reactions").insert({ post_id: postId, user_id: viewerId, type });
+      ? await supabase.from("reactions").delete().eq(targetCol, targetId).eq("user_id", viewerId).eq("type", type)
+      : await supabase.from("reactions").insert(
+          quoteId
+            ? { repost_id: quoteId, user_id: viewerId, type }
+            : { post_id: postId, user_id: viewerId, type },
+        );
     if (error)
       setS((p) =>
         type === "like"
@@ -122,8 +130,12 @@ export default function ReactionRow(props: Props) {
     const mine = s.mineBookmark;
     setS((p) => ({ ...p, mineBookmark: !mine }));
     const { error } = mine
-      ? await supabase.from("bookmarks").delete().eq("post_id", postId).eq("user_id", viewerId)
-      : await supabase.from("bookmarks").insert({ post_id: postId, user_id: viewerId });
+      ? await supabase.from("bookmarks").delete().eq(targetCol, targetId).eq("user_id", viewerId)
+      : await supabase.from("bookmarks").insert(
+          quoteId
+            ? { repost_id: quoteId, user_id: viewerId }
+            : { post_id: postId, user_id: viewerId },
+        );
     if (error) setS((p) => ({ ...p, mineBookmark: mine }));
   }
 
@@ -153,7 +165,7 @@ export default function ReactionRow(props: Props) {
         </ActionButton>
 
         {!hideComments && (
-          <Link href={`/post/${postId}`} aria-label="Comments" className={`${action} font-normal ${commentColor}`}>
+          <Link href={commentsHref} aria-label="Comments" className={`${action} font-normal ${commentColor}`}>
             <IconComment />
             {commentCount > 0 && <span>{commentCount}</span>}
           </Link>

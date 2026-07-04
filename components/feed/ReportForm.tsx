@@ -8,7 +8,16 @@ const REASONS = ["Spam", "Harassment", "Hate speech", "Sexual content", "Self-ha
 
 // Report form body — insert logic lives here once so PostMenu (the only
 // caller now) doesn't duplicate it. Caller supplies its own Modal wrapper.
-export function ReportForm({ postId, viewerId }: { postId: string; viewerId: string }) {
+export function ReportForm({
+  postId,
+  viewerId,
+  context,
+}: {
+  postId: string;
+  viewerId: string;
+  /** Prepended to optional details — e.g. quote repost being reported. */
+  context?: string;
+}) {
   const [reason, setReason] = useState("");
   const [detail, setDetail] = useState("");
   const [pending, setPending] = useState(false);
@@ -24,9 +33,13 @@ export function ReportForm({ postId, viewerId }: { postId: string; viewerId: str
     setPending(true);
     setError(null);
     const supabase = createClient();
-    const { error: err } = await supabase
-      .from("reports")
-      .insert({ post_id: postId, reporter_id: viewerId, reason, detail: detail.trim().slice(0, TEXT_LIMITS.reportDetail) || null });
+    const detailParts = [context?.trim(), detail.trim()].filter(Boolean);
+    const { error: err } = await supabase.from("reports").insert({
+      post_id: postId,
+      reporter_id: viewerId,
+      reason,
+      detail: detailParts.length ? detailParts.join("\n\n").slice(0, TEXT_LIMITS.reportDetail) : null,
+    });
     setPending(false);
     if (err) {
       setError("Couldn't submit. Try again.");

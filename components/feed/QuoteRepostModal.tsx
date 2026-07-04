@@ -52,18 +52,23 @@ export default function QuoteRepostModal({
     // Unique (post_id, user_id): replace a plain repost row before inserting quote.
     await supabase.from("reposts").delete().eq("post_id", post.id).eq("user_id", viewerId);
 
-    const { error: err } = await supabase.from("reposts").insert({
-      post_id: post.id,
-      user_id: viewerId,
-      quote_text: quote,
-    });
+    const { data, error: err } = await supabase
+      .from("reposts")
+      .insert({
+        post_id: post.id,
+        user_id: viewerId,
+        quote_text: quote,
+      })
+      .select("id")
+      .single();
     setBusy(false);
-    if (err) {
-      console.error("quote repost failed:", err.message);
+    if (err || !data) {
+      console.error("quote repost failed:", err?.message);
       return setError("Could not quote-repost. Try again.");
     }
     onDone();
     onClose();
+    router.push(`/quote/${data.id}`);
     router.refresh();
   }, [text, supabase, post.id, viewerId, onDone, onClose, router]);
 

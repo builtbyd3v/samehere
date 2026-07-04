@@ -2,6 +2,7 @@
 
 import { useActionState, useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { createComment, type CommentState } from "@/app/(app)/post/[id]/actions";
+import { createQuoteComment } from "@/app/(app)/quote/[id]/actions";
 import { useSubmitShortcut } from "@/lib/useSubmitShortcut";
 import { submitShortcutLabel } from "@/lib/keyboard";
 import { TEXT_LIMITS } from "@/lib/utils/validation";
@@ -10,8 +11,9 @@ import MentionTextarea from "@/components/ui/MentionTextarea";
 const POINT_AT = 50;
 const MAX = TEXT_LIMITS.comment;
 
-export default function CommentComposer({ postId }: { postId: string }) {
-  const [state, formAction, pending] = useActionState<CommentState, FormData>(createComment, {});
+export default function CommentComposer({ postId, quoteId }: { postId?: string; quoteId?: string }) {
+  const action = quoteId ? createQuoteComment : createComment;
+  const [state, formAction, pending] = useActionState<CommentState, FormData>(action, {});
   const [, startSubmit] = useTransition();
   const ref = useRef<HTMLFormElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -40,7 +42,11 @@ export default function CommentComposer({ postId }: { postId: string }) {
 
   return (
     <form ref={ref} action={formAction} className="rounded-xl border border-[var(--border)] bg-[var(--canvas)] p-4">
-      <input type="hidden" name="post_id" value={postId} />
+      {quoteId ? (
+        <input type="hidden" name="repost_id" value={quoteId} />
+      ) : (
+        <input type="hidden" name="post_id" value={postId ?? ""} />
+      )}
       <MentionTextarea
         textareaRef={textareaRef}
         name="content"

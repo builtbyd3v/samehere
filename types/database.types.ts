@@ -253,18 +253,21 @@ export type Database = {
           created_at: string | null
           id: string
           post_id: string | null
+          repost_id: string | null
           user_id: string | null
         }
         Insert: {
           created_at?: string | null
           id?: string
           post_id?: string | null
+          repost_id?: string | null
           user_id?: string | null
         }
         Update: {
           created_at?: string | null
           id?: string
           post_id?: string | null
+          repost_id?: string | null
           user_id?: string | null
         }
         Relationships: [
@@ -273,6 +276,13 @@ export type Database = {
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookmarks_repost_id_fkey"
+            columns: ["repost_id"]
+            isOneToOne: false
+            referencedRelation: "reposts"
             referencedColumns: ["id"]
           },
           {
@@ -290,6 +300,7 @@ export type Database = {
           created_at: string | null
           id: string
           post_id: string | null
+          repost_id: string | null
           user_id: string | null
         }
         Insert: {
@@ -297,6 +308,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           post_id?: string | null
+          repost_id?: string | null
           user_id?: string | null
         }
         Update: {
@@ -304,6 +316,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           post_id?: string | null
+          repost_id?: string | null
           user_id?: string | null
         }
         Relationships: [
@@ -312,6 +325,13 @@ export type Database = {
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_repost_id_fkey"
+            columns: ["repost_id"]
+            isOneToOne: false
+            referencedRelation: "reposts"
             referencedColumns: ["id"]
           },
           {
@@ -604,6 +624,7 @@ export type Database = {
           created_at: string | null
           id: string
           post_id: string | null
+          repost_id: string | null
           type: string
           user_id: string | null
         }
@@ -611,6 +632,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           post_id?: string | null
+          repost_id?: string | null
           type: string
           user_id?: string | null
         }
@@ -618,6 +640,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           post_id?: string | null
+          repost_id?: string | null
           type?: string
           user_id?: string | null
         }
@@ -627,6 +650,13 @@ export type Database = {
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reactions_repost_id_fkey"
+            columns: ["repost_id"]
+            isOneToOne: false
+            referencedRelation: "reposts"
             referencedColumns: ["id"]
           },
           {
