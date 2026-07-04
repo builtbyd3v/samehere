@@ -54,3 +54,17 @@ export const IconCrown = ({ className = "h-4 w-4" }: { className?: string }) => 
     <path d="M3 8l4.5 3.2L12 5l4.5 6.2L21 8l-1.6 10.4a1 1 0 0 1-1 .6H5.6a1 1 0 0 1-1-.6L3 8Z" />
   </svg>
 );
+
+export const IconSearch = () => (
+  <svg className={cls} {...s}>
+    <circle cx="11" cy="11" r="7" />
+    <path d="m20 20-3.5-3.5" />
+  </svg>
+);
+
+export const IconCompose = () => (
+  <svg className={cls} {...s}>
+    <path d="M12 20h9" />
+    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+  </svg>
+);

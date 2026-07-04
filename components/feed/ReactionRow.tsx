@@ -17,10 +17,24 @@ type Props = {
   mineSamehere: boolean;
   mineRepost: boolean;
   mineBookmark: boolean;
+  compact?: boolean;
 };
 
+const action =
+  "inline-flex min-h-9 items-center gap-1.5 rounded-full px-2.5 text-[13px] font-medium transition hover:bg-[var(--featured-surface)] disabled:opacity-40";
+
+const likeColor = (on: boolean) =>
+  on ? "bg-[var(--featured-surface)] text-[#f4245e]" : "text-[#f4245e]/60 hover:text-[#f4245e]";
+const sameColor = (on: boolean) =>
+  on ? "bg-[var(--featured-surface)] text-[var(--blue)]" : "text-[var(--blue)]/60 hover:text-[var(--blue)]";
+const repostColor = (on: boolean) =>
+  on ? "bg-[var(--featured-surface)] text-[#00ba7c]" : "text-[#00ba7c]/60 hover:text-[#00ba7c]";
+const bookmarkColor = (on: boolean) =>
+  on ? "bg-[var(--featured-surface)] text-[var(--blue)]" : "text-[var(--ink-muted)] hover:text-[var(--blue)]";
+const commentColor = "text-[var(--ink-muted)] hover:text-[var(--ink)]";
+
 export default function ReactionRow(props: Props) {
-  const { postId, viewerId, authorPrivate, commentCount } = props;
+  const { postId, viewerId, authorPrivate, commentCount, compact = false } = props;
   const [supabase] = useState(createClient);
   const [s, setS] = useState({
     like: props.like,
@@ -32,19 +46,24 @@ export default function ReactionRow(props: Props) {
     mineBookmark: props.mineBookmark,
   });
 
-  // Optimistic: flip local state first, then write; roll back on error. No global
-  // busy lock — each button acts independently (so clicking one never dims the
-  // others), and the tables' unique constraints keep rapid clicks safe.
-
   async function toggleReaction(type: "like" | "samehere") {
     if (!viewerId) return;
     const mine = type === "like" ? s.mineLike : s.mineSamehere;
     const d = mine ? -1 : 1;
-    setS((p) => (type === "like" ? { ...p, mineLike: !mine, like: p.like + d } : { ...p, mineSamehere: !mine, samehere: p.samehere + d }));
+    setS((p) =>
+      type === "like"
+        ? { ...p, mineLike: !mine, like: p.like + d }
+        : { ...p, mineSamehere: !mine, samehere: p.samehere + d },
+    );
     const { error } = mine
       ? await supabase.from("reactions").delete().eq("post_id", postId).eq("user_id", viewerId).eq("type", type)
       : await supabase.from("reactions").insert({ post_id: postId, user_id: viewerId, type });
-    if (error) setS((p) => (type === "like" ? { ...p, mineLike: mine, like: p.like - d } : { ...p, mineSamehere: mine, samehere: p.samehere - d }));
+    if (error)
+      setS((p) =>
+        type === "like"
+          ? { ...p, mineLike: mine, like: p.like - d }
+          : { ...p, mineSamehere: mine, samehere: p.samehere - d },
+      );
   }
 
   async function toggleRepost() {
@@ -68,33 +87,62 @@ export default function ReactionRow(props: Props) {
     if (error) setS((p) => ({ ...p, mineBookmark: mine }));
   }
 
-  const base = "flex items-center gap-1.5 text-sm font-medium transition disabled:opacity-40";
-  const dim = "hover:text-[var(--ink)]";
-
   return (
-    <div className="mt-3 flex items-center gap-5 text-[var(--ink-muted)]">
-      <button type="button" onClick={() => toggleReaction("like")} disabled={!viewerId} aria-pressed={s.mineLike} aria-label={s.mineLike ? "Liked" : "Like"}
-        className={`${base} ${s.mineLike ? "text-[#f4245e]" : dim}`}>
-        <IconHeart on={s.mineLike} />{s.like > 0 && <span>{s.like}</span>}
+    <div className={`${compact ? "mt-3" : "mt-4"} flex flex-wrap items-center gap-0.5 border-t border-[var(--border)] pt-3`}>
+      <button
+        type="button"
+        onClick={() => toggleReaction("like")}
+        disabled={!viewerId}
+        aria-pressed={s.mineLike}
+        aria-label={s.mineLike ? "Liked" : "Like"}
+        className={`${action} ${likeColor(s.mineLike)}`}
+      >
+        <IconHeart on={s.mineLike} />
+        {s.like > 0 && <span>{s.like}</span>}
       </button>
 
-      <button type="button" onClick={() => toggleReaction("samehere")} disabled={!viewerId} aria-pressed={s.mineSamehere} aria-label={s.mineSamehere ? "SameHere added" : "SameHere — this is me too"}
-        className={`${base} ${s.mineSamehere ? "text-[var(--blue)]" : dim}`}>
-        <IconSame on={s.mineSamehere} />{s.samehere > 0 && <span>{s.samehere}</span>}
+      <button
+        type="button"
+        onClick={() => toggleReaction("samehere")}
+        disabled={!viewerId}
+        aria-pressed={s.mineSamehere}
+        aria-label={s.mineSamehere ? "SameHere added" : "SameHere"}
+        className={`${action} ${sameColor(s.mineSamehere)}`}
+      >
+        <IconSame on={s.mineSamehere} />
+        {s.samehere > 0 && <span>{s.samehere}</span>}
       </button>
 
-      <Link href={`/post/${postId}`} aria-label="Comments" className={`${base} font-normal ${dim}`}>
-        <IconComment />{commentCount > 0 && <span>{commentCount}</span>}
+      <Link
+        href={`/post/${postId}`}
+        aria-label="Comments"
+        className={`${action} font-normal ${commentColor}`}
+      >
+        <IconComment />
+        {commentCount > 0 && <span>{commentCount}</span>}
       </Link>
 
-      <button type="button" onClick={toggleRepost} disabled={!viewerId || authorPrivate}
-        aria-pressed={s.mineRepost} aria-label={authorPrivate ? "Reposting is off for private accounts" : s.mineRepost ? "Reposted" : "Repost"} title={authorPrivate ? "Private posts can't be reposted" : undefined}
-        className={`${base} ${s.mineRepost ? "text-[#00ba7c]" : dim}`}>
-        <IconRepost />{s.repost > 0 && <span>{s.repost}</span>}
+      <button
+        type="button"
+        onClick={toggleRepost}
+        disabled={!viewerId || authorPrivate}
+        aria-pressed={s.mineRepost}
+        aria-label={authorPrivate ? "Reposting is off for private accounts" : s.mineRepost ? "Reposted" : "Repost"}
+        title={authorPrivate ? "Private posts can't be reposted" : undefined}
+        className={`${action} ${repostColor(s.mineRepost)}`}
+      >
+        <IconRepost />
+        {s.repost > 0 && <span>{s.repost}</span>}
       </button>
 
-      <button type="button" onClick={toggleBookmark} disabled={!viewerId} aria-pressed={s.mineBookmark} aria-label={s.mineBookmark ? "Bookmarked" : "Bookmark"}
-        className={`${base} ml-auto ${s.mineBookmark ? "text-[var(--blue)]" : dim}`}>
+      <button
+        type="button"
+        onClick={toggleBookmark}
+        disabled={!viewerId}
+        aria-pressed={s.mineBookmark}
+        aria-label={s.mineBookmark ? "Bookmarked" : "Bookmark"}
+        className={`${action} ml-auto ${bookmarkColor(s.mineBookmark)}`}
+      >
         <IconBookmark on={s.mineBookmark} />
       </button>
     </div>

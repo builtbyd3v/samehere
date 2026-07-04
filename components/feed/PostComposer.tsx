@@ -25,6 +25,7 @@ export default function PostComposer() {
   const [supabase] = useState(createClient);
   const [hint, setHint] = useState<string | null>(null);
   const [nudging, startNudge] = useTransition();
+  const [, startSubmit] = useTransition();
 
   // Latest files for the unmount-only revoke below (avoids a [files]-dep effect
   // that would revoke still-shown previews on every add).
@@ -129,11 +130,13 @@ export default function PostComposer() {
       formData.set("media", JSON.stringify(media));
     }
 
-    formAction(formData);
+    startSubmit(() => {
+      formAction(formData);
+    });
   }
 
   return (
-    <form ref={ref} onSubmit={onSubmit} className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
+    <form ref={ref} onSubmit={onSubmit} className="rounded-xl border border-[var(--border)] bg-[var(--surface-card)] p-4 sm:p-5">
       {hint && (
         <button
           type="button"
@@ -150,7 +153,7 @@ export default function PostComposer() {
         required
         onChange={(e) => setLen(e.target.value.trim().length)}
         placeholder="Share what you're building, learning, or figuring out…"
-        className="w-full resize-y bg-transparent text-[15px] leading-relaxed text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
+        className="w-full resize-y bg-transparent text-[16px] leading-[1.55] text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
       />
 
       {files.length > 0 && (

@@ -9,6 +9,10 @@ import UserBadges from "@/components/profile/UserBadges";
 import { attachSignedMedia } from "@/lib/media";
 import { scoreOverlap, type MatchSignal } from "@/lib/match";
 import { connectionPrompt } from "@/lib/connection-prompt";
+import FeedToolbar from "@/components/feed/FeedToolbar";
+import FeedTabs from "@/components/feed/FeedTabs";
+import AvatarImage from "@/components/ui/AvatarImage";
+import { FeedSearchForm, FeedSearchResults } from "@/components/feed/FeedSearch";
 
 // Twitter-style feed: Latest (global recency) and Following (followed users'
 // posts + follow requests + suggested users — formerly the dashboard). Only
@@ -16,9 +20,12 @@ import { connectionPrompt } from "@/lib/connection-prompt";
 export default async function FeedPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; q?: string; search?: string }>;
 }) {
-  const tab = (await searchParams).tab === "following" ? "following" : "latest";
+  const params = await searchParams;
+  const tab = params.tab === "following" ? "following" : "latest";
+  const q = (params.q ?? "").trim();
+  const searchOpen = params.search === "1" || !!q;
   const supabase = await createClient();
 
   const {
@@ -27,32 +34,21 @@ export default async function FeedPage({
   const viewerId = user?.id ?? null;
 
   return (
-    <main className="mx-auto max-w-2xl px-5 py-8">
-      <h1 className="mb-5 text-2xl font-semibold tracking-[-0.02em]">Feed</h1>
+    <main className="mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8">
+      <FeedToolbar
+        title={<h1 className="text-xl font-semibold tracking-[-0.02em] sm:text-2xl">Feed</h1>}
+        initialSearchOpen={searchOpen}
+        search={
+          <>
+            <FeedSearchForm q={q} tab={tab} />
+            <FeedSearchResults q={q} />
+          </>
+        }
+        composer={<PostComposer />}
+      />
 
-      <PostComposer />
-
-      <div className="mt-6 flex gap-5 border-b border-[var(--border)] text-sm">
-        <Link
-          href="/feed"
-          className={
-            tab === "latest"
-              ? "-mb-px border-b-2 border-[var(--ink)] pb-2 px-1 font-medium text-[var(--ink)]"
-              : "-mb-px border-b-2 border-transparent pb-2 px-1 text-[var(--ink-muted)] hover:text-[var(--ink)]"
-          }
-        >
-          Latest
-        </Link>
-        <Link
-          href="/feed?tab=following"
-          className={
-            tab === "following"
-              ? "-mb-px border-b-2 border-[var(--ink)] pb-2 px-1 font-medium text-[var(--ink)]"
-              : "-mb-px border-b-2 border-transparent pb-2 px-1 text-[var(--ink-muted)] hover:text-[var(--ink)]"
-          }
-        >
-          Following
-        </Link>
+      <div className="mb-6">
+        <FeedTabs tab={tab} />
       </div>
 
       {tab === "latest" ? (
@@ -82,11 +78,14 @@ async function LatestTab({ viewerId }: { viewerId: string | null }) {
   const posts = filtered ? await attachSignedMedia(supabase, filtered) : null;
 
   return (
-    <section className="mt-6">
+    <section className="flex flex-col gap-3">
       {!posts || posts.length === 0 ? (
-        <p className="py-16 text-center text-sm text-[var(--ink-muted)]">
-          No posts yet. Be the first to share something.
-        </p>
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-card)] px-6 py-16 text-center">
+          <p className="font-medium text-[var(--ink)]">Nothing here yet</p>
+          <p className="mt-1.5 text-sm text-[var(--ink-muted)]">
+            Be the first to share what you are building or figuring out.
+          </p>
+        </div>
       ) : (
         <>
           {posts.map((post) => (
@@ -194,20 +193,22 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
   const suggestedWithPrompt = suggested.map((s, i) => ({ ...s, _prompt: prompts[i] }));
 
   return (
-    <section className="mt-6">
+    <section className="flex flex-col gap-3">
       {visibleRequests.length > 0 && <FollowRequests requests={visibleRequests} />}
 
       {suggested && suggested.length > 0 && (
-        <section className="mb-8">
-          <h2 className="mb-3 text-sm font-medium">People to follow</h2>
-          <div className="space-y-2">
+        <section className="mb-3 rounded-xl border border-[var(--border)] bg-[var(--surface-card)] p-4 sm:p-5">
+          <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">People to follow</h2>
+          <div className="flex flex-col gap-2">
             {suggestedWithPrompt.map((s) => {
               const name = s.display_name ?? s.username;
               return (
-                <div key={s.id} className="flex items-center gap-3 rounded-lg border border-[var(--border)] p-3">
+                <div
+                  key={s.id}
+                  className="flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3"
+                >
                   {s.avatar_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
+                    <AvatarImage
                       src={s.avatar_url}
                       alt=""
                       className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover"
@@ -218,11 +219,13 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
                     </div>
                   )}
                   <div className="min-w-0 flex-1 text-sm">
-                    <Link href={`/profile/${s.username}`} className="font-medium hover:underline">
-                      {name}
-                    </Link>
-                    <UserBadges isPro={s.is_pro} isFounder={s.is_founder} />
-                    <span className="ml-1.5 text-[var(--ink-muted)]">@{s.username}</span>
+                    <div className="flex flex-wrap items-center gap-x-1.5">
+                      <Link href={`/profile/${s.username}`} className="font-medium hover:underline">
+                        {name}
+                      </Link>
+                      <UserBadges isPro={s.is_pro} isFounder={s.is_founder} />
+                      <span className="text-[var(--ink-muted)]">@{s.username}</span>
+                    </div>
                     {s._prompt && (
                       <p className="mt-0.5 text-xs text-[var(--ink-muted)]">{s._prompt}</p>
                     )}
@@ -236,14 +239,14 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
       )}
 
       {feedPosts && feedPosts.length > 0 ? (
-        <div>
+        <div className="flex flex-col gap-3">
           {feedPosts.map((post) => (
             <PostCard key={post.id} post={post} viewerId={viewerId} />
           ))}
         </div>
       ) : (
-        <p className="py-16 text-center text-sm text-[var(--ink-muted)]">
-          Your feed is empty — <Link href="/search" className="underline hover:no-underline">find people to follow</Link>.
+        <p className="rounded-xl border border-[var(--border)] bg-[var(--surface-card)] px-6 py-16 text-center text-sm text-[var(--ink-muted)]">
+          Your feed is empty. Tap the search icon above to find people to follow.
         </p>
       )}
     </section>

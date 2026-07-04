@@ -39,7 +39,7 @@ export default function FeedLoadMore({
         <button
           onClick={onMore}
           disabled={loading}
-          className="mx-auto mt-6 block rounded-md border border-[var(--border-strong)] px-4 py-2 text-sm font-medium transition active:opacity-80 disabled:opacity-50"
+          className="mx-auto mt-3 block rounded-full border border-[var(--border-strong)] px-5 py-2 text-sm font-medium transition hover:bg-[var(--featured-surface)] active:opacity-80 disabled:opacity-50"
         >
           {loading ? "Loading…" : "Load more"}
         </button>
