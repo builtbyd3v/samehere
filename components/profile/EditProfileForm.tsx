@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState, useState } from "react";
 import { updateProfile, type EditState } from "@/app/(app)/profile/edit/actions";
 import { createClient } from "@/lib/supabase/client";
+import AvatarImage from "@/components/ui/AvatarImage";
 
 export type EditInitial = {
   id: string;
@@ -94,8 +95,7 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
         {/* Avatar */}
         <div className="mb-5 flex items-center gap-4">
           {avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <AvatarImage
               src={avatarUrl}
               alt=""
               className="h-16 w-16 shrink-0 rounded-full border border-[var(--border)] object-cover"

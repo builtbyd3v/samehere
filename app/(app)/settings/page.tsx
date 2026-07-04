@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import PrivacyForm from "@/components/settings/PrivacyForm";
 import ChangePasswordForm from "@/components/settings/ChangePasswordForm";
 import DeleteAccountSection from "@/components/settings/DeleteAccountSection";
+import AvatarImage from "@/components/ui/AvatarImage";
 import { unblockUser } from "./actions";
 
 type BlockedRow = {
@@ -53,8 +54,7 @@ export default async function SettingsPage() {
               return (
                 <li key={b.blocked_id} className="flex items-center gap-3 rounded-lg border border-[var(--border)] p-3">
                   {b.blocked?.avatar_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={b.blocked.avatar_url} alt="" className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover" />
+                    <AvatarImage src={b.blocked.avatar_url} alt="" className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover" />
                   ) : (
                     <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--canvas)] text-sm font-semibold text-[var(--ink-muted)]">
                       {name.charAt(0).toUpperCase()}
