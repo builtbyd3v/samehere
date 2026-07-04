@@ -12,6 +12,10 @@ import { connectionPrompt } from "@/lib/connection-prompt";
 import FeedToolbar from "@/components/feed/FeedToolbar";
 import FeedTabs from "@/components/feed/FeedTabs";
 import AvatarImage from "@/components/ui/AvatarImage";
+import EmptyState from "@/components/ui/EmptyState";
+import OnboardingChecklist from "@/components/feed/OnboardingChecklist";
+import QuotedRepostCard, { type QuotedRepost } from "@/components/feed/QuotedRepostCard";
+import { mergeFeedTimeline } from "@/lib/feed-timeline";
 import { FeedSearchForm, FeedSearchResults } from "@/components/feed/FeedSearch";
 
 // Twitter-style feed: Latest (global recency) and Following (followed users'
@@ -33,23 +37,38 @@ export default async function FeedPage({
   } = await supabase.auth.getUser();
   const viewerId = user?.id ?? null;
 
+  const onboardingProfile = user
+    ? await supabase.from("profiles").select("avatar_url, bio").eq("id", user.id).single()
+    : { data: null };
+  const onboardingCounts = user
+    ? await supabase.rpc("get_profile_counts", { p_profile_id: user.id })
+    : { data: null };
+
   return (
     <main className="mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8">
-      <FeedToolbar
-        title={<h1 className="text-xl font-semibold tracking-[-0.02em] sm:text-2xl">Feed</h1>}
-        initialSearchOpen={searchOpen}
-        search={
-          <>
-            <FeedSearchForm q={q} tab={tab} />
-            <FeedSearchResults q={q} />
-          </>
-        }
-        composer={<PostComposer />}
-      />
-
-      <div className="mb-6">
+      <div className="sticky top-14 z-30 -mx-4 mb-6 border-b border-[var(--border)] bg-[var(--canvas)]/95 px-4 pb-4 backdrop-blur sm:-mx-5 sm:px-5">
+        <FeedToolbar
+          title={<h1 className="text-xl font-semibold tracking-[-0.02em] sm:text-2xl">Feed</h1>}
+          initialSearchOpen={searchOpen}
+          search={
+            <>
+              <FeedSearchForm q={q} tab={tab} />
+              <FeedSearchResults q={q} />
+            </>
+          }
+          composer={<PostComposer />}
+        />
         <FeedTabs tab={tab} />
       </div>
+
+      {user && (
+        <OnboardingChecklist
+          avatarUrl={onboardingProfile.data?.avatar_url ?? null}
+          bio={onboardingProfile.data?.bio ?? null}
+          postCount={Number(onboardingCounts.data?.[0]?.posts ?? 0)}
+          followingCount={Number(onboardingCounts.data?.[0]?.following ?? 0)}
+        />
+      )}
 
       {tab === "latest" ? (
         <LatestTab viewerId={viewerId} />
@@ -80,12 +99,11 @@ async function LatestTab({ viewerId }: { viewerId: string | null }) {
   return (
     <section className="flex flex-col gap-3">
       {!posts || posts.length === 0 ? (
-        <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-card)] px-6 py-16 text-center">
-          <p className="font-medium text-[var(--ink)]">Nothing here yet</p>
-          <p className="mt-1.5 text-sm text-[var(--ink-muted)]">
-            Be the first to share what you are building or figuring out.
-          </p>
-        </div>
+        <EmptyState
+          title="Nothing here yet"
+          description="Be the first to share what you are building or figuring out."
+          action={{ label: "Find students", href: "/feed?search=1" }}
+        />
       ) : (
         <>
           {posts.map((post) => (
@@ -133,7 +151,7 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
 
   // ponytail: Following feed is first-page only; add cursor load-more if it grows.
   // ponytail: followed users' own posts only; reposts-in-feed deferred.
-  const [{ data: followFeed }, { data: suggestedPool }] = await Promise.all([
+  const [{ data: followFeed }, { data: quoteRows }, { data: suggestedPool }] = await Promise.all([
     acceptedIds.length
       ? supabase
           .from("posts")
@@ -143,6 +161,17 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
           .limit(PAGE)
           .returns<FeedPost[]>()
       : Promise.resolve({ data: [] as FeedPost[] }),
+    acceptedIds.length
+      ? supabase
+          .from("reposts")
+          .select(
+            `id, quote_text, created_at, user_id, reposter:profiles!reposts_user_id_fkey(username, display_name, avatar_url, is_pro, is_founder), post:posts(${POST_SELECT})`,
+          )
+          .in("user_id", acceptedIds)
+          .not("quote_text", "is", null)
+          .order("created_at", { ascending: false })
+          .limit(PAGE)
+      : Promise.resolve({ data: [] as { id: string; quote_text: string; created_at: string; reposter: QuotedRepost["reposter"]; post: FeedPost | null }[] }),
     supabase
       .from("profiles")
       .select("id, username, display_name, avatar_url, created_at, year, major, skills, goals, bio, is_pro, is_founder, profile_school(school)")
@@ -151,6 +180,24 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
       .limit(30),
   ]);
   const feedPosts = followFeed ? await attachSignedMedia(supabase, followFeed) : null;
+
+  const quotePosts = (quoteRows ?? [])
+    .filter((r): r is typeof r & { post: FeedPost; quote_text: string; reposter: QuotedRepost["reposter"] } => !!r.post && !!r.quote_text && !!r.reposter)
+    .map((r) => r.post);
+  const quotesWithMedia = quotePosts.length ? await attachSignedMedia(supabase, quotePosts) : [];
+  const mediaByPostId = new Map(quotesWithMedia.map((p) => [p.id, p]));
+
+  const quotes: QuotedRepost[] = (quoteRows ?? [])
+    .filter((r) => r.post && r.quote_text && r.reposter)
+    .map((r) => ({
+      id: r.id,
+      quote_text: r.quote_text!,
+      created_at: r.created_at!,
+      reposter: r.reposter!,
+      original: mediaByPostId.get(r.post!.id) ?? (r.post as FeedPost),
+    }));
+
+  const timeline = feedPosts ? mergeFeedTimeline(feedPosts, quotes).slice(0, PAGE) : [];
 
   // ponytail: rank a 30-row recency pool; widen only if suggestions feel stale.
   const viewerSignal: MatchSignal = {
@@ -238,16 +285,22 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
         </section>
       )}
 
-      {feedPosts && feedPosts.length > 0 ? (
+      {timeline.length > 0 ? (
         <div className="flex flex-col gap-3">
-          {feedPosts.map((post) => (
-            <PostCard key={post.id} post={post} viewerId={viewerId} />
-          ))}
+          {timeline.map((item) =>
+            item.kind === "post" ? (
+              <PostCard key={item.post.id} post={item.post} viewerId={viewerId} />
+            ) : (
+              <QuotedRepostCard key={item.quote.id} item={item.quote} viewerId={viewerId} />
+            ),
+          )}
         </div>
       ) : (
-        <p className="rounded-xl border border-[var(--border)] bg-[var(--surface-card)] px-6 py-16 text-center text-sm text-[var(--ink-muted)]">
-          Your feed is empty. Tap the search icon above to find people to follow.
-        </p>
+        <EmptyState
+          title="Your feed is empty"
+          description="Follow students to see their posts and quote reposts here."
+          action={{ label: "Search students", href: "/feed?search=1" }}
+        />
       )}
     </section>
   );

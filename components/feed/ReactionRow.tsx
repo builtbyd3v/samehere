@@ -2,11 +2,15 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { motion, useReducedMotion } from "motion/react";
 import { createClient } from "@/lib/supabase/client";
 import { IconHeart, IconSame, IconComment, IconRepost, IconBookmark } from "@/components/icons";
+import QuoteRepostModal from "./QuoteRepostModal";
+import type { FeedPost } from "./PostCard";
 
 type Props = {
   postId: string;
+  post?: FeedPost;
   viewerId: string | null;
   authorPrivate: boolean;
   like: number;
@@ -18,24 +22,57 @@ type Props = {
   mineRepost: boolean;
   mineBookmark: boolean;
   compact?: boolean;
+  hideComments?: boolean;
 };
 
-const action =
+export const action =
   "inline-flex min-h-9 items-center gap-1.5 rounded-full px-2.5 text-[13px] font-medium transition hover:bg-[var(--featured-surface)] disabled:opacity-40";
 
-const likeColor = (on: boolean) =>
+export const likeColor = (on: boolean) =>
   on ? "bg-[var(--featured-surface)] text-[#f4245e]" : "text-[#f4245e]/60 hover:text-[#f4245e]";
-const sameColor = (on: boolean) =>
+export const sameColor = (on: boolean) =>
   on ? "bg-[var(--featured-surface)] text-[var(--blue)]" : "text-[var(--blue)]/60 hover:text-[var(--blue)]";
-const repostColor = (on: boolean) =>
+export const repostColor = (on: boolean) =>
   on ? "bg-[var(--featured-surface)] text-[#00ba7c]" : "text-[#00ba7c]/60 hover:text-[#00ba7c]";
-const bookmarkColor = (on: boolean) =>
+export const bookmarkColor = (on: boolean) =>
   on ? "bg-[var(--featured-surface)] text-[var(--blue)]" : "text-[var(--ink-muted)] hover:text-[var(--blue)]";
-const commentColor = "text-[var(--ink-muted)] hover:text-[var(--ink)]";
+export const commentColor = "text-[var(--ink-muted)] hover:text-[var(--ink)]";
+
+function ActionButton({
+  children,
+  className,
+  onClick,
+  disabled,
+  title,
+  ...a11y
+}: {
+  children: React.ReactNode;
+  className: string;
+  onClick?: () => void;
+  disabled?: boolean;
+  title?: string;
+} & React.AriaAttributes) {
+  const reduce = useReducedMotion();
+  return (
+    <motion.button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      whileTap={!disabled && !reduce ? { scale: 0.9 } : undefined}
+      className={className}
+      {...a11y}
+    >
+      {children}
+    </motion.button>
+  );
+}
 
 export default function ReactionRow(props: Props) {
-  const { postId, viewerId, authorPrivate, commentCount, compact = false } = props;
+  const { postId, post, viewerId, authorPrivate, commentCount, compact = false, hideComments = false } = props;
   const [supabase] = useState(createClient);
+  const [quoteOpen, setQuoteOpen] = useState(false);
+  const [repostMenu, setRepostMenu] = useState(false);
   const [s, setS] = useState({
     like: props.like,
     samehere: props.samehere,
@@ -68,6 +105,7 @@ export default function ReactionRow(props: Props) {
 
   async function toggleRepost() {
     if (!viewerId || authorPrivate) return;
+    setRepostMenu(false);
     const mine = s.mineRepost;
     const d = mine ? -1 : 1;
     setS((p) => ({ ...p, mineRepost: !mine, repost: p.repost + d }));
@@ -88,63 +126,100 @@ export default function ReactionRow(props: Props) {
   }
 
   return (
-    <div className={`${compact ? "mt-3" : "mt-4"} flex flex-wrap items-center gap-0.5 border-t border-[var(--border)] pt-3`}>
-      <button
-        type="button"
-        onClick={() => toggleReaction("like")}
-        disabled={!viewerId}
-        aria-pressed={s.mineLike}
-        aria-label={s.mineLike ? "Liked" : "Like"}
-        className={`${action} ${likeColor(s.mineLike)}`}
-      >
-        <IconHeart on={s.mineLike} />
-        {s.like > 0 && <span>{s.like}</span>}
-      </button>
+    <>
+      <div className={`${compact ? "mt-3" : "mt-4"} flex flex-wrap items-center gap-0.5 border-t border-[var(--border)] pt-3`}>
+        <ActionButton
+          onClick={() => toggleReaction("like")}
+          disabled={!viewerId}
+          aria-pressed={s.mineLike}
+          aria-label={s.mineLike ? "Liked" : "Like"}
+          className={`${action} ${likeColor(s.mineLike)}`}
+        >
+          <IconHeart on={s.mineLike} />
+          {s.like > 0 && <span>{s.like}</span>}
+        </ActionButton>
 
-      <button
-        type="button"
-        onClick={() => toggleReaction("samehere")}
-        disabled={!viewerId}
-        aria-pressed={s.mineSamehere}
-        aria-label={s.mineSamehere ? "SameHere added" : "SameHere"}
-        className={`${action} ${sameColor(s.mineSamehere)}`}
-      >
-        <IconSame on={s.mineSamehere} />
-        {s.samehere > 0 && <span>{s.samehere}</span>}
-      </button>
+        <ActionButton
+          onClick={() => toggleReaction("samehere")}
+          disabled={!viewerId}
+          aria-pressed={s.mineSamehere}
+          aria-label={s.mineSamehere ? "SameHere added" : "SameHere"}
+          className={`${action} ${sameColor(s.mineSamehere)}`}
+        >
+          <IconSame on={s.mineSamehere} />
+          {s.samehere > 0 && <span>{s.samehere}</span>}
+        </ActionButton>
 
-      <Link
-        href={`/post/${postId}`}
-        aria-label="Comments"
-        className={`${action} font-normal ${commentColor}`}
-      >
-        <IconComment />
-        {commentCount > 0 && <span>{commentCount}</span>}
-      </Link>
+        {!hideComments && (
+          <Link href={`/post/${postId}`} aria-label="Comments" className={`${action} font-normal ${commentColor}`}>
+            <IconComment />
+            {commentCount > 0 && <span>{commentCount}</span>}
+          </Link>
+        )}
 
-      <button
-        type="button"
-        onClick={toggleRepost}
-        disabled={!viewerId || authorPrivate}
-        aria-pressed={s.mineRepost}
-        aria-label={authorPrivate ? "Reposting is off for private accounts" : s.mineRepost ? "Reposted" : "Repost"}
-        title={authorPrivate ? "Private posts can't be reposted" : undefined}
-        className={`${action} ${repostColor(s.mineRepost)}`}
-      >
-        <IconRepost />
-        {s.repost > 0 && <span>{s.repost}</span>}
-      </button>
+        <div className="relative">
+          <ActionButton
+            onClick={() => {
+              if (authorPrivate) return;
+              if (post) setRepostMenu((o) => !o);
+              else toggleRepost();
+            }}
+            disabled={!viewerId || authorPrivate}
+            aria-pressed={s.mineRepost}
+            aria-expanded={repostMenu}
+            aria-label={authorPrivate ? "Reposting is off for private accounts" : s.mineRepost ? "Reposted" : "Repost"}
+            title={authorPrivate ? "Private posts can't be reposted" : undefined}
+            className={`${action} ${repostColor(s.mineRepost)}`}
+          >
+            <IconRepost />
+            {s.repost > 0 && <span>{s.repost}</span>}
+          </ActionButton>
+          {repostMenu && post && (
+            <>
+              <button type="button" className="fixed inset-0 z-10" aria-label="Close menu" onClick={() => setRepostMenu(false)} />
+              <div className="absolute bottom-full left-0 z-20 mb-1 min-w-[9rem] rounded-lg border border-[var(--border)] bg-[var(--surface-card)] py-1 shadow">
+                <button
+                  type="button"
+                  onClick={toggleRepost}
+                  className="block w-full px-3 py-2 text-left text-sm hover:bg-[var(--featured-surface)]"
+                >
+                  {s.mineRepost ? "Undo repost" : "Repost"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRepostMenu(false);
+                    setQuoteOpen(true);
+                  }}
+                  className="block w-full px-3 py-2 text-left text-sm hover:bg-[var(--featured-surface)]"
+                >
+                  Quote
+                </button>
+              </div>
+            </>
+          )}
+        </div>
 
-      <button
-        type="button"
-        onClick={toggleBookmark}
-        disabled={!viewerId}
-        aria-pressed={s.mineBookmark}
-        aria-label={s.mineBookmark ? "Bookmarked" : "Bookmark"}
-        className={`${action} ml-auto ${bookmarkColor(s.mineBookmark)}`}
-      >
-        <IconBookmark on={s.mineBookmark} />
-      </button>
-    </div>
+        <ActionButton
+          onClick={toggleBookmark}
+          disabled={!viewerId}
+          aria-pressed={s.mineBookmark}
+          aria-label={s.mineBookmark ? "Bookmarked" : "Bookmark"}
+          className={`${action} ml-auto ${bookmarkColor(s.mineBookmark)}`}
+        >
+          <IconBookmark on={s.mineBookmark} />
+        </ActionButton>
+      </div>
+
+      {post && viewerId && (
+        <QuoteRepostModal
+          post={post}
+          viewerId={viewerId}
+          open={quoteOpen}
+          onClose={() => setQuoteOpen(false)}
+          onDone={() => setS((p) => ({ ...p, repost: p.repost + 1, mineRepost: true }))}
+        />
+      )}
+    </>
   );
 }
