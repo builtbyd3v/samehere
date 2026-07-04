@@ -11,6 +11,19 @@ type Props = {
   highlightSamehere?: boolean;
 };
 
+const action =
+  "inline-flex min-h-9 items-center gap-1.5 rounded-full px-2.5 text-[13px] font-medium transition hover:bg-[var(--featured-surface)] disabled:opacity-40";
+
+const likeColor = (on: boolean) =>
+  on ? "bg-[var(--featured-surface)] text-[#f4245e]" : "text-[#f4245e]/60 hover:text-[#f4245e]";
+const sameColor = (on: boolean) =>
+  on ? "bg-[var(--featured-surface)] text-[var(--blue)]" : "text-[var(--blue)]/60 hover:text-[var(--blue)]";
+const repostColor = (on: boolean) =>
+  on ? "bg-[var(--featured-surface)] text-[#00ba7c]" : "text-[#00ba7c]/60 hover:text-[#00ba7c]";
+const bookmarkColor = (on: boolean) =>
+  on ? "bg-[var(--featured-surface)] text-[var(--blue)]" : "text-[var(--ink-muted)] hover:text-[var(--blue)]";
+const commentColor = "text-[var(--ink-muted)] hover:text-[var(--ink)]";
+
 export default function LandingPostCard({ post, interactive = false, highlightSamehere = false }: Props) {
   const reduce = useReducedMotion();
   const [samehereOn, setSamehereOn] = useState(highlightSamehere);
@@ -20,9 +33,6 @@ export default function LandingPostCard({ post, interactive = false, highlightSa
   const [reposted, setReposted] = useState(false);
   const [repostCount, setRepostCount] = useState(post.reposts);
   const [bookmarked, setBookmarked] = useState(false);
-
-  const base = "flex items-center gap-1.5 text-sm font-medium transition";
-  const dim = interactive ? "cursor-pointer hover:text-[var(--ink)]" : "cursor-default";
 
   function toggleSamehere() {
     if (!interactive) return;
@@ -50,38 +60,46 @@ export default function LandingPostCard({ post, interactive = false, highlightSa
     setBookmarked((b) => !b);
   }
 
+  const tap = interactive && !reduce ? { whileTap: { scale: 0.92 } } : {};
+
   return (
-    <article className="border-b border-[var(--border)] px-1 py-5 last:border-b-0">
-      <div className="flex items-center gap-2.5">
+    <article className="rounded-xl border border-[var(--border)] bg-[var(--surface-post)] p-4 sm:p-5">
+      <div className="flex gap-3 sm:gap-4">
         <img
           src={`https://picsum.photos/seed/${post.avatarSeed}/72/72`}
           alt=""
-          className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover"
+          className="h-10 w-10 shrink-0 rounded-full border border-[var(--border)] object-cover"
         />
-        <div className="min-w-0 text-sm">
-          <div className="flex flex-wrap items-center gap-x-1.5">
-            <span className="font-medium">{post.name}</span>
-            <span className="text-[var(--ink-muted)]">@{post.username}</span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+            <span className="font-semibold text-[var(--ink)]">{post.name}</span>
           </div>
-          <p className="text-[var(--ink-muted)]">
-            {post.school ? `${post.school} · ` : ""}
+          <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">
+            <span>@{post.username}</span>
+            {post.school && (
+              <>
+                <span className="mx-1 text-[var(--ink-faint)]">·</span>
+                <span>{post.school}</span>
+              </>
+            )}
+            <span className="mx-1 text-[var(--ink-faint)]">·</span>
             <span>{formatTimeAgo(post.minutesAgo)}</span>
+          </p>
+
+          <p className="mt-3 max-w-[65ch] whitespace-pre-line break-words text-[16px] leading-[1.55] text-[var(--ink)]">
+            {post.content}
           </p>
         </div>
       </div>
 
-      <p className="mt-3 whitespace-pre-line break-words text-[15px] leading-relaxed text-[var(--ink)]">
-        {post.content}
-      </p>
-
-      <div className="mt-3 flex items-center gap-5 text-[var(--ink-muted)]">
+      <div className="mt-4 flex flex-wrap items-center gap-0.5 border-t border-[var(--border)] pt-3">
         <motion.button
           type="button"
           onClick={toggleLike}
           disabled={!interactive}
-          whileTap={interactive && !reduce ? { scale: 0.92 } : undefined}
+          {...tap}
           aria-pressed={liked}
-          className={`${base} ${liked ? "text-[#f4245e]" : dim}`}
+          className={`${action} ${likeColor(liked)} ${interactive ? "cursor-pointer" : "cursor-default"}`}
         >
           <IconHeart on={liked} />
           {likeCount > 0 && <span>{likeCount}</span>}
@@ -91,15 +109,15 @@ export default function LandingPostCard({ post, interactive = false, highlightSa
           type="button"
           onClick={toggleSamehere}
           disabled={!interactive}
-          whileTap={interactive && !reduce ? { scale: 0.92 } : undefined}
+          {...tap}
           aria-pressed={samehereOn}
-          className={`${base} ${samehereOn ? "text-[var(--blue)]" : dim}`}
+          className={`${action} ${sameColor(samehereOn)} ${interactive ? "cursor-pointer" : "cursor-default"}`}
         >
           <IconSame on={samehereOn} />
           {samehereCount > 0 && <span>{samehereCount}</span>}
         </motion.button>
 
-        <span className={`${base} font-normal`}>
+        <span className={`${action} font-normal ${commentColor}`}>
           <IconComment />
           {post.comments > 0 && <span>{post.comments}</span>}
         </span>
@@ -108,9 +126,9 @@ export default function LandingPostCard({ post, interactive = false, highlightSa
           type="button"
           onClick={toggleRepost}
           disabled={!interactive}
-          whileTap={interactive && !reduce ? { scale: 0.92 } : undefined}
+          {...tap}
           aria-pressed={reposted}
-          className={`${base} ${reposted ? "text-[#00ba7c]" : dim}`}
+          className={`${action} ${repostColor(reposted)} ${interactive ? "cursor-pointer" : "cursor-default"}`}
         >
           <IconRepost />
           {repostCount > 0 && <span>{repostCount}</span>}
@@ -120,10 +138,10 @@ export default function LandingPostCard({ post, interactive = false, highlightSa
           type="button"
           onClick={toggleBookmark}
           disabled={!interactive}
-          whileTap={interactive && !reduce ? { scale: 0.92 } : undefined}
+          {...tap}
           aria-pressed={bookmarked}
           aria-label={bookmarked ? "Bookmarked" : "Bookmark"}
-          className={`${base} ml-auto ${bookmarked ? "text-[var(--blue)]" : dim}`}
+          className={`${action} ml-auto ${bookmarkColor(bookmarked)} ${interactive ? "cursor-pointer" : "cursor-default"}`}
         >
           <IconBookmark on={bookmarked} />
         </motion.button>

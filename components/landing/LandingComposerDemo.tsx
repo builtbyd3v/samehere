@@ -32,7 +32,7 @@ export default function LandingComposerDemo() {
   return (
     <form
       onSubmit={(e) => e.preventDefault()}
-      className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4"
+      className="rounded-xl border border-[var(--border)] bg-[var(--surface-card)] p-4 sm:p-5"
     >
       {hint && (
         <button
@@ -48,7 +48,7 @@ export default function LandingComposerDemo() {
         value={text}
         onChange={(e) => setText(e.target.value)}
         placeholder="Share what you're building, learning, or figuring out…"
-        className="w-full resize-y bg-transparent text-[15px] leading-relaxed text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
+        className="w-full resize-y bg-transparent text-[16px] leading-[1.55] text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
       />
 
       <div className="mt-3 flex items-center justify-between border-t border-[var(--border)] pt-3">

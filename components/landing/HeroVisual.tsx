@@ -28,7 +28,7 @@ export default function HeroVisual() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
     >
-      <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3">
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-post)] p-3 sm:p-4">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={post.id}

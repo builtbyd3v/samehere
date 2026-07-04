@@ -33,7 +33,7 @@ export default function AISection() {
             {DEMO_SUGGESTIONS.map((s) => (
               <div
                 key={s.username}
-                className="flex items-center gap-3 rounded-lg border border-[var(--border)] p-3"
+                className="flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3"
               >
                 <img
                   src={`https://picsum.photos/seed/${s.avatarSeed}/72/72`}
