@@ -3,6 +3,14 @@
 import { useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { IconHeart, IconSame, IconComment, IconRepost, IconBookmark } from "@/components/icons";
+import {
+  action,
+  likeColor,
+  sameColor,
+  repostColor,
+  bookmarkColor,
+  commentColor,
+} from "@/components/feed/ReactionRow";
 import { type DemoPost, formatTimeAgo } from "@/lib/landing/demo-data";
 
 type Props = {
@@ -10,19 +18,6 @@ type Props = {
   interactive?: boolean;
   highlightSamehere?: boolean;
 };
-
-const action =
-  "inline-flex min-h-9 items-center gap-1.5 rounded-full px-2.5 text-[13px] font-medium transition hover:bg-[var(--featured-surface)] disabled:opacity-40";
-
-const likeColor = (on: boolean) =>
-  on ? "bg-[var(--featured-surface)] text-[#f4245e]" : "text-[#f4245e]/60 hover:text-[#f4245e]";
-const sameColor = (on: boolean) =>
-  on ? "bg-[var(--featured-surface)] text-[var(--blue)]" : "text-[var(--blue)]/60 hover:text-[var(--blue)]";
-const repostColor = (on: boolean) =>
-  on ? "bg-[var(--featured-surface)] text-[#00ba7c]" : "text-[#00ba7c]/60 hover:text-[#00ba7c]";
-const bookmarkColor = (on: boolean) =>
-  on ? "bg-[var(--featured-surface)] text-[var(--blue)]" : "text-[var(--ink-muted)] hover:text-[var(--blue)]";
-const commentColor = "text-[var(--ink-muted)] hover:text-[var(--ink)]";
 
 export default function LandingPostCard({ post, interactive = false, highlightSamehere = false }: Props) {
   const reduce = useReducedMotion();
@@ -33,6 +28,8 @@ export default function LandingPostCard({ post, interactive = false, highlightSa
   const [reposted, setReposted] = useState(false);
   const [repostCount, setRepostCount] = useState(post.reposts);
   const [bookmarked, setBookmarked] = useState(false);
+
+  const tap = interactive && !reduce ? { whileTap: { scale: 0.9 } } : {};
 
   function toggleSamehere() {
     if (!interactive) return;
@@ -59,8 +56,6 @@ export default function LandingPostCard({ post, interactive = false, highlightSa
     if (!interactive) return;
     setBookmarked((b) => !b);
   }
-
-  const tap = interactive && !reduce ? { whileTap: { scale: 0.92 } } : {};
 
   return (
     <article className="rounded-xl border border-[var(--border)] bg-[var(--surface-post)] p-4 sm:p-5">
@@ -140,7 +135,6 @@ export default function LandingPostCard({ post, interactive = false, highlightSa
           disabled={!interactive}
           {...tap}
           aria-pressed={bookmarked}
-          aria-label={bookmarked ? "Bookmarked" : "Bookmark"}
           className={`${action} ml-auto ${bookmarkColor(bookmarked)} ${interactive ? "cursor-pointer" : "cursor-default"}`}
         >
           <IconBookmark on={bookmarked} />
