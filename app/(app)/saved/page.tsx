@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import PostCard, { POST_SELECT, type FeedPost } from "@/components/feed/PostCard";
 import { attachSignedMedia } from "@/lib/media";
+import EmptyState from "@/components/ui/EmptyState";
 
 export default async function SavedPage() {
   const supabase = await createClient();
@@ -27,11 +28,17 @@ export default async function SavedPage() {
 
       <section>
         {posts.length === 0 ? (
-          <p className="py-16 text-center text-sm text-[var(--ink-muted)]">
-            No saved posts yet. Bookmark posts to find them here.
-          </p>
+          <EmptyState
+            title="No saved posts yet"
+            description="Bookmark posts from the feed to find them here later."
+            action={{ label: "Go to feed", href: "/feed" }}
+          />
         ) : (
-          posts.map((post) => <PostCard key={post.id} post={post} viewerId={viewerId} />)
+          <div className="flex flex-col gap-3">
+            {posts.map((post) => (
+              <PostCard key={post.id} post={post} viewerId={viewerId} />
+            ))}
+          </div>
         )}
       </section>
     </main>
