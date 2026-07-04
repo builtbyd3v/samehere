@@ -5,6 +5,7 @@ import PostMenu from "./PostMenu";
 import UserBadges from "@/components/profile/UserBadges";
 import AvatarImage from "@/components/ui/AvatarImage";
 import MentionText from "@/components/ui/MentionText";
+import PostBodyLink from "./PostBodyLink";
 import type { PostMedia } from "@/lib/media";
 
 export const POST_SELECT =
@@ -81,11 +82,7 @@ function PostBody({ content, linked, postId }: { content: string; linked: boolea
     </span>
   );
   if (linked) {
-    return (
-      <Link href={`/post/${postId}`} className="mt-3 block hover:opacity-95">
-        {inner}
-      </Link>
-    );
+    return <PostBodyLink postId={postId}>{inner}</PostBodyLink>;
   }
   return <div className="mt-3">{inner}</div>;
 }
