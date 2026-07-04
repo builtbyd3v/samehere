@@ -2,12 +2,10 @@
 
 // Client component — hover needs state for the styled tooltip (native `title`
 // can't be styled). Grid-building stays a pure function so it's easy to test.
-// Visual (blue ramp, level thresholds, legend) mirrors the landing showcase so
-// the real profile heatmap and the marketing one stay identical.
-// The 1Y/6M/3M period sorter is the Pro "sortable heatmap" feature (Phase 15) —
-// v1 is a fixed 52-week grid.
+// Fixed-size cells keep month/weekday labels column-aligned; the grid scrolls
+// horizontally on narrow viewports (auto-scrolls to the most recent week).
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 export type HeatmapDay = { day: string; points: number; breakdown: Record<string, number> };
@@ -33,6 +31,13 @@ const fmtDate = new Intl.DateTimeFormat("en-US", {
   timeZone: "UTC",
 });
 
+// Shared sizing — every slot (month label, weekday label, cell) uses these so
+// columns stay aligned. 10px on mobile, 14px from sm up.
+const SLOT = "h-2.5 w-2.5 sm:h-3.5 sm:w-3.5";
+const GAP = "gap-0.5 sm:gap-[3px]";
+const MONTH_H = "h-2.5 sm:h-3.5";
+const LABEL = "text-[9px] sm:text-[11px] leading-none text-[var(--ink-faint)]";
+
 // Sun-aligned 53-column grid (52 weeks back + the current week), one row per
 // weekday. Days after today in the current week are `future` (rendered blank so
 // column alignment holds). UTC throughout.
@@ -41,7 +46,6 @@ export function buildHeatmapGrid(data: HeatmapDay[], today: Date = new Date()): 
   const byDate = new Map(data.map((d) => [d.day, d]));
   const end = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
   const firstSunday = new Date(end);
-  // Back up to this week's Sunday, then 52 more weeks.
   firstSunday.setUTCDate(end.getUTCDate() - end.getUTCDay() - 52 * 7);
 
   const cols: Cell[][] = [];
@@ -59,10 +63,8 @@ export function buildHeatmapGrid(data: HeatmapDay[], today: Date = new Date()): 
   return cols;
 }
 
-// Blank spacer for a column/row that has no label this frame — keeps the grid
-// (labels + cells) column-aligned since every column renders the same slots.
 function Spacer({ className }: { className: string }) {
-  return <div className={className} />;
+  return <div className={className} aria-hidden />;
 }
 
 export default function ContributionHeatmap({ data }: { data: HeatmapDay[] }) {
@@ -71,6 +73,7 @@ export default function ContributionHeatmap({ data }: { data: HeatmapDay[] }) {
   const [hovered, setHovered] = useState<{ cell: Cell; x: number; y: number } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Start scrolled to the most recent week (right edge).
   useEffect(() => {
     const el = scrollRef.current;
     if (el) el.scrollLeft = el.scrollWidth;
@@ -86,46 +89,51 @@ export default function ContributionHeatmap({ data }: { data: HeatmapDay[] }) {
         <b className="text-[var(--ink)]">{total.toLocaleString()}</b> contributions in the last year
       </p>
 
-      <div className="mt-4">
-        <div ref={scrollRef} className="overflow-x-auto">
-          <div className="inline-flex min-w-full gap-2">
-            {/* Weekday row labels — Mon/Wed/Fri at rows 1/3/5, blank spacers elsewhere. */}
-            <div className="flex shrink-0 flex-col gap-[3px] pt-[18px]">
+      <div className="mt-4 -mx-1 px-1">
+        <div
+          ref={scrollRef}
+          className="overflow-x-auto overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          <div className={`inline-flex ${GAP}`}>
+            {/* Weekday labels — Mon/Wed/Fri; blank spacers keep row heights matched */}
+            <div className={`flex shrink-0 flex-col ${GAP} pt-[calc(0.625rem+0.25rem)] sm:pt-[18px]`}>
               {["", "Mon", "", "Wed", "", "Fri", ""].map((label, row) => (
-                <div key={row} className="flex h-[14px] w-7 items-center text-[11px] text-[var(--ink-faint)]">
+                <div key={row} className={`flex ${SLOT} w-6 shrink-0 items-center sm:w-7 ${LABEL}`}>
                   {label}
                 </div>
               ))}
             </div>
 
             <div>
-              {/* Month labels — one per column whose first day starts a new month. */}
-              <div className="flex gap-[3px]">
+              {/* Month labels — one per column when the week crosses into a new month */}
+              <div className={`flex ${GAP}`}>
                 {cols.map((col, i) => {
                   const prevMonth = i > 0 ? cols[i - 1][6].date.slice(0, 7) : null;
                   const thisMonth = col[6].date.slice(0, 7);
                   const isNewMonth = thisMonth !== prevMonth;
                   return (
-                    <div key={i} className="h-[14px] w-[14px] text-[11px] whitespace-nowrap text-[var(--ink-faint)]">
+                    <div
+                      key={i}
+                      className={`${MONTH_H} w-2.5 shrink-0 overflow-visible whitespace-nowrap sm:w-3.5 ${LABEL}`}
+                    >
                       {isNewMonth ? MONTH_LABEL.format(new Date(col[6].date)) : null}
                     </div>
                   );
                 })}
               </div>
 
-              <div className="mt-1 flex gap-[3px]">
+              <div className={`mt-1 flex ${GAP}`}>
                 {cols.map((col, i) => (
-                  <div key={i} className="flex w-[14px] shrink-0 flex-col gap-[3px]">
-                    {col.map((cell, j) =>
+                  <div key={i} className={`flex w-2.5 shrink-0 flex-col ${GAP} sm:w-3.5`}>
+                    {col.map((cell) =>
                       cell.future ? (
-                        // Blank spacer keeps the current week's column aligned.
-                        <Spacer key={cell.date} className="h-[14px] w-[14px]" />
+                        <Spacer key={cell.date} className={`${SLOT} shrink-0`} />
                       ) : (
                         <div
                           key={cell.date}
                           onMouseEnter={(e) => setHovered({ cell, x: e.clientX, y: e.clientY })}
                           onMouseLeave={() => setHovered(null)}
-                          className={`relative h-[14px] w-[14px] rounded-[3px] ${CELL[level(cell.points)]}`}
+                          className={`${SLOT} shrink-0 rounded-[2px] sm:rounded-[3px] ${CELL[level(cell.points)]}`}
                         />
                       ),
                     )}
@@ -140,7 +148,7 @@ export default function ContributionHeatmap({ data }: { data: HeatmapDay[] }) {
       <div className="mt-3 flex items-center gap-1.5 text-[11px] text-[var(--ink-faint)]">
         <span>Less</span>
         {CELL.map((c, i) => (
-          <span key={i} className={`h-[11px] w-[11px] rounded-[2px] ${c}`} />
+          <span key={i} className={`h-2.5 w-2.5 rounded-[2px] sm:h-[11px] sm:w-[11px] ${c}`} />
         ))}
         <span>More</span>
       </div>
