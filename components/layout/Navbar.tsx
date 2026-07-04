@@ -1,5 +1,6 @@
 import Link from "next/link";
 import NavMenu from "./NavMenu";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 import { IconBolt } from "@/components/icons";
 
 // Server component — top-level stays plain links (no client JS); the avatar
@@ -30,7 +31,8 @@ export default function Navbar({
             </Link>
           )}
         </div>
-        <div className="flex items-center gap-4 text-sm">
+        <div className="flex items-center gap-3 text-sm">
+          <ThemeToggle compact />
           {!isPro && (
             <Link href="/pro" className="font-medium text-[var(--blue)] transition hover:opacity-80">
               Join Pro

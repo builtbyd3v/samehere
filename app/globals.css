@@ -21,11 +21,30 @@
   --hm0: rgba(28, 28, 28, 0.06); --hm1: #bcd8f5; --hm2: #5fa0e8; --hm3: #0075de;
 }
 
-/* Dark theme — warm-derived from the light tokens (see DESIGN.md §Dark Theme).
-   Whole landing is var-driven, so overriding vars flips the page with no markup change.
-   Follows system preference now; add a .dark class + toggle when settings UI exists. */
+.dark {
+  color-scheme: dark;
+  --canvas: #141310;
+  --surface: #1c1a16;
+  --surface-raised: #232018;
+  --surface-post: #26231f;
+  --surface-card: #1c1a16;
+  --border: rgba(247, 244, 237, 0.10);
+  --border-strong: rgba(247, 244, 237, 0.28);
+  --ink: #f2efe6;
+  --ink-muted: #a8a49a;
+  --ink-faint: rgba(242, 239, 230, 0.40);
+  --featured-surface: rgba(247, 244, 237, 0.06);
+  --blue: #4f9fe8;
+  --hm0: rgba(247, 244, 237, 0.07); --hm1: #1e3a5f; --hm2: #2f6db0; --hm3: #4f9fe8;
+}
+
+.light {
+  color-scheme: light;
+}
+
+/* System dark when user has not forced .light */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not(.light) {
     --canvas: #141310;
     --surface: #1c1a16;
     --surface-raised: #232018;

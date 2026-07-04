@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { signupCtaSm } from "./cta";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 
 const LINKS = [
   { href: "#features", id: "features", label: "Profiles" },
@@ -188,6 +189,7 @@ export default function LandingNav() {
             </nav>
 
             <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+              <ThemeToggle compact />
               <Link
                 href="/login"
                 className="hidden text-sm text-[var(--ink-muted)] transition hover:text-[var(--ink)] sm:inline-flex"

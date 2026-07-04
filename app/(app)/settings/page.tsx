@@ -5,6 +5,7 @@ import PrivacyForm from "@/components/settings/PrivacyForm";
 import ChangePasswordForm from "@/components/settings/ChangePasswordForm";
 import DeleteAccountSection from "@/components/settings/DeleteAccountSection";
 import AvatarImage from "@/components/ui/AvatarImage";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 import { unblockUser } from "./actions";
 
 type BlockedRow = {
@@ -32,6 +33,12 @@ export default async function SettingsPage() {
   return (
     <main className="mx-auto max-w-xl px-5 py-10">
       <h1 className="mb-6 text-2xl font-semibold tracking-[-0.02em]">Settings</h1>
+
+      <section className="mb-6 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6">
+        <h2 className="mb-4 text-lg font-semibold">Appearance</h2>
+        <p className="mb-3 text-sm text-[var(--ink-muted)]">Choose light, dark, or match your system.</p>
+        <ThemeToggle />
+      </section>
 
       <section className="mb-6 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6">
         <h2 className="mb-4 text-lg font-semibold">Privacy</h2>
