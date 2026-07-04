@@ -13,7 +13,7 @@ const CATEGORIES: { value: Category; label: string }[] = [
 
 // Trigger only rendered for logged-in users (Navbar gates on username).
 // No viewer-id prop plumbed through Navbar — fetched on open instead.
-export default function FeedbackButton() {
+export default function FeedbackButton({ className }: { className?: string }) {
   const [open, setOpen] = useState(false);
   const [category, setCategory] = useState<Category>("bug");
   const [message, setMessage] = useState("");
@@ -62,7 +62,7 @@ export default function FeedbackButton() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="text-[var(--ink-muted)] hover:text-[var(--ink)]"
+        className={className ?? "text-[var(--ink-muted)] hover:text-[var(--ink)]"}
       >
         Feedback
       </button>

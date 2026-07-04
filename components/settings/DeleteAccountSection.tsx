@@ -3,21 +3,20 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
 // Security boundary is the edge fn's verified JWT, not this form. Typed
-// username + confirm() are UX friction only.
+// username + a final ConfirmDialog step are UX friction only.
 export default function DeleteAccountSection({ username }: { username: string }) {
   const router = useRouter();
   const [typed, setTyped] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const matches = typed === username;
 
   async function handleDelete() {
-    if (!matches || pending) return;
-    if (!confirm("This permanently deletes your account and all your data. This cannot be undone. Continue?")) return;
-
     setPending(true);
     setError(null);
     const supabase = createClient();
@@ -61,12 +60,22 @@ export default function DeleteAccountSection({ username }: { username: string })
 
       <button
         type="button"
-        onClick={handleDelete}
+        onClick={() => setConfirmOpen(true)}
         disabled={!matches || pending}
         className="w-full rounded-md bg-[#c0392b] px-4 py-2.5 text-[15px] font-medium text-white transition active:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
       >
         {pending ? "Deleting…" : "Delete my account"}
       </button>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={handleDelete}
+        title="Delete account"
+        message="This permanently deletes your account and all your data. This cannot be undone."
+        confirmLabel="Delete"
+        destructive
+      />
     </section>
   );
 }

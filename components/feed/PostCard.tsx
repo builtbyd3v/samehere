@@ -1,8 +1,7 @@
 import Link from "next/link";
 import ReactionRow from "./ReactionRow";
 import PostMediaGrid from "./PostMediaGrid";
-import DeletePostButton from "./DeletePostButton";
-import ReportButton from "./ReportButton";
+import PostMenu from "./PostMenu";
 import UserBadges from "@/components/profile/UserBadges";
 import type { PostMedia } from "@/lib/media";
 
@@ -88,10 +87,11 @@ export default function PostCard({ post, viewerId }: { post: FeedPost; viewerId:
           </p>
         </div>
 
-        <div className="ml-auto flex items-center gap-3">
-          <ReportButton postId={post.id} viewerId={viewerId} authorId={post.user_id} />
-          <DeletePostButton postId={post.id} canDelete={viewerId === post.user_id} />
-        </div>
+        {a && (
+          <div className="ml-auto">
+            <PostMenu postId={post.id} authorId={post.user_id} authorUsername={a.username} viewerId={viewerId} />
+          </div>
+        )}
       </div>
 
       <Link href={`/post/${post.id}`} className="mt-3 block whitespace-pre-line break-words text-[15px] leading-relaxed text-[var(--ink)]">

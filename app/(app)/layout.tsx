@@ -10,12 +10,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     data: { user },
   } = await supabase.auth.getUser();
   const { data: profile } = user
-    ? await supabase.from("profiles").select("username").eq("id", user.id).single()
+    ? await supabase.from("profiles").select("username, avatar_url").eq("id", user.id).single()
     : { data: null };
 
   return (
     <>
-      <Navbar username={profile?.username ?? null} />
+      <Navbar username={profile?.username ?? null} avatarUrl={profile?.avatar_url ?? null} />
       {children}
     </>
   );

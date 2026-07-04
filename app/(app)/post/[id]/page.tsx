@@ -5,7 +5,7 @@ import { POST_SELECT, type FeedPost } from "@/components/feed/PostCard";
 import ReactionRow from "@/components/feed/ReactionRow";
 import CommentComposer from "@/components/feed/CommentComposer";
 import PostMediaGrid from "@/components/feed/PostMediaGrid";
-import DeletePostButton from "@/components/feed/DeletePostButton";
+import PostMenu from "@/components/feed/PostMenu";
 import DeleteCommentButton from "@/components/feed/DeleteCommentButton";
 import UserBadges from "@/components/profile/UserBadges";
 import { attachSignedMedia } from "@/lib/media";
@@ -76,9 +76,11 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
             {a && <span className="ml-1.5 text-sm text-[var(--ink-muted)]">@{a.username}</span>}
             <p className="text-sm text-[var(--ink-muted)]">{school ? `${school} · ` : ""}{when}</p>
           </div>
-          <div className="ml-auto">
-            <DeletePostButton postId={post.id} canDelete={viewerId === post.user_id} />
-          </div>
+          {a && (
+            <div className="ml-auto">
+              <PostMenu postId={post.id} authorId={post.user_id} authorUsername={a.username} viewerId={viewerId} />
+            </div>
+          )}
         </div>
 
         <p className="mt-5 whitespace-pre-line break-words text-[17px] leading-relaxed text-[var(--ink)]">

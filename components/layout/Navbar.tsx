@@ -1,9 +1,15 @@
 import Link from "next/link";
-import { signOut } from "@/app/(auth)/actions";
-import FeedbackButton from "@/components/feedback/FeedbackButton";
+import NavMenu from "./NavMenu";
 
-// Server component — logout is a form action, links are plain, so no client JS.
-export default function Navbar({ username }: { username: string | null }) {
+// Server component — top-level stays plain links (no client JS); the avatar
+// dropdown is the one client island (NavMenu).
+export default function Navbar({
+  username,
+  avatarUrl,
+}: {
+  username: string | null;
+  avatarUrl: string | null;
+}) {
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--canvas)]/80 backdrop-blur">
       <nav className="mx-auto flex h-14 max-w-2xl items-center justify-between px-5">
@@ -11,34 +17,14 @@ export default function Navbar({ username }: { username: string | null }) {
           samehere
         </Link>
         <div className="flex items-center gap-4 text-sm">
-          <Link href="/feed" className="text-[var(--ink-muted)] hover:text-[var(--ink)]">
-            Feed
-          </Link>
           <Link href="/search" className="text-[var(--ink-muted)] hover:text-[var(--ink)]">
             Search
           </Link>
           <Link href="/saved" className="text-[var(--ink-muted)] hover:text-[var(--ink)]">
             Saved
           </Link>
-          <Link href="/pro" className="text-[var(--ink-muted)] hover:text-[var(--ink)]">
-            Pro
-          </Link>
-          {username && (
-            <Link href={`/profile/${username}`} className="text-[var(--ink-muted)] hover:text-[var(--ink)]">
-              Profile
-            </Link>
-          )}
-          {username && (
-            <Link href="/settings" className="text-[var(--ink-muted)] hover:text-[var(--ink)]">
-              Settings
-            </Link>
-          )}
-          {username && <FeedbackButton />}
-          <form action={signOut}>
-            <button type="submit" className="text-[var(--ink-muted)] hover:text-[var(--ink)]">
-              Log out
-            </button>
-          </form>
+          {/* notifications bell slots in here next (Phase 14) */}
+          {username && <NavMenu username={username} avatarUrl={avatarUrl} />}
         </div>
       </nav>
     </header>
