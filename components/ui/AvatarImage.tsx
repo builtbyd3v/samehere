@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { isAnimatedAvatarUrl } from "@/lib/avatar";
 
 // 1x1 transparent GIF — keeps layout while the animated src is unloaded.
@@ -26,29 +26,33 @@ export default function AvatarImage({
   src,
   alt = "",
   className,
+  style,
 }: {
   src: string;
   alt?: string;
   className?: string;
+  style?: CSSProperties;
 }) {
   const animated = isAnimatedAvatarUrl(src);
 
   if (!animated) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={src} alt={alt} className={className} />;
+    return <img src={src} alt={alt} className={className} style={style} />;
   }
 
-  return <AnimatedAvatarImage src={src} alt={alt} className={className} />;
+  return <AnimatedAvatarImage src={src} alt={alt} className={className} style={style} />;
 }
 
 function AnimatedAvatarImage({
   src,
   alt,
   className,
+  style,
 }: {
   src: string;
   alt: string;
   className?: string;
+  style?: CSSProperties;
 }) {
   const ref = useRef<HTMLImageElement>(null);
   const tabVisible = useSyncExternalStore(subscribeTabVisible, getTabVisible, () => true);
@@ -69,5 +73,5 @@ function AnimatedAvatarImage({
   const shouldPlay = tabVisible && inView;
 
   // eslint-disable-next-line @next/next/no-img-element
-  return <img ref={ref} src={shouldPlay ? src : PLACEHOLDER} alt={alt} className={className} />;
+  return <img ref={ref} src={shouldPlay ? src : PLACEHOLDER} alt={alt} className={className} style={style} />;
 }

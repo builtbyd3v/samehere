@@ -13,7 +13,9 @@ export default async function EditProfilePage() {
   const [{ data: profile }, { data: schoolRow }] = await Promise.all([
     supabase
       .from("profiles")
-      .select("username, display_name, avatar_url, year, major, bio, goals, skills, is_private, hide_school, heatmap_visibility")
+      .select(
+        "username, display_name, avatar_url, year, major, bio, goals, skills, is_private, hide_school, heatmap_visibility, is_pro, accent_color"
+      )
       .eq("id", user.id)
       .single(),
     supabase.from("profile_school").select("school").eq("profile_id", user.id).maybeSingle(),

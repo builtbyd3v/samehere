@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState, useState } from "react";
 import { updateProfile, type EditState } from "@/app/(app)/profile/edit/actions";
 import { createClient } from "@/lib/supabase/client";
+import { isPro } from "@/lib/pro";
 import AvatarImage from "@/components/ui/AvatarImage";
 import ProfileNudgePanel from "@/components/profile/ProfileNudgePanel";
 
@@ -21,6 +22,8 @@ export type EditInitial = {
   is_private: boolean;
   hide_school: boolean;
   heatmap_visibility: string;
+  is_pro: boolean;
+  accent_color: string | null;
 };
 
 const label = "block text-sm font-medium text-[var(--ink)]";
@@ -44,6 +47,8 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(initial.avatar_url);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [avatarErr, setAvatarErr] = useState<string | null>(null);
+  const [accentColor, setAccentColor] = useState<string | null>(initial.accent_color);
+  const pro = isPro(initial);
 
   // Upload straight from the browser to storage (no server hop). Stable path
   // {id}/avatar with upsert overwrites in place — no orphan files piling up.
@@ -176,6 +181,43 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
           <input id="skills" name="skills" type="text"
             defaultValue={(initial.skills ?? []).join(", ")} placeholder="react, python, design" className={field} />
           <p className={hint}>Comma-separated. Up to 20.</p>
+        </div>
+
+        <div className="mb-5">
+          <label className={label}>Accent color</label>
+          {pro ? (
+            <>
+              {/* Hidden field carries the submitted value; the color input is
+                  just the picker UI (no name) so "Clear" can null it out. */}
+              <input type="hidden" name="accent_color" value={accentColor ?? ""} />
+              <div className="mt-1.5 flex items-center gap-3">
+                <input
+                  type="color"
+                  aria-label="Accent color"
+                  value={accentColor ?? "#3b82f6"}
+                  onChange={(e) => setAccentColor(e.target.value)}
+                  className="h-10 w-14 cursor-pointer rounded-md border border-[var(--border)] bg-[var(--surface)] p-1"
+                />
+                {accentColor && (
+                  <button
+                    type="button"
+                    onClick={() => setAccentColor(null)}
+                    className="text-sm text-[var(--ink-muted)] underline"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              <p className={hint}>Shown as a ring around your avatar.</p>
+            </>
+          ) : (
+            <div className="mt-1.5 flex items-center gap-3">
+              <div className="h-10 w-14 rounded-md border border-[var(--border)] bg-[var(--canvas)] opacity-50" />
+              <Link href="/pro" className="text-sm text-[var(--ink-muted)] underline">
+                Custom accent · Pro
+              </Link>
+            </div>
+          )}
         </div>
 
         <button type="submit" disabled={pending}

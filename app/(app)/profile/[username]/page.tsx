@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import type { FollowState } from "@/components/profile/FollowButton";
 import ProfileActions from "@/components/profile/ProfileActions";
@@ -8,11 +9,13 @@ import BlockButton from "@/components/profile/BlockButton";
 import PostCard, { POST_SELECT, type FeedPost } from "@/components/feed/PostCard";
 import FeedTimeline from "@/components/feed/FeedTimeline";
 import ContributionHeatmap, { type HeatmapDay } from "@/components/profile/ContributionHeatmap";
+import ProfileViewers, { type ProfileViewer } from "@/components/profile/ProfileViewers";
 import { attachSignedMedia } from "@/lib/media";
 import { fetchQuotedReposts } from "@/lib/feed-quotes";
 import { mergeFeedTimeline } from "@/lib/feed-timeline";
 import UserBadges from "@/components/profile/UserBadges";
 import AvatarImage from "@/components/ui/AvatarImage";
+import { isPro } from "@/lib/pro";
 
 const YEAR_LABEL: Record<string, string> = {
   freshman: "Freshman",
@@ -79,7 +82,9 @@ export default async function ProfilePage({
     supabase.auth.getUser(),
     supabase
       .from("profiles")
-      .select("id, username, display_name, avatar_url, year, major, bio, goals, skills, is_private, heatmap_visibility, is_pro, is_founder")
+      .select(
+        "id, username, display_name, avatar_url, year, major, bio, goals, skills, is_private, heatmap_visibility, is_pro, is_founder, accent_color"
+      )
       .eq("username", username)
       .maybeSingle(),
   ]);
@@ -89,7 +94,16 @@ export default async function ProfilePage({
   const isOwner = user?.id === profile.id;
   const displayName = profile.display_name ?? profile.username;
 
-  const [schoolRes, countRes, relRes, postsRes, quotesRes, heatRes, blockedIdsRes, myBlockRes] = await Promise.all([
+  // Record the view fire-and-forget (after the response is sent) — never on own
+  // profile. record_profile_view also self-guards server-side; this just skips
+  // the call entirely for the owner.
+  if (user && !isOwner) {
+    after(async () => {
+      await supabase.rpc("record_profile_view", { p_viewed: profile.id });
+    });
+  }
+
+  const [schoolRes, countRes, relRes, postsRes, quotesRes, heatRes, blockedIdsRes, myBlockRes, viewsRes] = await Promise.all([
     supabase.from("profile_school").select("school").eq("profile_id", profile.id).maybeSingle(),
     supabase.rpc("get_profile_counts", { p_profile_id: profile.id }),
     user && !isOwner
@@ -113,6 +127,8 @@ export default async function ProfilePage({
     user && !isOwner
       ? supabase.from("blocks").select("id").eq("blocker_id", user.id).eq("blocked_id", profile.id).maybeSingle()
       : Promise.resolve({ data: null as { id: string } | null }),
+    // Owner-only RPC — returns empty for everyone else, so only bother calling it for the owner.
+    isOwner ? supabase.rpc("get_profile_views", { p_profile: profile.id }) : Promise.resolve({ data: [] as ProfileViewer[] }),
   ]);
 
   const viewerId = user?.id ?? null;
@@ -123,6 +139,8 @@ export default async function ProfilePage({
   const heatmap = (heatRes.data ?? []) as HeatmapDay[];
   const isBlocked = !!(blockedIdsRes.data ?? []).includes(profile.id);
   const amIBlocking = !!myBlockRes.data;
+  const profileIsPro = isPro(profile);
+  const profileViews = (viewsRes.data ?? []) as ProfileViewer[];
 
   const followState: FollowState =
     relRes.data?.status === "accepted" ? "following" : relRes.data?.status === "pending" ? "pending" : "none";
@@ -146,10 +164,14 @@ export default async function ProfilePage({
             <AvatarImage
               src={profile.avatar_url}
               alt=""
-              className="h-20 w-20 shrink-0 rounded-full border border-[var(--border)] object-cover sm:h-24 sm:w-24"
+              style={profile.accent_color ? { borderColor: profile.accent_color } : undefined}
+              className="h-20 w-20 shrink-0 rounded-full border-2 border-[var(--border)] object-cover sm:h-24 sm:w-24"
             />
           ) : (
-            <div className="grid h-20 w-20 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-2xl font-semibold text-[var(--ink-muted)] sm:h-24 sm:w-24">
+            <div
+              style={profile.accent_color ? { borderColor: profile.accent_color } : undefined}
+              className="grid h-20 w-20 shrink-0 place-items-center rounded-full border-2 border-[var(--border)] bg-[var(--featured-surface)] text-2xl font-semibold text-[var(--ink-muted)] sm:h-24 sm:w-24"
+            >
               {displayName.charAt(0).toUpperCase()}
             </div>
           )}
@@ -238,6 +260,14 @@ export default async function ProfilePage({
           <h2 className="mb-4 text-sm font-semibold text-[var(--ink)]">Activity</h2>
           <ContributionHeatmap data={heatmap} />
         </section>
+      )}
+
+      {isOwner && (
+        <ProfileViewers
+          isPro={profileIsPro}
+          count={profileViews.length}
+          recent={profileIsPro ? profileViews.slice(0, 5) : []}
+        />
       )}
 
       <section className="mt-6">

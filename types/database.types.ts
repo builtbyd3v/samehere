@@ -562,8 +562,43 @@ export type Database = {
           },
         ]
       }
+      profile_views: {
+        Row: {
+          created_at: string
+          viewed_id: string
+          viewer_id: string
+        }
+        Insert: {
+          created_at?: string
+          viewed_id: string
+          viewer_id: string
+        }
+        Update: {
+          created_at?: string
+          viewed_id?: string
+          viewer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_views_viewed_id_fkey"
+            columns: ["viewed_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_views_viewer_id_fkey"
+            columns: ["viewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
+          accent_color: string | null
+          avatar_is_animated: boolean
           avatar_url: string | null
           bio: string | null
           created_at: string | null
@@ -582,6 +617,8 @@ export type Database = {
           year: string | null
         }
         Insert: {
+          accent_color?: string | null
+          avatar_is_animated?: boolean
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
@@ -600,6 +637,8 @@ export type Database = {
           year?: string | null
         }
         Update: {
+          accent_color?: string | null
+          avatar_is_animated?: boolean
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
@@ -788,6 +827,16 @@ export type Database = {
           posts: number
         }[]
       }
+      get_profile_views: {
+        Args: { p_profile: string }
+        Returns: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          username: string
+        }[]
+      }
       list_dm_inbox: {
         Args: never
         Returns: {
@@ -823,6 +872,7 @@ export type Database = {
       }
       mark_dm_read: { Args: { p_conversation_id: string }; Returns: undefined }
       mark_all_notifications_read: { Args: never; Returns: undefined }
+      record_profile_view: { Args: { p_viewed: string }; Returns: undefined }
       reject_follow: { Args: { p_follower: string }; Returns: undefined }
       request_follow: { Args: { p_target: string }; Returns: string }
       use_ai_quota: {

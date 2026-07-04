@@ -4,8 +4,10 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { aiEnabled, generateText } from "@/lib/ai";
 import { fallbackProfileNudge, getProfileGaps } from "@/lib/profile-completion";
+import type { TablesUpdate } from "@/types/database.types";
 
 const YEARS = ["freshman", "sophomore", "junior", "senior", "grad"];
+const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 
 export type EditState = { error?: string };
 
@@ -25,7 +27,7 @@ export async function updateProfile(_prev: EditState, formData: FormData): Promi
 
   const yearRaw = str("year", 20);
 
-  const updates = {
+  const updates: TablesUpdate<"profiles"> = {
     display_name: str("display_name", 50) || null,
     major: str("major", 100) || null,
     bio: str("bio", 500) || null,
@@ -34,7 +36,19 @@ export async function updateProfile(_prev: EditState, formData: FormData): Promi
     skills: parseSkills(String(formData.get("skills") ?? "")),
   };
 
-  const { error: pErr } = await supabase.from("profiles").update(updates).eq("id", user.id);
+  // Trust boundary: never take the client's word for Pro status. Non-Pro
+  // requests simply don't touch accent_color (a lapsed Pro keeps their color
+  // until they next edit it).
+  const { data: proRow } = await supabase.from("profiles").select("is_pro").eq("id", user.id).single();
+  if (proRow?.is_pro) {
+    const accentRaw = str("accent_color", 7);
+    updates.accent_color = HEX_COLOR.test(accentRaw) ? accentRaw : null;
+  }
+
+  const { error: pErr } = await supabase
+    .from("profiles")
+    .update(updates)
+    .eq("id", user.id);
   if (pErr) return { error: "Could not save your profile. Try again." };
 
   const school = str("school", 100) || null;
