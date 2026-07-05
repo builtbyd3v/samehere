@@ -30,6 +30,7 @@ export type DemoProfile = {
   /** Shown under @username when school/year/major are empty (e.g. "Founder"). */
   role?: string;
   showFounderBadge?: boolean;
+  showCampusFounderBadge?: boolean;
   showProBadge?: boolean;
 };
 
@@ -106,6 +107,7 @@ export const DEMO_PROFILE: DemoProfile = {
   major: "",
   role: "Founder",
   showFounderBadge: true,
+  showCampusFounderBadge: true,
   showProBadge: true,
   bio: "Building samehere. A place for verified students to show up, share the real stuff, and find people who get it.",
   goals: "Ship a social network students actually want to use: verified, honest, and built around real connection.",

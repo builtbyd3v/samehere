@@ -11,7 +11,7 @@ import { IconSame } from "@/components/icons";
 import type { PostMedia } from "@/lib/media";
 
 export const POST_SELECT =
-  "id, content, created_at, user_id, media, post_type, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, is_private, is_pro, is_founder, profile_school(school)), reactions(user_id, type), reposts(user_id), bookmarks(user_id), comments(count)";
+  "id, content, created_at, user_id, media, post_type, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, is_private, is_pro, is_founder, is_campus_founder, profile_school(school)), reactions(user_id, type), reposts(user_id), bookmarks(user_id), comments(count)";
 
 export const PAGE = 20;
 
@@ -29,6 +29,7 @@ export type FeedPost = {
     is_private: boolean;
     is_pro: boolean;
     is_founder: boolean;
+    is_campus_founder: boolean;
     profile_school: { school: string | null } | null;
   } | null;
   reactions: { user_id: string; type: string }[];
@@ -134,7 +135,7 @@ export default function PostCard({
                   ) : (
                     <span className="font-semibold">{name}</span>
                   )}
-                  {a && <UserBadges isPro={a.is_pro} isFounder={a.is_founder} />}
+                  {a && <UserBadges isPro={a.is_pro} isFounder={a.is_founder} isCampusFounder={a.is_campus_founder} />}
                 </div>
                 <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">
                   {a && <span>@{a.username}</span>}

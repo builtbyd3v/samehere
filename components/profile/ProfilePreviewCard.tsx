@@ -46,7 +46,7 @@ export default function ProfilePreviewCard({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-x-1.5">
             <span className="font-semibold text-[var(--ink)]">{name}</span>
-            <UserBadges isPro={profile.is_pro} isFounder={profile.is_founder} />
+            <UserBadges isPro={profile.is_pro} isFounder={profile.is_founder} isCampusFounder={profile.is_campus_founder} />
           </div>
           <p className="text-sm text-[var(--ink-muted)]">@{profile.username}</p>
         </div>

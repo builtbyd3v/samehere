@@ -1,21 +1,28 @@
-import { IconBolt, IconCrown } from "@/components/icons";
+import { IconBolt, IconCrown, IconFlag } from "@/components/icons";
 
 // ponytail: one badge component, all surfaces import it
 export default function UserBadges({
   isPro,
   isFounder,
+  isCampusFounder,
   className = "h-4 w-4",
 }: {
   isPro?: boolean;
   isFounder?: boolean;
+  isCampusFounder?: boolean;
   className?: string;
 }) {
-  if (!isPro && !isFounder) return null;
+  if (!isPro && !isFounder && !isCampusFounder) return null;
   return (
     <span className="inline-flex shrink-0 items-center gap-0.5">
       {isFounder && (
         <span title="Founder" className="text-[var(--blue)]">
           <IconCrown className={className} />
+        </span>
+      )}
+      {isCampusFounder && (
+        <span title="Campus Founder" className="text-amber-500">
+          <IconFlag className={className} />
         </span>
       )}
       {isPro && (

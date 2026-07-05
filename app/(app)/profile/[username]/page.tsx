@@ -84,7 +84,7 @@ export default async function ProfilePage({
     supabase
       .from("profiles")
       .select(
-        "id, username, display_name, avatar_url, year, major, bio, goals, skills, courses, is_private, heatmap_visibility, is_pro, is_founder, accent_color"
+        "id, username, display_name, avatar_url, year, major, bio, goals, skills, courses, is_private, heatmap_visibility, is_pro, is_founder, is_campus_founder, accent_color"
       )
       .eq("username", username)
       .maybeSingle(),
@@ -191,7 +191,7 @@ export default async function ProfilePage({
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                   <h1 className="text-2xl font-semibold tracking-[-0.025em] sm:text-[28px]">{displayName}</h1>
-                  <UserBadges isPro={profile.is_pro} isFounder={profile.is_founder} />
+                  <UserBadges isPro={profile.is_pro} isFounder={profile.is_founder} isCampusFounder={profile.is_campus_founder} />
                 </div>
                 <p className="mt-0.5 text-[15px] text-[var(--ink-muted)]">@{profile.username}</p>
               </div>

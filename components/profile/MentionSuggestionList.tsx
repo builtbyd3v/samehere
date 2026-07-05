@@ -46,7 +46,7 @@ export default function MentionSuggestionList({
               <span className="min-w-0 flex-1">
                 <span className="flex flex-wrap items-center gap-x-1 font-medium text-[var(--ink)]">
                   {name}
-                  <UserBadges isPro={s.is_pro} isFounder={s.is_founder} />
+                  <UserBadges isPro={s.is_pro} isFounder={s.is_founder} isCampusFounder={s.is_campus_founder} />
                 </span>
                 <span className="block text-[var(--ink-muted)]">@{s.username}</span>
               </span>

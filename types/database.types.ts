@@ -611,11 +611,13 @@ export type Database = {
           heatmap_visibility: string
           hide_school: boolean
           id: string
+          is_campus_founder: boolean
           is_founder: boolean
           is_private: boolean
           is_pro: boolean
           leaderboard_opt_out: boolean
           major: string | null
+          referral_code: string | null
           skills: string[] | null
           username: string
           wants_pro: boolean
@@ -633,11 +635,13 @@ export type Database = {
           heatmap_visibility?: string
           hide_school?: boolean
           id: string
+          is_campus_founder?: boolean
           is_founder?: boolean
           is_private?: boolean
           is_pro?: boolean
           leaderboard_opt_out?: boolean
           major?: string | null
+          referral_code?: string | null
           skills?: string[] | null
           username: string
           wants_pro?: boolean
@@ -655,11 +659,13 @@ export type Database = {
           heatmap_visibility?: string
           hide_school?: boolean
           id?: string
+          is_campus_founder?: boolean
           is_founder?: boolean
           is_private?: boolean
           is_pro?: boolean
           leaderboard_opt_out?: boolean
           major?: string | null
+          referral_code?: string | null
           skills?: string[] | null
           username?: string
           wants_pro?: boolean
@@ -710,6 +716,39 @@ export type Database = {
           {
             foreignKeyName: "reactions_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referrals: {
+        Row: {
+          created_at: string
+          referred_id: string
+          referrer_id: string
+        }
+        Insert: {
+          created_at?: string
+          referred_id: string
+          referrer_id: string
+        }
+        Update: {
+          created_at?: string
+          referred_id?: string
+          referrer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_referred_id_fkey"
+            columns: ["referred_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referrer_id_fkey"
+            columns: ["referrer_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -833,6 +872,7 @@ export type Database = {
           avatar_url: string
           display_name: string
           id: string
+          is_campus_founder: boolean
           is_founder: boolean
           is_pro: boolean
           rank: number
@@ -874,10 +914,19 @@ export type Database = {
           avatar_url: string
           display_name: string
           id: string
+          is_campus_founder: boolean
           is_founder: boolean
           is_pro: boolean
           school: string
           username: string
+        }[]
+      }
+      get_referral_stats: {
+        Args: never
+        Returns: {
+          code: string
+          is_campus_founder: boolean
+          referral_count: number
         }[]
       }
       get_streak: {
@@ -940,6 +989,7 @@ export type Database = {
       record_profile_view: { Args: { p_viewed: string }; Returns: undefined }
       reject_follow: { Args: { p_follower: string }; Returns: undefined }
       request_follow: { Args: { p_target: string }; Returns: string }
+      set_referral_code: { Args: { p_code: string }; Returns: string }
       use_ai_quota: {
         Args: { p_cap: number; p_kind: string }
         Returns: boolean

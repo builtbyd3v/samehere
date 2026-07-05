@@ -55,6 +55,14 @@ export const IconCrown = ({ className = "h-4 w-4" }: { className?: string }) => 
   </svg>
 );
 
+/** Campus Founder badge — 100 referred signups at one school. Distinct from IconCrown (global Founder). */
+export const IconFlag = ({ className = "h-4 w-4" }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
+    <path d="M6 2a1 1 0 0 1 1 1v18a1 1 0 1 1-2 0V3a1 1 0 0 1 1-1Z" />
+    <path d="M7 3.5h10.3a1 1 0 0 1 .8 1.6L15.4 9l2.7 3.9a1 1 0 0 1-.8 1.6H7Z" />
+  </svg>
+);
+
 export const IconSearch = () => (
   <svg className={cls} {...s}>
     <circle cx="11" cy="11" r="7" />

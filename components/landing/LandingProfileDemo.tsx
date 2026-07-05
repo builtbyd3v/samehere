@@ -1,7 +1,7 @@
 "use client";
 
 import ContributionHeatmap from "@/components/profile/ContributionHeatmap";
-import { IconBolt, IconCrown } from "@/components/icons";
+import { IconBolt, IconCrown, IconFlag } from "@/components/icons";
 import { buildDemoHeatmap, DEMO_PROFILE } from "@/lib/landing/demo-data";
 import Reveal from "./Reveal";
 import { landingH2 } from "@/lib/landing/styles";
@@ -39,6 +39,11 @@ export default function LandingProfileDemo() {
                       {p.showFounderBadge && (
                         <span title="Founder badge · first 100 signed-up users" className="text-[var(--blue)]">
                           <IconCrown />
+                        </span>
+                      )}
+                      {p.showCampusFounderBadge && (
+                        <span title="Campus Founder badge · refer 100 students from your campus" className="text-amber-500">
+                          <IconFlag />
                         </span>
                       )}
                       {p.showProBadge && (
@@ -104,6 +109,9 @@ export default function LandingProfileDemo() {
 
           <p className="text-center text-xs text-[var(--ink-faint)]">
             Hover a day to see points. Same as on every profile.
+          </p>
+          <p className="text-center text-xs text-[var(--ink-faint)]">
+            Refer 100 students from your campus and earn the Campus Founder badge.
           </p>
         </Reveal>
       </div>

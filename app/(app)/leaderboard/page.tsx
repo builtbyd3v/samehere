@@ -116,7 +116,7 @@ export default async function LeaderboardPage({
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-x-1.5">
                         <span className="truncate font-medium text-[var(--ink)]">{name}</span>
-                        <UserBadges isPro={row.is_pro} isFounder={row.is_founder} />
+                        <UserBadges isPro={row.is_pro} isFounder={row.is_founder} isCampusFounder={row.is_campus_founder} />
                       </div>
                       <p className="truncate text-xs text-[var(--ink-muted)]">
                         @{row.username}

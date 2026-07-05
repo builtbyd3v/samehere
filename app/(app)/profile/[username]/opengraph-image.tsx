@@ -23,6 +23,7 @@ const INK_FAINT = "rgba(28, 28, 28, 0.45)";
 const BORDER = "rgba(28, 28, 28, 0.14)";
 const SURFACE_CARD = "#f0ece4";
 const BLUE = "#0075de";
+const AMBER = "#b45309";
 const HM = ["rgba(28, 28, 28, 0.06)", "#bcd8f5", "#5fa0e8", "#0075de"];
 
 const level = (points: number) => (points === 0 ? 0 : points <= 3 ? 1 : points <= 7 ? 2 : 3);
@@ -34,6 +35,7 @@ type Profile = {
   avatar_url: string | null;
   is_pro: boolean;
   is_founder: boolean;
+  is_campus_founder: boolean;
 };
 
 const WEEKS = 26;
@@ -186,7 +188,7 @@ function HeatmapCard({
             <div style={{ marginTop: 10, fontSize: 16, color: INK_FAINT }}>{metaParts.join(" · ")}</div>
           )}
 
-          {(profile.is_pro || profile.is_founder) && (
+          {(profile.is_pro || profile.is_founder || profile.is_campus_founder) && (
             <div style={{ display: "flex", marginTop: 16 }}>
               {profile.is_founder && (
                 <div
@@ -202,6 +204,22 @@ function HeatmapCard({
                   }}
                 >
                   Founder
+                </div>
+              )}
+              {profile.is_campus_founder && (
+                <div
+                  style={{
+                    display: "flex",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: AMBER,
+                    border: `1px solid ${BORDER}`,
+                    borderRadius: 999,
+                    padding: "4px 12px",
+                    marginRight: 8,
+                  }}
+                >
+                  Campus Founder
                 </div>
               )}
               {profile.is_pro && (
@@ -300,6 +318,7 @@ export default async function Image({ params }: { params: Promise<{ username: st
           avatar_url: card.avatar_url,
           is_pro: card.is_pro,
           is_founder: card.is_founder,
+          is_campus_founder: card.is_campus_founder,
         };
         school = card.school ?? null;
         const { data: heatRes } = await supabase.rpc("get_public_heatmap", { p_profile_id: card.id });

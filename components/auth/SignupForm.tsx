@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
+import { useSearchParams } from "next/navigation";
 import { signUp, type AuthState } from "@/app/(auth)/actions";
 import AuthAlert from "./AuthAlert";
 import AuthCard from "./AuthCard";
@@ -12,6 +13,7 @@ import { authHint, authInput, authInputError, authLabel } from "./auth-fields";
 export default function SignupForm() {
   const [state, formAction, pending] = useActionState<AuthState, FormData>(signUp, {});
   const hasError = !!state.error;
+  const refFromLink = useSearchParams().get("ref") ?? "";
 
   if (state.ok && state.email) {
     return <SignupSuccess email={state.email} />;
@@ -70,6 +72,22 @@ export default function SignupForm() {
             aria-invalid={hasError}
             className={hasError ? authInputError : authInput}
           />
+        </div>
+
+        <div className="mb-5">
+          <label htmlFor="ref_code" className={authLabel}>
+            Referral code <span className="font-normal text-[var(--ink-muted)]">(optional)</span>
+          </label>
+          <input
+            id="ref_code"
+            name="ref_code"
+            type="text"
+            autoComplete="off"
+            defaultValue={refFromLink}
+            placeholder="friendcode"
+            className={authInput}
+          />
+          <p className={authHint}>Have a referral code? Enter it here.</p>
         </div>
 
         <AuthSubmitButton pending={pending} pendingLabel="Creating account…">

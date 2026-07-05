@@ -9,6 +9,7 @@ export type ProfilePreview = {
   major: string | null;
   is_pro: boolean;
   is_founder: boolean;
+  is_campus_founder: boolean;
   profile_school: { school: string | null } | null;
 };
 
@@ -18,10 +19,11 @@ export type MentionSuggestion = {
   avatar_url: string | null;
   is_pro: boolean;
   is_founder: boolean;
+  is_campus_founder: boolean;
 };
 
 const PREVIEW_SELECT =
-  "username, display_name, avatar_url, bio, year, major, is_pro, is_founder, profile_school(school)";
+  "username, display_name, avatar_url, bio, year, major, is_pro, is_founder, is_campus_founder, profile_school(school)";
 
 const cache = new Map<string, ProfilePreview | null>();
 
@@ -51,7 +53,7 @@ export async function searchMentionUsers(
   if (!q) {
     const { data } = await supabase
       .from("profiles")
-      .select("username, display_name, avatar_url, is_pro, is_founder")
+      .select("username, display_name, avatar_url, is_pro, is_founder, is_campus_founder")
       .order("created_at", { ascending: false })
       .limit(5);
     return (data as MentionSuggestion[]) ?? [];

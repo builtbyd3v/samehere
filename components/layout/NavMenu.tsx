@@ -29,8 +29,14 @@ function MenuItems({
 
   return (
     <>
-      <MenuLink href="/notifications">Notifications</MenuLink>
-      <MenuLink href="/messages">Messages</MenuLink>
+      <Link
+        href="/referrals"
+        onClick={() => close?.()}
+        className="mb-1 flex flex-col gap-0.5 rounded-md border border-[var(--border-strong)] bg-[var(--featured-surface)] px-3 py-2 transition active:scale-[0.98]"
+      >
+        <span className="text-sm font-medium text-[var(--ink)]">Invite friends</span>
+        <span className="text-xs text-[var(--ink-muted)]">Share your link, race to 100</span>
+      </Link>
       <MenuLink href={`/profile/${username}`}>Profile</MenuLink>
       <MenuLink href="/saved">Saved</MenuLink>
       <MenuLink href="/settings">Settings</MenuLink>

@@ -16,6 +16,7 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   const username = String(formData.get("username") ?? "").trim().toLowerCase();
+  const refCode = String(formData.get("ref_code") ?? "").trim().toLowerCase();
 
   // Never trust the client — the .edu gate and minimums are enforced here, server-side.
   if (!isEduEmail(email)) return { error: "Enter a valid .edu school email address." };
@@ -33,7 +34,9 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
     email,
     password,
     options: {
-      data: { username }, // read by the handle_new_user trigger
+      // read by the handle_new_user trigger; ref_code is optional attribution,
+      // never blocks signup if it's empty or turns out invalid
+      data: refCode ? { username, ref_code: refCode } : { username },
       emailRedirectTo: `${origin}/auth/confirm`,
     },
   });
