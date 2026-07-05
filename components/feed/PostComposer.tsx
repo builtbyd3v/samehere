@@ -7,6 +7,7 @@ import { useSubmitShortcut } from "@/lib/useSubmitShortcut";
 import { submitShortcutLabel } from "@/lib/keyboard";
 import { TEXT_LIMITS } from "@/lib/utils/validation";
 import MentionTextarea from "@/components/ui/MentionTextarea";
+import { IconSame } from "@/components/icons";
 
 // 150 chars earns a heatmap point, it does NOT gate posting.
 const POINT_AT = 150; // ponytail: mirrors log_contribution post threshold
@@ -27,6 +28,7 @@ export default function PostComposer() {
   const [len, setLen] = useState(0);
   const [content, setContent] = useState("");
   const [files, setFiles] = useState<Picked[]>([]);
+  const [teammate, setTeammate] = useState(false);
   const [mediaErr, setMediaErr] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [supabase] = useState(createClient);
@@ -48,6 +50,7 @@ export default function PostComposer() {
       setLen(0);
       files.forEach((f) => URL.revokeObjectURL(f.url));
       setFiles([]);
+      setTeammate(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.ok]);
@@ -208,6 +211,22 @@ export default function PostComposer() {
           {mediaErr ?? state.error}
         </p>
       )}
+
+      <div className="mt-3 flex items-center">
+        <button
+          type="button"
+          onClick={() => setTeammate((v) => !v)}
+          aria-pressed={teammate}
+          className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition active:scale-[0.97] ${
+            teammate
+              ? "border-[var(--blue)] bg-[var(--blue)]/10 text-[var(--blue)]"
+              : "border-[var(--border)] text-[var(--ink-muted)] hover:bg-[var(--featured-surface)]"
+          }`}
+        >
+          <IconSame className="h-3 w-3" /> Looking for a teammate
+        </button>
+        {teammate && <input type="hidden" name="post_type" value="teammate" />}
+      </div>
 
       <div className="mt-3 flex items-center justify-between border-t border-[var(--border)] pt-3">
         <div className="flex items-center gap-3">

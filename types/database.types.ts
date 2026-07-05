@@ -513,6 +513,7 @@ export type Database = {
           created_at: string | null
           id: string
           media: Json
+          post_type: string | null
           user_id: string | null
         }
         Insert: {
@@ -520,6 +521,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           media?: Json
+          post_type?: string | null
           user_id?: string | null
         }
         Update: {
@@ -527,6 +529,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           media?: Json
+          post_type?: string | null
           user_id?: string | null
         }
         Relationships: [
@@ -601,6 +604,7 @@ export type Database = {
           avatar_is_animated: boolean
           avatar_url: string | null
           bio: string | null
+          courses: string[] | null
           created_at: string | null
           display_name: string | null
           goals: string | null
@@ -622,6 +626,7 @@ export type Database = {
           avatar_is_animated?: boolean
           avatar_url?: string | null
           bio?: string | null
+          courses?: string[] | null
           created_at?: string | null
           display_name?: string | null
           goals?: string | null
@@ -643,6 +648,7 @@ export type Database = {
           avatar_is_animated?: boolean
           avatar_url?: string | null
           bio?: string | null
+          courses?: string[] | null
           created_at?: string | null
           display_name?: string | null
           goals?: string | null

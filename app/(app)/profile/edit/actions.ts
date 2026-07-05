@@ -33,7 +33,8 @@ export async function updateProfile(_prev: EditState, formData: FormData): Promi
     bio: str("bio", 500) || null,
     goals: str("goals", 500) || null,
     year: YEARS.includes(yearRaw) ? yearRaw : null,
-    skills: parseSkills(String(formData.get("skills") ?? "")),
+    skills: parseTags(String(formData.get("skills") ?? "")),
+    courses: parseTags(String(formData.get("courses") ?? "")),
   };
 
   // Trust boundary: never take the client's word for Pro status. Non-Pro
@@ -120,9 +121,10 @@ export async function profileNudge(): Promise<string> {
   return fallbackProfileNudge(gaps);
 }
 
-// "a, b, a , ,c" -> ["a","b","c"], trimmed, de-duped, capped.
-function parseSkills(raw: string): string[] | null {
-  const skills = Array.from(
+// "a, b, a , ,c" -> ["a","b","c"], trimmed, de-duped, capped. Shared by
+// skills + courses (courses is the same shape: freeform text[] tags).
+function parseTags(raw: string): string[] | null {
+  const tags = Array.from(
     new Set(
       raw
         .split(",")
@@ -130,5 +132,5 @@ function parseSkills(raw: string): string[] | null {
         .filter(Boolean)
     )
   ).slice(0, 20);
-  return skills.length ? skills : null;
+  return tags.length ? tags : null;
 }

@@ -21,8 +21,15 @@ async function searchProfiles(q: string): Promise<SearchResult[]> {
   const tokens = safe.split(/\s+/).filter(Boolean).slice(0, 5);
   if (!tokens.length) return [];
 
+  // safe already stripped ,()*% and \, so tokens are clean for both ilike and array-literal syntax.
   const orFilter = tokens
-    .flatMap((t) => [`username.ilike.%${t}%`, `display_name.ilike.%${t}%`])
+    .flatMap((t) => [
+      `username.ilike.%${t}%`,
+      `display_name.ilike.%${t}%`,
+      `major.ilike.%${t}%`,
+      `skills.cs.{${t}}`,
+      `courses.cs.{${t}}`,
+    ])
     .join(",");
 
   const supabase = await createClient();
@@ -45,7 +52,7 @@ export function FeedSearchForm({ q, tab }: { q: string; tab: string }) {
         name="q"
         defaultValue={q}
         maxLength={TEXT_LIMITS.searchQuery}
-        placeholder="Search students by name or username"
+        placeholder="Search by name, username, major, or skill"
         className={input}
         autoFocus
       />
@@ -66,7 +73,7 @@ export async function FeedSearchResults({ q }: { q: string }) {
       <div className="mt-4 rounded-xl border border-[var(--border)] bg-[var(--surface-card)] px-6 py-10 text-center">
         <p className="font-medium text-[var(--ink)]">No students found</p>
         <p className="mt-1.5 text-sm text-[var(--ink-muted)]">
-          Nothing matched &ldquo;{q}&rdquo;. Try a different name, username, or school.
+          Nothing matched &ldquo;{q}&rdquo;. Try a different name, username, major, or skill.
         </p>
       </div>
     );

@@ -19,6 +19,7 @@ export type EditInitial = {
   bio: string | null;
   goals: string | null;
   skills: string[] | null;
+  courses: string[] | null;
   is_private: boolean;
   hide_school: boolean;
   heatmap_visibility: string;
@@ -181,6 +182,14 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
             <input id="skills" name="skills" type="text"
               defaultValue={(initial.skills ?? []).join(", ")} placeholder="react, python, design" className={field} />
             <p className={hint}>Comma-separated. Up to 20.</p>
+          </div>
+
+          {/* ponytail: mirrors the skills field exactly, same tag-input pattern */}
+          <div>
+            <label htmlFor="courses" className={label}>Courses</label>
+            <input id="courses" name="courses" type="text"
+              defaultValue={(initial.courses ?? []).join(", ")} placeholder="CS 61A, MATH 54" className={field} />
+            <p className={hint}>Add courses you're taking. Comma-separated. Up to 20.</p>
           </div>
 
           <div className="border-t border-[var(--border)] pt-4">

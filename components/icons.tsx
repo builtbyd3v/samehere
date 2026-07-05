@@ -11,8 +11,8 @@ export const IconHeart = ({ on }: { on?: boolean }) => (
   </svg>
 );
 
-export const IconSame = ({ on }: { on?: boolean }) => (
-  <svg className={cls} {...s} fill={fillIf(on)}>
+export const IconSame = ({ on, className = cls }: { on?: boolean; className?: string }) => (
+  <svg className={className} {...s} fill={fillIf(on)}>
     <circle cx="9" cy="8" r="3.6" />
     <path d="M2.5 20v-1a6.5 6.5 0 0 1 13 0v1Z" />
     <circle cx="17" cy="8.5" r="2.8" />

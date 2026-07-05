@@ -7,10 +7,11 @@ import AvatarImage from "@/components/ui/AvatarImage";
 import MentionText from "@/components/ui/MentionText";
 import ProfileHoverLink from "@/components/profile/ProfileHoverLink";
 import PostBodyLink from "./PostBodyLink";
+import { IconSame } from "@/components/icons";
 import type { PostMedia } from "@/lib/media";
 
 export const POST_SELECT =
-  "id, content, created_at, user_id, media, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, is_private, is_pro, is_founder, profile_school(school)), reactions(user_id, type), reposts(user_id), bookmarks(user_id), comments(count)";
+  "id, content, created_at, user_id, media, post_type, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, is_private, is_pro, is_founder, profile_school(school)), reactions(user_id, type), reposts(user_id), bookmarks(user_id), comments(count)";
 
 export const PAGE = 20;
 
@@ -20,6 +21,7 @@ export type FeedPost = {
   created_at: string;
   user_id: string;
   media: PostMedia[];
+  post_type: string | null;
   author: {
     username: string;
     display_name: string | null;
@@ -159,6 +161,12 @@ export default function PostCard({
               <span className="font-medium text-[var(--ink)]">{name}</span>
               <span className="mx-1">@{a.username}</span>
             </p>
+          )}
+
+          {post.post_type === "teammate" && (
+            <span className="mb-1.5 mt-0.5 inline-flex w-fit items-center gap-1 rounded-full border border-[var(--border)] bg-[var(--featured-surface)] px-2 py-0.5 text-[11px] font-medium text-[var(--ink-muted)]">
+              <IconSame className="h-3 w-3" /> Looking for a teammate
+            </span>
           )}
 
           <PostBody content={post.content} linked={linked} postId={post.id} />

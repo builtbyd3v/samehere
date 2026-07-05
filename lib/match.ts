@@ -5,6 +5,8 @@ export type MatchSignal = {
   goals: string | null;
   bio: string | null;
   school: string | null;
+  // optional: callers that don't select courses yet stay backward-compatible.
+  courses?: string[] | null;
 };
 
 function norm(s: string | null): string {
@@ -20,9 +22,10 @@ function words(s: string | null): Set<string> {
 }
 
 // Weighted overlap. Higher = better fit. All comparisons case-insensitive.
-// school +3, major +2, year +1, each shared skill +1, each shared bio/goals
-// keyword (len>3, deduped) +0.5. // ponytail: fixed weights, no tuning knobs;
-// revisit only once real engagement data exists (v1.5 refinement).
+// school +3, major +2, year +1, each shared course +1.5 (classmate = strongest
+// concrete signal), each shared skill +1, each shared bio/goals keyword
+// (len>3, deduped) +0.5. // ponytail: fixed weights, no tuning knobs; revisit
+// only once real engagement data exists (v1.5 refinement).
 export function scoreOverlap(viewer: MatchSignal, candidate: MatchSignal): number {
   let score = 0;
 
@@ -34,6 +37,12 @@ export function scoreOverlap(viewer: MatchSignal, candidate: MatchSignal): numbe
 
   const year = norm(viewer.year);
   if (year && year === norm(candidate.year)) score += 1;
+
+  const viewerCourses = new Set((viewer.courses ?? []).map((c) => norm(c)).filter(Boolean));
+  const candidateCourses = new Set((candidate.courses ?? []).map((c) => norm(c)).filter(Boolean));
+  for (const c of viewerCourses) {
+    if (candidateCourses.has(c)) score += 1.5;
+  }
 
   const viewerSkills = new Set((viewer.skills ?? []).map((s) => norm(s)).filter(Boolean));
   const candidateSkills = new Set((candidate.skills ?? []).map((s) => norm(s)).filter(Boolean));

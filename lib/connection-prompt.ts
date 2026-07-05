@@ -30,8 +30,11 @@ export async function connectionPrompt(
   const year = norm(viewer.year) && norm(viewer.year) === norm(candidate.year) ? candidate.year : null;
   const viewerSkills = new Set((viewer.skills ?? []).map(norm).filter(Boolean));
   const sharedSkills = (candidate.skills ?? []).filter((s) => viewerSkills.has(norm(s)));
+  const viewerCourses = new Set((viewer.courses ?? []).map(norm).filter(Boolean));
+  const sharedCourses = (candidate.courses ?? []).filter((c) => viewerCourses.has(norm(c)));
 
   const template = (): string | null => {
+    if (sharedCourses.length > 0) return `Also taking ${sharedCourses[0]}.`;
     if (school && major) return `Also studies ${major} at ${school}.`;
     if (major) return `Also studies ${major}.`;
     if (school) return `Also at ${school}.`;
@@ -40,12 +43,13 @@ export async function connectionPrompt(
     return null;
   };
 
-  const hasSharedFact = !!(school || major || year || sharedSkills.length > 0);
+  const hasSharedFact = !!(school || major || year || sharedSkills.length > 0 || sharedCourses.length > 0);
 
   if (aiEnabled() && hasSharedFact) {
     const { data: withinCap } = await supabase.rpc("use_ai_quota", { p_kind: "connection_prompt", p_cap: 3 });
     if (withinCap) {
       const facts = [
+        sharedCourses.length > 0 && `same courses: ${sharedCourses.join(", ")}`,
         school && `same school: ${school}`,
         major && `same major: ${major}`,
         year && `same year: ${year}`,

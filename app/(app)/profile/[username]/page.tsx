@@ -84,7 +84,7 @@ export default async function ProfilePage({
     supabase
       .from("profiles")
       .select(
-        "id, username, display_name, avatar_url, year, major, bio, goals, skills, is_private, heatmap_visibility, is_pro, is_founder, accent_color"
+        "id, username, display_name, avatar_url, year, major, bio, goals, skills, courses, is_private, heatmap_visibility, is_pro, is_founder, accent_color"
       )
       .eq("username", username)
       .maybeSingle(),
@@ -253,6 +253,20 @@ export default async function ProfilePage({
                 className="rounded-full border border-[var(--border)] bg-[var(--canvas)] px-3 py-1 text-sm text-[var(--ink-muted)]"
               >
                 {s}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* ponytail: mirrors the skills chips above (same treatment), courses is the same text[] shape */}
+        {profile.courses && profile.courses.length > 0 && (
+          <div className="mt-5 flex flex-wrap gap-2 border-t border-[var(--border)] pt-5">
+            {profile.courses.map((c) => (
+              <span
+                key={c}
+                className="rounded-full border border-[var(--border)] bg-[var(--canvas)] px-3 py-1 text-sm text-[var(--ink-muted)]"
+              >
+                {c}
               </span>
             ))}
           </div>

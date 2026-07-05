@@ -18,6 +18,7 @@ import FeedTimeline from "@/components/feed/FeedTimeline";
 import { mergeFeedTimeline } from "@/lib/feed-timeline";
 import { fetchQuotedReposts } from "@/lib/feed-quotes";
 import { FeedSearchForm, FeedSearchResults } from "@/components/feed/FeedSearch";
+import { IconSame } from "@/components/icons";
 
 // Twitter-style feed: Latest (global recency) and Following (followed users'
 // posts + follow requests + suggested users — formerly the dashboard). Only
@@ -25,12 +26,13 @@ import { FeedSearchForm, FeedSearchResults } from "@/components/feed/FeedSearch"
 export default async function FeedPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; q?: string; search?: string }>;
+  searchParams: Promise<{ tab?: string; q?: string; search?: string; type?: string }>;
 }) {
   const params = await searchParams;
   const tab = params.tab === "following" ? "following" : "latest";
   const q = (params.q ?? "").trim();
   const searchOpen = params.search === "1" || !!q;
+  const type = params.type === "teammate" ? "teammate" : null;
   const supabase = await createClient();
 
   const {
@@ -59,7 +61,26 @@ export default async function FeedPage({
           }
           composer={<PostComposer />}
         />
-        <FeedTabs tab={tab} />
+        <div className="mt-3 flex items-center gap-2">
+          <FeedTabs tab={tab} />
+          <Link
+            href={
+              type === "teammate"
+                ? tab === "following"
+                  ? "/feed?tab=following"
+                  : "/feed"
+                : `/feed?type=teammate${tab === "following" ? "&tab=following" : ""}`
+            }
+            className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-medium transition active:scale-[0.97] ${
+              type === "teammate"
+                ? "border-[var(--blue)] bg-[var(--blue)]/10 text-[var(--blue)]"
+                : "border-[var(--border)] text-[var(--ink-muted)] hover:bg-[var(--featured-surface)]"
+            }`}
+          >
+            <IconSame className="h-3 w-3" />
+            {type === "teammate" ? "Teammate posts ×" : "Teammate posts"}
+          </Link>
+        </div>
       </div>
 
       {user && (
@@ -72,31 +93,34 @@ export default async function FeedPage({
       )}
 
       {tab === "latest" ? (
-        <LatestTab viewerId={viewerId} />
+        <LatestTab viewerId={viewerId} type={type} />
       ) : (
-        <FollowingTab userId={user?.id ?? null} viewerId={viewerId} />
+        <FollowingTab userId={user?.id ?? null} viewerId={viewerId} type={type} />
       )}
     </main>
   );
 }
 
 // ponytail: Latest = global recency; becomes a personalized "For You" once Phase 12 AI ranking lands.
-async function LatestTab({ viewerId }: { viewerId: string | null }) {
+async function LatestTab({ viewerId, type }: { viewerId: string | null; type: string | null }) {
   const supabase = await createClient();
+  let query = supabase
+    .from("posts")
+    .select(POST_SELECT)
+    .order("created_at", { ascending: false })
+    .limit(PAGE);
+  if (type) query = query.eq("post_type", type);
+
   const [{ data }, { data: blockedIds }] = await Promise.all([
-    supabase
-      .from("posts")
-      .select(POST_SELECT)
-      .order("created_at", { ascending: false })
-      .limit(PAGE)
-      .returns<FeedPost[]>(),
+    query.returns<FeedPost[]>(),
     viewerId ? supabase.rpc("get_blocked_ids") : Promise.resolve({ data: [] as string[] }),
   ]);
   const blocked = new Set(blockedIds ?? []);
   const filtered = data?.filter((p) => !blocked.has(p.user_id));
+  // ponytail: teammate filter skips the quote-repost merge — direct posts only.
   const [posts, quotes] = await Promise.all([
     filtered ? attachSignedMedia(supabase, filtered) : Promise.resolve(null),
-    fetchQuotedReposts(supabase, { limit: PAGE, blockedIds: blocked }),
+    type ? Promise.resolve([]) : fetchQuotedReposts(supabase, { limit: PAGE, blockedIds: blocked }),
   ]);
   const timeline = posts ? mergeFeedTimeline(posts, quotes).slice(0, PAGE) : [];
 
@@ -104,8 +128,12 @@ async function LatestTab({ viewerId }: { viewerId: string | null }) {
     <section className="flex flex-col gap-3">
       {timeline.length === 0 ? (
         <EmptyState
-          title="Nothing here yet"
-          description="Be the first to share what you are building or figuring out."
+          title={type ? "No teammate posts yet" : "Nothing here yet"}
+          description={
+            type
+              ? "No one is looking for a teammate right now. Check back soon."
+              : "Be the first to share what you are building or figuring out."
+          }
           action={{ label: "Find students", href: "/feed?search=1" }}
         />
       ) : (
@@ -115,6 +143,7 @@ async function LatestTab({ viewerId }: { viewerId: string | null }) {
             cursor={timeline[timeline.length - 1].created_at}
             hasMore={timeline.length === PAGE}
             viewerId={viewerId}
+            postType={type}
           />
         </>
       )}
@@ -122,7 +151,15 @@ async function LatestTab({ viewerId }: { viewerId: string | null }) {
   );
 }
 
-async function FollowingTab({ userId, viewerId }: { userId: string | null; viewerId: string | null }) {
+async function FollowingTab({
+  userId,
+  viewerId,
+  type,
+}: {
+  userId: string | null;
+  viewerId: string | null;
+  type: string | null;
+}) {
   // proxy already gates this route; userId is only null for a type-narrowing edge case.
   if (!userId) return null;
 
@@ -139,7 +176,7 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
     supabase.from("follows").select("following_id, status").eq("follower_id", userId),
     supabase
       .from("profiles")
-      .select("year, major, skills, goals, bio, profile_school(school)")
+      .select("year, major, skills, goals, bio, courses, profile_school(school)")
       .eq("id", userId)
       .single(),
     // ponytail: app-side filter post-fetch, not RLS on posts.
@@ -155,24 +192,31 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
   // ponytail: followed users' own posts only; reposts-in-feed deferred.
   const quoteAuthorIds = [userId, ...acceptedIds].filter((id): id is string => !!id);
 
+  // ponytail: teammate filter skips the quote-repost merge — direct posts only.
+  const followPostsPromise = (async () => {
+    if (!acceptedIds.length) return { data: [] as FeedPost[] };
+    let q = supabase
+      .from("posts")
+      .select(POST_SELECT)
+      .in("user_id", acceptedIds)
+      .order("created_at", { ascending: false })
+      .limit(PAGE);
+    if (type) q = q.eq("post_type", type);
+    return q.returns<FeedPost[]>();
+  })();
+
   const [{ data: followFeed }, quotes, { data: suggestedPool }] = await Promise.all([
-    acceptedIds.length
-      ? supabase
-          .from("posts")
-          .select(POST_SELECT)
-          .in("user_id", acceptedIds)
-          .order("created_at", { ascending: false })
-          .limit(PAGE)
-          .returns<FeedPost[]>()
-      : Promise.resolve({ data: [] as FeedPost[] }),
-    fetchQuotedReposts(supabase, {
-      userIds: quoteAuthorIds,
-      limit: PAGE,
-      blockedIds: blocked,
-    }),
+    followPostsPromise,
+    type
+      ? Promise.resolve([])
+      : fetchQuotedReposts(supabase, {
+          userIds: quoteAuthorIds,
+          limit: PAGE,
+          blockedIds: blocked,
+        }),
     supabase
       .from("profiles")
-      .select("id, username, display_name, avatar_url, created_at, year, major, skills, goals, bio, is_pro, is_founder, profile_school(school)")
+      .select("id, username, display_name, avatar_url, created_at, year, major, skills, goals, bio, courses, is_pro, is_founder, profile_school(school)")
       .not("id", "in", `(${excludeIds.join(",")})`)
       .order("created_at", { ascending: false })
       .limit(30),
@@ -188,6 +232,7 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
     goals: viewerProfile?.goals ?? null,
     bio: viewerProfile?.bio ?? null,
     school: viewerProfile?.profile_school?.school ?? null,
+    courses: viewerProfile?.courses ?? null,
   };
   const suggested = (suggestedPool ?? [])
     .map((s) => ({
@@ -199,6 +244,7 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
         goals: s.goals,
         bio: s.bio,
         school: s.profile_school?.school ?? null,
+        courses: s.courses,
       }),
     }))
     .sort((a, b) => b._score - a._score || ((a.created_at ?? "") < (b.created_at ?? "") ? 1 : -1))
@@ -215,54 +261,55 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
         goals: s.goals,
         bio: s.bio,
         school: s.profile_school?.school ?? null,
+        courses: s.courses,
       })
     )
   );
   const suggestedWithPrompt = suggested.map((s, i) => ({ ...s, _prompt: prompts[i] }));
 
+  // Reused as-is in the "People to follow" block (timeline non-empty) and inside
+  // the composed empty state (timeline empty) — same cards, same follow affordance.
+  function suggestedCard(s: (typeof suggestedWithPrompt)[number]) {
+    const name = s.display_name ?? s.username;
+    return (
+      <div
+        key={s.id}
+        className="flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3"
+      >
+        {s.avatar_url ? (
+          <AvatarImage
+            src={s.avatar_url}
+            alt=""
+            className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover"
+          />
+        ) : (
+          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-sm font-semibold text-[var(--ink-muted)]">
+            {name.charAt(0).toUpperCase()}
+          </div>
+        )}
+        <div className="min-w-0 flex-1 text-sm">
+          <div className="flex flex-wrap items-center gap-x-1.5">
+            <Link href={`/profile/${s.username}`} className="font-medium hover:underline">
+              {name}
+            </Link>
+            <UserBadges isPro={s.is_pro} isFounder={s.is_founder} />
+            <span className="text-[var(--ink-muted)]">@{s.username}</span>
+          </div>
+          {s._prompt && <p className="mt-0.5 text-xs text-[var(--ink-muted)]">{s._prompt}</p>}
+        </div>
+        <FollowButton targetId={s.id} initial="none" />
+      </div>
+    );
+  }
+
   return (
     <section className="flex flex-col gap-3">
       {visibleRequests.length > 0 && <FollowRequests requests={visibleRequests} />}
 
-      {suggested && suggested.length > 0 && (
+      {timeline.length > 0 && suggestedWithPrompt.length > 0 && (
         <section className="mb-3 rounded-xl border border-[var(--border)] bg-[var(--surface-card)] p-4 sm:p-5">
           <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">People to follow</h2>
-          <div className="flex flex-col gap-2">
-            {suggestedWithPrompt.map((s) => {
-              const name = s.display_name ?? s.username;
-              return (
-                <div
-                  key={s.id}
-                  className="flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3"
-                >
-                  {s.avatar_url ? (
-                    <AvatarImage
-                      src={s.avatar_url}
-                      alt=""
-                      className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover"
-                    />
-                  ) : (
-                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-sm font-semibold text-[var(--ink-muted)]">
-                      {name.charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                  <div className="min-w-0 flex-1 text-sm">
-                    <div className="flex flex-wrap items-center gap-x-1.5">
-                      <Link href={`/profile/${s.username}`} className="font-medium hover:underline">
-                        {name}
-                      </Link>
-                      <UserBadges isPro={s.is_pro} isFounder={s.is_founder} />
-                      <span className="text-[var(--ink-muted)]">@{s.username}</span>
-                    </div>
-                    {s._prompt && (
-                      <p className="mt-0.5 text-xs text-[var(--ink-muted)]">{s._prompt}</p>
-                    )}
-                  </div>
-                  <FollowButton targetId={s.id} initial="none" />
-                </div>
-              );
-            })}
-          </div>
+          <div className="flex flex-col gap-2">{suggestedWithPrompt.map(suggestedCard)}</div>
         </section>
       )}
 
@@ -270,6 +317,14 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
         <div className="flex flex-col gap-3">
           <FeedTimeline items={timeline} viewerId={viewerId} />
         </div>
+      ) : suggestedWithPrompt.length > 0 ? (
+        <section className="rounded-xl border border-[var(--border)] bg-[var(--surface-card)] px-4 py-8 text-center sm:px-6">
+          <p className="font-medium text-[var(--ink)]">Your feed is empty</p>
+          <p className="mx-auto mt-1.5 max-w-sm text-sm text-[var(--ink-muted)]">
+            Follow a few students below to start seeing their posts here.
+          </p>
+          <div className="mt-5 flex flex-col gap-2 text-left">{suggestedWithPrompt.map(suggestedCard)}</div>
+        </section>
       ) : (
         <EmptyState
           title="Your feed is empty"

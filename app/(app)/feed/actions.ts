@@ -12,17 +12,19 @@ export type ComposerState = { error?: string; ok?: boolean };
 // Next page for "Load more": posts strictly older than the cursor (created_at
 // of the last row shown). Keyset pagination — no OFFSET drift as new posts
 // arrive. RLS still restricts to visible posts.
-export async function loadMorePosts(cursor: string): Promise<FeedPost[]> {
+export async function loadMorePosts(cursor: string, postType?: string | null): Promise<FeedPost[]> {
   const supabase = await createClient();
   // ponytail: app-side filter post-fetch, not RLS on posts — mirrors the first page in feed/page.tsx.
+  let query = supabase
+    .from("posts")
+    .select(POST_SELECT)
+    .lt("created_at", cursor)
+    .order("created_at", { ascending: false })
+    .limit(PAGE);
+  if (postType) query = query.eq("post_type", postType);
+
   const [{ data }, { data: blockedIds }] = await Promise.all([
-    supabase
-      .from("posts")
-      .select(POST_SELECT)
-      .lt("created_at", cursor)
-      .order("created_at", { ascending: false })
-      .limit(PAGE)
-      .returns<FeedPost[]>(),
+    query.returns<FeedPost[]>(),
     supabase.rpc("get_blocked_ids"),
   ]);
   const blocked = new Set(blockedIds ?? []);
@@ -75,7 +77,9 @@ export async function createPost(_prev: ComposerState, formData: FormData): Prom
     media = parsed as { path: string; type: "image" | "video" }[];
   }
 
-  const { error } = await supabase.from("posts").insert({ user_id: user.id, content, media });
+  const postType = formData.get("post_type") === "teammate" ? "teammate" : null;
+
+  const { error } = await supabase.from("posts").insert({ user_id: user.id, content, media, post_type: postType });
   if (error) return { error: "Could not publish your post. Try again." };
 
   await supabase.rpc("log_contribution", {
