@@ -22,7 +22,11 @@ export default async function SettingsPage() {
   if (!user) redirect("/login");
 
   const [{ data: profile }, { data: blocks }] = await Promise.all([
-    supabase.from("profiles").select("username, is_private, hide_school, heatmap_visibility").eq("id", user.id).single(),
+    supabase
+      .from("profiles")
+      .select("username, is_private, hide_school, heatmap_visibility, leaderboard_opt_out")
+      .eq("id", user.id)
+      .single(),
     supabase
       .from("blocks")
       .select("blocked_id, blocked:profiles!blocks_blocked_id_fkey(username, display_name, avatar_url)")

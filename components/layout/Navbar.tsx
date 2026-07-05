@@ -1,7 +1,7 @@
 import Link from "next/link";
 import NavMenu from "./NavMenu";
 import NavIconBadge from "./NavIconBadge";
-import { IconBell, IconBolt, IconMail } from "@/components/icons";
+import { IconBell, IconBolt, IconCrown, IconMail } from "@/components/icons";
 
 export default function Navbar({
   username,
@@ -36,6 +36,9 @@ export default function Navbar({
         <div className="flex items-center gap-1 text-sm sm:gap-1.5">
           {username && (
             <>
+              <NavIconBadge href="/leaderboard" title="Leaderboard" count={0}>
+                <IconCrown className="h-5 w-5" />
+              </NavIconBadge>
               <NavIconBadge href="/messages" title="Messages" count={dmUnread}>
                 <IconMail />
               </NavIconBadge>

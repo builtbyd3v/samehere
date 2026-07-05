@@ -19,6 +19,7 @@ export async function updatePrivacy(_prev: PrivacyState, formData: FormData): Pr
     is_private: formData.get("is_private") === "on",
     hide_school: formData.get("hide_school") === "on",
     heatmap_visibility: hvRaw === "followers" ? "followers" : "public",
+    leaderboard_opt_out: formData.get("show_on_leaderboard") !== "on",
   };
 
   const { error } = await supabase.from("profiles").update(updates).eq("id", user.id);

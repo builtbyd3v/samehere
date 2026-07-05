@@ -10,6 +10,7 @@ export type PrivacyInitial = {
   is_private: boolean;
   hide_school: boolean;
   heatmap_visibility: string;
+  leaderboard_opt_out: boolean;
 };
 
 export default function PrivacyForm({ initial }: { initial: PrivacyInitial }) {
@@ -31,6 +32,10 @@ export default function PrivacyForm({ initial }: { initial: PrivacyInitial }) {
       <label className="flex items-center gap-2.5 text-sm text-[var(--ink)]">
         <input type="checkbox" name="hide_school" defaultChecked={initial.hide_school} className="h-4 w-4 accent-[var(--ink)]" />
         <span>Hide school <span className="text-[var(--ink-muted)]">, from people who don&apos;t follow you</span></span>
+      </label>
+      <label className="flex items-center gap-2.5 text-sm text-[var(--ink)]">
+        <input type="checkbox" name="show_on_leaderboard" defaultChecked={!initial.leaderboard_opt_out} className="h-4 w-4 accent-[var(--ink)]" />
+        <span>Show me on leaderboards</span>
       </label>
       <div>
         <label htmlFor="heatmap_visibility" className={label}>Heatmap visibility</label>

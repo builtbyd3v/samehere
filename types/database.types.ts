@@ -115,139 +115,6 @@ export type Database = {
           },
         ]
       }
-      conversation_members: {
-        Row: {
-          conversation_id: string
-          created_at: string
-          last_read_at: string | null
-          user_id: string
-        }
-        Insert: {
-          conversation_id: string
-          created_at?: string
-          last_read_at?: string | null
-          user_id: string
-        }
-        Update: {
-          conversation_id?: string
-          created_at?: string
-          last_read_at?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "conversation_members_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "conversations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "conversation_members_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      conversations: {
-        Row: {
-          created_at: string
-          id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      dm_pairs: {
-        Row: {
-          conversation_id: string
-          user_a: string
-          user_b: string
-        }
-        Insert: {
-          conversation_id: string
-          user_a: string
-          user_b: string
-        }
-        Update: {
-          conversation_id?: string
-          user_a?: string
-          user_b?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "dm_pairs_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: true
-            referencedRelation: "conversations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "dm_pairs_user_a_fkey"
-            columns: ["user_a"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "dm_pairs_user_b_fkey"
-            columns: ["user_b"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      messages: {
-        Row: {
-          content: string
-          conversation_id: string
-          created_at: string
-          id: string
-          sender_id: string
-        }
-        Insert: {
-          content: string
-          conversation_id: string
-          created_at?: string
-          id?: string
-          sender_id: string
-        }
-        Update: {
-          content?: string
-          conversation_id?: string
-          created_at?: string
-          id?: string
-          sender_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "messages_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "conversations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "messages_sender_id_fkey"
-            columns: ["sender_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       bookmarks: {
         Row: {
           created_at: string | null
@@ -381,6 +248,100 @@ export type Database = {
           },
         ]
       }
+      conversation_members: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          last_read_at: string | null
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          last_read_at?: string | null
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          last_read_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_members_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversations: {
+        Row: {
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      dm_pairs: {
+        Row: {
+          conversation_id: string
+          user_a: string
+          user_b: string
+        }
+        Insert: {
+          conversation_id: string
+          user_a: string
+          user_b: string
+        }
+        Update: {
+          conversation_id?: string
+          user_a?: string
+          user_b?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dm_pairs_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: true
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dm_pairs_user_a_fkey"
+            columns: ["user_a"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dm_pairs_user_b_fkey"
+            columns: ["user_b"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feedback: {
         Row: {
           category: string | null
@@ -407,6 +368,84 @@ export type Database = {
           {
             foreignKeyName: "feedback_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      follows: {
+        Row: {
+          created_at: string | null
+          follower_id: string | null
+          following_id: string | null
+          id: string
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          follower_id?: string | null
+          following_id?: string | null
+          id?: string
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          follower_id?: string | null
+          following_id?: string | null
+          id?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "follows_follower_id_fkey"
+            columns: ["follower_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follows_following_id_fkey"
+            columns: ["following_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -462,45 +501,6 @@ export type Database = {
           {
             foreignKeyName: "notifications_user_id_fkey"
             columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      follows: {
-        Row: {
-          created_at: string | null
-          follower_id: string | null
-          following_id: string | null
-          id: string
-          status: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          follower_id?: string | null
-          following_id?: string | null
-          id?: string
-          status?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          follower_id?: string | null
-          following_id?: string | null
-          id?: string
-          status?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "follows_follower_id_fkey"
-            columns: ["follower_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "follows_following_id_fkey"
-            columns: ["following_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -610,6 +610,7 @@ export type Database = {
           is_founder: boolean
           is_private: boolean
           is_pro: boolean
+          leaderboard_opt_out: boolean
           major: string | null
           skills: string[] | null
           username: string
@@ -630,6 +631,7 @@ export type Database = {
           is_founder?: boolean
           is_private?: boolean
           is_pro?: boolean
+          leaderboard_opt_out?: boolean
           major?: string | null
           skills?: string[] | null
           username: string
@@ -650,6 +652,7 @@ export type Database = {
           is_founder?: boolean
           is_private?: boolean
           is_pro?: boolean
+          leaderboard_opt_out?: boolean
           major?: string | null
           skills?: string[] | null
           username?: string
@@ -799,6 +802,16 @@ export type Database = {
       accept_follow: { Args: { p_follower: string }; Returns: undefined }
       block_user: { Args: { target: string }; Returns: undefined }
       get_blocked_ids: { Args: never; Returns: string[] }
+      get_dm_peer: {
+        Args: { p_conversation_id: string }
+        Returns: {
+          peer_avatar_url: string
+          peer_display_name: string
+          peer_id: string
+          peer_username: string
+        }[]
+      }
+      get_dm_unread_total: { Args: never; Returns: number }
       get_heatmap: {
         Args: { p_profile_id: string }
         Returns: {
@@ -807,17 +820,22 @@ export type Database = {
           points: number
         }[]
       }
-      get_dm_unread_total: { Args: never; Returns: number }
-      get_notification_unread_total: { Args: never; Returns: number }
-      get_dm_peer: {
-        Args: { p_conversation_id: string }
+      get_leaderboard: {
+        Args: { p_school?: string; p_scope: string }
         Returns: {
-          peer_avatar_url: string | null
-          peer_display_name: string | null
-          peer_id: string
-          peer_username: string
+          accent_color: string
+          avatar_url: string
+          display_name: string
+          id: string
+          is_founder: boolean
+          is_pro: boolean
+          rank: number
+          school: string
+          username: string
+          weekly_points: number
         }[]
       }
+      get_notification_unread_total: { Args: never; Returns: number }
       get_or_create_dm: { Args: { p_recipient: string }; Returns: string }
       get_profile_counts: {
         Args: { p_profile_id: string }
@@ -830,12 +848,53 @@ export type Database = {
       get_profile_views: {
         Args: { p_profile: string }
         Returns: {
-          avatar_url: string | null
+          avatar_url: string
           created_at: string
-          display_name: string | null
+          display_name: string
           id: string
           username: string
         }[]
+      }
+      get_public_heatmap: {
+        Args: { p_profile_id: string }
+        Returns: {
+          day: string
+          points: number
+        }[]
+      }
+      get_public_profile_card: {
+        Args: { p_username: string }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          id: string
+          is_founder: boolean
+          is_pro: boolean
+          school: string
+          username: string
+        }[]
+      }
+      get_streak: {
+        Args: { p_profile_id: string }
+        Returns: {
+          current_streak: number
+          longest_streak: number
+          today_earned: boolean
+        }[]
+      }
+      insert_notification: {
+        Args: {
+          p_actor_id: string
+          p_post_id?: string
+          p_reaction_type?: string
+          p_type: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
+      is_conversation_member: {
+        Args: { p_conversation_id: string }
+        Returns: boolean
       }
       list_dm_inbox: {
         Args: never
@@ -843,9 +902,9 @@ export type Database = {
           conversation_id: string
           last_message: string
           last_message_at: string
-          last_sender_id: string | null
-          peer_avatar_url: string | null
-          peer_display_name: string | null
+          last_sender_id: string
+          peer_avatar_url: string
+          peer_display_name: string
           peer_id: string
           peer_username: string
           unread_count: number
@@ -854,14 +913,14 @@ export type Database = {
       list_notifications: {
         Args: { p_limit?: number }
         Returns: {
-          actor_avatar_url: string | null
-          actor_display_name: string | null
+          actor_avatar_url: string
+          actor_display_name: string
           actor_id: string
           actor_username: string
           created_at: string
           id: string
-          post_id: string | null
-          reaction_type: string | null
+          post_id: string
+          reaction_type: string
           read: boolean
           type: string
         }[]
@@ -870,8 +929,8 @@ export type Database = {
         Args: { p_action_type: string; p_metadata?: Json }
         Returns: undefined
       }
-      mark_dm_read: { Args: { p_conversation_id: string }; Returns: undefined }
       mark_all_notifications_read: { Args: never; Returns: undefined }
+      mark_dm_read: { Args: { p_conversation_id: string }; Returns: undefined }
       record_profile_view: { Args: { p_viewed: string }; Returns: undefined }
       reject_follow: { Args: { p_follower: string }; Returns: undefined }
       request_follow: { Args: { p_target: string }; Returns: string }
