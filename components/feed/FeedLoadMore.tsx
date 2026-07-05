@@ -36,11 +36,7 @@ export default function FeedLoadMore({
         <PostCard key={post.id} post={post} viewerId={viewerId} />
       ))}
       {more && (
-        <button
-          onClick={onMore}
-          disabled={loading}
-          className="mx-auto mt-3 block rounded-full border border-[var(--border-strong)] px-5 py-2 text-sm font-medium transition hover:bg-[var(--featured-surface)] active:opacity-80 disabled:opacity-50"
-        >
+        <button type="button" onClick={onMore} disabled={loading} className="btn-ghost mx-auto mt-3">
           {loading ? "Loading…" : "Load more"}
         </button>
       )}

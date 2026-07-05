@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import AuthAlert from "./AuthAlert";
 import AuthCard from "./AuthCard";
-import { authHint, authInput, authLabel, authSubmit } from "./auth-fields";
+import AuthSubmitButton from "./AuthSubmitButton";
+import { authHint, authInput, authLabel } from "./auth-fields";
 
 export default function ForgotPasswordForm() {
   const [sent, setSent] = useState(false);
@@ -28,10 +30,11 @@ export default function ForgotPasswordForm() {
   if (sent) {
     return (
       <AuthCard title="Check your email">
-        <p className="text-[15px] leading-relaxed text-[var(--ink-muted)]">
-          If an account exists for that email, we sent a link to reset your password.
-        </p>
-        <p className={`${authHint} mt-4`}>
+        <AuthAlert
+          variant="success"
+          message="If an account exists for that email, we sent a link to reset your password."
+        />
+        <p className={authHint}>
           <Link href="/login" className="text-[var(--ink)] underline">
             Back to log in
           </Link>
@@ -58,9 +61,9 @@ export default function ForgotPasswordForm() {
           />
         </div>
 
-        <button type="submit" disabled={pending} className={authSubmit}>
-          {pending ? "Sending…" : "Send reset link"}
-        </button>
+        <AuthSubmitButton pending={pending} pendingLabel="Sending…">
+          Send reset link
+        </AuthSubmitButton>
       </form>
     </AuthCard>
   );

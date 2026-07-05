@@ -74,7 +74,7 @@ export const DEMO_POSTS: DemoPost[] = [
     school: "UCLA",
     avatarSeed: "jordan-samehere",
     minutesAgo: 1440,
-    content: "Shipped my first side project at 2am. No portfolio piece — just something I wanted to exist.",
+    content: "Shipped my first side project at 2am. No portfolio piece, just something I wanted to exist.",
     likes: 9,
     samehere: 18,
     comments: 5,
@@ -108,7 +108,7 @@ export const DEMO_PROFILE: DemoProfile = {
   showFounderBadge: true,
   showProBadge: true,
   bio: "Building samehere. A place for verified students to show up, share the real stuff, and find people who get it.",
-  goals: "Ship a social network students actually want to use — verified, honest, and built around real connection.",
+  goals: "Ship a social network students actually want to use: verified, honest, and built around real connection.",
   skills: ["product", "TypeScript", "React", "community"],
   posts: 128,
   followers: 2940,
@@ -120,20 +120,20 @@ export const DEMO_SUGGESTIONS: DemoSuggestion[] = [
     name: "Priya Raman",
     username: "priyar",
     avatarSeed: "priya-samehere",
-    prompt: "You're both CS juniors at UT Austin — Priya posts about imposter syndrome while applying to internships.",
+    prompt: "You're both CS juniors at UT Austin. Priya posts about imposter syndrome while applying to internships.",
   },
   {
     name: "Jordan Kim",
     username: "jkim",
     avatarSeed: "jordan-samehere",
-    prompt: "You share React and side-project goals — Jordan shipped a late-night build you might relate to.",
+    prompt: "You share React and side-project goals. Jordan shipped a late-night build you might relate to.",
   },
 ];
 
 export const DEMO_COMPOSER_NUDGES = [
   "What's one thing you're learning right now that isn't going on your résumé?",
   "Anyone on your campus dealing with the same midterm crunch? Say what week you're in.",
-  "Share a small win from this week — finished an assignment, fixed a bug, made a friend in class.",
+  "Share a small win from this week: finished an assignment, fixed a bug, made a friend in class.",
 ];
 
 function hash(seed: string, i: number): number {

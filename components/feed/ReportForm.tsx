@@ -70,11 +70,7 @@ export function ReportForm({
         className="w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
       />
       {error && <p role="alert" className="text-sm text-[#c0392b] dark:text-[#e88]">{error}</p>}
-      <button
-        type="submit"
-        disabled={pending}
-        className="btn-inset w-full rounded-md bg-[var(--ink)] px-4 py-1.5 text-sm font-medium text-[var(--canvas)] transition active:opacity-80 disabled:opacity-50"
-      >
+      <button type="submit" disabled={pending} className="btn-primary w-full">
         {pending ? "Submitting…" : "Submit report"}
       </button>
     </form>

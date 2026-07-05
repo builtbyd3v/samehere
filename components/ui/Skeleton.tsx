@@ -1,5 +1,5 @@
 export function Skeleton({ className = "" }: { className?: string }) {
-  return <div className={`animate-pulse rounded-md bg-[var(--featured-surface)] ${className}`} aria-hidden />;
+  return <div className={`skeleton ${className}`} aria-hidden />;
 }
 
 export function PostCardSkeleton() {

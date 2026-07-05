@@ -47,6 +47,7 @@ export default function FollowButton({
   }
 
   const shape = variant === "pill" ? "rounded-full px-4 py-2" : "rounded-md px-3 py-1.5";
+  const press = "active:scale-[0.98] disabled:active:scale-100";
 
   if (state === "none") {
     return (
@@ -54,9 +55,22 @@ export default function FollowButton({
         type="button"
         onClick={follow}
         disabled={busy}
-        className={`btn-inset bg-[var(--ink)] text-sm font-medium text-[var(--canvas)] transition active:opacity-80 disabled:opacity-50 ${shape} ${className}`}
+        className={`btn-inset bg-[var(--ink)] text-sm font-medium text-[var(--canvas)] transition active:opacity-80 disabled:opacity-50 ${press} ${shape} ${className}`}
       >
-        Follow
+        {busy ? "Following…" : "Follow"}
+      </button>
+    );
+  }
+
+  if (state === "pending") {
+    return (
+      <button
+        type="button"
+        onClick={remove}
+        disabled={busy}
+        className={`border border-[var(--border-strong)] text-sm font-medium text-[var(--ink-muted)] transition hover:bg-[var(--featured-surface)] active:opacity-80 disabled:opacity-50 ${press} ${shape} ${className}`}
+      >
+        Requested
       </button>
     );
   }
@@ -66,14 +80,10 @@ export default function FollowButton({
       type="button"
       onClick={remove}
       disabled={busy}
-      className={`group border border-[var(--border-strong)] text-sm font-medium transition active:opacity-80 disabled:opacity-50 ${shape} ${className}`}
+      className={`group border border-[var(--border-strong)] text-sm font-medium transition hover:border-[#c0392b] hover:bg-[#c0392b]/[0.06] hover:text-[#c0392b] active:opacity-80 disabled:opacity-50 dark:hover:border-[#e88] dark:hover:text-[#e88] ${press} ${shape} ${className}`}
     >
-      {state === "pending" ? "Requested" : (
-        <>
-          <span className="group-hover:hidden">Following</span>
-          <span className="hidden group-hover:inline">Unfollow</span>
-        </>
-      )}
+      <span className="group-hover:hidden">Following</span>
+      <span className="hidden group-hover:inline">Unfollow</span>
     </button>
   );
 }

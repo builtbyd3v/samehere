@@ -191,11 +191,11 @@ export default function ReactionRow(props: Props) {
           {repostMenu && post && (
             <>
               <button type="button" className="fixed inset-0 z-10" aria-label="Close menu" onClick={() => setRepostMenu(false)} />
-              <div className="absolute bottom-full left-0 z-20 mb-1 min-w-[9rem] rounded-lg border border-[var(--border)] bg-[var(--surface-card)] py-1 shadow">
+              <div className="absolute bottom-full left-0 z-20 mb-1 min-w-[9rem] rounded-lg border border-[var(--border)] bg-[var(--surface-card)] py-1 shadow-lg animate-[menu-pop_120ms_ease] motion-reduce:animate-none">
                 <button
                   type="button"
                   onClick={toggleRepost}
-                  className="block w-full px-3 py-2 text-left text-sm hover:bg-[var(--featured-surface)]"
+                  className="block w-full px-3 py-2 text-left text-sm transition hover:bg-[var(--featured-surface)] active:scale-[0.98]"
                 >
                   {s.mineRepost ? "Undo repost" : "Repost"}
                 </button>
@@ -205,7 +205,7 @@ export default function ReactionRow(props: Props) {
                     setRepostMenu(false);
                     setQuoteOpen(true);
                   }}
-                  className="block w-full px-3 py-2 text-left text-sm hover:bg-[var(--featured-surface)]"
+                  className="block w-full px-3 py-2 text-left text-sm transition hover:bg-[var(--featured-surface)] active:scale-[0.98]"
                 >
                   Quote
                 </button>

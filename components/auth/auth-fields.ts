@@ -1,9 +1,12 @@
 export const authLabel = "block text-sm font-medium text-[var(--ink)]";
 
-export const authInput =
-  "mt-1.5 w-full rounded-md border border-[var(--border)] bg-[var(--canvas)] px-3 py-2.5 text-[15px] text-[var(--ink)] outline-none transition placeholder:text-[var(--ink-faint)] focus:border-[var(--border-strong)] focus:ring-2 focus:ring-[#3b82f6]/40";
+export const authInput = "input-base mt-1.5 py-2.5 text-[15px]";
+
+// Same visual treatment, additionally marked invalid so browsers/AT surface
+// the field alongside the top-level AuthAlert (no new validation logic).
+export const authInputError =
+  "input-base mt-1.5 py-2.5 text-[15px] border-red-400/60 dark:border-red-500/50 focus-visible:shadow-none focus-visible:ring-2 focus-visible:ring-red-400/40";
 
 export const authHint = "mt-1 text-xs text-[var(--ink-muted)]";
 
-export const authSubmit =
-  "btn-inset w-full rounded-md bg-[var(--ink)] px-4 py-2.5 text-[15px] font-medium text-[var(--canvas)] transition active:opacity-80 disabled:opacity-60";
+export const authSubmit = "btn-primary w-full py-2.5 text-[15px]";

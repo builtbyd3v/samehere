@@ -56,7 +56,7 @@ export default async function MessageThreadPage({
   }));
 
   return (
-    <main className="mx-auto flex min-h-[calc(100dvh-3.5rem)] max-w-2xl flex-col px-4 py-4 sm:px-5 sm:py-6">
+    <main className="page-enter mx-auto flex min-h-[calc(100dvh-3.5rem)] max-w-2xl flex-col px-4 py-4 sm:px-5 sm:py-6">
       <MessageMarkRead conversationId={id} />
       <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface-card)]">
         <MessageThreadHeader

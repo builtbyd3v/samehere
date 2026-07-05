@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import AuthAlert from "./AuthAlert";
 import AuthCard from "./AuthCard";
-import { authInput, authLabel, authSubmit } from "./auth-fields";
+import AuthSubmitButton from "./AuthSubmitButton";
+import { authInput, authInputError, authLabel } from "./auth-fields";
 
 export default function UpdatePasswordForm() {
   const router = useRouter();
@@ -43,14 +44,33 @@ export default function UpdatePasswordForm() {
   if (hasSession === false) {
     return (
       <AuthCard title="Link expired">
-        <p className="text-[15px] leading-relaxed text-[var(--ink-muted)]">
-          This reset link is no longer valid. Request a new one to continue.
-        </p>
+        <AuthAlert
+          variant="info"
+          message="This reset link is no longer valid. Request a new one to continue."
+        />
         <p className="mt-4 text-xs text-[var(--ink-muted)]">
           <Link href="/forgot-password" className="text-[var(--ink)] underline">
             Request a new link
           </Link>
         </p>
+      </AuthCard>
+    );
+  }
+
+  // hasSession === null: still verifying the recovery link. Show the card's
+  // shape as a skeleton instead of an interactive form that might flash away.
+  if (hasSession === null) {
+    return (
+      <AuthCard title="Set a new password">
+        <div className="mb-4">
+          <div className="skeleton h-3.5 w-28" />
+          <div className="skeleton mt-1.5 h-[42px] w-full" />
+        </div>
+        <div className="mb-5">
+          <div className="skeleton h-3.5 w-36" />
+          <div className="skeleton mt-1.5 h-[42px] w-full" />
+        </div>
+        <div className="skeleton h-[42px] w-full" />
       </AuthCard>
     );
   }
@@ -72,7 +92,8 @@ export default function UpdatePasswordForm() {
             required
             minLength={8}
             placeholder="At least 8 characters"
-            className={authInput}
+            aria-invalid={!!error}
+            className={error ? authInputError : authInput}
           />
         </div>
 
@@ -88,13 +109,14 @@ export default function UpdatePasswordForm() {
             required
             minLength={8}
             placeholder="Repeat your password"
-            className={authInput}
+            aria-invalid={!!error}
+            className={error ? authInputError : authInput}
           />
         </div>
 
-        <button type="submit" disabled={pending || hasSession === null} className={authSubmit}>
-          {pending ? "Updating…" : "Update password"}
-        </button>
+        <AuthSubmitButton pending={pending} pendingLabel="Updating…">
+          Update password
+        </AuthSubmitButton>
       </form>
     </AuthCard>
   );

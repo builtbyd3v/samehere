@@ -27,12 +27,11 @@ export type EditInitial = {
 };
 
 const label = "block text-sm font-medium text-[var(--ink)]";
-const field =
-  "mt-1.5 w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[15px] text-[var(--ink)] outline-none transition placeholder:text-[var(--ink-faint)] focus:border-[var(--border-strong)] focus:ring-2 focus:ring-[#3b82f6]/40";
+const field = "input-base mt-1.5";
 const hint = "mt-1 text-xs text-[var(--ink-muted)]";
 
 const YEARS: [string, string][] = [
-  ["", "—"],
+  ["", "Select year"],
   ["freshman", "Freshman"],
   ["sophomore", "Sophomore"],
   ["junior", "Junior"],
@@ -104,15 +103,15 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
         }}
       />
 
-      <form action={formAction} className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6">
+      <form action={formAction} className="card p-6">
         {state.error && (
-          <p role="alert" className="mb-5 rounded-md border border-[var(--border-strong)] px-3 py-2 text-sm">
+          <p role="alert" className="mb-5 rounded-md border border-[var(--border-strong)] bg-[var(--featured-surface)] px-3 py-2 text-sm text-[var(--ink)]">
             {state.error}
           </p>
         )}
 
         {/* Avatar */}
-        <div className="mb-5 flex items-center gap-4">
+        <div className="mb-6 flex items-center gap-4 border-b border-[var(--border)] pb-6">
           {avatarUrl ? (
             <AvatarImage
               src={avatarUrl}
@@ -127,101 +126,103 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
           <div>
             <label
               id="avatar-upload"
-              className="inline-block cursor-pointer rounded-md border border-[var(--border-strong)] px-3 py-1.5 text-sm font-medium transition active:opacity-80"
+              className="btn-ghost inline-flex cursor-pointer !py-1.5 text-sm"
             >
               <input type="file" accept="image/*" onChange={onAvatar} disabled={avatarBusy} className="hidden" />
               {avatarBusy ? "Uploading…" : "Change avatar"}
             </label>
-            <p className={avatarErr ? "mt-1 text-xs text-[#c0392b] dark:text-[#e88]" : hint}>
+            <p className={avatarErr ? "mt-1.5 text-xs text-[#c0392b] dark:text-[#e88]" : hint}>
               {avatarErr ?? "JPG, PNG, or WebP. Max 2 MB."}
             </p>
           </div>
         </div>
 
-        <div className="mb-4">
-          <label htmlFor="display_name" className={label}>Display name</label>
-          <input id="display_name" name="display_name" type="text" maxLength={50}
-            defaultValue={initial.display_name ?? ""} placeholder="Your name" className={field} />
-        </div>
-
-        <div className="mb-4">
-          <label htmlFor="school" className={label}>School</label>
-          <input id="school" name="school" type="text" maxLength={100}
-            defaultValue={initial.school} placeholder="Your university" className={field} />
-        </div>
-
-        <div className="mb-4 grid grid-cols-2 gap-4">
+        <div className="flex flex-col gap-4">
           <div>
-            <label htmlFor="year" className={label}>Year</label>
-            <select id="year" name="year" defaultValue={initial.year ?? ""} className={field}>
-              {YEARS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-            </select>
+            <label htmlFor="display_name" className={label}>Display name</label>
+            <input id="display_name" name="display_name" type="text" maxLength={50}
+              defaultValue={initial.display_name ?? ""} placeholder="Your name" className={field} />
           </div>
+
           <div>
-            <label htmlFor="major" className={label}>Major</label>
-            <input id="major" name="major" type="text" maxLength={100}
-              defaultValue={initial.major ?? ""} placeholder="e.g. Computer Science" className={field} />
+            <label htmlFor="school" className={label}>School</label>
+            <input id="school" name="school" type="text" maxLength={100}
+              defaultValue={initial.school} placeholder="Your university" className={field} />
           </div>
-        </div>
 
-        <div className="mb-4">
-          <label htmlFor="bio" className={label}>Bio</label>
-          <textarea id="bio" name="bio" rows={3} maxLength={500}
-            defaultValue={initial.bio ?? ""} placeholder="A few lines about you." className={field} />
-        </div>
-
-        <div className="mb-4">
-          <label htmlFor="goals" className={label}>Goals</label>
-          <textarea id="goals" name="goals" rows={2} maxLength={500}
-            defaultValue={initial.goals ?? ""} placeholder="What are you working toward?" className={field} />
-        </div>
-
-        <div className="mb-5">
-          <label htmlFor="skills" className={label}>Skills</label>
-          <input id="skills" name="skills" type="text"
-            defaultValue={(initial.skills ?? []).join(", ")} placeholder="react, python, design" className={field} />
-          <p className={hint}>Comma-separated. Up to 20.</p>
-        </div>
-
-        <div className="mb-5">
-          <label className={label}>Accent color</label>
-          {pro ? (
-            <>
-              {/* Hidden field carries the submitted value; the color input is
-                  just the picker UI (no name) so "Clear" can null it out. */}
-              <input type="hidden" name="accent_color" value={accentColor ?? ""} />
-              <div className="mt-1.5 flex items-center gap-3">
-                <input
-                  type="color"
-                  aria-label="Accent color"
-                  value={accentColor ?? "#3b82f6"}
-                  onChange={(e) => setAccentColor(e.target.value)}
-                  className="h-10 w-14 cursor-pointer rounded-md border border-[var(--border)] bg-[var(--surface)] p-1"
-                />
-                {accentColor && (
-                  <button
-                    type="button"
-                    onClick={() => setAccentColor(null)}
-                    className="text-sm text-[var(--ink-muted)] underline"
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
-              <p className={hint}>Shown as a ring around your avatar.</p>
-            </>
-          ) : (
-            <div className="mt-1.5 flex items-center gap-3">
-              <div className="h-10 w-14 rounded-md border border-[var(--border)] bg-[var(--canvas)] opacity-50" />
-              <Link href="/pro" className="text-sm text-[var(--ink-muted)] underline">
-                Custom accent · Pro
-              </Link>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="year" className={label}>Year</label>
+              <select id="year" name="year" defaultValue={initial.year ?? ""} className={field}>
+                {YEARS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              </select>
             </div>
-          )}
+            <div>
+              <label htmlFor="major" className={label}>Major</label>
+              <input id="major" name="major" type="text" maxLength={100}
+                defaultValue={initial.major ?? ""} placeholder="e.g. Computer Science" className={field} />
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="bio" className={label}>Bio</label>
+            <textarea id="bio" name="bio" rows={3} maxLength={500}
+              defaultValue={initial.bio ?? ""} placeholder="A few lines about you." className={field} />
+          </div>
+
+          <div>
+            <label htmlFor="goals" className={label}>Goals</label>
+            <textarea id="goals" name="goals" rows={2} maxLength={500}
+              defaultValue={initial.goals ?? ""} placeholder="What are you working toward?" className={field} />
+          </div>
+
+          <div>
+            <label htmlFor="skills" className={label}>Skills</label>
+            <input id="skills" name="skills" type="text"
+              defaultValue={(initial.skills ?? []).join(", ")} placeholder="react, python, design" className={field} />
+            <p className={hint}>Comma-separated. Up to 20.</p>
+          </div>
+
+          <div className="border-t border-[var(--border)] pt-4">
+            <label className={label}>Accent color</label>
+            {pro ? (
+              <>
+                {/* Hidden field carries the submitted value; the color input is
+                    just the picker UI (no name) so "Clear" can null it out. */}
+                <input type="hidden" name="accent_color" value={accentColor ?? ""} />
+                <div className="mt-1.5 flex items-center gap-3">
+                  <input
+                    type="color"
+                    aria-label="Accent color"
+                    value={accentColor ?? "#3b82f6"}
+                    onChange={(e) => setAccentColor(e.target.value)}
+                    className="h-10 w-14 cursor-pointer rounded-md border border-[var(--border)] bg-[var(--surface)] p-1"
+                  />
+                  {accentColor && (
+                    <button
+                      type="button"
+                      onClick={() => setAccentColor(null)}
+                      className="text-sm text-[var(--ink-muted)] underline active:scale-[0.98]"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+                <p className={hint}>Shown as a ring around your avatar.</p>
+              </>
+            ) : (
+              <div className="mt-1.5 flex items-center gap-3">
+                <div className="h-10 w-14 rounded-md border border-[var(--border)] bg-[var(--canvas)] opacity-50" />
+                <Link href="/pro" className="text-sm text-[var(--ink-muted)] underline">
+                  Custom accent · Pro
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
 
         <button type="submit" disabled={pending}
-          className="btn-inset w-full rounded-md bg-[var(--ink)] px-4 py-2.5 text-[15px] font-medium text-[var(--canvas)] transition active:opacity-80 disabled:opacity-60">
+          className="btn-primary mt-6 w-full !py-2.5 text-[15px]">
           {pending ? "Saving…" : "Save profile"}
         </button>
       </form>

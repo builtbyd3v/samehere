@@ -60,23 +60,34 @@ export function FeedbackModal({ open, onClose }: { open: boolean; onClose: () =>
   return (
     <Modal open={open} onClose={handleClose} title="Send feedback">
       {done ? (
-        <p className="text-sm text-[var(--ink-muted)]">Thanks — got it.</p>
+        <p className="text-sm text-[var(--ink-muted)]">Thanks, got it.</p>
       ) : (
         <form onSubmit={submit} className="space-y-3">
-          <fieldset className="space-y-1.5">
+          <fieldset className="flex flex-wrap gap-1.5">
             <legend className="sr-only">Category</legend>
-            {CATEGORIES.map((c) => (
-              <label key={c.value} className="flex items-center gap-2 text-sm text-[var(--ink)]">
-                <input
-                  type="radio"
-                  name="category"
-                  value={c.value}
-                  checked={category === c.value}
-                  onChange={() => setCategory(c.value)}
-                />
-                {c.label}
-              </label>
-            ))}
+            {CATEGORIES.map((c) => {
+              const active = category === c.value;
+              return (
+                <label
+                  key={c.value}
+                  className={`cursor-pointer rounded-full border px-3 py-1 text-sm transition ${
+                    active
+                      ? "border-[var(--border-strong)] bg-[var(--featured-surface)] text-[var(--ink)]"
+                      : "border-[var(--border)] text-[var(--ink-muted)] hover:border-[var(--border-strong)] hover:text-[var(--ink)]"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="category"
+                    value={c.value}
+                    checked={active}
+                    onChange={() => setCategory(c.value)}
+                    className="sr-only"
+                  />
+                  {c.label}
+                </label>
+              );
+            })}
           </fieldset>
           <textarea
             value={message}
@@ -84,14 +95,10 @@ export function FeedbackModal({ open, onClose }: { open: boolean; onClose: () =>
             placeholder="What's on your mind?"
             rows={4}
             maxLength={TEXT_LIMITS.feedback}
-            className="w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
+            className="input-base resize-none"
           />
           {error && <p role="alert" className="text-sm text-[#c0392b] dark:text-[#e88]">{error}</p>}
-          <button
-            type="submit"
-            disabled={pending}
-            className="btn-inset w-full cursor-pointer rounded-md bg-[var(--ink)] px-4 py-1.5 text-sm font-medium text-[var(--canvas)] transition active:opacity-80 disabled:opacity-50"
-          >
+          <button type="submit" disabled={pending} className="btn-primary w-full">
             {pending ? "Submitting…" : "Send feedback"}
           </button>
         </form>

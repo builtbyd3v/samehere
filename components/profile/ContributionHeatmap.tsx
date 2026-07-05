@@ -133,7 +133,7 @@ export default function ContributionHeatmap({ data }: { data: HeatmapDay[] }) {
                           key={cell.date}
                           onMouseEnter={(e) => setHovered({ cell, x: e.clientX, y: e.clientY })}
                           onMouseLeave={() => setHovered(null)}
-                          className={`${SLOT} shrink-0 rounded-[2px] sm:rounded-[3px] ${CELL[level(cell.points)]}`}
+                          className={`${SLOT} shrink-0 rounded-[2px] outline outline-1 outline-offset-0 outline-transparent transition hover:scale-110 hover:outline-[var(--border-strong)] sm:rounded-[3px] ${CELL[level(cell.points)]}`}
                         />
                       ),
                     )}
@@ -158,7 +158,7 @@ export default function ContributionHeatmap({ data }: { data: HeatmapDay[] }) {
         createPortal(
           <div
             style={{ position: "fixed", left: clampedX, top: hovered.y - 12 }}
-            className="pointer-events-none z-50 -translate-x-1/2 -translate-y-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1.5 text-xs whitespace-nowrap shadow"
+            className="pointer-events-none z-50 -translate-x-1/2 -translate-y-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1.5 text-xs whitespace-nowrap shadow-[0_4px_12px_rgba(0,0,0,0.12)]"
           >
             <p className="font-medium text-[var(--ink)]">{fmtDate.format(new Date(hovered.cell.date))}</p>
             <p className="text-[var(--ink-muted)]">

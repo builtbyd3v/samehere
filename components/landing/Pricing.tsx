@@ -15,10 +15,12 @@ const FREE_FEATURES = [
 ] as const;
 
 const PRO_FEATURES: { label: string; icon?: "bolt" }[] = [
-  { label: "Expanded AI usage" },
+  { label: "See who viewed your profile" },
+  { label: "Custom accent color and animated avatar" },
+  { label: "Unlimited AI and post improvements" },
+  { label: "AI icebreaker for new conversations" },
   { label: "Pro badge on your profile", icon: "bolt" },
-  { label: "Full-year heatmap and export" },
-  { label: "Advanced search filters" },
+  { label: "Early access to new features" },
 ];
 
 const card = `flex h-full flex-col ${landingCard}`;
@@ -55,7 +57,7 @@ export default function Pricing() {
             </ul>
             <div className="mt-8">
               <Link href="/signup" className={signupCta}>
-                Join with your .edu
+                Join with .edu
               </Link>
             </div>
           </motion.div>
@@ -77,7 +79,7 @@ export default function Pricing() {
               </span>
             </div>
             <p className="mt-2 text-[48px] font-semibold leading-none tracking-[-0.03em]">$4.99<span className="text-lg font-normal text-[var(--ink-muted)]">/mo</span></p>
-            <p className="mt-1 text-sm text-[var(--ink-muted)]">or $29.99/yr when billing launches</p>
+            <p className="mt-1 text-sm text-[var(--ink-muted)]">or $19.99/yr when billing launches</p>
             <ul className="mt-6 flex-1 space-y-2.5 text-sm text-[var(--ink-muted)]">
               {PRO_FEATURES.map((f) => (
                 <li key={f.label} className="flex items-center gap-2">

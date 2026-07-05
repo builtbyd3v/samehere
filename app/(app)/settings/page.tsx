@@ -32,63 +32,63 @@ export default async function SettingsPage() {
   if (!profile) redirect("/login");
 
   return (
-    <main className="mx-auto max-w-xl px-5 py-10">
-      <h1 className="mb-6 text-2xl font-semibold tracking-[-0.02em]">Settings</h1>
+    <main className="page-enter mx-auto max-w-xl px-5 py-10">
+      <h1 className="mb-6 text-2xl font-semibold tracking-[-0.02em] text-[var(--ink)]">Settings</h1>
 
-      <section className="mb-6 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6">
-        <h2 className="mb-4 text-lg font-semibold">Appearance</h2>
-        <p className="mb-3 text-sm text-[var(--ink-muted)]">Choose light, dark, or match your system.</p>
-        <ThemeToggle />
-      </section>
+      <div className="space-y-5">
+        <section className="card p-6">
+          <h2 className="mb-1 text-lg font-semibold text-[var(--ink)]">Appearance</h2>
+          <p className="mb-4 text-sm text-[var(--ink-muted)]">Choose light, dark, or match your system.</p>
+          <ThemeToggle />
+        </section>
 
-      <section className="mb-6 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6">
-        <h2 className="mb-4 text-lg font-semibold">Privacy</h2>
-        <PrivacyForm initial={profile} />
-      </section>
+        <section className="card p-6">
+          <h2 className="mb-4 text-lg font-semibold text-[var(--ink)]">Privacy</h2>
+          <PrivacyForm initial={profile} />
+        </section>
 
-      <section className="mb-6 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6">
-        <h2 className="mb-4 text-lg font-semibold">Account</h2>
-        <ChangePasswordForm />
-      </section>
+        <section className="card p-6">
+          <h2 className="mb-4 text-lg font-semibold text-[var(--ink)]">Account</h2>
+          <ChangePasswordForm />
+        </section>
 
-      <ComingSoonFeatures />
+        <ComingSoonFeatures />
 
-      <section className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6">
-        <h2 className="mb-4 text-lg font-semibold">Blocked users</h2>
-        {!blocks?.length ? (
-          <p className="text-sm text-[var(--ink-muted)]">No blocked users.</p>
-        ) : (
-          <ul className="space-y-2">
-            {blocks.map((b) => {
-              const name = b.blocked?.display_name ?? b.blocked?.username ?? "Unknown";
-              return (
-                <li key={b.blocked_id} className="flex items-center gap-3 rounded-lg border border-[var(--border)] p-3">
-                  {b.blocked?.avatar_url ? (
-                    <AvatarImage src={b.blocked.avatar_url} alt="" className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover" />
-                  ) : (
-                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--canvas)] text-sm font-semibold text-[var(--ink-muted)]">
-                      {name.charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                  <div className="min-w-0 flex-1 text-sm">
-                    {b.blocked ? (
-                      <Link href={`/profile/${b.blocked.username}`} className="font-medium hover:underline">{name}</Link>
+        <section className="card p-6">
+          <h2 className="mb-4 text-lg font-semibold text-[var(--ink)]">Blocked users</h2>
+          {!blocks?.length ? (
+            <p className="text-sm text-[var(--ink-muted)]">No blocked users.</p>
+          ) : (
+            <ul className="space-y-2">
+              {blocks.map((b) => {
+                const name = b.blocked?.display_name ?? b.blocked?.username ?? "Unknown";
+                return (
+                  <li key={b.blocked_id} className="flex items-center gap-3 rounded-lg border border-[var(--border)] p-3 transition hover:border-[var(--border-strong)]">
+                    {b.blocked?.avatar_url ? (
+                      <AvatarImage src={b.blocked.avatar_url} alt="" className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover" />
                     ) : (
-                      <span className="font-medium">{name}</span>
+                      <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--canvas)] text-sm font-semibold text-[var(--ink-muted)]">
+                        {name.charAt(0).toUpperCase()}
+                      </div>
                     )}
-                    {b.blocked && <span className="ml-1.5 text-[var(--ink-muted)]">@{b.blocked.username}</span>}
-                  </div>
-                  <form action={unblockUser.bind(null, b.blocked_id)}>
-                    <button type="submit" className="text-sm text-[var(--ink-muted)] underline">Unblock</button>
-                  </form>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
+                    <div className="min-w-0 flex-1 text-sm text-[var(--ink)]">
+                      {b.blocked ? (
+                        <Link href={`/profile/${b.blocked.username}`} className="font-medium hover:underline">{name}</Link>
+                      ) : (
+                        <span className="font-medium">{name}</span>
+                      )}
+                      {b.blocked && <span className="ml-1.5 text-[var(--ink-muted)]">@{b.blocked.username}</span>}
+                    </div>
+                    <form action={unblockUser.bind(null, b.blocked_id)}>
+                      <button type="submit" className="cursor-pointer text-sm text-[var(--ink-muted)] underline transition hover:text-[var(--ink)]">Unblock</button>
+                    </form>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
 
-      <div className="mt-10">
         <DeleteAccountSection username={profile.username} />
       </div>
     </main>

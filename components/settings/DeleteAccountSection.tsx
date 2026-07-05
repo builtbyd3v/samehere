@@ -62,7 +62,7 @@ export default function DeleteAccountSection({ username }: { username: string })
         type="button"
         onClick={() => setConfirmOpen(true)}
         disabled={!matches || pending}
-        className="w-full rounded-md bg-[#c0392b] px-4 py-2.5 text-[15px] font-medium text-white transition active:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
+        className="w-full rounded-md bg-[#c0392b] px-4 py-2.5 text-[15px] font-medium text-white transition active:scale-[0.98] active:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
       >
         {pending ? "Deleting…" : "Delete my account"}
       </button>

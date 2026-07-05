@@ -136,8 +136,7 @@ export default function PostCard({
                 </div>
                 <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">
                   {a && <span>@{a.username}</span>}
-                  {school && a && <span className="mx-1 text-[var(--ink-faint)]">·</span>}
-                  {school && <span>{school}</span>}
+                  {school && <span>{a ? ", " : ""}{school}</span>}
                   {(a || school) && <span className="mx-1 text-[var(--ink-faint)]">·</span>}
                   {linked ? (
                     <Link href={`/post/${post.id}`} className="hover:text-[var(--ink)] hover:underline">

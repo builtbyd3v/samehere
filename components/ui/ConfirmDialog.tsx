@@ -39,7 +39,7 @@ export default function ConfirmDialog({
           type="button"
           onClick={onClose}
           disabled={pending}
-          className="rounded-md border border-[var(--border)] px-3 py-1.5 text-sm text-[var(--ink)] transition hover:bg-[var(--canvas)] disabled:opacity-50"
+          className="rounded-md border border-[var(--border)] px-3 py-1.5 text-sm text-[var(--ink)] transition hover:bg-[var(--featured-surface)] hover:border-[var(--border-strong)] disabled:opacity-50"
         >
           Cancel
         </button>
@@ -48,7 +48,9 @@ export default function ConfirmDialog({
           onClick={handleConfirm}
           disabled={pending}
           className={`rounded-md px-3 py-1.5 text-sm font-medium transition active:opacity-80 disabled:opacity-50 ${
-            destructive ? "bg-[#c0392b] text-white" : "btn-inset bg-[var(--ink)] text-[var(--canvas)]"
+            destructive
+              ? "bg-[#c0392b] text-white hover:brightness-110"
+              : "btn-inset bg-[var(--ink)] text-[var(--canvas)] hover:brightness-110"
           }`}
         >
           {pending ? "…" : confirmLabel}

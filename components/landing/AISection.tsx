@@ -12,14 +12,14 @@ export default function AISection() {
       <Reveal>
         <h2 className={`max-w-[18ch] text-balance ${landingH2}`}>AI that helps you connect.</h2>
         <p className="mt-4 max-w-[48ch] text-base leading-relaxed text-[var(--ink-muted)]">
-          Composer nudges when you&apos;re stuck. Connection prompts on suggested follows — grounded in real profile overlap, not generic flattery.
+          Composer nudges when you&apos;re stuck. Connection prompts on suggested follows, grounded in real profile overlap, not generic flattery.
         </p>
       </Reveal>
 
       <div className="mt-12 grid gap-10 lg:grid-cols-2 lg:gap-14">
         <Reveal delay={0.06}>
           <h3 className="text-sm font-medium">Post composer</h3>
-          <p className="mt-1 text-sm text-[var(--ink-muted)]">Tap &ldquo;Need an idea?&rdquo; — same flow as the feed.</p>
+          <p className="mt-1 text-sm text-[var(--ink-muted)]">Tap &ldquo;Need an idea?&rdquo; for the same flow as the feed.</p>
           <div className="mt-4">
             <LandingComposerDemo />
           </div>
@@ -27,7 +27,7 @@ export default function AISection() {
 
         <Reveal delay={0.1}>
           <h3 className="text-sm font-medium">People to follow</h3>
-          <p className="mt-1 text-sm text-[var(--ink-muted)]">Suggested on your Following tab — ranked by profile fit.</p>
+          <p className="mt-1 text-sm text-[var(--ink-muted)]">Suggested on your Following tab, ranked by profile fit.</p>
           <div className="mt-4 space-y-2">
             {DEMO_SUGGESTIONS.map((s) => (
               <div

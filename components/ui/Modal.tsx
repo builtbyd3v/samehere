@@ -33,7 +33,7 @@ export default function Modal({
       onClick={(e) => {
         if (e.target === ref.current) onClose();
       }}
-      className="fixed inset-0 m-auto w-full max-w-sm rounded-xl border border-[var(--border)] bg-[var(--surface)] p-0 text-[var(--ink)] [&::backdrop]:bg-black/40"
+      className="fixed inset-0 m-auto w-full max-w-sm rounded-xl border border-[var(--border)] bg-[var(--surface)] p-0 text-[var(--ink)] shadow-none backdrop:backdrop-blur-sm open:animate-[modal-in_180ms_ease] motion-reduce:open:animate-none [&::backdrop]:bg-black/40"
     >
       <div className="p-5">
         <div className="mb-3 flex items-center justify-between">
@@ -42,7 +42,7 @@ export default function Modal({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="text-[var(--ink-muted)] hover:text-[var(--ink)]"
+            className="grid h-6 w-6 place-items-center rounded-full text-[var(--ink-muted)] transition hover:bg-[var(--featured-surface)] hover:text-[var(--ink)]"
           >
             ×
           </button>

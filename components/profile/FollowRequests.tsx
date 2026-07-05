@@ -28,7 +28,7 @@ export default function FollowRequests({ requests }: { requests: FollowRequest[]
   if (list.length === 0) return null;
 
   return (
-    <section className="rounded-xl border border-[var(--border)] bg-[var(--surface-card)] p-4 sm:p-5">
+    <section className="card p-4 sm:p-5">
       <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">Follow requests</h2>
       <div className="flex flex-col gap-2">
         {list.map((r) => {
@@ -61,11 +61,11 @@ export default function FollowRequests({ requests }: { requests: FollowRequest[]
                 </div>
               </div>
               <button type="button" onClick={() => act(r.follower_id, true)} disabled={busy === r.follower_id}
-                className="btn-inset rounded-md bg-[var(--ink)] px-3 py-1.5 text-sm font-medium text-[var(--canvas)] transition active:opacity-80 disabled:opacity-50">
-                Accept
+                className="btn-inset shrink-0 rounded-md bg-[var(--ink)] px-3 py-1.5 text-sm font-medium text-[var(--canvas)] transition active:scale-[0.98] active:opacity-80 disabled:opacity-50 disabled:active:scale-100">
+                {busy === r.follower_id ? "…" : "Accept"}
               </button>
               <button type="button" onClick={() => act(r.follower_id, false)} disabled={busy === r.follower_id}
-                className="rounded-md border border-[var(--border-strong)] px-3 py-1.5 text-sm font-medium transition active:opacity-80 disabled:opacity-50">
+                className="shrink-0 rounded-md border border-[var(--border-strong)] px-3 py-1.5 text-sm font-medium transition hover:bg-[var(--featured-surface)] active:scale-[0.98] active:opacity-80 disabled:opacity-50 disabled:active:scale-100">
                 Reject
               </button>
             </div>

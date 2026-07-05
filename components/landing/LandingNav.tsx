@@ -195,7 +195,7 @@ export default function LandingNav() {
                 Log in
               </Link>
               <Link href="/signup" className={signupCtaSm}>
-                <span className="hidden sm:inline">Join with your .edu</span>
+                <span className="hidden sm:inline">Join with .edu</span>
                 <span className="sm:hidden">Join</span>
               </Link>
               <button

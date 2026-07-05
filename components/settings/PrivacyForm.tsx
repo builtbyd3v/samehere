@@ -4,8 +4,7 @@ import { useActionState } from "react";
 import { updatePrivacy, type PrivacyState } from "@/app/(app)/settings/actions";
 
 const label = "block text-sm font-medium text-[var(--ink)]";
-const field =
-  "mt-1.5 w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[15px] text-[var(--ink)] outline-none transition placeholder:text-[var(--ink-faint)] focus:border-[var(--border-strong)] focus:ring-2 focus:ring-[#3b82f6]/40";
+const field = "input-base mt-1.5";
 
 export type PrivacyInitial = {
   is_private: boolean;
@@ -19,19 +18,19 @@ export default function PrivacyForm({ initial }: { initial: PrivacyInitial }) {
   return (
     <form action={formAction} className="space-y-3">
       {state.error && (
-        <p role="alert" className="rounded-md border border-[var(--border-strong)] px-3 py-2 text-sm">
+        <p role="alert" className="rounded-md border border-[var(--border-strong)] px-3 py-2 text-sm text-[var(--ink)]">
           {state.error}
         </p>
       )}
       {state.success && <p className="text-sm text-[var(--ink-muted)]">Saved.</p>}
 
-      <label className="flex items-center gap-2.5 text-sm">
-        <input type="checkbox" name="is_private" defaultChecked={initial.is_private} className="h-4 w-4" />
-        <span>Private account <span className="text-[var(--ink-muted)]">— require approval to follow</span></span>
+      <label className="flex items-center gap-2.5 text-sm text-[var(--ink)]">
+        <input type="checkbox" name="is_private" defaultChecked={initial.is_private} className="h-4 w-4 accent-[var(--ink)]" />
+        <span>Private account <span className="text-[var(--ink-muted)]">, require approval to follow</span></span>
       </label>
-      <label className="flex items-center gap-2.5 text-sm">
-        <input type="checkbox" name="hide_school" defaultChecked={initial.hide_school} className="h-4 w-4" />
-        <span>Hide school <span className="text-[var(--ink-muted)]">— from people who don&apos;t follow you</span></span>
+      <label className="flex items-center gap-2.5 text-sm text-[var(--ink)]">
+        <input type="checkbox" name="hide_school" defaultChecked={initial.hide_school} className="h-4 w-4 accent-[var(--ink)]" />
+        <span>Hide school <span className="text-[var(--ink-muted)]">, from people who don&apos;t follow you</span></span>
       </label>
       <div>
         <label htmlFor="heatmap_visibility" className={label}>Heatmap visibility</label>
@@ -42,8 +41,7 @@ export default function PrivacyForm({ initial }: { initial: PrivacyInitial }) {
         </select>
       </div>
 
-      <button type="submit" disabled={pending}
-        className="btn-inset w-full rounded-md bg-[var(--ink)] px-4 py-2.5 text-[15px] font-medium text-[var(--canvas)] transition active:opacity-80 disabled:opacity-60">
+      <button type="submit" disabled={pending} className="btn-primary w-full">
         {pending ? "Saving…" : "Save privacy settings"}
       </button>
     </form>

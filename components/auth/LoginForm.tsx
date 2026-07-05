@@ -5,10 +5,12 @@ import { useActionState } from "react";
 import { logIn, type AuthState } from "@/app/(auth)/actions";
 import AuthAlert from "./AuthAlert";
 import AuthCard from "./AuthCard";
-import { authInput, authLabel, authSubmit } from "./auth-fields";
+import AuthSubmitButton from "./AuthSubmitButton";
+import { authInput, authInputError, authLabel } from "./auth-fields";
 
 export default function LoginForm() {
   const [state, formAction, pending] = useActionState<AuthState, FormData>(logIn, {});
+  const hasError = !!state.error;
 
   return (
     <AuthCard title="Log in">
@@ -26,7 +28,8 @@ export default function LoginForm() {
             autoComplete="email"
             required
             placeholder="you@school.edu"
-            className={authInput}
+            aria-invalid={hasError}
+            className={hasError ? authInputError : authInput}
           />
         </div>
 
@@ -41,7 +44,8 @@ export default function LoginForm() {
             autoComplete="current-password"
             required
             placeholder="Your password"
-            className={authInput}
+            aria-invalid={hasError}
+            className={hasError ? authInputError : authInput}
           />
         </div>
 
@@ -51,9 +55,9 @@ export default function LoginForm() {
           </Link>
         </p>
 
-        <button type="submit" disabled={pending} className={authSubmit}>
-          {pending ? "Logging in…" : "Log in"}
-        </button>
+        <AuthSubmitButton pending={pending} pendingLabel="Logging in…">
+          Log in
+        </AuthSubmitButton>
       </form>
     </AuthCard>
   );

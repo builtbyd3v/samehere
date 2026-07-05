@@ -4,7 +4,7 @@ import { useState } from "react";
 import { IconCompose, IconSearch } from "@/components/icons";
 
 const iconBtn =
-  "grid h-9 w-9 place-items-center rounded-full border border-transparent text-[var(--ink-muted)] transition hover:border-[var(--border)] hover:bg-[var(--surface-card)] hover:text-[var(--ink)]";
+  "grid h-9 w-9 place-items-center rounded-full border border-transparent text-[var(--ink-muted)] transition hover:border-[var(--border)] hover:bg-[var(--surface-card)] hover:text-[var(--ink)] active:scale-90";
 
 export default function FeedToolbar({
   title,

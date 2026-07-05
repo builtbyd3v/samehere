@@ -5,11 +5,13 @@ import { useActionState } from "react";
 import { signUp, type AuthState } from "@/app/(auth)/actions";
 import AuthAlert from "./AuthAlert";
 import AuthCard from "./AuthCard";
+import AuthSubmitButton from "./AuthSubmitButton";
 import SignupSuccess from "./SignupSuccess";
-import { authHint, authInput, authLabel, authSubmit } from "./auth-fields";
+import { authHint, authInput, authInputError, authLabel } from "./auth-fields";
 
 export default function SignupForm() {
   const [state, formAction, pending] = useActionState<AuthState, FormData>(signUp, {});
+  const hasError = !!state.error;
 
   if (state.ok && state.email) {
     return <SignupSuccess email={state.email} />;
@@ -31,7 +33,8 @@ export default function SignupForm() {
             autoComplete="email"
             required
             placeholder="you@school.edu"
-            className={authInput}
+            aria-invalid={hasError}
+            className={hasError ? authInputError : authInput}
           />
         </div>
 
@@ -46,9 +49,10 @@ export default function SignupForm() {
             autoComplete="username"
             required
             placeholder="yourname"
-            className={authInput}
+            aria-invalid={hasError}
+            className={hasError ? authInputError : authInput}
           />
-          <p className={authHint}>3–20 characters: lowercase letters, numbers, or underscores.</p>
+          <p className={authHint}>3-20 characters: lowercase letters, numbers, or underscores.</p>
         </div>
 
         <div className="mb-5">
@@ -63,13 +67,14 @@ export default function SignupForm() {
             required
             minLength={8}
             placeholder="At least 8 characters"
-            className={authInput}
+            aria-invalid={hasError}
+            className={hasError ? authInputError : authInput}
           />
         </div>
 
-        <button type="submit" disabled={pending} className={authSubmit}>
-          {pending ? "Creating account…" : "Create account"}
-        </button>
+        <AuthSubmitButton pending={pending} pendingLabel="Creating account…">
+          Create account
+        </AuthSubmitButton>
       </form>
     </AuthCard>
   );

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { authInput, authLabel, authSubmit } from "@/components/auth/auth-fields";
+import { authLabel } from "@/components/auth/auth-fields";
 
 // Adapted from UpdatePasswordForm: no recovery-session check needed here —
 // the viewer already has a live session to reach /settings.
@@ -45,16 +45,16 @@ export default function ChangePasswordForm() {
       <div className="mb-4">
         <label htmlFor="password" className={authLabel}>New password</label>
         <input id="password" name="password" type="password" autoComplete="new-password" required minLength={8}
-          placeholder="At least 8 characters" className={authInput} />
+          placeholder="At least 8 characters" className="input-base mt-1.5" />
       </div>
 
       <div className="mb-5">
         <label htmlFor="confirm" className={authLabel}>Confirm password</label>
         <input id="confirm" name="confirm" type="password" autoComplete="new-password" required minLength={8}
-          placeholder="Repeat your password" className={authInput} />
+          placeholder="Repeat your password" className="input-base mt-1.5" />
       </div>
 
-      <button type="submit" disabled={pending} className={authSubmit}>
+      <button type="submit" disabled={pending} className="btn-primary w-full">
         {pending ? "Updating…" : "Update password"}
       </button>
     </form>

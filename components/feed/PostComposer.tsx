@@ -146,7 +146,11 @@ export default function PostComposer() {
   useSubmitShortcut(textareaRef, () => ref.current?.requestSubmit(), !pending && !uploading && len > 0);
 
   return (
-    <form ref={ref} onSubmit={onSubmit} className="rounded-xl border border-[var(--border)] bg-[var(--surface-card)] p-4 sm:p-5">
+    <form
+      ref={ref}
+      onSubmit={onSubmit}
+      className="rounded-xl border border-[var(--border)] bg-[var(--surface-card)] p-4 transition-colors focus-within:border-[var(--border-strong)] sm:p-5"
+    >
       {hint && (
         <button
           type="button"
@@ -189,7 +193,7 @@ export default function PostComposer() {
                 type="button"
                 onClick={() => removeFile(i)}
                 aria-label="Remove"
-                className="absolute right-0.5 top-0.5 grid h-5 w-5 place-items-center rounded-full bg-black/60 text-xs text-white"
+                className="absolute right-0.5 top-0.5 grid h-5 w-5 place-items-center rounded-full bg-black/60 text-xs text-white transition active:scale-90"
               >
                 ×
               </button>
@@ -241,7 +245,7 @@ export default function PostComposer() {
         <button
           type="submit"
           disabled={pending || uploading || len === 0 || len > MAX}
-          className="btn-inset rounded-md bg-[var(--ink)] px-4 py-1.5 text-sm font-medium text-[var(--canvas)] transition active:opacity-80 disabled:opacity-50"
+          className="btn-primary"
         >
           {uploading ? "Uploading…" : pending ? "Posting…" : "Post"}
         </button>

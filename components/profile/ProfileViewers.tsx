@@ -50,7 +50,7 @@ export default function ProfileViewers({
   recent: ProfileViewer[];
 }) {
   return (
-    <section className="mt-3 rounded-xl border border-[var(--border)] bg-[var(--surface-card)] p-5 sm:p-6">
+    <section className="card mt-3 p-5 sm:p-6">
       <h2 className="mb-4 text-sm font-semibold text-[var(--ink)]">Recent profile views</h2>
 
       {count === 0 ? (
@@ -103,7 +103,7 @@ export default function ProfileViewers({
           </ul>
           <Link
             href="/pro"
-            className="btn-inset mt-4 flex w-full items-center justify-center gap-1.5 rounded-md bg-[var(--ink)] px-4 py-2.5 text-sm font-medium text-[var(--canvas)] transition active:opacity-80"
+            className="btn-inset mt-4 flex w-full items-center justify-center gap-1.5 rounded-md bg-[var(--ink)] px-4 py-2.5 text-sm font-medium text-[var(--canvas)] transition active:scale-[0.98] active:opacity-80"
           >
             <IconBolt className="h-4 w-4" />
             See who viewed you · Pro

@@ -44,7 +44,7 @@ export default function OnboardingChecklist({ avatarUrl, bio, postCount, followi
             localStorage.setItem(DISMISS_KEY, "1");
             setDismissed(true);
           }}
-          className="text-xs text-[var(--ink-muted)] underline"
+          className="text-xs text-[var(--ink-muted)] underline transition active:scale-[0.97]"
         >
           Dismiss
         </button>

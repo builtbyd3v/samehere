@@ -14,7 +14,7 @@ export default async function MessagesPage() {
   const { data: threads } = await supabase.rpc("list_dm_inbox");
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8">
+    <main className="page-enter mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8">
       <h1 className="mb-5 text-2xl font-semibold tracking-[-0.02em] text-[var(--ink)]">Messages</h1>
 
       <section className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface-card)]">

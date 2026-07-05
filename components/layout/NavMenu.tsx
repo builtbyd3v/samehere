@@ -65,7 +65,7 @@ export default function NavMenu({ username, avatarUrl }: { username: string; ava
           avatarUrl ? (
             <AvatarImage src={avatarUrl} alt="" className="h-full w-full object-cover" />
           ) : (
-            <span className="grid h-full w-full place-items-center bg-[var(--surface)] text-xs font-semibold text-[var(--ink-muted)]">
+            <span className="grid h-full w-full place-items-center bg-[var(--featured-surface)] text-xs font-semibold text-[var(--ink-muted)]">
               {username.charAt(0).toUpperCase()}
             </span>
           )

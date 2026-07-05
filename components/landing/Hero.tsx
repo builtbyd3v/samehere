@@ -26,7 +26,7 @@ export default function Hero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
           >
-            The social network for verified students. Post the real stuff. React with SameHere when it&apos;s you too.
+            Verified .edu students only. Post the real stuff, grow a heatmap of it, and let AI find your people.
           </motion.p>
           <motion.div
             className="mt-10 flex flex-wrap items-center gap-3"
@@ -35,20 +35,12 @@ export default function Hero() {
             transition={{ duration: 0.6, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
           >
             <Link href="/signup" className={signupCta}>
-              Join with your .edu
+              Join with .edu
             </Link>
             <Link href="/login" className={ghostCta}>
               Log in
             </Link>
           </motion.div>
-          <motion.p
-            className="mt-4 text-sm text-[var(--ink-faint)]"
-            initial={reduce ? false : { opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.24 }}
-          >
-            Free · Verified .edu only · Private when you want
-          </motion.p>
         </div>
         <HeroVisual />
       </div>

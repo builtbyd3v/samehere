@@ -47,9 +47,6 @@ const NEVER_GATED = [
   "reactions",
 ];
 
-const card =
-  "rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6";
-
 export default async function ProPage() {
   const supabase = await createClient();
   const {
@@ -67,10 +64,10 @@ export default async function ProPage() {
   const pro = isPro(profile);
 
   return (
-    <main className="mx-auto max-w-2xl px-5 py-10">
+    <main className="page-enter mx-auto max-w-2xl px-5 py-10">
       <div className="mb-6 flex items-center gap-2">
         <IconBolt className="h-5 w-5 text-[var(--blue)]" />
-        <h1 className="text-2xl font-semibold tracking-[-0.02em]">Pro</h1>
+        <h1 className="text-2xl font-semibold tracking-[-0.02em] text-[var(--ink)]">Pro</h1>
         {profile.is_founder && (
           <span className="inline-flex items-center gap-1 rounded-full border border-[var(--border-strong)] px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--ink-muted)]">
             <IconCrown className="h-3 w-3 text-[var(--blue)]" />
@@ -79,10 +76,31 @@ export default async function ProPage() {
         )}
       </div>
 
-      {/* Pricing / waitlist card */}
-      <div className="rounded-xl border border-[var(--border-strong)] bg-[var(--featured-surface)] p-8">
+      {/* Pricing */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="card p-6">
+          <p className="text-sm font-medium text-[var(--ink)]">Monthly</p>
+          <p className="mt-2 text-[36px] font-semibold leading-none tracking-[-0.03em] text-[var(--ink)]">
+            $4.99<span className="text-lg font-normal text-[var(--ink-muted)]">/mo</span>
+          </p>
+          <p className="mt-1 text-sm text-[var(--ink-muted)]">Billed monthly.</p>
+        </div>
+        <div className="card relative border-[var(--border-strong)] bg-[var(--featured-surface)] p-6">
+          <span className="absolute right-4 top-4 rounded-full border border-[var(--border-strong)] px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--ink-muted)]">
+            Save 2 months
+          </span>
+          <p className="text-sm font-medium text-[var(--ink)]">Yearly</p>
+          <p className="mt-2 text-[36px] font-semibold leading-none tracking-[-0.03em] text-[var(--ink)]">
+            $19.99<span className="text-lg font-normal text-[var(--ink-muted)]">/yr</span>
+          </p>
+          <p className="mt-1 text-sm text-[var(--ink-muted)]">Billed once a year.</p>
+        </div>
+      </div>
+
+      {/* Status / waitlist */}
+      <div className="mt-4 card p-6">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-medium">samehere Pro</span>
+          <span className="text-sm font-medium text-[var(--ink)]">samehere Pro</span>
           {!pro && (
             <span className="rounded-full border border-[var(--border-strong)] px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--ink-muted)]">
               Coming soon
@@ -90,14 +108,9 @@ export default async function ProPage() {
           )}
         </div>
 
-        <p className="mt-2 text-[36px] font-semibold leading-none tracking-[-0.03em]">
-          $4.99<span className="text-lg font-normal text-[var(--ink-muted)]">/mo</span>
-        </p>
-        <p className="mt-1 text-sm text-[var(--ink-muted)]">or $29.99/yr when billing launches</p>
-
-        <div className="mt-8">
+        <div className="mt-4">
           {pro ? (
-            <p className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm font-medium">
+            <p className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm font-medium text-[var(--ink)]">
               You&apos;re on Pro.
             </p>
           ) : profile.wants_pro ? (
@@ -106,10 +119,7 @@ export default async function ProPage() {
             </p>
           ) : (
             <form action={joinProWaitlist}>
-              <button
-                type="submit"
-                className="btn-inset w-full rounded-md bg-[var(--ink)] px-4 py-2.5 text-[15px] font-medium text-[var(--canvas)] transition active:opacity-80"
-              >
+              <button type="submit" className="btn-primary w-full">
                 Join waitlist
               </button>
             </form>
@@ -118,10 +128,10 @@ export default async function ProPage() {
       </div>
 
       {/* Feature groups */}
-      <div className="mt-8 grid gap-4 sm:grid-cols-2">
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
         {GROUPS.map((g) => (
-          <div key={g.title} className={card}>
-            <h2 className="text-sm font-semibold">{g.title}</h2>
+          <div key={g.title} className="card p-6">
+            <h2 className="text-sm font-semibold text-[var(--ink)]">{g.title}</h2>
             <ul className="mt-3 space-y-2 text-sm text-[var(--ink-muted)]">
               {g.features.map((f) => (
                 <li key={f} className="flex gap-2">
@@ -135,7 +145,7 @@ export default async function ProPage() {
       </div>
 
       {/* Founder badge callout */}
-      <div className="mt-6 flex items-start gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-5 py-4">
+      <div className="mt-4 flex items-start gap-3 card px-5 py-4">
         <IconCrown className="mt-0.5 h-5 w-5 shrink-0 text-[var(--blue)]" />
         <p className="text-sm leading-relaxed text-[var(--ink-muted)]">
           <span className="font-medium text-[var(--ink)]">Founder badge</span> on your profile for
@@ -146,7 +156,7 @@ export default async function ProPage() {
       {/* Never gated */}
       <p className="mt-6 text-sm leading-relaxed text-[var(--ink-muted)]">
         <span className="font-medium text-[var(--ink)]">Never gated:</span>{" "}
-        {NEVER_GATED.join(" · ")} — never paywalled.
+        {NEVER_GATED.join(", ")}.
       </p>
     </main>
   );

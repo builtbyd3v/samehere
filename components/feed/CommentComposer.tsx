@@ -41,7 +41,11 @@ export default function CommentComposer({ postId, quoteId }: { postId?: string; 
   const qualifies = len >= POINT_AT;
 
   return (
-    <form ref={ref} action={formAction} className="rounded-xl border border-[var(--border)] bg-[var(--canvas)] p-4">
+    <form
+      ref={ref}
+      action={formAction}
+      className="rounded-xl border border-[var(--border)] bg-[var(--canvas)] p-4 transition-colors focus-within:border-[var(--border-strong)]"
+    >
       {quoteId ? (
         <input type="hidden" name="repost_id" value={quoteId} />
       ) : (
@@ -86,11 +90,7 @@ export default function CommentComposer({ postId, quoteId }: { postId?: string; 
                 ? `${len}/${MAX} · earns a point`
                 : `${len}/${MAX} · ${POINT_AT - len} more to earn a point`}
         </span>
-        <button
-          type="submit"
-          disabled={pending || len === 0 || len > MAX}
-          className="btn-inset rounded-md bg-[var(--ink)] px-4 py-1.5 text-sm font-medium text-[var(--canvas)] transition active:opacity-80 disabled:opacity-50"
-        >
+        <button type="submit" disabled={pending || len === 0 || len > MAX} className="btn-primary">
           {pending ? "Posting…" : "Comment"}
         </button>
       </div>

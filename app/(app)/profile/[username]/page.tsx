@@ -27,8 +27,8 @@ const YEAR_LABEL: Record<string, string> = {
 
 function Stat({ value, label }: { value: number; label: string }) {
   return (
-    <span className="text-sm">
-      <b className="font-semibold text-[var(--ink)]">{value.toLocaleString()}</b>{" "}
+    <span className="text-[15px]">
+      <b className="font-semibold tracking-[-0.01em] text-[var(--ink)]">{value.toLocaleString()}</b>{" "}
       <span className="text-[var(--ink-muted)]">{label}</span>
     </span>
   );
@@ -154,11 +154,15 @@ export default async function ProfilePage({
     profile.year ? YEAR_LABEL[profile.year] : null,
     profile.major,
   ].filter(Boolean);
+  // Max one middle-dot per line: first item gets the dot separator, any
+  // further items are comma-joined after it.
+  const metaLine =
+    metaParts.length <= 1 ? metaParts[0] ?? null : `${metaParts[0]} · ${metaParts.slice(1).join(", ")}`;
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8">
+    <main className="page-enter mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8">
       {/* Identity */}
-      <section className="rounded-xl border border-[var(--border)] bg-[var(--surface-card)] p-5 sm:p-6">
+      <section className="card p-5 sm:p-6">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
           {profile.avatar_url ? (
             <AvatarImage
@@ -179,8 +183,8 @@ export default async function ProfilePage({
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                  <h1 className="text-xl font-semibold tracking-[-0.02em] sm:text-2xl">{displayName}</h1>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                  <h1 className="text-2xl font-semibold tracking-[-0.025em] sm:text-[28px]">{displayName}</h1>
                   <UserBadges isPro={profile.is_pro} isFounder={profile.is_founder} />
                 </div>
                 <p className="mt-0.5 text-[15px] text-[var(--ink-muted)]">@{profile.username}</p>
@@ -189,15 +193,15 @@ export default async function ProfilePage({
               {isOwner && (
                 <Link
                   href="/profile/edit"
-                  className="shrink-0 rounded-full border border-[var(--border-strong)] px-4 py-1.5 text-sm font-medium transition hover:bg-[var(--featured-surface)] active:opacity-80"
+                  className="btn-ghost shrink-0 !rounded-full !px-4 !py-1.5 text-sm"
                 >
                   Edit profile
                 </Link>
               )}
             </div>
 
-            {metaParts.length > 0 && (
-              <p className="mt-2 text-sm text-[var(--ink-muted)]">{metaParts.join(" · ")}</p>
+            {metaLine && (
+              <p className="mt-2 text-sm text-[var(--ink-muted)]">{metaLine}</p>
             )}
 
             <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1">
@@ -256,7 +260,7 @@ export default async function ProfilePage({
       </section>
 
       {canSeeHeatmap && (
-        <section className="mt-3 rounded-xl border border-[var(--border)] bg-[var(--surface-card)] p-5 sm:p-6">
+        <section className="card mt-3 p-5 sm:p-6">
           <h2 className="mb-4 text-sm font-semibold text-[var(--ink)]">Activity</h2>
           <ContributionHeatmap data={heatmap} />
         </section>
@@ -274,23 +278,26 @@ export default async function ProfilePage({
         <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">Posts</h2>
 
         {isBlocked ? (
-          <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-card)] px-6 py-12 text-center">
+          <div className="card px-6 py-12 text-center">
             <p className="font-medium text-[var(--ink)]">Posts unavailable</p>
             <p className="mt-1.5 text-sm text-[var(--ink-muted)]">
               You and @{profile.username} cannot see each other&apos;s posts.
             </p>
           </div>
         ) : contentHidden ? (
-          <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-card)] px-6 py-12 text-center">
+          <div className="card px-6 py-12 text-center">
             <p className="font-medium text-[var(--ink)]">This account is private</p>
             <p className="mt-1.5 text-sm text-[var(--ink-muted)]">
               Follow @{profile.username} to see their posts.
             </p>
           </div>
         ) : timeline.length === 0 ? (
-          <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-card)] px-6 py-12 text-center">
-            <p className="text-sm text-[var(--ink-muted)]">
-              {isOwner ? "You have not posted yet." : `@${profile.username} has not posted yet.`}
+          <div className="card px-6 py-12 text-center">
+            <p className="font-medium text-[var(--ink)]">
+              {isOwner ? "No posts yet" : "No posts yet"}
+            </p>
+            <p className="mt-1.5 text-sm text-[var(--ink-muted)]">
+              {isOwner ? "Share something to fill your feed." : `@${profile.username} has not posted yet.`}
             </p>
           </div>
         ) : (

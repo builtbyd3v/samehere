@@ -18,7 +18,7 @@ export default function MentionSuggestionList({
   return (
     <ul
       role="listbox"
-      className="absolute left-0 right-0 top-full z-20 mt-1 max-h-56 overflow-y-auto rounded-xl border border-[var(--border)] bg-[var(--surface-card)] py-1 shadow-lg sm:right-auto sm:min-w-[240px] sm:max-w-[min(320px,calc(100vw-2rem))]"
+      className="card absolute left-0 right-0 top-full z-20 mt-1 max-h-56 overflow-y-auto py-1 shadow-lg motion-safe:[animation:menu-pop_150ms_ease-out] sm:right-auto sm:min-w-[240px] sm:max-w-[min(320px,calc(100vw-2rem))]"
     >
       {suggestions.map((s, i) => {
         const name = s.display_name ?? s.username;
@@ -28,7 +28,7 @@ export default function MentionSuggestionList({
               type="button"
               onMouseEnter={() => onHover(i)}
               onClick={() => onPick(s.username)}
-              className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition ${
+              className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition active:scale-[0.99] ${
                 i === highlight ? "bg-[var(--featured-surface)]" : "hover:bg-[var(--featured-surface)]"
               }`}
             >

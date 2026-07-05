@@ -51,8 +51,8 @@ export default function Menu({
           aria-expanded={open}
           className={
             variant === "avatar"
-              ? "h-8 w-8 shrink-0 overflow-hidden rounded-full border border-[var(--border)] transition hover:opacity-90"
-              : "grid h-7 w-7 place-items-center rounded-full text-[var(--ink-muted)] transition hover:bg-[var(--surface)] hover:text-[var(--ink)]"
+              ? "h-8 w-8 shrink-0 overflow-hidden rounded-full border border-[var(--border)] transition hover:opacity-90 hover:border-[var(--border-strong)]"
+              : "grid h-7 w-7 place-items-center rounded-full text-[var(--ink-muted)] transition hover:bg-[var(--featured-surface)] hover:text-[var(--ink)]"
           }
         >
           {trigger}
@@ -60,8 +60,8 @@ export default function Menu({
         {open && (
           <div
             role="menu"
-            className={`absolute top-full z-50 mt-1 min-w-[9rem] overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)] py-1 shadow-lg ${
-              align === "end" ? "right-0" : "left-0"
+            className={`absolute top-full z-50 mt-1 min-w-[9rem] origin-top overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)] py-1 shadow-lg animate-[menu-pop_120ms_ease] motion-reduce:animate-none ${
+              align === "end" ? "right-0 origin-top-right" : "left-0 origin-top-left"
             }`}
           >
             {children}

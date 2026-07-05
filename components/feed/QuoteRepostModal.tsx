@@ -86,9 +86,12 @@ export default function QuoteRepostModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[var(--ink)]/40 p-4 sm:items-center" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 backdrop-blur-sm sm:items-center"
+      onClick={onClose}
+    >
       <div
-        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-[var(--border)] bg-[var(--surface-card)] p-4 shadow-lg sm:p-5"
+        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-[var(--border)] bg-[var(--surface-card)] p-4 shadow-lg animate-[modal-in_180ms_ease] motion-reduce:animate-none sm:p-5"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-lg font-semibold">Quote repost</h2>
@@ -121,18 +124,14 @@ export default function QuoteRepostModal({
         )}
 
         <div className="mt-4 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md border border-[var(--border)] px-4 py-1.5 text-sm text-[var(--ink-muted)] hover:bg-[var(--featured-surface)]"
-          >
+          <button type="button" onClick={onClose} className="btn-ghost">
             Cancel
           </button>
           <button
             type="button"
             onClick={submit}
             disabled={busy || !text.trim() || text.trim().length > MAX}
-            className="btn-inset rounded-md bg-[var(--ink)] px-4 py-1.5 text-sm font-medium text-[var(--canvas)] disabled:opacity-50"
+            className="btn-primary"
           >
             {busy ? "Posting…" : "Quote repost"}
           </button>

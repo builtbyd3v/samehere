@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 const pill =
-  "rounded-full px-4 py-1.5 text-sm font-medium transition";
+  "rounded-full px-4 py-1.5 text-sm font-medium transition active:scale-[0.97]";
 
 export default function FeedTabs({ tab }: { tab: "latest" | "following" }) {
   return (

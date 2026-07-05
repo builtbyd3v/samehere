@@ -18,7 +18,7 @@ export default function LandingProfileDemo() {
         <Reveal>
           <h2 className={`text-balance ${landingH2}`}>Your profile, not your résumé.</h2>
           <p className="mt-4 max-w-[42ch] text-base leading-relaxed text-[var(--ink-muted)]">
-            Skills, goals, and a contribution heatmap that tracks real activity — posts, comments, and connections.
+            Skills, goals, and a contribution heatmap that tracks real activity: posts, comments, and connections.
           </p>
         </Reveal>
 
@@ -103,7 +103,7 @@ export default function LandingProfileDemo() {
           </div>
 
           <p className="text-center text-xs text-[var(--ink-faint)]">
-            Hover a day to see points — same as on every profile
+            Hover a day to see points. Same as on every profile.
           </p>
         </Reveal>
       </div>

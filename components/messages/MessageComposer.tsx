@@ -50,7 +50,7 @@ export default function MessageComposer({ conversationId }: { conversationId: st
           type="submit"
           disabled={pending}
           aria-label="Send message"
-          className="btn-inset mb-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[var(--ink)] text-[var(--canvas)] transition active:opacity-80 disabled:opacity-40"
+          className="btn-inset mb-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[var(--ink)] text-[var(--canvas)] transition active:scale-[0.94] active:opacity-80 disabled:opacity-40 disabled:active:scale-100"
         >
           <IconSend />
         </button>

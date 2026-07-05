@@ -20,10 +20,13 @@ export default function ProfilePreviewCard({
 }) {
   const name = profile.display_name ?? profile.username;
   const school = profile.profile_school?.school ?? null;
-  const meta = [school, profile.year ? YEAR[profile.year] : null, profile.major].filter(Boolean).join(" · ");
+  // Max one middle-dot per line: first item gets the dot separator, any
+  // further items are comma-joined after it.
+  const metaParts = [school, profile.year ? YEAR[profile.year] : null, profile.major].filter(Boolean);
+  const meta = metaParts.length <= 1 ? metaParts[0] ?? "" : `${metaParts[0]} · ${metaParts.slice(1).join(", ")}`;
 
-  const className = `block w-[min(300px,calc(100vw-2rem))] rounded-xl border border-[var(--border)] bg-[var(--surface-card)] p-4 shadow-lg ${
-    popover ? "" : "transition hover:bg-[var(--featured-surface)]"
+  const className = `card block w-[min(300px,calc(100vw-2rem))] p-4 shadow-lg ${
+    popover ? "motion-safe:[animation:menu-pop_150ms_ease-out]" : "transition hover:bg-[var(--featured-surface)]"
   }`;
 
   const inner = (

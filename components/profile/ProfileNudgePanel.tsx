@@ -36,14 +36,14 @@ export default function ProfileNudgePanel({ profile }: { profile: ProfileForComp
         <div>
           <h2 className="text-sm font-semibold text-[var(--ink)]">Profile completeness</h2>
           <p className="mt-0.5 text-xs text-[var(--ink-muted)]">
-            {gaps.length} field{gaps.length === 1 ? "" : "s"} left — stronger profiles get better follow suggestions.
+            {gaps.length} field{gaps.length === 1 ? "" : "s"} left, stronger profiles get better follow suggestions.
           </p>
         </div>
         <button
           type="button"
           onClick={onNudge}
           disabled={nudging}
-          className="shrink-0 text-xs text-[var(--ink-muted)] underline disabled:opacity-50"
+          className="shrink-0 text-xs text-[var(--ink-muted)] underline active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
         >
           {nudging ? "Thinking…" : "Need a suggestion?"}
         </button>
@@ -64,7 +64,7 @@ export default function ProfileNudgePanel({ profile }: { profile: ProfileForComp
         <button
           type="button"
           onClick={focusGap}
-          className="mt-3 block w-full text-left text-sm italic text-[var(--ink-muted)] hover:underline"
+          className="mt-3 block w-full text-left text-sm italic text-[var(--ink-muted)] hover:underline active:scale-[0.99]"
         >
           {hint} <span className="not-italic">(click to jump to field)</span>
         </button>

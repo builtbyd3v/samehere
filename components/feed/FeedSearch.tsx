@@ -49,10 +49,7 @@ export function FeedSearchForm({ q, tab }: { q: string; tab: string }) {
         className={input}
         autoFocus
       />
-      <button
-        type="submit"
-        className="btn-inset shrink-0 rounded-md bg-[var(--ink)] px-4 py-2.5 text-[15px] font-medium text-[var(--canvas)] transition active:opacity-80"
-      >
+      <button type="submit" className="btn-primary shrink-0">
         Search
       </button>
     </form>
@@ -66,29 +63,32 @@ export async function FeedSearchResults({ q }: { q: string }) {
 
   if (results.length === 0) {
     return (
-      <p className="mt-4 text-center text-sm text-[var(--ink-muted)]">
-        No students found for &ldquo;{q}&rdquo;.
-      </p>
+      <div className="mt-4 rounded-xl border border-[var(--border)] bg-[var(--surface-card)] px-6 py-10 text-center">
+        <p className="font-medium text-[var(--ink)]">No students found</p>
+        <p className="mt-1.5 text-sm text-[var(--ink-muted)]">
+          Nothing matched &ldquo;{q}&rdquo;. Try a different name, username, or school.
+        </p>
+      </div>
     );
   }
 
   return (
-    <ul className="mt-4">
+    <ul className="mt-4 flex flex-col gap-1.5">
       {results.map((p) => {
         const name = p.display_name ?? p.username;
         return (
-          <li key={p.id} className="border-b border-[var(--border)]">
+          <li key={p.id}>
             <Link
               href={`/profile/${p.username}`}
-              className="flex items-center gap-2.5 px-1 py-3 hover:bg-[var(--surface)]"
+              className="card card-hover flex items-center gap-2.5 px-3 py-2.5 active:scale-[0.99]"
             >
-                    {p.avatar_url ? (
-                      <AvatarImage
-                        src={p.avatar_url}
-                        alt=""
-                        className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover"
-                      />
-                    ) : (
+              {p.avatar_url ? (
+                <AvatarImage
+                  src={p.avatar_url}
+                  alt=""
+                  className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover"
+                />
+              ) : (
                 <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-sm font-semibold text-[var(--ink-muted)]">
                   {name.charAt(0).toUpperCase()}
                 </div>

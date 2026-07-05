@@ -6,7 +6,7 @@ export default function PostMediaGrid({ media, compact = false }: { media: PostM
   if (media.length === 1) {
     const m = media[0];
     return (
-      <div className={`${mt} overflow-hidden rounded-lg border border-[var(--border)]`}>
+      <div className={`${mt} overflow-hidden rounded-xl border border-[var(--border)]`}>
         {m.type === "image" ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={m.url} alt="" loading="lazy" className="max-h-[420px] w-full object-cover" />
@@ -18,7 +18,7 @@ export default function PostMediaGrid({ media, compact = false }: { media: PostM
   }
 
   return (
-    <div className={`${mt} grid grid-cols-2 gap-1 overflow-hidden rounded-lg border border-[var(--border)]`}>
+    <div className={`${mt} grid grid-cols-2 gap-1 overflow-hidden rounded-xl border border-[var(--border)]`}>
       {media.map((m, i) =>
         m.type === "image" ? (
           // eslint-disable-next-line @next/next/no-img-element

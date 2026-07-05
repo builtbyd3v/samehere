@@ -21,7 +21,7 @@ export default function DeleteCommentButton({ commentId, canDelete }: { commentI
           router.refresh();
         });
       }}
-      className="text-xs text-[var(--ink-muted)] hover:text-[#c0392b] disabled:opacity-50"
+      className="text-xs text-[var(--ink-muted)] transition hover:text-[#c0392b] active:scale-[0.97] disabled:opacity-50"
     >
       Delete
     </button>

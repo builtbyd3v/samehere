@@ -63,7 +63,7 @@ export async function logIn(_prev: AuthState, formData: FormData): Promise<AuthS
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
     if (error.code === "email_not_confirmed")
-      return { error: "Confirm your email first — check your inbox for the link." };
+      return { error: "Confirm your email first, check your inbox for the link." };
     return { error: "Invalid email or password." };
   }
 
