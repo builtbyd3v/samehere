@@ -79,7 +79,7 @@ export default function Pricing() {
               </span>
             </div>
             <p className="mt-2 text-[48px] font-semibold leading-none tracking-[-0.03em]">$4.99<span className="text-lg font-normal text-[var(--ink-muted)]">/mo</span></p>
-            <p className="mt-1 text-sm text-[var(--ink-muted)]">or $19.99/yr when billing launches</p>
+            <p className="mt-1 text-sm text-[var(--ink-muted)]">or $12.99/semester when billing launches</p>
             <ul className="mt-6 flex-1 space-y-2.5 text-sm text-[var(--ink-muted)]">
               {PRO_FEATURES.map((f) => (
                 <li key={f.label} className="flex items-center gap-2">

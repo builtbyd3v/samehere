@@ -87,13 +87,13 @@ export default async function ProPage() {
         </div>
         <div className="card relative border-[var(--border-strong)] bg-[var(--featured-surface)] p-6">
           <span className="absolute right-4 top-4 rounded-full border border-[var(--border-strong)] px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--ink-muted)]">
-            Save 2 months
+            Best value
           </span>
-          <p className="text-sm font-medium text-[var(--ink)]">Yearly</p>
+          <p className="text-sm font-medium text-[var(--ink)]">Semester</p>
           <p className="mt-2 text-[36px] font-semibold leading-none tracking-[-0.03em] text-[var(--ink)]">
-            $19.99<span className="text-lg font-normal text-[var(--ink-muted)]">/yr</span>
+            $12.99<span className="text-lg font-normal text-[var(--ink-muted)]">/semester</span>
           </p>
-          <p className="mt-1 text-sm text-[var(--ink-muted)]">Billed once a year.</p>
+          <p className="mt-1 text-sm text-[var(--ink-muted)]">Billed each semester.</p>
         </div>
       </div>
 
