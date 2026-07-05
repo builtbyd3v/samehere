@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     default: "samehere: the network for verified students",
     template: "%s · samehere",
   },
-  description: "A network for verified college students.",
+  description: "Verified students only, .edu required. The social network for college.",
 };
 
 export default function RootLayout({

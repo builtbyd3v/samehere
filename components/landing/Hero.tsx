@@ -26,7 +26,7 @@ export default function Hero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
           >
-            Verified .edu students only. Post the real stuff, grow a heatmap of it, and let AI find your people.
+            Verified students only, .edu required. Post the real stuff, grow a heatmap, and let AI find your people.
           </motion.p>
           <motion.div
             className="mt-10 flex flex-wrap items-center gap-3"

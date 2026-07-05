@@ -24,7 +24,7 @@ export default function SignupForm() {
 
         <div className="mb-4">
           <label htmlFor="email" className={authLabel}>
-            School email
+            School email (.edu required)
           </label>
           <input
             id="email"

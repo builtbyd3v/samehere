@@ -11,7 +11,7 @@ const COPY = {
   },
   signup: {
     headline: "You're not the only one.",
-    sub: "Verified .edu only. Takes a minute.",
+    sub: "Verified students only, .edu required. Takes a minute.",
   },
   forgot: {
     headline: "Locked out?",

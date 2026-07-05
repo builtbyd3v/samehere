@@ -23,7 +23,7 @@ export default function OgImage() {
           You&apos;re not the only one.
         </div>
         <div style={{ marginTop: 24, fontSize: 18, color: "#5f5f5d", maxWidth: 720, lineHeight: 1.38 }}>
-          The social network for verified students. Post the real stuff. Find people who get it.
+          Verified students only, .edu required. Post the real stuff. Find people who get it.
         </div>
         <div style={{ marginTop: 48, fontSize: 20, fontWeight: 600 }}>samehere</div>
       </div>

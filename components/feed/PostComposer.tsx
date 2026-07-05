@@ -8,8 +8,9 @@ import { submitShortcutLabel } from "@/lib/keyboard";
 import { TEXT_LIMITS } from "@/lib/utils/validation";
 import MentionTextarea from "@/components/ui/MentionTextarea";
 
-// 150 chars earns a heatmap point — it does NOT gate posting.
-const POINT_AT = 150;
+// 150 chars earns a heatmap point, it does NOT gate posting.
+const POINT_AT = 150; // ponytail: mirrors log_contribution post threshold
+const AWARD = 5; // ponytail: mirrors log_contribution post points
 const MAX = TEXT_LIMITS.post;
 
 const MAX_FILES = 4;
@@ -211,17 +212,17 @@ export default function PostComposer() {
       <div className="mt-3 flex items-center justify-between border-t border-[var(--border)] pt-3">
         <div className="flex items-center gap-3">
           <span
-            className={`text-xs ${
+            className={`text-xs transition-colors duration-300 motion-reduce:transition-none ${
               len >= MAX ? "text-[#c0392b] dark:text-[#e88]" : qualifies ? "text-[var(--blue)]" : "text-[var(--ink-muted)]"
             }`}
           >
             {len === 0
-              ? `${POINT_AT}+ characters earns a point`
+              ? `${POINT_AT}+ characters earns +${AWARD} points`
               : len >= MAX
                 ? `${len}/${MAX}`
                 : qualifies
-                  ? `${len}/${MAX} · earns a point`
-                  : `${len}/${MAX} · ${POINT_AT - len} more to earn a point`}
+                  ? `+${AWARD} points earned`
+                  : `${POINT_AT - len} more characters to earn +${AWARD} points`}
           </span>
           <label className="cursor-pointer text-xs font-medium text-[var(--ink-muted)] underline">
             <input

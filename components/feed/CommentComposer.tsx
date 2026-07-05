@@ -8,7 +8,8 @@ import { submitShortcutLabel } from "@/lib/keyboard";
 import { TEXT_LIMITS } from "@/lib/utils/validation";
 import MentionTextarea from "@/components/ui/MentionTextarea";
 
-const POINT_AT = 50;
+const POINT_AT = 50; // ponytail: mirrors log_contribution comment threshold
+const AWARD = 3; // ponytail: mirrors log_contribution comment points
 const MAX = TEXT_LIMITS.comment;
 
 export default function CommentComposer({ postId, quoteId }: { postId?: string; quoteId?: string }) {
@@ -78,17 +79,17 @@ export default function CommentComposer({ postId, quoteId }: { postId?: string; 
 
       <div className="mt-3 flex items-center justify-between border-t border-[var(--border)] pt-3">
         <span
-          className={`text-xs ${
+          className={`text-xs transition-colors duration-300 motion-reduce:transition-none ${
             len >= MAX ? "text-[#c0392b] dark:text-[#e88]" : qualifies ? "text-[var(--blue)]" : "text-[var(--ink-muted)]"
           }`}
         >
           {len === 0
-            ? `${POINT_AT}+ characters earns a point`
+            ? `${POINT_AT}+ characters earns +${AWARD} points`
             : len >= MAX
               ? `${len}/${MAX}`
               : qualifies
-                ? `${len}/${MAX} · earns a point`
-                : `${len}/${MAX} · ${POINT_AT - len} more to earn a point`}
+                ? `+${AWARD} points earned`
+                : `${POINT_AT - len} more characters to earn +${AWARD} points`}
         </span>
         <button type="submit" disabled={pending || len === 0 || len > MAX} className="btn-primary">
           {pending ? "Posting…" : "Comment"}

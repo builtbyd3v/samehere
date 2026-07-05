@@ -4,7 +4,7 @@ import LandingPage from "@/components/landing/LandingPage";
 export const metadata: Metadata = {
   title: "samehere: the network for verified students",
   description:
-    "The social network for verified students. Post the real stuff, react with SameHere, and find people who get it.",
+    "Verified students only, .edu required. Post the real stuff, react with SameHere, and find people who get it.",
   openGraph: {
     title: "samehere: you're not the only one",
     description:
