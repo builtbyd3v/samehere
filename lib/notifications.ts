@@ -1,3 +1,5 @@
+import { parseTimestamp } from "@/lib/utils/time";
+
 export type NotificationRow = {
   id: string;
   type: "follow" | "follow_request" | "comment" | "reaction";
@@ -12,7 +14,7 @@ export type NotificationRow = {
 };
 
 export function formatNotificationTime(iso: string): string {
-  const d = new Date(iso);
+  const d = parseTimestamp(iso);
   const now = new Date();
   const sameDay =
     d.getFullYear() === now.getFullYear() &&

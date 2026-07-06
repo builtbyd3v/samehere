@@ -1,3 +1,5 @@
+import { parseTimestamp } from "@/lib/utils/time";
+
 export type DmInboxRow = {
   conversation_id: string;
   peer_id: string;
@@ -23,7 +25,7 @@ export type DmMessage = {
 };
 
 export function formatMessageTime(iso: string): string {
-  const d = new Date(iso);
+  const d = parseTimestamp(iso);
   const now = new Date();
   const sameDay =
     d.getFullYear() === now.getFullYear() &&

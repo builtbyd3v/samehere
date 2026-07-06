@@ -8,6 +8,7 @@ import ProfileHoverLink from "@/components/profile/ProfileHoverLink";
 import UserBadges from "@/components/profile/UserBadges";
 import ReactionRow from "@/components/feed/ReactionRow";
 import QuoteBodyLink from "@/components/feed/QuoteBodyLink";
+import { parseTimestamp } from "@/lib/utils/time";
 import QuoteMenu from "@/components/feed/QuoteMenu";
 import type { FeedPost } from "@/components/feed/PostCard";
 
@@ -31,7 +32,7 @@ export type QuotedRepost = {
 };
 
 function timeAgo(iso: string): string {
-  const s = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
+  const s = Math.max(0, Math.floor((Date.now() - parseTimestamp(iso).getTime()) / 1000));
   if (s < 60) return `${s}s`;
   const m = Math.floor(s / 60);
   if (m < 60) return `${m}m`;
@@ -39,7 +40,7 @@ function timeAgo(iso: string): string {
   if (h < 24) return `${h}h`;
   const d = Math.floor(h / 24);
   if (d < 7) return `${d}d`;
-  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return parseTimestamp(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
 export default function QuotedRepostCard({

@@ -9,6 +9,7 @@ import ProfileHoverLink from "@/components/profile/ProfileHoverLink";
 import PostBodyLink from "./PostBodyLink";
 import { IconSame } from "@/components/icons";
 import type { PostMedia } from "@/lib/media";
+import { parseTimestamp } from "@/lib/utils/time";
 
 export const POST_SELECT =
   "id, content, created_at, user_id, media, post_type, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, is_private, is_pro, is_founder, is_campus_founder, profile_school(school)), reactions(user_id, type), reposts(user_id), bookmarks(user_id), comments(count)";
@@ -39,7 +40,7 @@ export type FeedPost = {
 };
 
 function timeAgo(iso: string): string {
-  const s = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
+  const s = Math.max(0, Math.floor((Date.now() - parseTimestamp(iso).getTime()) / 1000));
   if (s < 60) return `${s}s`;
   const m = Math.floor(s / 60);
   if (m < 60) return `${m}m`;
@@ -47,7 +48,7 @@ function timeAgo(iso: string): string {
   if (h < 24) return `${h}h`;
   const d = Math.floor(h / 24);
   if (d < 7) return `${d}d`;
-  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return parseTimestamp(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
 function Avatar({
