@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
-import { updateProfile, type EditState } from "@/app/(app)/profile/edit/actions";
-import { createClient } from "@/lib/supabase/client";
+import { useActionState, useEffect, useState } from "react";
+import { updateProfile, uploadAvatar, type AvatarState, type EditState } from "@/app/(app)/profile/edit/actions";
 import { isPro } from "@/lib/pro";
 import AvatarImage from "@/components/ui/AvatarImage";
 import ProfileNudgePanel from "@/components/profile/ProfileNudgePanel";
@@ -43,43 +42,24 @@ const YEARS: [string, string][] = [
 export default function EditProfileForm({ initial }: { initial: EditInitial }) {
   const [state, formAction, pending] = useActionState<EditState, FormData>(updateProfile, {});
 
-  const [supabase] = useState(createClient);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(initial.avatar_url);
-  const [avatarBusy, setAvatarBusy] = useState(false);
-  const [avatarErr, setAvatarErr] = useState<string | null>(null);
+  const [avatarState, avatarAction, avatarBusy] = useActionState<AvatarState, FormData>(uploadAvatar, {});
   const [accentColor, setAccentColor] = useState<string | null>(initial.accent_color);
   const pro = isPro(initial);
 
-  // Upload straight from the browser to storage (no server hop). Stable path
-  // {id}/avatar with upsert overwrites in place — no orphan files piling up.
-  // The public URL is cache-busted with ?v= so the new image shows immediately.
-  // Storage RLS pins writes to the user's own {id}/ folder; the profiles owner
-  // policy pins the avatar_url write to their own row.
-  // ponytail: avatar_url column isn't URL-checked in the DB. Low risk (own row,
-  // rendered only as <img src>); add a CHECK/trigger if it ever needs pinning.
-  async function onAvatar(e: React.ChangeEvent<HTMLInputElement>) {
+  // Server action validates MIME/size/animation and gates animated avatars
+  // behind Pro (client checks below are UX only, not the trust boundary).
+  useEffect(() => {
+    if (avatarState.url) setAvatarUrl(avatarState.url);
+  }, [avatarState.url]);
+
+  function onAvatar(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = ""; // let the same file be re-picked after an error
     if (!file) return;
-    if (!file.type.startsWith("image/")) return setAvatarErr("Choose an image file.");
-    if (file.size > 2 * 1024 * 1024) return setAvatarErr("Image must be under 2 MB.");
-
-    setAvatarErr(null);
-    setAvatarBusy(true);
-    const path = `${initial.id}/avatar`;
-    const { error: upErr } = await supabase.storage
-      .from("avatars")
-      .upload(path, file, { upsert: true, cacheControl: "3600" });
-    if (upErr) {
-      setAvatarBusy(false);
-      return setAvatarErr("Upload failed. Try again.");
-    }
-    const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-    const url = `${data.publicUrl}?v=${Date.now()}`;
-    const { error: dbErr } = await supabase.from("profiles").update({ avatar_url: url }).eq("id", initial.id);
-    setAvatarBusy(false);
-    if (dbErr) return setAvatarErr("Saved the image but couldn't update your profile.");
-    setAvatarUrl(url);
+    const fd = new FormData();
+    fd.set("avatar", file);
+    avatarAction(fd);
   }
 
   return (
@@ -132,8 +112,8 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
               <input type="file" accept="image/*" onChange={onAvatar} disabled={avatarBusy} className="hidden" />
               {avatarBusy ? "Uploading…" : "Change avatar"}
             </label>
-            <p className={avatarErr ? "mt-1.5 text-xs text-[#c0392b] dark:text-[#e88]" : hint}>
-              {avatarErr ?? "JPG, PNG, or WebP. Max 2 MB."}
+            <p className={avatarState.error ? "mt-1.5 text-xs text-[#c0392b] dark:text-[#e88]" : hint}>
+              {avatarState.error ?? "JPG, PNG, or WebP. Max 2 MB."}
             </p>
           </div>
         </div>

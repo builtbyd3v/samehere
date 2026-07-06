@@ -42,12 +42,22 @@ const WEEKS = 26;
 const CELL = 13;
 const CELL_GAP = 2;
 
-// Sun-aligned grid over the last WEEKS weeks, ending today (UTC). Mirrors
+// Platform's day boundary is midnight America/New_York (matches get_streak/get_heatmap).
+// This gives "today" as an Eastern calendar date, then encodes it into UTC fields so
+// setUTCDate/toISOString below can do pure calendar-day arithmetic against it.
+function easternTodayAnchor(): Date {
+  const [y, m, d] = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" })
+    .format(new Date())
+    .split("-")
+    .map(Number);
+  return new Date(Date.UTC(y, m - 1, d));
+}
+
+// Sun-aligned grid over the last WEEKS weeks, ending today (Eastern). Mirrors
 // ContributionHeatmap's grid math at a shorter window (26wk reads well at OG size).
 function buildWeeks(rows: HeatmapRow[]): number[][] {
   const byDate = new Map(rows.map((r) => [r.day, Number(r.points)]));
-  const today = new Date();
-  const end = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
+  const end = easternTodayAnchor();
   const firstSunday = new Date(end);
   firstSunday.setUTCDate(end.getUTCDate() - end.getUTCDay() - (WEEKS - 1) * 7);
 
@@ -64,13 +74,12 @@ function buildWeeks(rows: HeatmapRow[]): number[][] {
   return cols;
 }
 
-// Consecutive days ending today or yesterday (UTC), computed from the public
+// Consecutive days ending today or yesterday (Eastern), computed from the public
 // heatmap rows already fetched — no auth-only get_streak call.
 function currentStreak(rows: HeatmapRow[]): number {
   const activeDays = new Set(rows.filter((r) => Number(r.points) > 0).map((r) => r.day));
   if (activeDays.size === 0) return 0;
-  const today = new Date();
-  const cursor = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
+  const cursor = easternTodayAnchor();
   if (!activeDays.has(cursor.toISOString().slice(0, 10))) {
     cursor.setUTCDate(cursor.getUTCDate() - 1);
   }

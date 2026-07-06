@@ -1,7 +1,7 @@
 import PostCard, { type FeedPost } from "@/components/feed/PostCard";
 import QuotedRepostCard, { type QuotedRepost } from "@/components/feed/QuotedRepostCard";
 import type { PlainRepost } from "@/lib/feed-reposts";
-import { mergeFeedTimeline, type FeedTimelineItem } from "@/lib/feed-timeline";
+import type { FeedTimelineItem } from "@/lib/feed-timeline";
 
 export default function FeedTimeline({
   items,

@@ -25,6 +25,7 @@ export type MentionSuggestion = {
 const PREVIEW_SELECT =
   "username, display_name, avatar_url, bio, year, major, is_pro, is_founder, is_campus_founder, profile_school(school)";
 
+// ponytail: per-instance cache, no TTL; staleness bounded by serverless recycle
 const cache = new Map<string, ProfilePreview | null>();
 
 export async function fetchProfilePreview(
@@ -61,7 +62,7 @@ export async function searchMentionUsers(
 
   const { data } = await supabase
     .from("profiles")
-    .select("username, display_name, avatar_url, is_pro, is_founder")
+    .select("username, display_name, avatar_url, is_pro, is_founder, is_campus_founder")
     .or(`username.ilike.${q}%,display_name.ilike.%${q}%`)
     .limit(6);
 

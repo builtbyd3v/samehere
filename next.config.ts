@@ -1,7 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Avatar upload server action sends the raw file (<=2MB) as FormData;
+  // default 1mb body limit would reject it.
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "3mb",
+    },
+  },
 };
 
 export default nextConfig;

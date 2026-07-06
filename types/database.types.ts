@@ -617,8 +617,10 @@ export type Database = {
           is_pro: boolean
           leaderboard_opt_out: boolean
           major: string | null
+          pro_until: string | null
           referral_code: string | null
           skills: string[] | null
+          stripe_customer_id: string | null
           username: string
           wants_pro: boolean
           year: string | null
@@ -641,8 +643,10 @@ export type Database = {
           is_pro?: boolean
           leaderboard_opt_out?: boolean
           major?: string | null
+          pro_until?: string | null
           referral_code?: string | null
           skills?: string[] | null
+          stripe_customer_id?: string | null
           username: string
           wants_pro?: boolean
           year?: string | null
@@ -665,13 +669,47 @@ export type Database = {
           is_pro?: boolean
           leaderboard_opt_out?: boolean
           major?: string | null
+          pro_until?: string | null
           referral_code?: string | null
           skills?: string[] | null
+          stripe_customer_id?: string | null
           username?: string
           wants_pro?: boolean
           year?: string | null
         }
         Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          p256dh: string
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          p256dh: string
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          p256dh?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reactions: {
         Row: {

@@ -8,8 +8,11 @@ import type { TablesUpdate } from "@/types/database.types";
 
 const YEARS = ["freshman", "sophomore", "junior", "senior", "grad"];
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
+const ALLOWED_AVATAR_MIME = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 
 export type EditState = { error?: string };
+export type AvatarState = { error?: string; url?: string };
 
 // Update the signed-in user's profile. All writes go through the session client,
 // so RLS enforces that a user can only edit their own row. School lives in a
@@ -119,6 +122,82 @@ export async function profileNudge(): Promise<string> {
   }
 
   return fallbackProfileNudge(gaps);
+}
+
+// Upload an avatar server-side so MIME/size/animation checks can't be
+// bypassed from the browser. Animated images (gif/webp/apng) are Pro-only —
+// trust boundary lives here, not in the client's <input accept>.
+export async function uploadAvatar(_prev: AvatarState, formData: FormData): Promise<AvatarState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be logged in." };
+
+  const file = formData.get("avatar");
+  if (!(file instanceof File) || file.size === 0) return { error: "Choose an image file." };
+  if (!ALLOWED_AVATAR_MIME.has(file.type)) return { error: "Choose an image file." };
+  if (file.size > MAX_AVATAR_BYTES) return { error: "Image must be under 2 MB." };
+
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const animated = isAnimated(bytes, file.type);
+
+  if (animated) {
+    const { data: proRow } = await supabase.from("profiles").select("is_pro").eq("id", user.id).single();
+    if (!proRow?.is_pro) return { error: "Animated avatars are a Pro perk." };
+  }
+
+  const path = `${user.id}/avatar`;
+  const { error: upErr } = await supabase.storage
+    .from("avatars")
+    .upload(path, bytes, { upsert: true, cacheControl: "3600", contentType: file.type });
+  if (upErr) return { error: "Upload failed. Try again." };
+
+  const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
+  const url = `${pub.publicUrl}?v=${Date.now()}`;
+
+  const { error: dbErr } = await supabase
+    .from("profiles")
+    .update({ avatar_url: url, avatar_is_animated: animated })
+    .eq("id", user.id);
+  if (dbErr) return { error: "Saved the image but couldn't update your profile." };
+
+  return { url };
+}
+
+// Byte-sniff for animation, no libraries. Each format is checked by its own
+// container structure rather than trusting file extension/MIME alone.
+function isAnimated(bytes: Uint8Array, mime: string): boolean {
+  if (mime === "image/gif") return gifFrameCount(bytes) > 1;
+  if (mime === "image/webp") return containsAscii(bytes, "ANIM");
+  if (mime === "image/png") return containsAscii(bytes, "acTL");
+  return false;
+}
+
+// GIF frames are each preceded by a Graphic Control Extension block
+// (0x21 0xF9 0x04 ...). Static GIFs have at most one; animated GIFs have one
+// per frame. Counting GCE blocks is simpler than walking the full block
+// structure and is the standard heuristic for "is this GIF animated".
+function gifFrameCount(bytes: Uint8Array): number {
+  let count = 0;
+  for (let i = 0; i < bytes.length - 2; i++) {
+    if (bytes[i] === 0x21 && bytes[i + 1] === 0xf9 && bytes[i + 2] === 0x04) count++;
+  }
+  return count;
+}
+
+// Plain substring search for a 4-byte ASCII chunk id (WebP RIFF "ANIM" chunk,
+// PNG "acTL" chunk) anywhere in the file. Good enough — these tags don't
+// occur incidentally in valid image data for the formats they gate.
+function containsAscii(bytes: Uint8Array, needle: string): boolean {
+  const target = Array.from(needle, (c) => c.charCodeAt(0));
+  outer: for (let i = 0; i <= bytes.length - target.length; i++) {
+    for (let j = 0; j < target.length; j++) {
+      if (bytes[i + j] !== target[j]) continue outer;
+    }
+    return true;
+  }
+  return false;
 }
 
 // "a, b, a , ,c" -> ["a","b","c"], trimmed, de-duped, capped. Shared by
