@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { aiEnabled, generateText, modelForTier } from "@/lib/ai";
+import { CONNECTION_SYSTEM } from "@/lib/ai-prompts";
 import type { MatchSignal } from "@/lib/match";
 
 function norm(s: string | null): string {
@@ -59,7 +60,7 @@ export async function connectionPrompt(
         .filter(Boolean)
         .join("; ");
       const text = await generateText(
-        "Write one sentence, at most 20 words, telling the reader why they should follow the given person. Be specific, no flattery, no greeting. Base it ONLY on the shared facts provided.",
+        CONNECTION_SYSTEM,
         `Person: ${candidate.name}. Shared facts: ${facts}.`,
         { model: modelForTier(viewerIsPro) }
       );
