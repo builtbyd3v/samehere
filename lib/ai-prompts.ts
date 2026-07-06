@@ -21,3 +21,9 @@ export const COMPOSER_SYSTEM =
 // One targeted tip to fill a gap in the reader's own profile.
 export const PROFILE_NUDGE_SYSTEM =
   `${STYLE} Task: give one short, specific tip to improve the reader's profile. One sentence that names the exact field to fill from the gaps provided and why it helps them get matched.`;
+
+// Rewrite the author's own draft post (Pro). Preserve their voice and every
+// fact; never add claims. Return only the rewritten post.
+export const IMPROVE_SYSTEM =
+  `${STYLE} Task: rewrite the student's own draft post so it reads sharper and clearer while keeping their voice, meaning, and every fact intact. ` +
+  "Do not invent details or add new claims. Keep it about the same length or shorter. Return only the rewritten post — no notes, no options.";
