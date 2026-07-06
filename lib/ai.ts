@@ -12,6 +12,11 @@ export function aiEnabled(): boolean {
   return !!client && !!model;
 }
 
+// Result of an on-demand nudge action. `overCap` means a free user hit their
+// daily quota — the UI shows an upsell at that point. Every other case (success,
+// AI off, or a failed call) collapses to `text` so the surface degrades quietly.
+export type AiResult = { text: string } | { overCap: true };
+
 // The model to use for a given tier. Pro gets OPENAI_MODEL_PRO; free (and Pro
 // when the Pro model is unset) gets OPENAI_MODEL. Returns undefined only when
 // neither is configured — generateText then no-ops like any unconfigured call.

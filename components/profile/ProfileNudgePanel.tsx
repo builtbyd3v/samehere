@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { profileNudge } from "@/app/(app)/profile/edit/actions";
 import {
@@ -12,14 +13,21 @@ import {
 export default function ProfileNudgePanel({ profile }: { profile: ProfileForCompletion }) {
   const gaps = getProfileGaps(profile);
   const [hint, setHint] = useState<string | null>(null);
+  const [overCap, setOverCap] = useState(false);
   const [nudging, startNudge] = useTransition();
 
   if (gaps.length === 0) return null;
 
   function onNudge() {
     startNudge(async () => {
-      const text = await profileNudge();
-      setHint(text);
+      const res = await profileNudge();
+      if ("overCap" in res) {
+        setOverCap(true);
+        setHint(null);
+      } else {
+        setHint(res.text);
+        setOverCap(false);
+      }
     });
   }
 
@@ -68,6 +76,16 @@ export default function ProfileNudgePanel({ profile }: { profile: ProfileForComp
         >
           {hint} <span className="not-italic">(click to jump to field)</span>
         </button>
+      )}
+
+      {overCap && (
+        <p className="mt-3 text-sm text-[var(--ink-muted)]">
+          You&apos;re out of AI suggestions for today.{" "}
+          <Link href="/pro" className="font-medium text-[var(--ink)] underline">
+            Upgrade for unlimited + smarter AI
+          </Link>
+          .
+        </p>
       )}
     </section>
   );

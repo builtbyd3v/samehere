@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { aiEnabled, generateText, modelForTier } from "@/lib/ai";
+import { aiEnabled, generateText, modelForTier, type AiResult } from "@/lib/ai";
 import { PROFILE_NUDGE_SYSTEM } from "@/lib/ai-prompts";
 import { isPro } from "@/lib/pro";
 import { fallbackProfileNudge, getProfileGaps } from "@/lib/profile-completion";
@@ -78,12 +78,12 @@ export async function updateProfile(_prev: EditState, formData: FormData): Promi
 
 // On-demand profile-completion nudge. Metered via use_ai_quota; static fallback
 // when AI is off, over quota, or the call fails.
-export async function profileNudge(): Promise<string> {
+export async function profileNudge(): Promise<AiResult> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return fallbackProfileNudge([]);
+  if (!user) return { text: fallbackProfileNudge([]) };
 
   const [{ data: profile }, { data: schoolRow }] = await Promise.all([
     supabase
@@ -105,7 +105,7 @@ export async function profileNudge(): Promise<string> {
     skills: profile?.skills ?? null,
   });
 
-  if (gaps.length === 0) return fallbackProfileNudge([]);
+  if (gaps.length === 0) return { text: fallbackProfileNudge([]) };
 
   if (aiEnabled()) {
     const pro = isPro(profile ?? { is_pro: false });
@@ -113,18 +113,18 @@ export async function profileNudge(): Promise<string> {
       p_kind: "profile_nudge",
       p_cap: pro ? 9999 : 3,
     });
-    if (allowed) {
-      const missing = gaps.map((g) => g.replace("_", " ")).join(", ");
-      const text = await generateText(
-        PROFILE_NUDGE_SYSTEM,
-        `Missing or weak fields: ${missing}.`,
-        { model: modelForTier(pro), maxTokens: 100 },
-      );
-      if (text) return text;
-    }
+    // Free user out of quota → upsell; Pro can't realistically hit the cap.
+    if (!allowed) return pro ? { text: fallbackProfileNudge(gaps) } : { overCap: true };
+    const missing = gaps.map((g) => g.replace("_", " ")).join(", ");
+    const text = await generateText(
+      PROFILE_NUDGE_SYSTEM,
+      `Missing or weak fields: ${missing}.`,
+      { model: modelForTier(pro), maxTokens: 100 },
+    );
+    if (text) return { text };
   }
 
-  return fallbackProfileNudge(gaps);
+  return { text: fallbackProfileNudge(gaps) };
 }
 
 // Upload an avatar server-side so MIME/size/animation checks can't be

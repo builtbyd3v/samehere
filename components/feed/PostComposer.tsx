@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { createPost, composerNudge, type ComposerState } from "@/app/(app)/feed/actions";
 import { createClient } from "@/lib/supabase/client";
@@ -33,6 +34,7 @@ export default function PostComposer() {
   const [uploading, setUploading] = useState(false);
   const [supabase] = useState(createClient);
   const [hint, setHint] = useState<string | null>(null);
+  const [overCap, setOverCap] = useState(false);
   const [shortcutLabel, setShortcutLabel] = useState("");
   const [nudging, startNudge] = useTransition();
   const [, startSubmit] = useTransition();
@@ -92,8 +94,14 @@ export default function PostComposer() {
 
   function onNudge() {
     startNudge(async () => {
-      const prompt = await composerNudge();
-      setHint(prompt);
+      const res = await composerNudge();
+      if ("overCap" in res) {
+        setOverCap(true);
+        setHint(null);
+      } else {
+        setHint(res.text);
+        setOverCap(false);
+      }
     });
   }
 
@@ -163,6 +171,15 @@ export default function PostComposer() {
         >
           {hint} <span className="not-italic">(click to use)</span>
         </button>
+      )}
+      {overCap && (
+        <p className="mb-2 text-xs text-[var(--ink-muted)]">
+          Out of AI prompts for today.{" "}
+          <Link href="/pro" className="font-medium text-[var(--ink)] underline">
+            Upgrade for unlimited + smarter AI
+          </Link>
+          .
+        </p>
       )}
       <MentionTextarea
         textareaRef={textareaRef}
