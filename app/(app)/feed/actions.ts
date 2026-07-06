@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { POST_SELECT, PAGE, type FeedPost } from "@/components/feed/PostCard";
 import { attachSignedMedia } from "@/lib/media";
 import { aiEnabled, generateText, modelForTier } from "@/lib/ai";
+import { COMPOSER_SYSTEM } from "@/lib/ai-prompts";
 import { isPro } from "@/lib/pro";
 import { TEXT_LIMITS, textLimitError } from "@/lib/utils/validation";
 
@@ -124,7 +125,7 @@ export async function composerNudge(): Promise<string> {
     });
     if (allowed) {
       const text = await generateText(
-        "Give one short writing prompt — a question — that inspires a student to post about what they're building, learning, or struggling with. One sentence, no preamble, no quotes.",
+        COMPOSER_SYSTEM,
         "Give me one prompt.",
         { model: modelForTier(pro) }
       );

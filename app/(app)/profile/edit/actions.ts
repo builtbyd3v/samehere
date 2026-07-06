@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { aiEnabled, generateText, modelForTier } from "@/lib/ai";
+import { PROFILE_NUDGE_SYSTEM } from "@/lib/ai-prompts";
 import { isPro } from "@/lib/pro";
 import { fallbackProfileNudge, getProfileGaps } from "@/lib/profile-completion";
 import type { TablesUpdate } from "@/types/database.types";
@@ -115,7 +116,7 @@ export async function profileNudge(): Promise<string> {
     if (allowed) {
       const missing = gaps.map((g) => g.replace("_", " ")).join(", ");
       const text = await generateText(
-        "Give one short, specific tip for a student to improve their social profile. One sentence. Mention which field to fill. No greeting, no quotes.",
+        PROFILE_NUDGE_SYSTEM,
         `Missing or weak fields: ${missing}.`,
         { model: modelForTier(pro), maxTokens: 100 },
       );
