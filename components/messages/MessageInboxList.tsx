@@ -1,6 +1,7 @@
 import Link from "next/link";
 import AvatarImage from "@/components/ui/AvatarImage";
-import { formatMessageTime, type DmInboxRow } from "@/lib/messages";
+import MessageTime from "@/components/messages/MessageTime";
+import type { DmInboxRow } from "@/lib/messages";
 
 function Avatar({ url, name }: { url: string | null; name: string }) {
   if (url) {
@@ -57,9 +58,7 @@ export default function MessageInboxList({
                   <p className={`truncate text-[15px] ${unread ? "font-semibold text-[var(--ink)]" : "font-medium text-[var(--ink)]"}`}>
                     {name}
                   </p>
-                  <time className="shrink-0 text-xs text-[var(--ink-faint)]" dateTime={t.last_message_at}>
-                    {formatMessageTime(t.last_message_at)}
-                  </time>
+                  <MessageTime iso={t.last_message_at} className="shrink-0 text-xs text-[var(--ink-faint)]" />
                 </div>
                 <p className={`mt-0.5 truncate text-sm ${unread ? "text-[var(--ink)]" : "text-[var(--ink-muted)]"}`}>
                   {preview}

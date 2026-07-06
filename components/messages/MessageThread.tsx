@@ -1,7 +1,8 @@
 import Link from "next/link";
 import AvatarImage from "@/components/ui/AvatarImage";
 import { IconChevronLeft } from "@/components/icons";
-import { formatMessageTime, type DmMessage } from "@/lib/messages";
+import MessageTime from "@/components/messages/MessageTime";
+import type { DmMessage } from "@/lib/messages";
 
 export default function MessageThread({
   messages,
@@ -34,12 +35,7 @@ export default function MessageThread({
               >
                 {m.content}
               </div>
-              <time
-                className="mt-1 px-1 text-[11px] text-[var(--ink-faint)]"
-                dateTime={m.created_at}
-              >
-                {formatMessageTime(m.created_at)}
-              </time>
+              <MessageTime iso={m.created_at} className="mt-1 px-1 text-[11px] text-[var(--ink-faint)]" />
             </div>
           </div>
         );
