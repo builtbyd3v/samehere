@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { POST_SELECT, PAGE, type FeedPost } from "@/components/feed/PostCard";
 import { attachSignedMedia } from "@/lib/media";
-import { aiEnabled, generateText } from "@/lib/ai";
+import { aiEnabled, generateText, modelForTier } from "@/lib/ai";
+import { isPro } from "@/lib/pro";
 import { TEXT_LIMITS, textLimitError } from "@/lib/utils/validation";
 
 export type ComposerState = { error?: string; ok?: boolean };
@@ -115,14 +116,17 @@ export async function composerNudge(): Promise<string> {
   if (!user) return randomFallback();
 
   if (aiEnabled()) {
+    const { data: profile } = await supabase.from("profiles").select("is_pro").eq("id", user.id).single();
+    const pro = isPro(profile ?? { is_pro: false });
     const { data: allowed } = await supabase.rpc("use_ai_quota", {
       p_kind: "composer_nudge",
-      p_cap: 3,
+      p_cap: pro ? 9999 : 3,
     });
     if (allowed) {
       const text = await generateText(
         "Give one short writing prompt — a question — that inspires a student to post about what they're building, learning, or struggling with. One sentence, no preamble, no quotes.",
-        "Give me one prompt."
+        "Give me one prompt.",
+        { model: modelForTier(pro) }
       );
       if (text) return text;
     }

@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { aiEnabled, generateText } from "@/lib/ai";
+import { aiEnabled, generateText, modelForTier } from "@/lib/ai";
 import type { MatchSignal } from "@/lib/match";
 
 function norm(s: string | null): string {
@@ -15,7 +15,8 @@ export async function connectionPrompt(
   supabase: SupabaseClient,
   viewerId: string,
   viewer: MatchSignal,
-  candidate: { id: string; name: string } & MatchSignal
+  candidate: { id: string; name: string } & MatchSignal,
+  viewerIsPro: boolean
 ): Promise<string | null> {
   const { data: cached } = await supabase
     .from("ai_connection_prompts")
@@ -46,7 +47,7 @@ export async function connectionPrompt(
   const hasSharedFact = !!(school || major || year || sharedSkills.length > 0 || sharedCourses.length > 0);
 
   if (aiEnabled() && hasSharedFact) {
-    const { data: withinCap } = await supabase.rpc("use_ai_quota", { p_kind: "connection_prompt", p_cap: 3 });
+    const { data: withinCap } = await supabase.rpc("use_ai_quota", { p_kind: "connection_prompt", p_cap: viewerIsPro ? 9999 : 3 });
     if (withinCap) {
       const facts = [
         sharedCourses.length > 0 && `same courses: ${sharedCourses.join(", ")}`,
@@ -59,7 +60,8 @@ export async function connectionPrompt(
         .join("; ");
       const text = await generateText(
         "Write one sentence, at most 20 words, telling the reader why they should follow the given person. Be specific, no flattery, no greeting. Base it ONLY on the shared facts provided.",
-        `Person: ${candidate.name}. Shared facts: ${facts}.`
+        `Person: ${candidate.name}. Shared facts: ${facts}.`,
+        { model: modelForTier(viewerIsPro) }
       );
       if (text) {
         await supabase.from("ai_connection_prompts").insert({ viewer_id: viewerId, candidate_id: candidate.id, prompt: text });
