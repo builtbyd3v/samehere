@@ -1,0 +1,50 @@
+"use client";
+
+import { useTransition } from "react";
+import { hidePost, unhidePost, resolveReport, suspendUser, unsuspendUser } from "./actions";
+
+const btn =
+  "rounded-full border border-[var(--border-strong)] px-3 py-1 text-xs font-medium text-[var(--ink)] transition hover:bg-[var(--featured-surface)] disabled:opacity-50";
+
+export default function ReportActions({
+  reportId,
+  postId,
+  authorId,
+  postHidden,
+  authorSuspended,
+}: {
+  reportId: string;
+  postId: string;
+  authorId: string;
+  postHidden: boolean;
+  authorSuspended: boolean;
+}) {
+  const [pending, start] = useTransition();
+  const run = (fn: () => Promise<void>) => () => start(() => fn());
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {postHidden ? (
+        <button type="button" disabled={pending} className={btn} onClick={run(() => unhidePost(postId))}>
+          Unhide post
+        </button>
+      ) : (
+        <button type="button" disabled={pending} className={btn} onClick={run(() => hidePost(postId))}>
+          Hide post
+        </button>
+      )}
+      {authorSuspended ? (
+        <button type="button" disabled={pending} className={btn} onClick={run(() => unsuspendUser(authorId))}>
+          Unsuspend author
+        </button>
+      ) : (
+        <button type="button" disabled={pending} className={btn} onClick={run(() => suspendUser(authorId))}>
+          Suspend author
+        </button>
+      )}
+      <button type="button" disabled={pending} className={btn} onClick={run(() => resolveReport(reportId))}>
+        Dismiss report
+      </button>
+    </div>
+  );
+}

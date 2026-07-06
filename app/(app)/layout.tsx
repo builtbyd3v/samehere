@@ -15,7 +15,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const [{ data: profile }, { data: dmUnread }, { data: notificationUnread }] = user
     ? await Promise.all([
-        supabase.from("profiles").select("username, avatar_url, is_pro").eq("id", user.id).single(),
+        supabase.from("profiles").select("username, avatar_url, is_pro, is_admin").eq("id", user.id).single(),
         supabase.rpc("get_dm_unread_total"),
         supabase.rpc("get_notification_unread_total"),
       ])
@@ -34,6 +34,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         username={profile?.username ?? null}
         avatarUrl={profile?.avatar_url ?? null}
         isPro={profile ? isPro(profile) : false}
+        isAdmin={profile?.is_admin ?? false}
         dmUnread={Number(dmUnread ?? 0)}
         notificationUnread={Number(notificationUnread ?? 0)}
       />

@@ -8,12 +8,14 @@ export default function Navbar({
   username,
   avatarUrl,
   isPro,
+  isAdmin,
   dmUnread,
   notificationUnread,
 }: {
   username: string | null;
   avatarUrl: string | null;
   isPro: boolean;
+  isAdmin: boolean;
   dmUnread: number;
   notificationUnread: number;
 }) {
@@ -56,7 +58,7 @@ export default function Navbar({
               Join Pro
             </Link>
           )}
-          {username && <NavMenu username={username} avatarUrl={avatarUrl} />}
+          {username && <NavMenu username={username} avatarUrl={avatarUrl} isAdmin={isAdmin} />}
         </div>
       </nav>
     </header>

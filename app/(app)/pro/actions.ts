@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getPostHogServerClient } from "@/lib/posthog-server";
 import { stripe } from "@/lib/stripe";
 import { SITE_URL } from "@/lib/site";
 
@@ -16,6 +17,16 @@ export async function joinProWaitlist() {
   if (!user) return;
 
   await supabase.from("profiles").update({ wants_pro: true }).eq("id", user.id);
+
+  const posthog = getPostHogServerClient();
+  posthog?.capture({
+    distinctId: user.id,
+    event: "pro_waitlist_joined",
+    properties: {
+      source: "pro_page",
+    },
+  });
+
   revalidatePath("/pro");
 }
 
@@ -38,6 +49,15 @@ export async function openBillingPortal() {
   const session = await stripe.billingPortal.sessions.create({
     customer: profile.stripe_customer_id,
     return_url: `${SITE_URL}/pro`,
+  });
+
+  const posthog = getPostHogServerClient();
+  posthog?.capture({
+    distinctId: user.id,
+    event: "billing_portal_opened",
+    properties: {
+      billing_provider: "stripe",
+    },
   });
 
   redirect(session.url);

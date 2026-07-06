@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { aiEnabled, generateText, modelForTier } from "@/lib/ai";
 import { ICEBREAKER_SYSTEM } from "@/lib/ai-prompts";
+import { getPostHogServerClient } from "@/lib/posthog-server";
 import { isPro } from "@/lib/pro";
 import { TEXT_LIMITS, textLimitError } from "@/lib/utils/validation";
 
@@ -91,6 +92,16 @@ export async function sendMessage(
   });
 
   if (error) return { error: "Could not send message. Try again." };
+
+  const posthog = getPostHogServerClient();
+  posthog?.capture({
+    distinctId: user.id,
+    event: "message_sent",
+    properties: {
+      conversation_id: conversationId,
+      character_count: content.length,
+    },
+  });
 
   revalidatePath(`/messages/${conversationId}`);
   revalidatePath("/messages");

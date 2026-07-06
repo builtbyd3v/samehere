@@ -6,6 +6,7 @@ import { POST_SELECT, PAGE, type FeedPost } from "@/components/feed/PostCard";
 import { attachSignedMedia } from "@/lib/media";
 import { aiEnabled, generateText, modelForTier, type AiResult } from "@/lib/ai";
 import { COMPOSER_SYSTEM, IMPROVE_SYSTEM } from "@/lib/ai-prompts";
+import { getPostHogServerClient } from "@/lib/posthog-server";
 import { isPro } from "@/lib/pro";
 import { TEXT_LIMITS, textLimitError } from "@/lib/utils/validation";
 
@@ -83,6 +84,18 @@ export async function createPost(_prev: ComposerState, formData: FormData): Prom
 
   const { error } = await supabase.from("posts").insert({ user_id: user.id, content, media, post_type: postType });
   if (error) return { error: "Could not publish your post. Try again." };
+
+  const posthog = getPostHogServerClient();
+  posthog?.capture({
+    distinctId: user.id,
+    event: "post_created",
+    properties: {
+      has_media: media.length > 0,
+      media_count: media.length,
+      post_type: postType ?? "standard",
+      character_count: content.length,
+    },
+  });
 
   await supabase.rpc("log_contribution", {
     p_action_type: "post",

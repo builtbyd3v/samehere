@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { stripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getPostHogServerClient } from "@/lib/posthog-server";
 
 // Stripe webhook — unauthenticated by design (Stripe calls this, not a user
 // session), signature-verified below. proxy.ts allowlists this exact path.
@@ -72,6 +73,16 @@ export async function POST(req: Request) {
             pro_until: proUntil,
           })
           .eq("id", supabaseId);
+
+        const posthog = getPostHogServerClient();
+        posthog?.capture({
+          distinctId: supabaseId,
+          event: "stripe_checkout_completed",
+          properties: {
+            billing_provider: "stripe",
+            has_subscription: Boolean(subscriptionId),
+          },
+        });
         break;
       }
 

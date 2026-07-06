@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import posthog from "posthog-js";
 import { updateReferralCode, type ReferralCodeState } from "@/app/(app)/referrals/actions";
 
 const GOAL = 100;
@@ -24,6 +25,10 @@ export default function ReferralShareCard({
 
   function copyLink() {
     navigator.clipboard.writeText(shareLink);
+    posthog.capture("referral_link_copied", {
+      referral_count: referralCount,
+      is_campus_founder: isCampusFounder,
+    });
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1500);
   }

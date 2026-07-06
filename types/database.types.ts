@@ -511,6 +511,7 @@ export type Database = {
         Row: {
           content: string
           created_at: string | null
+          hidden: boolean
           id: string
           media: Json
           post_type: string | null
@@ -519,6 +520,7 @@ export type Database = {
         Insert: {
           content: string
           created_at?: string | null
+          hidden?: boolean
           id?: string
           media?: Json
           post_type?: string | null
@@ -527,6 +529,7 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string | null
+          hidden?: boolean
           id?: string
           media?: Json
           post_type?: string | null
@@ -611,10 +614,12 @@ export type Database = {
           heatmap_visibility: string
           hide_school: boolean
           id: string
+          is_admin: boolean
           is_campus_founder: boolean
           is_founder: boolean
           is_private: boolean
           is_pro: boolean
+          is_suspended: boolean
           leaderboard_opt_out: boolean
           major: string | null
           pro_until: string | null
@@ -637,10 +642,12 @@ export type Database = {
           heatmap_visibility?: string
           hide_school?: boolean
           id: string
+          is_admin?: boolean
           is_campus_founder?: boolean
           is_founder?: boolean
           is_private?: boolean
           is_pro?: boolean
+          is_suspended?: boolean
           leaderboard_opt_out?: boolean
           major?: string | null
           pro_until?: string | null
@@ -663,10 +670,12 @@ export type Database = {
           heatmap_visibility?: string
           hide_school?: boolean
           id?: string
+          is_admin?: boolean
           is_campus_founder?: boolean
           is_founder?: boolean
           is_private?: boolean
           is_pro?: boolean
+          is_suspended?: boolean
           leaderboard_opt_out?: boolean
           major?: string | null
           pro_until?: string | null
@@ -883,7 +892,33 @@ export type Database = {
     }
     Functions: {
       accept_follow: { Args: { p_follower: string }; Returns: undefined }
+      admin_hide_post: { Args: { p_post_id: string }; Returns: undefined }
+      admin_list_reports: {
+        Args: never
+        Returns: {
+          author_id: string
+          author_suspended: boolean
+          author_username: string
+          created_at: string
+          detail: string
+          post_content: string
+          post_hidden: boolean
+          post_id: string
+          reason: string
+          report_id: string
+          reporter_username: string
+        }[]
+      }
+      admin_resolve_report: {
+        Args: { p_report_id: string }
+        Returns: undefined
+      }
+      admin_suspend_user: { Args: { p_user: string }; Returns: undefined }
+      admin_unhide_post: { Args: { p_post_id: string }; Returns: undefined }
+      admin_unsuspend_user: { Args: { p_user: string }; Returns: undefined }
       block_user: { Args: { target: string }; Returns: undefined }
+      current_is_admin: { Args: never; Returns: boolean }
+      current_is_suspended: { Args: never; Returns: boolean }
       get_blocked_ids: { Args: never; Returns: string[] }
       get_dm_peer: {
         Args: { p_conversation_id: string }
@@ -975,6 +1010,10 @@ export type Database = {
           today_earned: boolean
         }[]
       }
+      has_same_day_connection: {
+        Args: { p_day: string; p_user: string }
+        Returns: boolean
+      }
       insert_notification: {
         Args: {
           p_actor_id: string
@@ -1027,6 +1066,10 @@ export type Database = {
       record_profile_view: { Args: { p_viewed: string }; Returns: undefined }
       reject_follow: { Args: { p_follower: string }; Returns: undefined }
       request_follow: { Args: { p_target: string }; Returns: string }
+      revoke_contribution_same_day: {
+        Args: { p_action: string; p_created: string; p_user: string }
+        Returns: undefined
+      }
       set_referral_code: { Args: { p_code: string }; Returns: string }
       use_ai_quota: {
         Args: { p_cap: number; p_kind: string }

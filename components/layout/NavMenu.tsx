@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import posthog from "posthog-js";
 import Menu, { useMenuClose } from "@/components/ui/Menu";
 import AvatarImage from "@/components/ui/AvatarImage";
 import { FeedbackModal } from "@/components/feedback/FeedbackButton";
@@ -20,9 +21,11 @@ function MenuLink({ href, children }: { href: string; children: React.ReactNode 
 
 function MenuItems({
   username,
+  isAdmin,
   onFeedback,
 }: {
   username: string;
+  isAdmin: boolean;
   onFeedback: () => void;
 }) {
   const close = useMenuClose();
@@ -40,6 +43,7 @@ function MenuItems({
       <MenuLink href={`/profile/${username}`}>Profile</MenuLink>
       <MenuLink href="/saved">Saved</MenuLink>
       <MenuLink href="/settings">Settings</MenuLink>
+      {isAdmin && <MenuLink href="/admin">Admin</MenuLink>}
       <button
         type="button"
         className={menuItemClass}
@@ -50,7 +54,15 @@ function MenuItems({
       >
         Feedback
       </button>
-      <form action={signOut}>
+      <form
+        action={async () => {
+          posthog.capture("user_logged_out", {
+            source: "nav_menu",
+          });
+          posthog.reset();
+          await signOut();
+        }}
+      >
         <button type="submit" className={menuItemClass}>
           Log out
         </button>
@@ -59,7 +71,15 @@ function MenuItems({
   );
 }
 
-export default function NavMenu({ username, avatarUrl }: { username: string; avatarUrl: string | null }) {
+export default function NavMenu({
+  username,
+  avatarUrl,
+  isAdmin,
+}: {
+  username: string;
+  avatarUrl: string | null;
+  isAdmin: boolean;
+}) {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   return (
@@ -77,7 +97,7 @@ export default function NavMenu({ username, avatarUrl }: { username: string; ava
           )
         }
       >
-        <MenuItems username={username} onFeedback={() => setFeedbackOpen(true)} />
+        <MenuItems username={username} isAdmin={isAdmin} onFeedback={() => setFeedbackOpen(true)} />
       </Menu>
       <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </>

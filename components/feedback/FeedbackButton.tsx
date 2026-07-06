@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import posthog from "posthog-js";
 import { createClient } from "@/lib/supabase/client";
 import Modal from "@/components/ui/Modal";
 import { TEXT_LIMITS } from "@/lib/utils/validation";
@@ -54,6 +55,10 @@ export function FeedbackModal({ open, onClose }: { open: boolean; onClose: () =>
       setError("Couldn't submit. Try again.");
       return;
     }
+    posthog.capture("feedback_submitted", {
+      category,
+      message_length: message.trim().slice(0, TEXT_LIMITS.feedback).length,
+    });
     setDone(true);
   }
 
