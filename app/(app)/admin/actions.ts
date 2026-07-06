@@ -20,30 +20,35 @@ async function requireAdmin() {
 
 export async function hidePost(postId: string) {
   const supabase = await requireAdmin();
-  await supabase.rpc("admin_hide_post", { p_post_id: postId });
+  const { error } = await supabase.rpc("admin_hide_post", { p_post_id: postId });
+  if (error) throw new Error(error.message);
   revalidatePath("/admin");
 }
 
 export async function unhidePost(postId: string) {
   const supabase = await requireAdmin();
-  await supabase.rpc("admin_unhide_post", { p_post_id: postId });
+  const { error } = await supabase.rpc("admin_unhide_post", { p_post_id: postId });
+  if (error) throw new Error(error.message);
   revalidatePath("/admin");
 }
 
 export async function resolveReport(reportId: string) {
   const supabase = await requireAdmin();
-  await supabase.rpc("admin_resolve_report", { p_report_id: reportId });
+  const { error } = await supabase.rpc("admin_resolve_report", { p_report_id: reportId });
+  if (error) throw new Error(error.message);
   revalidatePath("/admin");
 }
 
 export async function suspendUser(userId: string) {
   const supabase = await requireAdmin();
-  await supabase.rpc("admin_suspend_user", { p_user: userId });
+  const { error } = await supabase.rpc("admin_suspend_user", { p_user: userId });
+  if (error) throw new Error(error.message);
   revalidatePath("/admin");
 }
 
 export async function unsuspendUser(userId: string) {
   const supabase = await requireAdmin();
-  await supabase.rpc("admin_unsuspend_user", { p_user: userId });
+  const { error } = await supabase.rpc("admin_unsuspend_user", { p_user: userId });
+  if (error) throw new Error(error.message);
   revalidatePath("/admin");
 }

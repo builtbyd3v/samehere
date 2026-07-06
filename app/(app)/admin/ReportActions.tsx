@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { hidePost, unhidePost, resolveReport, suspendUser, unsuspendUser } from "./actions";
 
 const btn =
@@ -19,8 +20,18 @@ export default function ReportActions({
   postHidden: boolean;
   authorSuspended: boolean;
 }) {
-  const [pending, start] = useTransition();
-  const run = (fn: () => Promise<void>) => () => start(() => fn());
+  const [pending, startTransition] = useTransition();
+  const router = useRouter();
+
+  const run = (fn: () => Promise<void>) => () =>
+    startTransition(async () => {
+      try {
+        await fn();
+        router.refresh();
+      } catch (e) {
+        alert(e instanceof Error ? e.message : "Action failed");
+      }
+    });
 
   return (
     <div className="flex flex-wrap gap-2">
