@@ -43,7 +43,7 @@ export default function Navbar({
               <NavIconBadge href="/messages" title="Messages" count={dmUnread}>
                 <IconMail />
               </NavIconBadge>
-              <NavIconBadge href="/notifications" title="Notifications" count={notificationUnread} poll={getNotificationUnreadCount}>
+              <NavIconBadge href="/notifications" title="Notifications" count={notificationUnread} poll={getNotificationUnreadCount} realtimeTable="notifications">
                 <IconBell />
               </NavIconBadge>
             </>
