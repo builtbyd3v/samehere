@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import MessageInboxList from "@/components/messages/MessageInboxList";
+import MessageInboxRealtime from "@/components/messages/MessageInboxRealtime";
 import NewMessageFinder from "@/components/messages/NewMessageFinder";
 import type { DmInboxRow } from "@/lib/messages";
 
@@ -20,6 +21,7 @@ export default async function MessagesPage() {
       <section className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface-card)]">
         <NewMessageFinder />
         <MessageInboxList threads={(threads ?? []) as DmInboxRow[]} viewerId={user.id} />
+        <MessageInboxRealtime />
       </section>
     </main>
   );
