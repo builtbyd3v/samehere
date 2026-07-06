@@ -2,20 +2,41 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { formatBadgeCount } from "@/lib/notifications";
 
 export default function NavIconBadge({
   href,
   title,
   count,
+  poll,
   children,
 }: {
   href: string;
   title: string;
   count: number;
+  /** Optional server action returning the latest count; when set, polls every 60s and on focus. */
+  poll?: () => Promise<number>;
   children: React.ReactNode;
 }) {
-  const badge = formatBadgeCount(count);
+  const [liveCount, setLiveCount] = useState(count);
+  useEffect(() => setLiveCount(count), [count]);
+
+  useEffect(() => {
+    if (!poll) return;
+    const refresh = () => {
+      if (document.hidden) return;
+      poll().then(setLiveCount).catch(() => {});
+    };
+    const id = setInterval(refresh, 60_000);
+    window.addEventListener("focus", refresh);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener("focus", refresh);
+    };
+  }, [poll]);
+
+  const badge = formatBadgeCount(liveCount);
   const pathname = usePathname();
   const active = pathname === href || pathname.startsWith(`${href}/`);
 
