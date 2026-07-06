@@ -2,7 +2,9 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isPro } from "@/lib/pro";
 import { IconBolt, IconCrown } from "@/components/icons";
-import { joinProWaitlist } from "./actions";
+import { joinProWaitlist, startCheckout, openBillingPortal } from "./actions";
+
+const BILLING_ENABLED = process.env.NEXT_PUBLIC_BILLING_ENABLED === "true";
 
 const GROUPS: { title: string; features: string[] }[] = [
   {
@@ -47,7 +49,12 @@ const NEVER_GATED = [
   "reactions",
 ];
 
-export default async function ProPage() {
+export default async function ProPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ upgraded?: string }>;
+}) {
+  const { upgraded } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -101,7 +108,7 @@ export default async function ProPage() {
       <div className="mt-4 card p-6">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-medium text-[var(--ink)]">samehere Pro</span>
-          {!pro && (
+          {!pro && !BILLING_ENABLED && (
             <span className="rounded-full border border-[var(--border-strong)] px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--ink-muted)]">
               Coming soon
             </span>
@@ -109,10 +116,36 @@ export default async function ProPage() {
         </div>
 
         <div className="mt-4">
-          {pro ? (
-            <p className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm font-medium text-[var(--ink)]">
-              You&apos;re on Pro.
+          {upgraded && (
+            <p className="mb-3 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm font-medium text-[var(--ink)]">
+              You&apos;re upgraded to Pro. Welcome.
             </p>
+          )}
+          {pro ? (
+            BILLING_ENABLED ? (
+              <form action={openBillingPortal}>
+                <button type="submit" className="btn-primary w-full">
+                  Manage billing
+                </button>
+              </form>
+            ) : (
+              <p className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm font-medium text-[var(--ink)]">
+                You&apos;re on Pro.
+              </p>
+            )
+          ) : BILLING_ENABLED ? (
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <form action={startCheckout.bind(null, "monthly")} className="flex-1">
+                <button type="submit" className="btn-primary w-full">
+                  Go Pro — Monthly
+                </button>
+              </form>
+              <form action={startCheckout.bind(null, "semester")} className="flex-1">
+                <button type="submit" className="btn-primary w-full">
+                  Go Pro — Semester
+                </button>
+              </form>
+            </div>
           ) : profile.wants_pro ? (
             <p className="text-sm text-[var(--ink-muted)]">
               You&apos;re on the list. We&apos;ll email you when Pro opens.

@@ -39,7 +39,8 @@ export async function updateSession(request: NextRequest) {
     path === '/update-password' ||
     path === '/terms' ||
     path === '/privacy' ||
-    path.startsWith('/auth/')
+    path.startsWith('/auth/') ||
+    path === '/api/stripe/webhook'
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone()
