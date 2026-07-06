@@ -48,7 +48,7 @@ export default function NavIconBadge({
       .channel(`nav-badge-${realtimeTable}`)
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: realtimeTable },
+        { event: "*", schema: "public", table: realtimeTable },
         () => {
           if (timer) clearTimeout(timer);
           timer = setTimeout(() => {

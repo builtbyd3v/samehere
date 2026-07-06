@@ -1,7 +1,7 @@
 import Link from "next/link";
 import AvatarImage from "@/components/ui/AvatarImage";
+import LocalTime from "@/components/ui/LocalTime";
 import { IconBolt } from "@/components/icons";
-import { formatNotificationTime } from "@/lib/notifications";
 
 export type ProfileViewer = {
   id: string;
@@ -74,9 +74,7 @@ export default function ProfileViewers({
                       <p className="truncate text-sm font-medium text-[var(--ink)]">{name}</p>
                       <p className="truncate text-xs text-[var(--ink-muted)]">@{v.username}</p>
                     </div>
-                    <time className="shrink-0 text-xs text-[var(--ink-faint)]" dateTime={v.created_at}>
-                      {formatNotificationTime(v.created_at)}
-                    </time>
+                    <LocalTime iso={v.created_at} variant="notification" className="shrink-0 text-xs text-[var(--ink-faint)]" />
                   </Link>
                 </li>
               );

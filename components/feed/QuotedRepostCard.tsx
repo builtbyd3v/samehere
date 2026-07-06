@@ -9,6 +9,7 @@ import UserBadges from "@/components/profile/UserBadges";
 import ReactionRow from "@/components/feed/ReactionRow";
 import QuoteBodyLink from "@/components/feed/QuoteBodyLink";
 import QuoteMenu from "@/components/feed/QuoteMenu";
+import LocalTime from "@/components/ui/LocalTime";
 import type { FeedPost } from "@/components/feed/PostCard";
 
 export type QuotedRepost = {
@@ -29,18 +30,6 @@ export type QuotedRepost = {
   bookmarks: { user_id: string }[];
   comments: { count: number }[];
 };
-
-function timeAgo(iso: string): string {
-  const s = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
-  if (s < 60) return `${s}s`;
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h`;
-  const d = Math.floor(h / 24);
-  if (d < 7) return `${d}d`;
-  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-}
 
 export default function QuotedRepostCard({
   item,
@@ -83,12 +72,10 @@ export default function QuotedRepostCard({
                 <span className="text-[13px] text-[var(--ink-faint)]">·</span>
                 {linked ? (
                   <Link href={`/quote/${item.id}`} className="text-[13px] text-[var(--ink-faint)] hover:text-[var(--ink)] hover:underline">
-                    {timeAgo(item.created_at)}
+                    <LocalTime iso={item.created_at} variant="ago" />
                   </Link>
                 ) : (
-                  <time dateTime={item.created_at} className="text-[13px] text-[var(--ink-faint)]">
-                    {timeAgo(item.created_at)}
-                  </time>
+                  <LocalTime iso={item.created_at} variant="ago" className="text-[13px] text-[var(--ink-faint)]" />
                 )}
               </div>
             </div>

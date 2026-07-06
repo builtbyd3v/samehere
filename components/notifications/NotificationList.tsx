@@ -1,8 +1,8 @@
 ﻿import Link from "next/link";
 import AvatarImage from "@/components/ui/AvatarImage";
+import LocalTime from "@/components/ui/LocalTime";
 import { IconComment, IconHeart, IconSame } from "@/components/icons";
 import {
-  formatNotificationTime,
   notificationHref,
   notificationLabel,
   type NotificationRow,
@@ -99,9 +99,7 @@ export default function NotificationList({ items }: { items: NotificationRow[] }
                 <p className={`text-[15px] leading-snug text-[var(--ink)] ${!n.read ? "font-medium" : ""}`}>
                   {notificationLabel(n.type, actorName, n.reaction_type)}
                 </p>
-                <time className="mt-0.5 block text-xs text-[var(--ink-faint)]" dateTime={n.created_at}>
-                  {formatNotificationTime(n.created_at)}
-                </time>
+                <LocalTime iso={n.created_at} variant="notification" className="mt-0.5 block text-xs text-[var(--ink-faint)]" />
               </div>
             </Link>
           </li>

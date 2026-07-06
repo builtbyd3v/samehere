@@ -7,6 +7,7 @@ import AvatarImage from "@/components/ui/AvatarImage";
 import MentionText from "@/components/ui/MentionText";
 import ProfileHoverLink from "@/components/profile/ProfileHoverLink";
 import PostBodyLink from "./PostBodyLink";
+import LocalTime from "@/components/ui/LocalTime";
 import { IconSame } from "@/components/icons";
 import type { PostMedia } from "@/lib/media";
 
@@ -37,18 +38,6 @@ export type FeedPost = {
   bookmarks: { user_id: string }[];
   comments: { count: number }[];
 };
-
-function timeAgo(iso: string): string {
-  const s = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
-  if (s < 60) return `${s}s`;
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h`;
-  const d = Math.floor(h / 24);
-  if (d < 7) return `${d}d`;
-  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-}
 
 function Avatar({
   author,
@@ -143,10 +132,10 @@ export default function PostCard({
                   {(a || school) && <span className="mx-1 text-[var(--ink-faint)]">·</span>}
                   {linked ? (
                     <Link href={`/post/${post.id}`} className="hover:text-[var(--ink)] hover:underline">
-                      {timeAgo(post.created_at)}
+                      <LocalTime iso={post.created_at} variant="ago" />
                     </Link>
                   ) : (
-                    <time dateTime={post.created_at}>{timeAgo(post.created_at)}</time>
+                    <LocalTime iso={post.created_at} variant="ago" />
                   )}
                 </p>
               </div>
