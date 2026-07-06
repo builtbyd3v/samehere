@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { POST_SELECT, PAGE, type FeedPost } from "@/components/feed/PostCard";
 import { attachSignedMedia } from "@/lib/media";
-import { aiEnabled, generateText, modelForTier } from "@/lib/ai";
+import { aiEnabled, generateText, modelForTier, type AiResult } from "@/lib/ai";
 import { COMPOSER_SYSTEM } from "@/lib/ai-prompts";
 import { isPro } from "@/lib/pro";
 import { TEXT_LIMITS, textLimitError } from "@/lib/utils/validation";
@@ -109,12 +109,12 @@ function randomFallback(): string {
 // back to a static prompt (AI off, over quota, or call failed) so this never
 // throws and always returns something usable.
 // ponytail: static fallback list covers AI-off/over-quota; on-demand only, so no quota burn on render.
-export async function composerNudge(): Promise<string> {
+export async function composerNudge(): Promise<AiResult> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return randomFallback();
+  if (!user) return { text: randomFallback() };
 
   if (aiEnabled()) {
     const { data: profile } = await supabase.from("profiles").select("is_pro").eq("id", user.id).single();
@@ -123,17 +123,17 @@ export async function composerNudge(): Promise<string> {
       p_kind: "composer_nudge",
       p_cap: pro ? 9999 : 3,
     });
-    if (allowed) {
-      const text = await generateText(
-        COMPOSER_SYSTEM,
-        "Give me one prompt.",
-        { model: modelForTier(pro) }
-      );
-      if (text) return text;
-    }
+    // Free user out of quota → upsell; Pro can't realistically hit the cap.
+    if (!allowed) return pro ? { text: randomFallback() } : { overCap: true };
+    const text = await generateText(
+      COMPOSER_SYSTEM,
+      "Give me one prompt.",
+      { model: modelForTier(pro) }
+    );
+    if (text) return { text };
   }
 
-  return randomFallback();
+  return { text: randomFallback() };
 }
 
 // Delete own post. RLS restricts the delete to the owner, so a non-owner's
