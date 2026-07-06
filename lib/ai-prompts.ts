@@ -22,6 +22,12 @@ export const COMPOSER_SYSTEM =
 export const PROFILE_NUDGE_SYSTEM =
   `${STYLE} Task: give one short, specific tip to improve the reader's profile. One sentence that names the exact field to fill from the gaps provided and why it helps them get matched.`;
 
+// First-DM draft (Pro), grounded in what the two students share.
+export const ICEBREAKER_SYSTEM =
+  `${STYLE} Task: write the body of a friendly first direct message from the sender to the recipient, to start a conversation. ` +
+  "Anchor it in something they genuinely share from the facts — a course, school, major, year, or skill — and end with a light, specific question. One or two sentences, first person, casual. " +
+  "Return only the message body the sender can edit and send — no \"Hi [name]\" boilerplate, no subject line, no options.";
+
 // Rewrite the author's own draft post (Pro). Preserve their voice and every
 // fact; never add claims. Return only the rewritten post.
 export const IMPROVE_SYSTEM =

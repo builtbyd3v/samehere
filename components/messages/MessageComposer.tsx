@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
-import { sendMessage, type SendMessageState } from "@/app/(app)/messages/actions";
+import Link from "next/link";
+import { useActionState, useEffect, useRef, useTransition } from "react";
+import { sendMessage, icebreaker, type SendMessageState } from "@/app/(app)/messages/actions";
 import { IconSend } from "@/components/icons";
 import { useSubmitShortcut } from "@/lib/useSubmitShortcut";
 import { TEXT_LIMITS } from "@/lib/utils/validation";
@@ -14,10 +15,21 @@ function resizeTextarea(el: HTMLTextAreaElement | null) {
   el.style.height = `${Math.min(el.scrollHeight, 128)}px`;
 }
 
-export default function MessageComposer({ conversationId }: { conversationId: string }) {
+export default function MessageComposer({
+  conversationId,
+  peerId,
+  viewerIsPro = false,
+  empty = false,
+}: {
+  conversationId: string;
+  peerId?: string;
+  viewerIsPro?: boolean;
+  empty?: boolean;
+}) {
   const [state, formAction, pending] = useActionState<SendMessageState, FormData>(sendMessage, {});
   const ref = useRef<HTMLFormElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [drafting, startDraft] = useTransition();
 
   useEffect(() => {
     if (state.ok) {
@@ -32,9 +44,46 @@ export default function MessageComposer({ conversationId }: { conversationId: st
 
   useSubmitShortcut(textareaRef, () => ref.current?.requestSubmit(), !pending);
 
+  // Pro-only: drop an AI-drafted intro into the (editable) composer.
+  function onDraftIntro() {
+    if (!peerId || drafting) return;
+    startDraft(async () => {
+      const res = await icebreaker(peerId);
+      const el = textareaRef.current;
+      if ("text" in res && el) {
+        el.value = res.text;
+        resizeTextarea(el);
+        el.focus();
+      }
+      // locked can't reach here (button links to /pro); error → leave empty.
+    });
+  }
+
   return (
     <form ref={ref} action={formAction} className="shrink-0 border-t border-[var(--border)] bg-[var(--surface-card)] px-3 py-3 sm:px-4">
       <input type="hidden" name="conversation_id" value={conversationId} />
+      {empty && peerId && (
+        <div className="mb-2 px-1">
+          {viewerIsPro ? (
+            <button
+              type="button"
+              onClick={onDraftIntro}
+              disabled={drafting}
+              className="text-xs font-medium text-[var(--blue)] underline disabled:opacity-50"
+            >
+              {drafting ? "Drafting…" : "✦ Draft an intro"}
+            </button>
+          ) : (
+            <Link
+              href="/pro"
+              title="Draft an intro is a Pro feature"
+              className="text-xs font-medium text-[var(--ink-muted)] underline"
+            >
+              ✦ Draft an intro <span className="text-[var(--ink-faint)]">(Pro)</span>
+            </Link>
+          )}
+        </div>
+      )}
       <div className="flex items-end gap-2 rounded-full border border-[var(--border)] bg-[var(--canvas)] px-4 py-2">
         <textarea
           ref={textareaRef}

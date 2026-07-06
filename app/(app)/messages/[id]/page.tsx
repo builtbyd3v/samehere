@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { isPro } from "@/lib/pro";
 import MessageComposer from "@/components/messages/MessageComposer";
 import MessageMarkRead from "@/components/messages/MessageMarkRead";
 import MessageThreadLive from "@/components/messages/MessageThreadLive";
@@ -32,7 +33,7 @@ export default async function MessageThreadPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [{ data: peerRows }, { data: messageRows }] = await Promise.all([
+  const [{ data: peerRows }, { data: messageRows }, { data: viewer }] = await Promise.all([
     supabase.rpc("get_dm_peer", { p_conversation_id: id }),
     supabase
       .from("messages")
@@ -41,10 +42,13 @@ export default async function MessageThreadPage({
       .order("created_at", { ascending: true })
       .limit(200)
       .returns<MessageRow[]>(),
+    supabase.from("profiles").select("is_pro").eq("id", user.id).single(),
   ]);
 
   const peer = (peerRows as PeerRow[] | null)?.[0];
   if (!peer) notFound();
+
+  const viewerIsPro = isPro(viewer ?? { is_pro: false });
 
   const displayName = peer.peer_display_name ?? peer.peer_username;
   const messages: DmMessage[] = (messageRows ?? []).map((m) => ({
@@ -67,7 +71,12 @@ export default async function MessageThreadPage({
         <div className="min-h-0 flex-1 overflow-y-auto bg-[var(--canvas)]">
           <MessageThreadLive conversationId={id} initialMessages={messages} viewerId={user.id} />
         </div>
-        <MessageComposer conversationId={id} />
+        <MessageComposer
+          conversationId={id}
+          peerId={peer.peer_id}
+          viewerIsPro={viewerIsPro}
+          empty={messages.length === 0}
+        />
       </section>
     </main>
   );
