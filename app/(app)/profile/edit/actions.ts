@@ -115,7 +115,7 @@ export async function profileNudge(): Promise<string> {
       const text = await generateText(
         "Give one short, specific tip for a student to improve their social profile. One sentence. Mention which field to fill. No greeting, no quotes.",
         `Missing or weak fields: ${missing}.`,
-        100,
+        { maxTokens: 100 },
       );
       if (text) return text;
     }
