@@ -2,8 +2,8 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import MessageComposer from "@/components/messages/MessageComposer";
 import MessageMarkRead from "@/components/messages/MessageMarkRead";
-import MessageScrollArea from "@/components/messages/MessageScrollArea";
-import MessageThread, { MessageThreadHeader } from "@/components/messages/MessageThread";
+import MessageThreadLive from "@/components/messages/MessageThreadLive";
+import { MessageThreadHeader } from "@/components/messages/MessageThread";
 import type { DmMessage } from "@/lib/messages";
 
 type MessageRow = {
@@ -65,9 +65,7 @@ export default async function MessageThreadPage({
           avatarUrl={peer.peer_avatar_url}
         />
         <div className="min-h-0 flex-1 overflow-y-auto bg-[var(--canvas)]">
-          <MessageScrollArea messageCount={messages.length}>
-            <MessageThread messages={messages} viewerId={user.id} />
-          </MessageScrollArea>
+          <MessageThreadLive conversationId={id} initialMessages={messages} viewerId={user.id} />
         </div>
         <MessageComposer conversationId={id} />
       </section>
