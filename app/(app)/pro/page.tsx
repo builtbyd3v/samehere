@@ -2,9 +2,13 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isPro } from "@/lib/pro";
 import { IconBolt, IconCrown } from "@/components/icons";
-import { joinProWaitlist, startCheckout, openBillingPortal } from "./actions";
+import { joinProWaitlist, openBillingPortal } from "./actions";
 
 const BILLING_ENABLED = process.env.NEXT_PUBLIC_BILLING_ENABLED === "true";
+
+// ponytail: live payment links; swap for test links via env if a test flow is needed
+const PAYMENT_LINK_MONTHLY = "https://buy.stripe.com/14A9AUcQm0gqeQH9r02wU00";
+const PAYMENT_LINK_SEMESTER = "https://buy.stripe.com/cNi00k4jQ0gq8sj7iS2wU01";
 
 const GROUPS: { title: string; features: string[] }[] = [
   {
@@ -56,6 +60,12 @@ export default async function ProPage({
   if (!profile) redirect("/login");
 
   const pro = isPro(profile);
+
+  const refParams = `client_reference_id=${encodeURIComponent(user.id)}${
+    user.email ? `&prefilled_email=${encodeURIComponent(user.email)}` : ""
+  }`;
+  const monthlyHref = `${PAYMENT_LINK_MONTHLY}?${refParams}`;
+  const semesterHref = `${PAYMENT_LINK_SEMESTER}?${refParams}`;
 
   return (
     <main className="page-enter mx-auto max-w-2xl px-5 py-10">
@@ -122,16 +132,12 @@ export default async function ProPage({
             )
           ) : BILLING_ENABLED ? (
             <div className="flex flex-col gap-2 sm:flex-row">
-              <form action={startCheckout.bind(null, "monthly")} className="flex-1">
-                <button type="submit" className="btn-primary w-full">
-                  Go Pro — Monthly
-                </button>
-              </form>
-              <form action={startCheckout.bind(null, "semester")} className="flex-1">
-                <button type="submit" className="btn-primary w-full">
-                  Go Pro — Semester
-                </button>
-              </form>
+              <a href={monthlyHref} className="btn-primary flex-1 text-center">
+                Go Pro — Monthly
+              </a>
+              <a href={semesterHref} className="btn-primary flex-1 text-center">
+                Go Pro — Semester
+              </a>
             </div>
           ) : profile.wants_pro ? (
             <p className="text-sm text-[var(--ink-muted)]">

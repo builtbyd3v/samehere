@@ -42,6 +42,12 @@ export async function updateSession(request: NextRequest) {
     path.startsWith('/auth/') ||
     path === '/api/stripe/webhook'
 
+  if (user && (path === '/' || path === '/login' || path === '/signup')) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/feed'
+    return NextResponse.redirect(url)
+  }
+
   if (!user && !isPublic) {
     const url = request.nextUrl.clone()
     url.pathname = '/signup'

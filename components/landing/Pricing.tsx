@@ -32,7 +32,7 @@ export default function Pricing() {
       <Reveal>
         <h2 className={`text-balance ${landingH2}`}>Free for every verified student.</h2>
         <p className="mt-4 max-w-[48ch] text-base leading-relaxed text-[var(--ink-muted)]">
-          Posting, following, and private accounts are never paywalled. Pro is optional, coming soon.
+          Posting, following, and private accounts are never paywalled. Pro is optional.
         </p>
       </Reveal>
 
@@ -73,12 +73,9 @@ export default function Pricing() {
                 <IconBolt className="h-4 w-4 text-[var(--blue)]" />
                 Pro
               </span>
-              <span className="rounded-full border border-[var(--border-strong)] px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--ink-muted)]">
-                Coming soon
-              </span>
             </div>
             <p className="mt-2 text-[48px] font-semibold leading-none tracking-[-0.03em]">$4.99<span className="text-lg font-normal text-[var(--ink-muted)]">/mo</span></p>
-            <p className="mt-1 text-sm text-[var(--ink-muted)]">or $12.99/semester when billing launches</p>
+            <p className="mt-1 text-sm text-[var(--ink-muted)]">or $12.99/semester</p>
             <ul className="mt-6 flex-1 space-y-2.5 text-sm text-[var(--ink-muted)]">
               {PRO_FEATURES.map((f) => (
                 <li key={f.label} className="flex items-center gap-2">
@@ -98,10 +95,9 @@ export default function Pricing() {
               Coming soon to Pro: {PRO_COMING_SOON.join(", ")}.
             </p>
             <div className="mt-8">
-              <Link href="/signup" className={signupCta}>
-                Join waitlist
+              <Link href="/pro" className={signupCta}>
+                Go Pro
               </Link>
-              <p className="mt-2 text-xs text-[var(--ink-faint)]">Sign up free, then opt in from Pro settings.</p>
             </div>
           </motion.div>
         </Reveal>
