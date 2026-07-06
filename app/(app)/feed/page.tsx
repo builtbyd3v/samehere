@@ -8,6 +8,7 @@ import FollowButton from "@/components/profile/FollowButton";
 import UserBadges from "@/components/profile/UserBadges";
 import { attachSignedMedia } from "@/lib/media";
 import { scoreOverlap, type MatchSignal } from "@/lib/match";
+import { isPro } from "@/lib/pro";
 import { connectionPrompt } from "@/lib/connection-prompt";
 import FeedToolbar from "@/components/feed/FeedToolbar";
 import FeedTabs from "@/components/feed/FeedTabs";
@@ -176,7 +177,7 @@ async function FollowingTab({
     supabase.from("follows").select("following_id, status").eq("follower_id", userId),
     supabase
       .from("profiles")
-      .select("year, major, skills, goals, bio, courses, profile_school(school)")
+      .select("year, major, skills, goals, bio, courses, is_pro, profile_school(school)")
       .eq("id", userId)
       .single(),
     // ponytail: app-side filter post-fetch, not RLS on posts.
@@ -225,6 +226,7 @@ async function FollowingTab({
   const timeline = feedPosts || quotes.length ? mergeFeedTimeline(feedPosts ?? [], quotes).slice(0, PAGE) : [];
 
   // ponytail: rank a 30-row recency pool; widen only if suggestions feel stale.
+  const viewerPro = isPro(viewerProfile ?? { is_pro: false });
   const viewerSignal: MatchSignal = {
     year: viewerProfile?.year ?? null,
     major: viewerProfile?.major ?? null,
@@ -262,7 +264,7 @@ async function FollowingTab({
         bio: s.bio,
         school: s.profile_school?.school ?? null,
         courses: s.courses,
-      })
+      }, viewerPro)
     )
   );
   const suggestedWithPrompt = suggested.map((s, i) => ({ ...s, _prompt: prompts[i] }));

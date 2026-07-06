@@ -2,7 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { aiEnabled, generateText } from "@/lib/ai";
+import { aiEnabled, generateText, modelForTier } from "@/lib/ai";
+import { isPro } from "@/lib/pro";
 import { fallbackProfileNudge, getProfileGaps } from "@/lib/profile-completion";
 import type { TablesUpdate } from "@/types/database.types";
 
@@ -86,7 +87,7 @@ export async function profileNudge(): Promise<string> {
   const [{ data: profile }, { data: schoolRow }] = await Promise.all([
     supabase
       .from("profiles")
-      .select("display_name, avatar_url, year, major, bio, goals, skills")
+      .select("display_name, avatar_url, year, major, bio, goals, skills, is_pro")
       .eq("id", user.id)
       .single(),
     supabase.from("profile_school").select("school").eq("profile_id", user.id).maybeSingle(),
@@ -106,16 +107,17 @@ export async function profileNudge(): Promise<string> {
   if (gaps.length === 0) return fallbackProfileNudge([]);
 
   if (aiEnabled()) {
+    const pro = isPro(profile ?? { is_pro: false });
     const { data: allowed } = await supabase.rpc("use_ai_quota", {
       p_kind: "profile_nudge",
-      p_cap: 3,
+      p_cap: pro ? 9999 : 3,
     });
     if (allowed) {
       const missing = gaps.map((g) => g.replace("_", " ")).join(", ");
       const text = await generateText(
         "Give one short, specific tip for a student to improve their social profile. One sentence. Mention which field to fill. No greeting, no quotes.",
         `Missing or weak fields: ${missing}.`,
-        { maxTokens: 100 },
+        { model: modelForTier(pro), maxTokens: 100 },
       );
       if (text) return text;
     }
