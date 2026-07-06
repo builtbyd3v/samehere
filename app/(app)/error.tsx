@@ -1,5 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
+import posthog from "posthog-js";
+
 export default function AppError({
   error,
   reset,
@@ -7,6 +10,10 @@ export default function AppError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  useEffect(() => {
+    posthog.captureException(error);
+  }, [error]);
+
   return (
     <main className="page-enter mx-auto max-w-2xl px-5 py-10">
       <div className="card p-10 text-center">

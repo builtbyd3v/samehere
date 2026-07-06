@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import Navbar from "@/components/layout/Navbar";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import PostHogUserIdentification from "@/components/providers/PostHogUserIdentification";
 import { isPro } from "@/lib/pro";
 
 // Wraps every authed page (feed, dashboard, profile, post, edit) with the nav.
@@ -22,6 +23,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <ThemeProvider>
+      {user && (
+        <PostHogUserIdentification
+          distinctId={user.id}
+          email={user.email ?? null}
+          username={profile?.username ?? null}
+        />
+      )}
       <Navbar
         username={profile?.username ?? null}
         avatarUrl={profile?.avatar_url ?? null}

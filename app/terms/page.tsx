@@ -16,7 +16,7 @@ export default function TermsPage() {
       <div className="mt-8 space-y-8 text-[15px] leading-relaxed text-[var(--ink-muted)]">
         <p>
           These Terms of Service (&ldquo;Terms&rdquo;) govern your access to and use of samehere (the
-          &ldquo;Service&rdquo;), operated by [LEGAL ENTITY NAME] (&ldquo;we&rdquo;, &ldquo;us&rdquo;). By
+          &ldquo;Service&rdquo;), operated by Devgiri Goswami (&ldquo;we&rdquo;, &ldquo;us&rdquo;). By
           creating an account or using the Service, you agree to these Terms. If you do not agree, do not use
           the Service.
         </p>
@@ -129,10 +129,10 @@ export default function TermsPage() {
         <section>
           <h2 className="text-lg font-semibold text-[var(--ink)]">11. Governing law &amp; contact</h2>
           <p className="mt-2">
-            These Terms are governed by the laws of [STATE/COUNTRY], without regard to conflict-of-laws rules.
+            These Terms are governed by the laws of the State of Florida, United States, without regard to conflict-of-laws rules.
             Questions about these Terms can be sent to{" "}
-            <a href="mailto:[CONTACT EMAIL]" className="text-[var(--ink)] underline underline-offset-4">
-              [CONTACT EMAIL]
+            <a href="mailto:support@samehere.dev" className="text-[var(--ink)] underline underline-offset-4">
+              support@samehere.dev
             </a>
             .
           </p>

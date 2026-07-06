@@ -15,7 +15,7 @@ export default function PrivacyPage() {
 
       <div className="mt-8 space-y-8 text-[15px] leading-relaxed text-[var(--ink-muted)]">
         <p>
-          This Privacy Policy explains how samehere, operated by [LEGAL ENTITY NAME] (&ldquo;we&rdquo;,
+          This Privacy Policy explains how samehere, operated by Devgiri Goswami (&ldquo;we&rdquo;,
           &ldquo;us&rdquo;), collects, uses, and shares information when you use the Service. By using
           samehere, you agree to this Policy.
         </p>
@@ -139,8 +139,8 @@ export default function PrivacyPage() {
           <p className="mt-2">
             We may update this Policy from time to time and will revise the &ldquo;Last updated&rdquo; date
             above. For privacy questions or requests, contact{" "}
-            <a href="mailto:[CONTACT EMAIL]" className="text-[var(--ink)] underline underline-offset-4">
-              [CONTACT EMAIL]
+            <a href="mailto:support@samehere.dev" className="text-[var(--ink)] underline underline-offset-4">
+              support@samehere.dev
             </a>
             .
           </p>
