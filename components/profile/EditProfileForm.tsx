@@ -6,6 +6,7 @@ import { updateProfile, uploadAvatar, type AvatarState, type EditState } from "@
 import { isPro } from "@/lib/pro";
 import AvatarImage from "@/components/ui/AvatarImage";
 import ProfileNudgePanel from "@/components/profile/ProfileNudgePanel";
+import SchoolAutocomplete from "@/components/profile/SchoolAutocomplete";
 
 export type EditInitial = {
   id: string;
@@ -127,7 +128,7 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
 
           <div>
             <label htmlFor="school" className={label}>School</label>
-            <input id="school" name="school" type="text" maxLength={100}
+            <SchoolAutocomplete id="school" name="school" maxLength={100}
               defaultValue={initial.school} placeholder="Your university" className={field} />
           </div>
 
