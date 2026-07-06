@@ -4,12 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { formatBadgeCount } from "@/lib/notifications";
+import { createClient } from "@/lib/supabase/client";
 
 export default function NavIconBadge({
   href,
   title,
   count,
   poll,
+  realtimeTable,
   children,
 }: {
   href: string;
@@ -17,10 +19,13 @@ export default function NavIconBadge({
   count: number;
   /** Optional server action returning the latest count; when set, polls every 60s and on focus. */
   poll?: () => Promise<number>;
+  /** Optional table name; when set with `poll`, subscribes to Realtime INSERTs (RLS-gated, own rows only) and re-polls on event. */
+  realtimeTable?: string;
   children: React.ReactNode;
 }) {
   const [liveCount, setLiveCount] = useState(count);
   useEffect(() => setLiveCount(count), [count]);
+  const [supabase] = useState(createClient);
 
   useEffect(() => {
     if (!poll) return;
@@ -35,6 +40,29 @@ export default function NavIconBadge({
       window.removeEventListener("focus", refresh);
     };
   }, [poll]);
+
+  useEffect(() => {
+    if (!poll || !realtimeTable) return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const channel = supabase
+      .channel(`nav-badge-${realtimeTable}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: realtimeTable },
+        () => {
+          if (timer) clearTimeout(timer);
+          timer = setTimeout(() => {
+            poll().then(setLiveCount).catch(() => {});
+          }, 250);
+        },
+      )
+      .subscribe();
+
+    return () => {
+      if (timer) clearTimeout(timer);
+      supabase.removeChannel(channel);
+    };
+  }, [poll, realtimeTable, supabase]);
 
   const badge = formatBadgeCount(liveCount);
   const pathname = usePathname();
