@@ -17,11 +17,10 @@ const FREE_FEATURES = [
 const PRO_FEATURES: { label: string; icon?: "bolt" }[] = [
   { label: "See who viewed your profile" },
   { label: "Custom accent color and animated avatar" },
-  { label: "Unlimited AI and post improvements" },
-  { label: "AI icebreaker for new conversations" },
   { label: "Pro badge on your profile", icon: "bolt" },
-  { label: "Early access to new features" },
 ];
+
+const PRO_COMING_SOON = ["Unlimited AI and a smarter model", "AI icebreaker for new conversations", "Early access to new features"];
 
 const card = `flex h-full flex-col ${landingCard}`;
 
@@ -95,6 +94,9 @@ export default function Pricing() {
                 </li>
               ))}
             </ul>
+            <p className="mt-4 text-xs text-[var(--ink-faint)]">
+              Coming soon to Pro: {PRO_COMING_SOON.join(", ")}.
+            </p>
             <div className="mt-8">
               <Link href="/signup" className={signupCta}>
                 Join waitlist

@@ -8,7 +8,7 @@ const FAQ_ITEMS = [
   ["Who can join?", "Anyone with a valid .edu email. We verify it before you get an account."],
   ["What makes samehere different?", "Profiles, a feed, and reactions built for students. Verified .edu signup, a heatmap on every profile, and SameHere when a post sounds like your life."],
   ["Is my stuff private?", "You control it. Private accounts, a hideable school, and a heatmap visibility setting. Logged-out visitors see nothing."],
-  ["What is Pro?", "Optional upgrades: who viewed your profile, a custom accent color and animated avatar, unlimited AI, a badge, and early access to new features. Billing comes later at $4.99/mo or $12.99/semester."],
+  ["What is Pro?", "Optional upgrades: who viewed your profile, a custom accent color, an animated avatar, and a badge. Unlimited AI, an AI icebreaker, and early access to new features are coming soon. Billing comes later at $4.99/mo or $12.99/semester."],
 ] as const;
 
 export default function FAQ() {

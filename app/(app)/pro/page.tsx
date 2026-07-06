@@ -8,36 +8,23 @@ const BILLING_ENABLED = process.env.NEXT_PUBLIC_BILLING_ENABLED === "true";
 
 const GROUPS: { title: string; features: string[] }[] = [
   {
-    title: "Smarter",
-    features: [
-      "Higher AI caps + smarter model (free ~3/day, Pro much higher)",
-      "Advanced search filters (school/year/major/skills)",
-    ],
-  },
-  {
     title: "Stand out",
     features: [
       "Pro badge on profile",
       "Custom profile accent color",
-      "Pin a post to top of profile",
       "Animated profile picture (GIF / animated-webp)",
     ],
   },
   {
     title: "Insights",
-    features: [
-      "Full-year sortable heatmap + export (CSV/image)",
-      "Profile-view analytics (who viewed you + counts)",
-      "Post insights (reaction/repost/bookmark breakdown per post)",
-    ],
+    features: ["See who viewed your profile"],
   },
-  {
-    title: "More room",
-    features: [
-      "Bigger media limits (longer video, more files/post)",
-      "Saved collections (organize bookmarks into folders)",
-    ],
-  },
+];
+
+const COMING_SOON_TO_PRO = [
+  "Unlimited AI + a smarter model",
+  "AI icebreaker for your first message",
+  "Early access to new features",
 ];
 
 const NEVER_GATED = [
@@ -175,6 +162,19 @@ export default async function ProPage({
             </ul>
           </div>
         ))}
+      </div>
+
+      {/* Coming soon */}
+      <div className="mt-4 card p-6">
+        <h2 className="text-sm font-semibold text-[var(--ink)]">Coming soon to Pro</h2>
+        <ul className="mt-3 space-y-2 text-sm text-[var(--ink-muted)]">
+          {COMING_SOON_TO_PRO.map((f) => (
+            <li key={f} className="flex gap-2">
+              <span className="text-[var(--ink-faint)]">+</span>
+              {f}
+            </li>
+          ))}
+        </ul>
       </div>
 
       {/* Founder badge callout */}
