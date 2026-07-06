@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { POST_SELECT, PAGE, type FeedPost } from "@/components/feed/PostCard";
 import { attachSignedMedia } from "@/lib/media";
 import { aiEnabled, generateText, modelForTier, type AiResult } from "@/lib/ai";
-import { COMPOSER_SYSTEM } from "@/lib/ai-prompts";
+import { COMPOSER_SYSTEM, IMPROVE_SYSTEM } from "@/lib/ai-prompts";
 import { isPro } from "@/lib/pro";
 import { TEXT_LIMITS, textLimitError } from "@/lib/utils/validation";
 
@@ -134,6 +134,32 @@ export async function composerNudge(): Promise<AiResult> {
   }
 
   return { text: randomFallback() };
+}
+
+// Pro-only: rewrite the author's OWN draft sharper. `locked` when the caller
+// isn't Pro; `error` when the draft is empty, AI is off, or the call fails.
+// Only ever sees the author's own draft — no other user's content is loaded.
+export type ImproveResult = { locked: true } | { text: string } | { error: true };
+
+export async function improvePost(draft: string): Promise<ImproveResult> {
+  const trimmed = draft.trim();
+  if (!trimmed) return { error: true };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: true };
+
+  const { data: profile } = await supabase.from("profiles").select("is_pro").eq("id", user.id).single();
+  if (!isPro(profile ?? { is_pro: false })) return { locked: true };
+  if (!aiEnabled()) return { error: true };
+
+  // Metered for telemetry; Pro's 9999 cap never blocks.
+  await supabase.rpc("use_ai_quota", { p_kind: "improve_post", p_cap: 9999 });
+
+  const text = await generateText(IMPROVE_SYSTEM, trimmed, { model: modelForTier(true), maxTokens: 512 });
+  return text ? { text } : { error: true };
 }
 
 // Delete own post. RLS restricts the delete to the owner, so a non-owner's

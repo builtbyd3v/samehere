@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
-import { createPost, composerNudge, type ComposerState } from "@/app/(app)/feed/actions";
+import { createPost, composerNudge, improvePost, type ComposerState } from "@/app/(app)/feed/actions";
 import { createClient } from "@/lib/supabase/client";
 import { useSubmitShortcut } from "@/lib/useSubmitShortcut";
 import { submitShortcutLabel } from "@/lib/keyboard";
@@ -22,7 +22,7 @@ const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif", "video/mp
 
 type Picked = { file: File; type: "image" | "video"; url: string };
 
-export default function PostComposer() {
+export default function PostComposer({ isPro = false }: { isPro?: boolean }) {
   const [state, formAction, pending] = useActionState<ComposerState, FormData>(createPost, {});
   const ref = useRef<HTMLFormElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -37,6 +37,8 @@ export default function PostComposer() {
   const [overCap, setOverCap] = useState(false);
   const [shortcutLabel, setShortcutLabel] = useState("");
   const [nudging, startNudge] = useTransition();
+  const [improving, startImprove] = useTransition();
+  const [preImprove, setPreImprove] = useState<string | null>(null);
   const [, startSubmit] = useTransition();
 
   // Latest files for the unmount-only revoke below (avoids a [files]-dep effect
@@ -111,6 +113,31 @@ export default function PostComposer() {
     textareaRef.current?.focus();
     setLen(hint.trim().length);
     setHint(null);
+  }
+
+  function applyText(next: string) {
+    setContent(next);
+    setLen(next.trim().length);
+  }
+
+  // Pro-only: rewrite the current draft, keeping the original for one-tap undo.
+  function onImprove() {
+    if (!content.trim() || improving) return;
+    startImprove(async () => {
+      const res = await improvePost(content);
+      if ("text" in res) {
+        setPreImprove(content);
+        applyText(res.text);
+      }
+      // locked (non-Pro) can't reach here — the button links to /pro instead.
+      // error → leave the draft untouched.
+    });
+  }
+
+  function undoImprove() {
+    if (preImprove === null) return;
+    applyText(preImprove);
+    setPreImprove(null);
   }
 
   function removeFile(i: number) {
@@ -278,6 +305,34 @@ export default function PostComposer() {
           >
             {nudging ? "Thinking…" : "Need an idea?"}
           </button>
+          {isPro ? (
+            preImprove !== null ? (
+              <button
+                type="button"
+                onClick={undoImprove}
+                className="text-xs text-[var(--ink-muted)] underline"
+              >
+                Undo improve
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={onImprove}
+                disabled={improving || len === 0}
+                className="text-xs font-medium text-[var(--blue)] underline disabled:opacity-50"
+              >
+                {improving ? "Improving…" : "✦ Improve"}
+              </button>
+            )
+          ) : (
+            <Link
+              href="/pro"
+              title="Improve is a Pro feature — upgrade to rewrite your drafts"
+              className="text-xs font-medium text-[var(--ink-muted)] underline"
+            >
+              ✦ Improve <span className="text-[var(--ink-faint)]">(Pro)</span>
+            </Link>
+          )}
         </div>
         <button
           type="submit"

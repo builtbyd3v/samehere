@@ -42,8 +42,9 @@ export default async function FeedPage({
   const viewerId = user?.id ?? null;
 
   const onboardingProfile = user
-    ? await supabase.from("profiles").select("avatar_url, bio").eq("id", user.id).single()
+    ? await supabase.from("profiles").select("avatar_url, bio, is_pro").eq("id", user.id).single()
     : { data: null };
+  const composerPro = isPro(onboardingProfile.data ?? { is_pro: false });
   const onboardingCounts = user
     ? await supabase.rpc("get_profile_counts", { p_profile_id: user.id })
     : { data: null };
@@ -60,7 +61,7 @@ export default async function FeedPage({
               <FeedSearchResults q={q} />
             </>
           }
-          composer={<PostComposer />}
+          composer={<PostComposer isPro={composerPro} />}
         />
         <div className="mt-3 flex items-center gap-2">
           <FeedTabs tab={tab} />
