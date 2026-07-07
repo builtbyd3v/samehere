@@ -2,6 +2,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { Figtree } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 // humanist warmth as a stand-in for Camera Plain Variable (see DESIGN.md)
 const figtree = Figtree({ subsets: ["latin"], weight: ["400", "500", "600"] });
@@ -25,6 +26,7 @@ export default function RootLayout({
       <body className={`${figtree.className} min-h-full bg-[var(--canvas)] text-[var(--ink)] antialiased`}>
         {children}
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
