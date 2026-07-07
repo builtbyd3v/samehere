@@ -5,6 +5,18 @@ import { motion, useReducedMotion } from "motion/react";
 import HeroVisual from "./HeroVisual";
 import { ghostCta, signupCta } from "./cta";
 
+const EASE = [0.16, 1, 0.3, 1] as const;
+const HEADLINE = ["You're", "not", "the", "only", "one."] as const;
+
+const wordContainer = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.07, delayChildren: 0.05 } },
+};
+const word = {
+  hidden: { opacity: 0, y: 24 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.55, ease: EASE } },
+};
+
 export default function Hero() {
   const reduce = useReducedMotion();
 
@@ -14,17 +26,21 @@ export default function Hero() {
         <div className="lg:max-w-[52%]">
           <motion.h1
             className="text-balance text-[44px] font-semibold leading-[1.02] tracking-[-0.03em] sm:text-[56px] md:text-[64px] lg:text-[72px] lg:tracking-[-0.04em]"
-            initial={reduce ? false : { opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            variants={wordContainer}
+            initial={reduce ? false : "hidden"}
+            animate="show"
           >
-            You&apos;re not the only one.
+            {HEADLINE.map((w, i) => (
+              <motion.span key={i} variants={word} className="mr-[0.22em] inline-block will-change-transform">
+                {w}
+              </motion.span>
+            ))}
           </motion.h1>
           <motion.p
             className="mt-6 max-w-[40ch] text-lg leading-[1.45] text-[var(--ink-muted)] md:text-xl"
             initial={reduce ? false : { opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.6, delay: 0.5, ease: EASE }}
           >
             Verified students only, .edu required. Post the real stuff, grow a heatmap, and let AI find your people.
           </motion.p>
@@ -32,7 +48,7 @@ export default function Hero() {
             className="mt-10 flex flex-wrap items-center gap-3"
             initial={reduce ? false : { opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.6, delay: 0.62, ease: EASE }}
           >
             <Link href="/signup" className={signupCta}>
               Join with .edu

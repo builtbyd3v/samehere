@@ -111,6 +111,19 @@ summary {
   50%      { transform: translate3d(-4%, 4%, 0) scale(1.1); opacity: 0.6; }
 }
 
+/* Heatmap fill wave — cells cascade in on a top-left→bottom-right diagonal.
+ * Opt-in via the `hm-run` ancestor (set by ContributionHeatmap animate mode). */
+@keyframes cell-in {
+  from { opacity: 0; transform: scale(0.4); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hm-run .hm-cell {
+    animation: cell-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: calc(var(--i, 0) * 10ms);
+  }
+}
+
 /* ---------------------------------------------------------------------
  * Wave-1 shared utilities (see DESIGN.md). Component classes below are
  * self-contained — apply one class, no need to stack Tailwind utilities

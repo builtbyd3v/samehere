@@ -5,7 +5,7 @@
 // Fixed-size cells keep month/weekday labels column-aligned; the grid scrolls
 // horizontally on narrow viewports (auto-scrolls to the most recent week).
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 
 export type HeatmapDay = { day: string; points: number; breakdown: Record<string, number> };
@@ -67,17 +67,43 @@ function Spacer({ className }: { className: string }) {
   return <div className={className} aria-hidden />;
 }
 
-export default function ContributionHeatmap({ data }: { data: HeatmapDay[] }) {
+export default function ContributionHeatmap({
+  data,
+  animate = false,
+}: {
+  data: HeatmapDay[];
+  animate?: boolean;
+}) {
   const cols = buildHeatmapGrid(data);
   const total = data.reduce((sum, d) => sum + d.points, 0);
   const [hovered, setHovered] = useState<{ cell: Cell; x: number; y: number } | null>(null);
+  const [run, setRun] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
 
   // Start scrolled to the most recent week (right edge).
   useEffect(() => {
     const el = scrollRef.current;
     if (el) el.scrollLeft = el.scrollWidth;
   }, []);
+
+  // animate mode: fire the fill wave once the grid scrolls into view.
+  useEffect(() => {
+    if (!animate) return;
+    const el = gridRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setRun(true);
+          io.disconnect();
+        }
+      },
+      { threshold: 0.2 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [animate]);
 
   const clampedX = hovered
     ? Math.min(Math.max(hovered.x, 90), (typeof window !== "undefined" ? window.innerWidth : 1000) - 90)
@@ -122,10 +148,10 @@ export default function ContributionHeatmap({ data }: { data: HeatmapDay[] }) {
                 })}
               </div>
 
-              <div className={`mt-1 flex ${GAP}`}>
+              <div ref={gridRef} className={`mt-1 flex ${GAP} ${animate && run ? "hm-run" : ""}`}>
                 {cols.map((col, i) => (
                   <div key={i} className={`flex w-2.5 shrink-0 flex-col ${GAP} sm:w-3.5`}>
-                    {col.map((cell) =>
+                    {col.map((cell, row) =>
                       cell.future ? (
                         <Spacer key={cell.date} className={`${SLOT} shrink-0`} />
                       ) : (
@@ -133,7 +159,8 @@ export default function ContributionHeatmap({ data }: { data: HeatmapDay[] }) {
                           key={cell.date}
                           onMouseEnter={(e) => setHovered({ cell, x: e.clientX, y: e.clientY })}
                           onMouseLeave={() => setHovered(null)}
-                          className={`${SLOT} shrink-0 rounded-[2px] outline outline-1 outline-offset-0 outline-transparent transition hover:scale-110 hover:outline-[var(--border-strong)] sm:rounded-[3px] ${CELL[level(cell.points)]}`}
+                          style={animate ? ({ "--i": i + row } as CSSProperties) : undefined}
+                          className={`${SLOT} shrink-0 rounded-[2px] outline outline-1 outline-offset-0 outline-transparent transition hover:scale-110 hover:outline-[var(--border-strong)] sm:rounded-[3px] ${CELL[level(cell.points)]} ${animate ? "hm-cell" : ""}`}
                         />
                       ),
                     )}

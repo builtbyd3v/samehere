@@ -104,7 +104,7 @@ export default function LandingProfileDemo() {
           {/* Activity card */}
           <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-card)] p-5 sm:p-6">
             <h4 className="mb-4 text-sm font-semibold text-[var(--ink)]">Activity</h4>
-            <ContributionHeatmap data={heatmap} />
+            <ContributionHeatmap data={heatmap} animate />
           </div>
 
           <p className="text-center text-xs text-[var(--ink-muted)]">
