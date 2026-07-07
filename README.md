@@ -1,8 +1,8 @@
 # samehere
 
-samehere is a verified student social platform for students who want real peer connections instead of recruiter noise. It uses .edu email verification as the access gate and Claude to power AI-driven peer matching based on student profiles.
+samehere is a verified-student social platform for students who want real peer connections instead of recruiter noise. It uses `.edu` email verification as the access gate and Claude to power AI-driven peer matching from student profiles.
 
-**Status: v1 shipped and live.** Core platform, AI features, trust & safety, and Pro presence are all in production. Stripe billing is the next milestone (payment deferred to v1.1).
+**Status: v1 shipped and live**, with Pro billing wired. Core platform, AI features, trust & safety, moderation, and Stripe billing are all in production.
 
 **Live on Vercel** — every push to `main` auto-redeploys.
 
@@ -13,22 +13,23 @@ Students don't have a dedicated space that combines verified peer identity, real
 ## What's built
 
 ### Authentication and access
-- .edu email verification enforced server-side before the account is created
+- `.edu` email verification enforced server-side before the account is created
 - Supabase Auth: sign up, sign in, email confirmation, password reset (forgot / update)
 - Twitter-style gate: logged-out users reach only the landing, login, signup, and auth routes — everything else redirects to signup, enforced in both middleware (`proxy.ts`) and Row Level Security
 
 ### Student profiles
-- Username, display name, school, year, major, bio, skills, goals
+- Username, display name, school, year, major, bio, skills, goals, courses
 - Public profile at `/profile/[username]`, editable at `/profile/edit`
 - Avatar upload via Supabase Storage
-- Privacy: private accounts (follow approval), hideable school, per-profile heatmap visibility
+- Privacy: private accounts (follow approval), hideable school (separate RLS-gated table), per-profile heatmap visibility
 - Profile hover-previews across the app
 
 ### Social feed
 - Latest + Following tabs, chronological, cursor pagination
-- Composer with image/video upload (private bucket, signed URLs) and @mention autocomplete
+- Composer with image/video upload (private bucket, signed URLs), live point counter, and @mention autocomplete
 - Reactions: Like, SameHere, Repost, Bookmark
-- Comments, quote-reposts with engagement counts, individual post pages
+- Comments, quote-reposts and plain reposts (surfaced on the reposter's profile) with engagement counts, individual post pages
+- "Looking for teammate" post type
 - Report button and post menus
 
 ### Follow system
@@ -38,12 +39,14 @@ Students don't have a dedicated space that combines verified peer identity, real
 
 ### Direct messaging
 - One-to-one DMs with inbox, threads, unread counts, start-by-username
+- **Realtime** — new messages update the open thread and the inbox live
 
 ### Notifications
 - In-app notifications (follow, follow request, comment, reaction) written by DB triggers
-- Navbar bell with unread count (no realtime — fetch on load)
+- Navbar bell with unread count, **realtime** (live increment on new, decrement when an action is undone)
+- Point + notification integrity: undoing a qualifying action same-day revokes its heatmap point and clears an unread notification
 
-### Contribution heatmap
+### Contribution heatmap, streaks & leaderboard
 
 A GitHub-style activity heatmap on every profile showing daily engagement, tracked in tiers with quality gates to prevent low-effort gaming.
 
@@ -54,52 +57,82 @@ A GitHub-style activity heatmap on every profile showing daily engagement, track
 | Comment | 50+ characters | 3 |
 | Post published | 150+ characters | 5 |
 
-Each action type counts once per day. Daily square intensity reflects total points. Profile updates have a weekly cooldown. All scoring is enforced server-side in a `SECURITY DEFINER` function — points are never trusted from the client.
+Each action type counts once per day. Daily square intensity reflects total points. Profile updates have a weekly cooldown. All scoring is enforced server-side in `SECURITY DEFINER` functions — points are never trusted from the client. Day boundaries use midnight America/New_York.
 
-### AI features
-- Peer matching: suggested users ranked by profile-signal overlap (school, year, major, skills, goals), recency fallback on thin data
-- Connection prompts: one AI sentence per suggested-follow card explaining the fit
+- **Streaks**: consecutive days with activity, plus a saver nudge when today has no point yet
+- **Leaderboard**: global and per-school boards ranked by weekly points (schools canonicalized server-side so "UF" and "University of Florida" don't split)
+- **Shareable OG card** with the heatmap for each profile
+
+### AI features (Claude via the `openai` SDK)
+- Peer matching: suggested users ranked by profile-signal overlap (school, year, major, skills, goals, courses), recency fallback on thin data
+- Connection prompts: one AI sentence per suggested-follow card explaining the fit (cached)
 - Composer writing prompts + profile-completion nudges
-- All calls server-side via the `openai` SDK pointed at a Claude-compatible endpoint; metered per user
+- "Improve my post" and DM icebreaker drafts (Pro)
+- Tiered models: free users get a fast model, Pro users get a stronger one; metered per user with a cap-hit upsell
+- All calls server-side; the provider/model is swappable by env with no code change; AI output is rendered as plain text only
 
-### Trust & safety
+### Trust, safety & moderation
 - Reports, blocks, feedback, account settings, delete-account (edge function for the auth-user purge)
+- Coarse per-user rate limits on posts/follows
+- **Admin moderation** (`/admin`, gated to admins): triage open reports, soft-hide posts, suspend/unsuspend users — all via `is_admin`-gated `SECURITY DEFINER` functions; privileged columns are frozen against self-grant
 
-### Pro tier (presence — billing deferred to v1.1)
-- `is_pro` / founder flags, `/pro` page, waitlist
-- Live perks: Pro badge, accent color, who-viewed-you
-- Pricing: $4.99/mo · $19.99/yr (Stripe Checkout + webhook land in v1.1)
+### Pro tier & billing
+- Live perks: Pro badge, accent color, who-viewed-you, animated avatar (server-gated), stronger + unlimited AI
+- Stripe billing: hosted Checkout, Customer Portal, and a signature-verified webhook that sets `is_pro` / `pro_until`
+- `NEXT_PUBLIC_BILLING_ENABLED` flips the `/pro` page between waitlist and live Checkout
+- Pricing: **$4.99/mo · $12.99/semester**. The mission (peer discovery / connecting) is never paywalled.
+- Referrals: each user gets a referral link/code, tracks progress to 100, and earns a Campus Founder badge
+
+### Onboarding & growth
+- Dismissable onboarding checklist (avatar, bio, first post, first follow)
+- Empty-feed AI suggestions, positioning copy ("verified students only")
 
 ### Landing & legal
 - Full landing page (light + dark) with live product demos, pricing, FAQ, OG image
-- Terms and privacy pages
+- Real Terms and Privacy pages
 
-## What's not done yet
-- Stripe billing (Checkout, Customer Portal, webhook)
-- Server-side animated-avatar gate for Pro
-- AI icebreakers, "Improve my post"
-- Realtime notifications, email notifications
+### Analytics
+- Vercel Analytics (traffic + Web Vitals) and PostHog (product funnels, error capture)
+
+## What's not built yet
+- Weekly "people to meet" email digest
+- PWA + web push
+- Natural-language people search
 - Job board
 
 ## Tech stack
 
-### Client
-- Next.js 16 (App Router), React 19
-- TypeScript (strict)
-- Tailwind CSS (light cream + dark themes)
+**Client** — Next.js 16 (App Router), React 19, TypeScript (strict), Tailwind CSS (light cream + dark themes)
 
-### Backend and data
-- Supabase (Postgres, Auth, Row Level Security, Storage, edge functions)
+**Backend & data** — Supabase (Postgres, Auth, Row Level Security, Storage, Realtime, edge functions)
 
-### AI
-- Claude via the `openai` SDK against a Claude-compatible endpoint (provider swappable by env)
+**AI** — Claude via the `openai` SDK against a Claude-compatible endpoint (provider swappable by env)
 
-### Hosting
-- Vercel
+**Billing** — Stripe (Checkout, Customer Portal, webhooks)
+
+**Hosting & analytics** — Vercel, Vercel Analytics, PostHog
+
+## Running it & what's not in this repo
+
+samehere needs environment variables that are **never committed**. Copy `.env.example` to `.env.local` and fill in your own values, then `npm install && npm run dev`.
+
+**Required environment:**
+- `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase project (public by design; security rests on RLS, not secrecy)
+- `SUPABASE_SERVICE_ROLE_KEY` — server-only; used **only** by the Stripe webhook and the delete-account edge function, never in app or client code
+- `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `OPENAI_MODEL`, `OPENAI_MODEL_PRO` — AI provider (OpenAI-compatible endpoint)
+- `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and price/link config — billing
+- `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN`, `NEXT_PUBLIC_POSTHOG_HOST` — analytics
+- `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_BILLING_ENABLED` — app config
+
+**Intentionally excluded from the repo:**
+- `.env*` (all secrets; only `.env.example` with blank names is committed)
+- Internal working docs (agent, design-system, and strategy notes) — not required to run the app
+
+The database schema and RLS policies live in `supabase/migrations/` and are public on purpose — the security model is enforced by Row Level Security and `SECURITY DEFINER` functions, not by hiding the schema.
 
 ## Why this project
 
-This is a personal portfolio project built to develop full-stack skills with a real product behind it, not a tutorial clone. The problem it solves is one I've run into directly as a self-taught, non-traditional CS student looking for peers at a similar stage.
+A personal portfolio project built to develop full-stack skills with a real product behind it, not a tutorial clone. The problem it solves is one I've run into directly as a self-taught, non-traditional CS student looking for peers at a similar stage.
 
 ## Author
 
