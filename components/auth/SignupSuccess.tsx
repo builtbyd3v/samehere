@@ -1,4 +1,3 @@
-import Link from "next/link";
 import AuthAlert from "./AuthAlert";
 import AuthCard from "./AuthCard";
 import { authHint } from "./auth-fields";
@@ -16,9 +15,12 @@ export default function SignupSuccess({ email }: Props) {
       />
       <p className={authHint}>
         Wrong address or nothing arrived?{" "}
-        <Link href="/signup" className="text-[var(--ink)] underline">
+        {/* Plain <a> (not next/link): a client-side nav back to /signup keeps the
+            success state in useActionState, so the form never re-renders. A full
+            reload remounts SignupForm with empty state. */}
+        <a href="/signup" className="text-[var(--ink)] underline">
           Start over
-        </Link>
+        </a>
         .
       </p>
     </AuthCard>
