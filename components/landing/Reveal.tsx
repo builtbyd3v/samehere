@@ -26,48 +26,29 @@ export default function Reveal({ children, className, delay = 0 }: Props) {
 }
 
 /**
- * Staggered sibling reveal. Parent gates the group; each `RevealItem` child
- * rises in sequence. Use for lists (steps, claims) — a real list rhythm, not
- * the whole-section fade reflex.
+ * Thin wrapper for a staggered list — pairs with `RevealItem`, which carries the
+ * per-item delay. (Parent→child variant propagation is unreliable in this motion
+ * build, so each item animates itself on scroll-in.)
  */
-export function Stagger({
+export function Stagger({ children, className }: Omit<Props, "delay">) {
+  return <div className={className}>{children}</div>;
+}
+
+export function RevealItem({
   children,
   className,
+  index = 0,
   step = 0.08,
-  delay = 0,
-  amount = 0.15,
-}: Props & { step?: number; amount?: number }) {
+}: Omit<Props, "delay"> & { index?: number; step?: number }) {
   const reduce = useReducedMotion();
-  const container = {
-    hidden: {},
-    show: {
-      transition: {
-        staggerChildren: reduce ? 0 : step,
-        delayChildren: reduce ? 0 : delay,
-      },
-    },
-  };
   return (
     <motion.div
       className={className}
-      variants={container}
-      initial={reduce ? false : "hidden"}
-      whileInView="show"
-      viewport={{ once: true, amount }}
+      initial={reduce ? false : { opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.2 }}
+      transition={{ duration: 0.5, delay: reduce ? 0 : index * step, ease: EASE }}
     >
-      {children}
-    </motion.div>
-  );
-}
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: EASE } },
-};
-
-export function RevealItem({ children, className }: Omit<Props, "delay">) {
-  return (
-    <motion.div className={className} variants={itemVariants}>
       {children}
     </motion.div>
   );

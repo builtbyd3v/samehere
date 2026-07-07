@@ -33,9 +33,9 @@ export default function HowItWorks() {
         <h2 className={landingH2}>How it works.</h2>
       </Reveal>
 
-      <Stagger className="mt-10 divide-y divide-[var(--border)] border-y border-[var(--border)]" delay={0.08}>
+      <Stagger className="mt-10 divide-y divide-[var(--border)] border-y border-[var(--border)]">
         {STEPS.map((step, i) => (
-          <RevealItem key={step.title}>
+          <RevealItem key={step.title} index={i}>
             <div className="flex gap-5 py-6 sm:gap-8">
               <span className="shrink-0 text-2xl font-semibold leading-none tracking-[-0.02em] text-[var(--ink-faint)] sm:text-3xl">
                 {i + 1}
