@@ -12,7 +12,7 @@ export default function LandingFooter() {
             </p>
           </div>
           <nav className="flex flex-wrap gap-x-8 gap-y-3 text-sm text-[var(--ink-muted)]">
-            <a href="mailto:hello@samehere.app" className="underline-offset-4 hover:underline">
+            <a href="mailto:support@samehere.dev" className="underline-offset-4 hover:underline">
               Feedback
             </a>
             <Link href="/terms" className="underline-offset-4 hover:underline">

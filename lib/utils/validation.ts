@@ -21,7 +21,7 @@ export const RESERVED_USERNAMES = new Set([
 // Returns a human error string, or null when the username is acceptable.
 export function usernameError(username: string): string | null {
   if (!/^[a-z0-9_]{3,20}$/.test(username))
-    return "Username must be 3–20 characters — lowercase letters, numbers, or underscores.";
+    return "Username must be 3-20 characters: lowercase letters, numbers, or underscores.";
   if (RESERVED_USERNAMES.has(username)) return "That username is reserved.";
   return null;
 }

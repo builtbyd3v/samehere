@@ -64,14 +64,14 @@ export function gapFieldId(gap: ProfileGap): string | null {
 }
 
 const FALLBACK_BY_GAP: Record<ProfileGap, string> = {
-  avatar: "Add a profile photo — it makes you recognizable when peers see your posts.",
+  avatar: "Add a profile photo. It makes you recognizable when peers see your posts.",
   display_name: "Add your display name so classmates recognize you beyond @username.",
   school: "Confirm your school so campus peers can find you in search.",
-  year: "Set your year — it helps surface students at the same stage.",
+  year: "Set your year. It helps surface students at the same stage.",
   major: "Add your major so others in your program can discover you.",
-  bio: "Write a short bio about what you're building or learning — it's the first thing people read.",
+  bio: "Write a short bio about what you're building or learning. It's the first thing people read.",
   goals: "Share what you're working toward this semester so others know how to connect.",
-  skills: "List a few skills — overlap drives better follow suggestions.",
+  skills: "List a few skills. Overlap drives better follow suggestions.",
 };
 
 export function fallbackProfileNudge(gaps: ProfileGap[]): string {

@@ -7,7 +7,7 @@ import { Analytics } from "@vercel/analytics/next";
 const figtree = Figtree({ subsets: ["latin"], weight: ["400", "500", "600"] });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://samehere.app"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.samehere.dev"),
   title: {
     default: "samehere: the network for verified students",
     template: "%s · samehere",

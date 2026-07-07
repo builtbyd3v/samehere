@@ -110,8 +110,9 @@ export default function Pricing() {
         <div className="flex items-start gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-5 py-4">
           <IconCrown className="mt-0.5 h-5 w-5 shrink-0 text-[var(--blue)]" />
           <p className="text-sm leading-relaxed text-[var(--ink-muted)]">
-            <span className="font-medium text-[var(--ink)]">Founder badge</span> on your profile for the
-            first 100 students who sign up. Permanent, regardless of plan.
+            <span className="font-medium text-[var(--ink)]">Founder badge</span> for the first 100
+            students to sign up. Earn <span className="font-medium text-[var(--ink)]">Campus Founder</span>{" "}
+            when your referral link brings 100 students from your own school. Both permanent, any plan.
           </p>
         </div>
       </Reveal>

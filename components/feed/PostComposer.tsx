@@ -327,7 +327,7 @@ export default function PostComposer({ isPro = false }: { isPro?: boolean }) {
           ) : (
             <Link
               href="/pro"
-              title="Improve is a Pro feature — upgrade to rewrite your drafts"
+              title="Improve is a Pro feature. Upgrade to rewrite your drafts."
               className="text-xs font-medium text-[var(--ink-muted)] underline"
             >
               ✦ Improve <span className="text-[var(--ink-faint)]">(Pro)</span>

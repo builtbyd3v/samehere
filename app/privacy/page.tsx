@@ -39,7 +39,7 @@ export default function PrivacyPage() {
             <li>
               <strong className="text-[var(--ink)]">Billing:</strong> if you subscribe to Pro, our payment
               processor collects your payment details. We receive your subscription status and a customer
-              identifier &mdash; not your full card number.
+              identifier, not your full card number.
             </li>
             <li>
               <strong className="text-[var(--ink)]">Technical:</strong> standard log and device data (IP
@@ -79,17 +79,17 @@ export default function PrivacyPage() {
           </p>
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li>
-              <strong className="text-[var(--ink)]">Supabase</strong> &mdash; database, authentication, and
+              <strong className="text-[var(--ink)]">Supabase</strong>: database, authentication, and
               file storage;
             </li>
             <li>
-              <strong className="text-[var(--ink)]">Vercel</strong> &mdash; application hosting and delivery;
+              <strong className="text-[var(--ink)]">Vercel</strong>: application hosting and delivery;
             </li>
             <li>
-              <strong className="text-[var(--ink)]">Stripe</strong> &mdash; payment processing for Pro;
+              <strong className="text-[var(--ink)]">Stripe</strong>: payment processing for Pro;
             </li>
             <li>
-              <strong className="text-[var(--ink)]">Anthropic</strong> (or an equivalent AI provider) &mdash;
+              <strong className="text-[var(--ink)]">Anthropic</strong> (or an equivalent AI provider):
               generating AI feature text.
             </li>
           </ul>

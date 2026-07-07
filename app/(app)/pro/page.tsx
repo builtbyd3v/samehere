@@ -15,7 +15,7 @@ const GROUPS: { title: string; features: string[] }[] = [
     title: "Smarter AI",
     features: [
       "Unlimited AI on a stronger model",
-      "Improve my post — AI rewrites your draft",
+      "Improve my post: AI rewrites your draft",
       "AI icebreaker for your first message",
     ],
   },
@@ -141,10 +141,10 @@ export default async function ProPage({
           ) : BILLING_ENABLED ? (
             <div className="flex flex-col gap-2 sm:flex-row">
               <a href={monthlyHref} className="btn-primary flex-1 text-center">
-                Go Pro — Monthly
+                Subscribe monthly
               </a>
               <a href={semesterHref} className="btn-primary flex-1 text-center">
-                Go Pro — Semester
+                Subscribe for a semester
               </a>
             </div>
           ) : profile.wants_pro ? (
@@ -195,8 +195,9 @@ export default async function ProPage({
       <div className="mt-4 flex items-start gap-3 card px-5 py-4">
         <IconCrown className="mt-0.5 h-5 w-5 shrink-0 text-[var(--blue)]" />
         <p className="text-sm leading-relaxed text-[var(--ink-muted)]">
-          <span className="font-medium text-[var(--ink)]">Founder badge</span> on your profile for
-          the first 100 students who sign up. Permanent, on any plan.
+          <span className="font-medium text-[var(--ink)]">Founder badge</span> for the first 100
+          students to sign up. Earn <span className="font-medium text-[var(--ink)]">Campus Founder</span>{" "}
+          when your referral link brings 100 students from your school. Both permanent, on any plan.
         </p>
       </div>
 
