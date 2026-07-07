@@ -8,6 +8,19 @@ import { isEduEmail, usernameError } from "@/lib/utils/validation";
 // Shared shape for useActionState on the auth forms.
 export type AuthState = { error?: string; ok?: boolean; email?: string };
 
+// Testing bypass for the .edu gate: comma-separated emails in SIGNUP_ALLOWLIST
+// (env, empty by default) may sign up without a .edu. Kept out of the repo so
+// no address is hardcoded; unset = gate applies to everyone.
+function isAllowlisted(email: string): boolean {
+  const list = process.env.SIGNUP_ALLOWLIST;
+  if (!list) return false;
+  return list
+    .toLowerCase()
+    .split(",")
+    .map((e) => e.trim())
+    .includes(email.toLowerCase());
+}
+
 // Signup: server-side gate on .edu + username + password, then Supabase creates
 // the user and (with email confirmations on) sends a confirmation link.
 // The handle_new_user trigger claims profiles.username from user_metadata, so
@@ -19,7 +32,7 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
   const refCode = String(formData.get("ref_code") ?? "").trim().toLowerCase();
 
   // Never trust the client — the .edu gate and minimums are enforced here, server-side.
-  if (!isEduEmail(email)) return { error: "Enter a valid .edu school email address." };
+  if (!isEduEmail(email) && !isAllowlisted(email)) return { error: "Enter a valid .edu school email address." };
   const uErr = usernameError(username);
   if (uErr) return { error: uErr };
   if (password.length < 8) return { error: "Password must be at least 8 characters." };
