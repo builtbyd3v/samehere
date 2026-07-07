@@ -1,6 +1,6 @@
 "use client";
 
-import Reveal from "./Reveal";
+import Reveal, { Stagger, RevealItem } from "./Reveal";
 import { landingH2 } from "@/lib/landing/styles";
 
 const STEPS = [
@@ -33,21 +33,23 @@ export default function HowItWorks() {
         <h2 className={landingH2}>How it works.</h2>
       </Reveal>
 
-      <Reveal className="mt-10 divide-y divide-[var(--border)] border-y border-[var(--border)]" delay={0.08}>
+      <Stagger className="mt-10 divide-y divide-[var(--border)] border-y border-[var(--border)]" delay={0.08}>
         {STEPS.map((step, i) => (
-          <div key={step.title} className="flex gap-5 py-6 sm:gap-8">
-            <span className="shrink-0 text-2xl font-semibold leading-none tracking-[-0.02em] text-[var(--ink-faint)] sm:text-3xl">
-              {i + 1}
-            </span>
-            <div className="min-w-0">
-              <h3 className="font-medium text-[var(--ink)]">{step.title}</h3>
-              <p className="mt-1.5 max-w-[52ch] text-sm leading-relaxed text-[var(--ink-muted)] sm:text-base">
-                {step.body}
-              </p>
+          <RevealItem key={step.title}>
+            <div className="flex gap-5 py-6 sm:gap-8">
+              <span className="shrink-0 text-2xl font-semibold leading-none tracking-[-0.02em] text-[var(--ink-faint)] sm:text-3xl">
+                {i + 1}
+              </span>
+              <div className="min-w-0">
+                <h3 className="font-medium text-[var(--ink)]">{step.title}</h3>
+                <p className="mt-1.5 max-w-[52ch] text-sm leading-relaxed text-[var(--ink-muted)] sm:text-base">
+                  {step.body}
+                </p>
+              </div>
             </div>
-          </div>
+          </RevealItem>
         ))}
-      </Reveal>
+      </Stagger>
     </section>
   );
 }
