@@ -12,6 +12,14 @@ const PAYMENT_LINK_SEMESTER = "https://buy.stripe.com/cNi00k4jQ0gq8sj7iS2wU01";
 
 const GROUPS: { title: string; features: string[] }[] = [
   {
+    title: "Smarter AI",
+    features: [
+      "Unlimited AI on a stronger model",
+      "Improve my post — AI rewrites your draft",
+      "AI icebreaker for your first message",
+    ],
+  },
+  {
     title: "Stand out",
     features: [
       "Pro badge on profile",
@@ -26,8 +34,7 @@ const GROUPS: { title: string; features: string[] }[] = [
 ];
 
 const COMING_SOON_TO_PRO = [
-  "Unlimited AI + a smarter model",
-  "AI icebreaker for your first message",
+  "Natural-language people search",
   "Early access to new features",
 ];
 
@@ -35,6 +42,7 @@ const NEVER_GATED = [
   ".edu verify",
   "posting",
   "following",
+  "DMs",
   "private accounts",
   "feed",
   "reactions",

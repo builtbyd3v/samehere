@@ -6,9 +6,9 @@ import { landingH2 } from "@/lib/landing/styles";
 const FAQ_ITEMS = [
   ["Is samehere free?", "Yes. Free for every verified student. Core features are never gated."],
   ["Who can join?", "Anyone with a valid .edu email. We verify it before you get an account."],
-  ["What makes samehere different?", "Profiles, a feed, and reactions built for students. Verified .edu signup, a heatmap on every profile, and SameHere when a post sounds like your life."],
+  ["What makes samehere different?", "Built for students: verified .edu signup, a contribution heatmap on every profile, streaks and school leaderboards, AI that matches you with the right peers, and SameHere when a post sounds like your life."],
   ["Is my stuff private?", "You control it. Private accounts, a hideable school, and a heatmap visibility setting. Logged-out visitors see nothing."],
-  ["What is Pro?", "Optional upgrades: who viewed your profile, a custom accent color, an animated avatar, and a badge. $4.99/mo or $12.99/semester. Unlimited AI, an AI icebreaker, and early access to new features are coming soon."],
+  ["What is Pro?", "Optional upgrades: unlimited AI on a stronger model, Improve-my-post and AI icebreakers, who viewed your profile, a custom accent color, an animated avatar, and a badge. $4.99/mo or $12.99/semester. Natural-language search and early access are coming soon."],
 ] as const;
 
 export default function FAQ() {

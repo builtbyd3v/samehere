@@ -9,18 +9,21 @@ import { signupCta } from "./cta";
 const FREE_FEATURES = [
   "Verified .edu signup",
   "Profiles, feed, and reactions",
-  "Follow and private accounts",
+  "Follow, DMs, and private accounts",
+  "Streaks, leaderboards, and your heatmap",
   "Search and saved posts",
-  "AI with daily free caps",
+  "AI matching with daily free caps",
 ] as const;
 
 const PRO_FEATURES: { label: string; icon?: "bolt" }[] = [
+  { label: "Unlimited AI on a stronger model" },
+  { label: "Improve my post and AI icebreakers" },
   { label: "See who viewed your profile" },
   { label: "Custom accent color and animated avatar" },
   { label: "Pro badge on your profile", icon: "bolt" },
 ];
 
-const PRO_COMING_SOON = ["Unlimited AI and a smarter model", "AI icebreaker for new conversations", "Early access to new features"];
+const PRO_COMING_SOON = ["Natural-language people search", "Early access to new features"];
 
 const card = `flex h-full flex-col ${landingCard}`;
 

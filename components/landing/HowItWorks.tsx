@@ -14,7 +14,7 @@ const STEPS = [
   },
   {
     title: "Build your heatmap",
-    body: "Every post, comment, and connection lands on your heatmap. A year of real activity, not a highlight reel.",
+    body: "Every post, comment, and connection lands on your heatmap. Keep a streak going and climb your school's leaderboard — a year of real activity, not a highlight reel.",
   },
   {
     title: "Get AI matched",
