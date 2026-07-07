@@ -15,6 +15,9 @@ export default function LandingFooter() {
             <a href="mailto:support@samehere.dev" className="underline-offset-4 hover:underline">
               Feedback
             </a>
+            <Link href="/pricing" className="underline-offset-4 hover:underline">
+              Pricing
+            </Link>
             <Link href="/terms" className="underline-offset-4 hover:underline">
               Terms
             </Link>
@@ -26,7 +29,7 @@ export default function LandingFooter() {
             </Link>
           </nav>
         </div>
-        <p className="mt-10 text-sm text-[var(--ink-faint)]">© 2026 samehere</p>
+        <p className="mt-10 text-sm text-[var(--ink-muted)]">© 2026 samehere</p>
       </div>
     </footer>
   );

@@ -99,22 +99,18 @@ export const DEMO_VIEWER_PROFILE: DemoProfile = {
 };
 
 export const DEMO_PROFILE: DemoProfile = {
-  name: "Dev Goswami",
-  username: "dev",
-  avatarSeed: "dev-goswami",
-  school: "",
-  year: "",
-  major: "",
-  role: "Founder",
-  showFounderBadge: true,
-  showCampusFounderBadge: true,
-  showProBadge: true,
-  bio: "Building samehere. A place for verified students to show up, share the real stuff, and find people who get it.",
-  goals: "Ship a social network students actually want to use: verified, honest, and built around real connection.",
-  skills: ["product", "TypeScript", "React", "community"],
-  posts: 128,
-  followers: 2940,
-  following: 311,
+  name: "Maya Ortiz",
+  username: "mortiz",
+  avatarSeed: "maya-samehere",
+  school: "Arizona State",
+  year: "Sophomore",
+  major: "Biology",
+  bio: "Pre-med, mostly stressed, occasionally normal. Posting the small wins so future me remembers they happened.",
+  goals: "Find other people grinding through orgo who don't have it all figured out either.",
+  skills: ["Python", "research", "public speaking", "time management"],
+  posts: 9,
+  followers: 47,
+  following: 63,
 };
 
 export const DEMO_SUGGESTIONS: DemoSuggestion[] = [

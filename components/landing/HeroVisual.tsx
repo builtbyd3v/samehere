@@ -74,7 +74,7 @@ export default function HeroVisual() {
           </button>
         </div>
       </div>
-      <p className="mt-3 text-center text-sm text-[var(--ink-faint)]">
+      <p className="mt-3 text-center text-sm text-[var(--ink-muted)]">
         Tap SameHere. Same reactions as the real feed.
       </p>
     </motion.div>

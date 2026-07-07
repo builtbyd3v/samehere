@@ -107,10 +107,10 @@ export default function LandingProfileDemo() {
             <ContributionHeatmap data={heatmap} />
           </div>
 
-          <p className="text-center text-xs text-[var(--ink-faint)]">
+          <p className="text-center text-xs text-[var(--ink-muted)]">
             Hover a day to see points. Same as on every profile.
           </p>
-          <p className="text-center text-xs text-[var(--ink-faint)]">
+          <p className="text-center text-xs text-[var(--ink-muted)]">
             Refer 100 students from your campus and earn the Campus Founder badge.
           </p>
         </Reveal>

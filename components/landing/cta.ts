@@ -1,10 +1,8 @@
-/** Outline CTAs — signup matches waitlist (DESIGN.md ghost button) */
-export const signupCta =
-  "inline-flex cursor-pointer items-center justify-center rounded-md border border-[var(--border-strong)] bg-transparent px-5 py-2.5 text-base text-[var(--ink)] transition active:opacity-80";
+/** Primary = filled (btn-primary), Ghost = outline (btn-ghost). Sm = nav-compact. */
+export const signupCta = "btn-primary cursor-pointer px-5 py-2.5 text-base";
 
-export const signupCtaSm =
-  "inline-flex cursor-pointer items-center justify-center rounded-md border border-[var(--border-strong)] bg-transparent px-4 py-2 text-sm text-[var(--ink)] transition active:opacity-80";
+export const signupCtaSm = "btn-primary cursor-pointer";
 
-export const ghostCta = signupCta;
+export const ghostCta = "btn-ghost cursor-pointer px-5 py-2.5 text-base";
 
-export const ghostCtaSm = signupCtaSm;
+export const ghostCtaSm = "btn-ghost cursor-pointer";

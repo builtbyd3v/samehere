@@ -5,7 +5,6 @@ import StatsBar from "./StatsBar";
 import HowItWorks from "./HowItWorks";
 import LandingProfileDemo from "./LandingProfileDemo";
 import AISection from "./AISection";
-import Pricing from "./Pricing";
 import FAQ from "./FAQ";
 import CtaBand from "./CtaBand";
 import LandingFooter from "./LandingFooter";
@@ -20,7 +19,6 @@ export default function LandingPage() {
       <HowItWorks />
       <LandingProfileDemo />
       <AISection />
-      <Pricing />
       <FAQ />
       <CtaBand />
       <LandingFooter />

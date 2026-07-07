@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import Reveal from "./Reveal";
 import { landingH2 } from "@/lib/landing/styles";
 
@@ -26,7 +27,17 @@ export default function FAQ() {
                 +
               </span>
             </summary>
-            <p className="mt-3 text-base leading-relaxed text-[var(--ink-muted)]">{a}</p>
+            <p className="mt-3 text-base leading-relaxed text-[var(--ink-muted)]">
+              {a}
+              {q === "What is Pro?" && (
+                <>
+                  {" "}
+                  <Link href="/pricing" className="underline underline-offset-2">
+                    See full pricing →
+                  </Link>
+                </>
+              )}
+            </p>
           </details>
         ))}
       </Reveal>
