@@ -42,7 +42,7 @@ export default function LandingProfileDemo() {
                         </span>
                       )}
                       {p.showCampusFounderBadge && (
-                        <span title="Campus Founder badge · refer 100 students from your campus" className="text-[var(--founder)]">
+                        <span title="Campus Founder badge · refer 100 students from your campus" className="text-amber-500">
                           <IconFlag />
                         </span>
                       )}
