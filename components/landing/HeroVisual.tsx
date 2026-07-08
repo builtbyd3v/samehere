@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import LandingPostCard from "./LandingPostCard";
 import { DEMO_POSTS } from "@/lib/landing/demo-data";
@@ -9,7 +9,19 @@ export default function HeroVisual() {
   const reduce = useReducedMotion();
   const [index, setIndex] = useState(0);
   const [direction, setDirection] = useState(1);
+  const [paused, setPaused] = useState(false);
   const post = DEMO_POSTS[index];
+
+  // Auto-advance so the card isn't dead until touched. Pauses on hover; off for
+  // reduced-motion.
+  useEffect(() => {
+    if (reduce || paused) return;
+    const id = setInterval(() => {
+      setDirection(1);
+      setIndex((i) => (i + 1) % DEMO_POSTS.length);
+    }, 4500);
+    return () => clearInterval(id);
+  }, [reduce, paused]);
 
   function go(dir: -1 | 1) {
     setDirection(dir);
@@ -24,6 +36,8 @@ export default function HeroVisual() {
   return (
     <motion.div
       className="w-full lg:max-w-[48%] lg:flex-1"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
       initial={reduce ? false : { opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
