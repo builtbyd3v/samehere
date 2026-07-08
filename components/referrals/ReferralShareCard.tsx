@@ -86,11 +86,7 @@ export default function ReferralShareCard({
 
       {/* Campus Founder badge — always showcased; locked (grey) until earned, then green */}
       <div className="mt-5 flex items-start gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-4">
-        <IconGradCap
-          className={`h-9 w-9 shrink-0 ${
-            isCampusFounder ? "text-[var(--campus-founder)]" : "text-[var(--ink-faint)]"
-          }`}
-        />
+        <IconGradCap className="h-9 w-9 shrink-0 text-[var(--campus-founder)]" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
             <span className="text-sm font-semibold text-[var(--ink)]">Campus Founder</span>
