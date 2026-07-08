@@ -285,7 +285,7 @@ export default function PostComposer({ isPro = false }: { isPro?: boolean }) {
       )}
 
       {(state.error || mediaErr) && (
-        <p role="alert" className="mt-2 text-sm text-[#c0392b] dark:text-[#e88]">
+        <p role="alert" className="mt-2 text-sm text-[var(--danger)]">
           {mediaErr ?? state.error}
         </p>
       )}
@@ -310,7 +310,7 @@ export default function PostComposer({ isPro = false }: { isPro?: boolean }) {
         <div className="flex items-center gap-3">
           <span
             className={`text-xs transition-colors duration-300 motion-reduce:transition-none ${
-              len >= MAX ? "text-[#c0392b] dark:text-[#e88]" : qualifies ? "text-[var(--blue)]" : "text-[var(--ink-muted)]"
+              len >= MAX ? "text-[var(--danger)]" : qualifies ? "text-[var(--blue)]" : "text-[var(--ink-muted)]"
             }`}
           >
             {len === 0

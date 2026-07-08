@@ -69,7 +69,7 @@ export function ReportForm({
         maxLength={TEXT_LIMITS.reportDetail}
         className="w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
       />
-      {error && <p role="alert" className="text-sm text-[#c0392b] dark:text-[#e88]">{error}</p>}
+      {error && <p role="alert" className="text-sm text-[var(--danger)]">{error}</p>}
       <button type="submit" disabled={pending} className="btn-primary w-full">
         {pending ? "Submitting…" : "Submit report"}
       </button>

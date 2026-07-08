@@ -36,7 +36,7 @@ export default function ChangePasswordForm() {
   return (
     <form onSubmit={handleSubmit}>
       {error && (
-        <p role="alert" className="mb-4 text-sm text-[#c0392b] dark:text-[#e88]">
+        <p role="alert" className="mb-4 text-sm text-[var(--danger)]">
           {error}
         </p>
       )}

@@ -51,7 +51,7 @@ export default function BlockButton({
         disabled={busy}
         className={
           className ??
-          "shrink-0 text-sm text-[#c0392b] underline-offset-2 transition hover:underline active:scale-[0.98] active:opacity-80 disabled:opacity-50 disabled:active:scale-100 dark:text-[#e88]"
+          "shrink-0 text-sm text-[var(--danger)] underline-offset-2 transition hover:underline active:scale-[0.98] active:opacity-80 disabled:opacity-50 disabled:active:scale-100"
         }
       >
         {blocked ? "Unblock" : "Block"}

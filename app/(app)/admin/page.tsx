@@ -44,7 +44,7 @@ export default async function AdminPage() {
                   by @{r.reporter_username ?? "deleted"} · <LocalTime iso={r.created_at} />
                 </span>
                 {r.post_hidden && <span className="text-[var(--blue)]">post hidden</span>}
-                {r.author_suspended && <span className="text-red-500">author suspended</span>}
+                {r.author_suspended && <span className="text-[var(--danger)]">author suspended</span>}
               </div>
 
               {r.detail && <p className="mb-2 text-sm text-[var(--ink-muted)]">&ldquo;{r.detail}&rdquo;</p>}

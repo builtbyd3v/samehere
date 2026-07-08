@@ -102,7 +102,7 @@ export function FeedbackModal({ open, onClose }: { open: boolean; onClose: () =>
             maxLength={TEXT_LIMITS.feedback}
             className="input-base resize-none"
           />
-          {error && <p role="alert" className="text-sm text-[#c0392b] dark:text-[#e88]">{error}</p>}
+          {error && <p role="alert" className="text-sm text-[var(--danger)]">{error}</p>}
           <button type="submit" disabled={pending} className="btn-primary w-full">
             {pending ? "Submitting…" : "Send feedback"}
           </button>

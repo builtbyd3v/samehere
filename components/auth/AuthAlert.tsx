@@ -12,7 +12,7 @@ const ICON_PATH: Record<Variant, string> = {
 };
 
 const VARIANT_STYLES: Record<Variant, string> = {
-  error: "border-red-400/40 bg-red-500/[0.06] text-[var(--ink)] [&_svg]:text-red-500",
+  error: "border-[var(--danger)]/40 bg-[var(--danger)]/[0.06] text-[var(--ink)] [&_svg]:text-[var(--danger)]",
   success: "border-emerald-400/40 bg-emerald-500/[0.06] text-[var(--ink)] [&_svg]:text-emerald-500",
   info: "border-[var(--blue)]/30 bg-[var(--blue)]/[0.06] text-[var(--ink)] [&_svg]:text-[var(--blue)]",
 };

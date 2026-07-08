@@ -19,6 +19,7 @@
   --featured-surface: rgba(28, 28, 28, 0.04);
   --blue: #0075de;
   --founder: #806400;
+  --danger: #c0392b;
   --hm0: rgba(28, 28, 28, 0.06); --hm1: #bcd8f5; --hm2: #5fa0e8; --hm3: #0075de;
 }
 
@@ -37,6 +38,7 @@
   --featured-surface: rgba(247, 244, 237, 0.06);
   --blue: #4f9fe8;
   --founder: #f59e0b;
+  --danger: #e88;
   --hm0: rgba(247, 244, 237, 0.07); --hm1: #1e3a5f; --hm2: #2f6db0; --hm3: #4f9fe8;
 }
 
@@ -60,6 +62,7 @@
     --featured-surface: rgba(247, 244, 237, 0.06);
     --blue: #4f9fe8;
     --founder: #f59e0b;
+    --danger: #e88;
     --hm0: rgba(247, 244, 237, 0.07); --hm1: #1e3a5f; --hm2: #2f6db0; --hm3: #4f9fe8;
   }
 }

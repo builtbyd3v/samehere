@@ -113,7 +113,7 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
               <input type="file" accept="image/*" onChange={onAvatar} disabled={avatarBusy} className="hidden" />
               {avatarBusy ? "Uploading…" : "Change avatar"}
             </label>
-            <p className={avatarState.error ? "mt-1.5 text-xs text-[#c0392b] dark:text-[#e88]" : hint}>
+            <p className={avatarState.error ? "mt-1.5 text-xs text-[var(--danger)]" : hint}>
               {avatarState.error ?? "JPG, PNG, or WebP. Max 2 MB."}
             </p>
           </div>

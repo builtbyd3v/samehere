@@ -72,7 +72,7 @@ export default function CommentComposer({ postId, quoteId }: { postId?: string; 
       />
 
       {state.error && (
-        <p role="alert" className="mt-2 text-sm text-[#c0392b] dark:text-[#e88]">
+        <p role="alert" className="mt-2 text-sm text-[var(--danger)]">
           {state.error}
         </p>
       )}
@@ -80,7 +80,7 @@ export default function CommentComposer({ postId, quoteId }: { postId?: string; 
       <div className="mt-3 flex items-center justify-between border-t border-[var(--border)] pt-3">
         <span
           className={`text-xs transition-colors duration-300 motion-reduce:transition-none ${
-            len >= MAX ? "text-[#c0392b] dark:text-[#e88]" : qualifies ? "text-[var(--blue)]" : "text-[var(--ink-muted)]"
+            len >= MAX ? "text-[var(--danger)]" : qualifies ? "text-[var(--blue)]" : "text-[var(--ink-muted)]"
           }`}
         >
           {len === 0

@@ -105,7 +105,7 @@ export default function QuoteRepostModal({
           className="mt-3 w-full resize-y bg-transparent text-[16px] leading-[1.55] text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
         />
         {text.length > 0 && (
-          <p className={`mt-1 text-xs ${text.length >= MAX ? "text-[#c0392b] dark:text-[#e88]" : "text-[var(--ink-faint)]"}`}>
+          <p className={`mt-1 text-xs ${text.length >= MAX ? "text-[var(--danger)]" : "text-[var(--ink-faint)]"}`}>
             {text.length}/{MAX}
           </p>
         )}
@@ -118,7 +118,7 @@ export default function QuoteRepostModal({
         </div>
 
         {error && (
-          <p role="alert" className="mt-3 text-sm text-[#c0392b] dark:text-[#e88]">
+          <p role="alert" className="mt-3 text-sm text-[var(--danger)]">
             {error}
           </p>
         )}

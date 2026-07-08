@@ -80,7 +80,7 @@ export default function FollowButton({
       type="button"
       onClick={remove}
       disabled={busy}
-      className={`group border border-[var(--border-strong)] text-sm font-medium transition hover:border-[#c0392b] hover:bg-[#c0392b]/[0.06] hover:text-[#c0392b] active:opacity-80 disabled:opacity-50 dark:hover:border-[#e88] dark:hover:text-[#e88] ${press} ${shape} ${className}`}
+      className={`group border border-[var(--border-strong)] text-sm font-medium transition hover:border-[var(--danger)] hover:bg-[var(--danger)]/[0.06] hover:text-[var(--danger)] active:opacity-80 disabled:opacity-50 ${press} ${shape} ${className}`}
     >
       <span className="group-hover:hidden">Following</span>
       <span className="hidden group-hover:inline">Unfollow</span>

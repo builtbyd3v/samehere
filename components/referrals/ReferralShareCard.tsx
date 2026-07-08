@@ -67,7 +67,7 @@ export default function ReferralShareCard({
         </form>
       )}
       {state.error && (
-        <p role="alert" className="mt-2 text-sm text-red-500">
+        <p role="alert" className="mt-2 text-sm text-[var(--danger)]">
           {state.error}
         </p>
       )}

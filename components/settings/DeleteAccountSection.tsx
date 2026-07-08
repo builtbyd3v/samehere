@@ -33,15 +33,15 @@ export default function DeleteAccountSection({ username }: { username: string })
   }
 
   return (
-    <section className="rounded-xl border border-[#c0392b]/30 bg-[var(--surface)] p-6">
-      <h2 className="mb-2 text-lg font-semibold text-[#c0392b] dark:text-[#e88]">Danger zone</h2>
+    <section className="rounded-xl border border-[var(--danger)]/30 bg-[var(--surface)] p-6">
+      <h2 className="mb-2 text-lg font-semibold text-[var(--danger)]">Danger zone</h2>
       <p className="mb-4 text-sm text-[var(--ink-muted)]">
         Deleting your account is permanent and irreversible. All your posts, comments, follows, and data will be
         removed forever.
       </p>
 
       {error && (
-        <p role="alert" className="mb-4 text-sm text-[#c0392b] dark:text-[#e88]">
+        <p role="alert" className="mb-4 text-sm text-[var(--danger)]">
           {error}
         </p>
       )}
@@ -55,14 +55,14 @@ export default function DeleteAccountSection({ username }: { username: string })
         value={typed}
         onChange={(e) => setTyped(e.target.value)}
         autoComplete="off"
-        className="mt-1.5 mb-4 w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[15px] text-[var(--ink)] outline-none transition placeholder:text-[var(--ink-faint)] focus:border-[#c0392b] focus:ring-2 focus:ring-[#c0392b]/40"
+        className="mt-1.5 mb-4 w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[15px] text-[var(--ink)] outline-none transition placeholder:text-[var(--ink-faint)] focus:border-[var(--danger)] focus:ring-2 focus:ring-[var(--danger)]/40"
       />
 
       <button
         type="button"
         onClick={() => setConfirmOpen(true)}
         disabled={!matches || pending}
-        className="w-full rounded-md bg-[#c0392b] px-4 py-2.5 text-[15px] font-medium text-white transition active:scale-[0.98] active:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
+        className="w-full rounded-md bg-[var(--danger)] px-4 py-2.5 text-[15px] font-medium text-white transition active:scale-[0.98] active:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
       >
         {pending ? "Deleting…" : "Delete my account"}
       </button>

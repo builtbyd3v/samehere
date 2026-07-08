@@ -105,7 +105,7 @@ export default function MessageComposer({
         </button>
       </div>
       {state.error && (
-        <p role="alert" className="mt-2 px-2 text-sm text-[#c0392b] dark:text-[#e88]">
+        <p role="alert" className="mt-2 px-2 text-sm text-[var(--danger)]">
           {state.error}
         </p>
       )}
