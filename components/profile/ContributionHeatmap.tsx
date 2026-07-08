@@ -67,6 +67,12 @@ function Spacer({ className }: { className: string }) {
   return <div className={className} aria-hidden />;
 }
 
+function cellAriaLabel(cell: Cell): string {
+  const date = fmtDate.format(new Date(cell.date));
+  if (cell.points === 0) return `${date}: no contributions`;
+  return `${date}: ${cell.points} contribution${cell.points === 1 ? "" : "s"}`;
+}
+
 export default function ContributionHeatmap({
   data,
   animate = false,
@@ -157,10 +163,18 @@ export default function ContributionHeatmap({
                       ) : (
                         <div
                           key={cell.date}
+                          tabIndex={0}
+                          role="img"
+                          aria-label={cellAriaLabel(cell)}
                           onMouseEnter={(e) => setHovered({ cell, x: e.clientX, y: e.clientY })}
                           onMouseLeave={() => setHovered(null)}
+                          onFocus={(e) => {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            setHovered({ cell, x: rect.left + rect.width / 2, y: rect.top });
+                          }}
+                          onBlur={() => setHovered(null)}
                           style={animate ? ({ "--i": i + row } as CSSProperties) : undefined}
-                          className={`${SLOT} shrink-0 rounded-[2px] outline outline-1 outline-offset-0 outline-transparent transition hover:scale-110 hover:outline-[var(--border-strong)] sm:rounded-[3px] ${CELL[level(cell.points)]} ${animate ? "hm-cell" : ""}`}
+                          className={`${SLOT} shrink-0 rounded-[2px] outline outline-1 outline-offset-0 outline-transparent transition hover:scale-110 hover:outline-[var(--border-strong)] focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#3b82f6] sm:rounded-[3px] ${CELL[level(cell.points)]} ${animate ? "hm-cell" : ""}`}
                         />
                       ),
                     )}
