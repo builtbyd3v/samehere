@@ -8,6 +8,7 @@ import UserBadges from "@/components/profile/UserBadges";
 import AvatarImage from "@/components/ui/AvatarImage";
 import MentionText from "@/components/ui/MentionText";
 import ProfileHoverLink from "@/components/profile/ProfileHoverLink";
+import { IconChevronLeft } from "@/components/icons";
 import { fetchQuotedRepostById } from "@/lib/feed-quotes";
 
 type Comment = {
@@ -39,15 +40,19 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8">
-      <Link href="/feed" className="text-sm text-[var(--ink-muted)] hover:underline">
-        ← Feed
+      <Link
+        href="/feed"
+        className="inline-flex items-center gap-1 text-sm text-[var(--ink-muted)] transition hover:text-[var(--ink)]"
+      >
+        <IconChevronLeft />
+        Feed
       </Link>
 
       <div className="mt-4">
         <QuotedRepostCard item={quote} viewerId={viewerId} variant="detail" />
       </div>
 
-      <section className="mt-6 rounded-xl border border-[var(--border)] bg-[var(--surface-card)] p-4 sm:p-5">
+      <section className="card mt-6 p-4 sm:p-5">
         <h2 className="mb-4 text-sm font-semibold text-[var(--ink)]">
           {comments && comments.length > 0 ? `${comments.length} comments` : "Comments"}
         </h2>

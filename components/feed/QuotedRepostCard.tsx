@@ -49,7 +49,11 @@ export default function QuotedRepostCard({
   const authorPrivate = !!original.author?.is_private;
 
   return (
-    <article className="rounded-xl border border-[var(--border)] bg-[var(--surface-post)] p-4 sm:p-5">
+    <article
+      className={`rounded-2xl border border-[var(--border)] bg-[var(--surface-post)] p-4 sm:p-5${
+        detail ? "" : " transition-colors duration-200 hover:border-[var(--border-strong)]"
+      }`}
+    >
       <div className="flex gap-3">
         <ProfileHoverLink href={`/profile/${r.username}`} username={r.username} className="shrink-0">
           {r.avatar_url ? (
