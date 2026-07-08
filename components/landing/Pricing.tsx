@@ -16,14 +16,15 @@ const FREE_FEATURES = [
 ] as const;
 
 const PRO_FEATURES: { label: string; icon?: "bolt" }[] = [
+  { label: "Unlimited natural-language people search" },
   { label: "Unlimited AI on a stronger model" },
   { label: "Improve my post and AI icebreakers" },
   { label: "See who viewed your profile" },
-  { label: "Custom accent color and animated avatar" },
+  { label: "Custom accent color, banner, and animated avatar" },
   { label: "Pro badge on your profile", icon: "bolt" },
 ];
 
-const PRO_COMING_SOON = ["Natural-language people search", "Early access to new features"];
+const PRO_COMING_SOON = ["Weekly “3 people to meet”", "Profile themes"];
 
 const card = `flex h-full flex-col ${landingCard}`;
 
