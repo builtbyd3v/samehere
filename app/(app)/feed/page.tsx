@@ -19,7 +19,6 @@ import FeedTimeline from "@/components/feed/FeedTimeline";
 import { mergeFeedTimeline } from "@/lib/feed-timeline";
 import { fetchQuotedReposts } from "@/lib/feed-quotes";
 import { FeedSearchForm, FeedSearchResults } from "@/components/feed/FeedSearch";
-import { IconSame } from "@/components/icons";
 
 // Twitter-style feed: Latest (global recency) and Following (followed users'
 // posts + follow requests + suggested users — formerly the dashboard). Only
@@ -27,12 +26,11 @@ import { IconSame } from "@/components/icons";
 export default async function FeedPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; q?: string; search?: string; type?: string }>;
+  searchParams: Promise<{ tab?: string; q?: string; search?: string }>;
 }) {
   const params = await searchParams;
   const tab = params.tab === "following" ? "following" : "latest";
   const q = (params.q ?? "").trim();
-  const type = params.type === "teammate" ? "teammate" : null;
   const supabase = await createClient();
 
   const {
@@ -61,25 +59,8 @@ export default async function FeedPage({
           }
           composer={<PostComposer isPro={composerPro} />}
         />
-        <div className="mt-3 flex items-center gap-2">
+        <div className="mt-3">
           <FeedTabs tab={tab} />
-          <Link
-            href={
-              type === "teammate"
-                ? tab === "following"
-                  ? "/feed?tab=following"
-                  : "/feed"
-                : `/feed?type=teammate${tab === "following" ? "&tab=following" : ""}`
-            }
-            className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-medium transition active:scale-[0.97] ${
-              type === "teammate"
-                ? "border-[var(--blue)] bg-[var(--blue)]/10 text-[var(--blue)]"
-                : "border-[var(--border)] text-[var(--ink-muted)] hover:bg-[var(--featured-surface)]"
-            }`}
-          >
-            <IconSame className="h-3 w-3" />
-            {type === "teammate" ? "Teammate posts ×" : "Teammate posts"}
-          </Link>
         </div>
       </div>
 
@@ -93,23 +74,22 @@ export default async function FeedPage({
       )}
 
       {tab === "latest" ? (
-        <LatestTab viewerId={viewerId} type={type} />
+        <LatestTab viewerId={viewerId} />
       ) : (
-        <FollowingTab userId={user?.id ?? null} viewerId={viewerId} type={type} />
+        <FollowingTab userId={user?.id ?? null} viewerId={viewerId} />
       )}
     </main>
   );
 }
 
 // ponytail: Latest = global recency; becomes a personalized "For You" once Phase 12 AI ranking lands.
-async function LatestTab({ viewerId, type }: { viewerId: string | null; type: string | null }) {
+async function LatestTab({ viewerId }: { viewerId: string | null }) {
   const supabase = await createClient();
-  let query = supabase
+  const query = supabase
     .from("posts")
     .select(POST_SELECT)
     .order("created_at", { ascending: false })
     .limit(PAGE);
-  if (type) query = query.eq("post_type", type);
 
   const [{ data }, { data: blockedIds }] = await Promise.all([
     query.returns<FeedPost[]>(),
@@ -117,10 +97,9 @@ async function LatestTab({ viewerId, type }: { viewerId: string | null; type: st
   ]);
   const blocked = new Set(blockedIds ?? []);
   const filtered = data?.filter((p) => !blocked.has(p.user_id));
-  // ponytail: teammate filter skips the quote-repost merge — direct posts only.
   const [posts, quotes] = await Promise.all([
     filtered ? attachSignedMedia(supabase, filtered) : Promise.resolve(null),
-    type ? Promise.resolve([]) : fetchQuotedReposts(supabase, { limit: PAGE, blockedIds: blocked }),
+    fetchQuotedReposts(supabase, { limit: PAGE, blockedIds: blocked }),
   ]);
   const timeline = posts ? mergeFeedTimeline(posts, quotes).slice(0, PAGE) : [];
 
@@ -128,12 +107,8 @@ async function LatestTab({ viewerId, type }: { viewerId: string | null; type: st
     <section className="flex flex-col gap-3">
       {timeline.length === 0 ? (
         <EmptyState
-          title={type ? "No teammate posts yet" : "Nothing here yet"}
-          description={
-            type
-              ? "No one is looking for a teammate right now. Check back soon."
-              : "Be the first to share what you are building or figuring out."
-          }
+          title="Nothing here yet"
+          description="Be the first to share what you are building or figuring out."
           action={{ label: "Find students", href: "/feed?search=1" }}
         />
       ) : (
@@ -143,7 +118,6 @@ async function LatestTab({ viewerId, type }: { viewerId: string | null; type: st
             cursor={timeline[timeline.length - 1].created_at}
             hasMore={timeline.length === PAGE}
             viewerId={viewerId}
-            postType={type}
           />
         </>
       )}
@@ -154,11 +128,9 @@ async function LatestTab({ viewerId, type }: { viewerId: string | null; type: st
 async function FollowingTab({
   userId,
   viewerId,
-  type,
 }: {
   userId: string | null;
   viewerId: string | null;
-  type: string | null;
 }) {
   // proxy already gates this route; userId is only null for a type-narrowing edge case.
   if (!userId) return null;
@@ -192,28 +164,24 @@ async function FollowingTab({
   // ponytail: followed users' own posts only; reposts-in-feed deferred.
   const quoteAuthorIds = [userId, ...acceptedIds].filter((id): id is string => !!id);
 
-  // ponytail: teammate filter skips the quote-repost merge — direct posts only.
   const followPostsPromise = (async () => {
     if (!acceptedIds.length) return { data: [] as FeedPost[] };
-    let q = supabase
+    const q = supabase
       .from("posts")
       .select(POST_SELECT)
       .in("user_id", acceptedIds)
       .order("created_at", { ascending: false })
       .limit(PAGE);
-    if (type) q = q.eq("post_type", type);
     return q.returns<FeedPost[]>();
   })();
 
   const [{ data: followFeed }, quotes, { data: suggestedPool }] = await Promise.all([
     followPostsPromise,
-    type
-      ? Promise.resolve([])
-      : fetchQuotedReposts(supabase, {
-          userIds: quoteAuthorIds,
-          limit: PAGE,
-          blockedIds: blocked,
-        }),
+    fetchQuotedReposts(supabase, {
+      userIds: quoteAuthorIds,
+      limit: PAGE,
+      blockedIds: blocked,
+    }),
     supabase
       .from("profiles")
       .select("id, username, display_name, avatar_url, created_at, year, major, skills, goals, bio, courses, is_pro, is_founder, is_campus_founder, profile_school(school)")

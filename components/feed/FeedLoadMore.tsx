@@ -11,12 +11,10 @@ export default function FeedLoadMore({
   cursor,
   hasMore,
   viewerId,
-  postType = null,
 }: {
   cursor: string;
   hasMore: boolean;
   viewerId: string | null;
-  postType?: string | null;
 }) {
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [next, setNext] = useState<string>(cursor);
@@ -25,7 +23,7 @@ export default function FeedLoadMore({
 
   async function onMore() {
     setLoading(true);
-    const batch = await loadMorePosts(next, postType);
+    const batch = await loadMorePosts(next);
     setLoading(false);
     setPosts((prev) => [...prev, ...batch]);
     setMore(batch.length === PAGE);
