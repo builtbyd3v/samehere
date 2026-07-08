@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { motion, useReducedMotion } from "motion/react";
 import HeroVisual from "./HeroVisual";
-import MagneticCta from "./MagneticCta";
 import { ghostCta, signupCta } from "./cta";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
@@ -43,9 +42,15 @@ export default function Hero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.62, ease: EASE }}
           >
-            <MagneticCta href="/signup" className={signupCta}>
-              Join with .edu
-            </MagneticCta>
+            <Link href="/signup" className={`group relative overflow-hidden ${signupCta}`}>
+              <span className="relative z-10">Join with .edu</span>
+              {!reduce && (
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 z-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full"
+                />
+              )}
+            </Link>
             <Link href="/login" className={ghostCta}>
               Log in
             </Link>
