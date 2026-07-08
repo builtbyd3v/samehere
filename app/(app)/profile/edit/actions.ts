@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { aiEnabled, generateText, modelForTier, type AiResult } from "@/lib/ai";
-import { PROFILE_NUDGE_SYSTEM } from "@/lib/ai-prompts";
+import { PROFILE_DRAFT_SYSTEM, PROFILE_NUDGE_SYSTEM } from "@/lib/ai-prompts";
 import { isPro } from "@/lib/pro";
 import { fallbackProfileNudge, getProfileGaps } from "@/lib/profile-completion";
 import type { TablesUpdate } from "@/types/database.types";
@@ -127,6 +127,49 @@ export async function profileNudge(): Promise<AiResult> {
   }
 
   return { text: fallbackProfileNudge(gaps) };
+}
+
+export type DraftState = { bio?: string; goals?: string; overCap?: boolean; error?: string };
+
+// On-demand bio + goals draft from the reader's own profile facts. Free,
+// metered on the same profile_nudge quota as the nudge above (no new DB kind).
+export async function draftProfileText(): Promise<DraftState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be logged in." };
+  if (!aiEnabled()) return { error: "AI is unavailable right now." };
+
+  const [{ data: p }, { data: schoolRow }] = await Promise.all([
+    supabase.from("profiles").select("display_name, year, major, skills, courses, is_pro").eq("id", user.id).single(),
+    supabase.from("profile_school").select("school").eq("profile_id", user.id).maybeSingle(),
+  ]);
+  const pro = isPro(p ?? { is_pro: false });
+  const { data: allowed } = await supabase.rpc("use_ai_quota", { p_kind: "profile_nudge", p_cap: pro ? 9999 : 3 });
+  if (!allowed) return pro ? { error: "Try again." } : { overCap: true };
+
+  const facts = [
+    p?.display_name ? `name: ${p.display_name}` : "",
+    p?.year ? `year: ${p.year}` : "",
+    p?.major ? `major: ${p.major}` : "",
+    schoolRow?.school ? `school: ${schoolRow.school}` : "",
+    p?.skills?.length ? `skills: ${p.skills.join(", ")}` : "",
+    p?.courses?.length ? `courses: ${p.courses.join(", ")}` : "",
+  ].filter(Boolean).join("\n");
+
+  const raw = await generateText(PROFILE_DRAFT_SYSTEM, `Facts:\n${facts || "(no facts yet)"}`, { model: modelForTier(pro), maxTokens: 220 });
+  if (!raw) return { error: "Couldn't draft right now. Try again." };
+  try {
+    const cleaned = raw.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+    const obj = JSON.parse(cleaned);
+    const bio = typeof obj?.bio === "string" ? obj.bio.slice(0, 500) : undefined;
+    const goals = typeof obj?.goals === "string" ? obj.goals.slice(0, 500) : undefined;
+    if (!bio && !goals) return { error: "Couldn't draft right now. Try again." };
+    return { bio, goals };
+  } catch {
+    return { error: "Couldn't draft right now. Try again." };
+  }
 }
 
 // Upload an avatar server-side so MIME/size/animation checks can't be

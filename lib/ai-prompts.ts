@@ -26,6 +26,11 @@ export const WEEKLY_PROMPT_SYSTEM =
 export const PROFILE_NUDGE_SYSTEM =
   `${STYLE} Task: give one short, specific tip to improve the reader's profile. One sentence that names the exact field to fill from the gaps provided and why it helps them get matched.`;
 
+// Draft a bio + goals pair from the reader's own profile facts (edit-form assist).
+export const PROFILE_DRAFT_SYSTEM =
+  `${STYLE} Task: write a short first-person student profile from the facts given. Output STRICT JSON only, no prose, no code fences: {"bio":"<2 to 3 sentences>","goals":"<one sentence>"}. ` +
+  "Bio: 2-3 sentences, first person, concrete, grounded only in the given facts (name, year, major, school, skills, courses). Goals: one sentence on what they're working toward. Invent nothing; if facts are thin, keep it short and honest.";
+
 // First-DM draft (Pro), grounded in what the two students share.
 export const ICEBREAKER_SYSTEM =
   `${STYLE} Task: write the body of a friendly first direct message from the sender to the recipient, to start a conversation. ` +

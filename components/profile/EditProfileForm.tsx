@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useState } from "react";
-import { updateProfile, uploadAvatar, uploadBanner, type AvatarState, type EditState } from "@/app/(app)/profile/edit/actions";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
+import { draftProfileText, updateProfile, uploadAvatar, uploadBanner, type AvatarState, type DraftState, type EditState } from "@/app/(app)/profile/edit/actions";
 import { isPro } from "@/lib/pro";
 import AvatarImage from "@/components/ui/AvatarImage";
 import ProfileNudgePanel from "@/components/profile/ProfileNudgePanel";
@@ -50,6 +50,22 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
   const [bannerState, bannerAction, bannerBusy] = useActionState<AvatarState, FormData>(uploadBanner, {});
   const [accentColor, setAccentColor] = useState<string | null>(initial.accent_color);
   const pro = isPro(initial);
+
+  // Bio + goals are uncontrolled (defaultValue); the draft button writes into
+  // them directly via ref so typing elsewhere isn't fought by React state.
+  const bioRef = useRef<HTMLTextAreaElement>(null);
+  const goalsRef = useRef<HTMLTextAreaElement>(null);
+  const [draftState, setDraftState] = useState<DraftState>({});
+  const [drafting, startDraft] = useTransition();
+
+  function onDraft() {
+    startDraft(async () => {
+      const result = await draftProfileText();
+      setDraftState(result);
+      if (result.bio && bioRef.current) bioRef.current.value = result.bio;
+      if (result.goals && goalsRef.current) goalsRef.current.value = result.goals;
+    });
+  }
 
   // Server action validates MIME/size/animation and gates animated avatars
   // behind Pro (client checks below are UX only, not the trust boundary).
@@ -196,14 +212,25 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
           </div>
 
           <div>
-            <label htmlFor="bio" className={label}>Bio</label>
-            <textarea id="bio" name="bio" rows={3} maxLength={500}
+            <div className="flex items-center justify-between">
+              <label htmlFor="bio" className={label}>Bio</label>
+              <button type="button" onClick={onDraft} disabled={drafting} className="btn-ghost !py-1 !px-2 text-xs">
+                {drafting ? "Drafting…" : "✦ Draft with AI"}
+              </button>
+            </div>
+            {draftState.overCap && (
+              <p className="mt-1 text-xs text-[var(--ink-muted)]">
+                Out of AI drafts today. <Link href="/pro" className="underline">Pro for more</Link>
+              </p>
+            )}
+            {draftState.error && <p className="mt-1 text-xs text-[var(--danger)]">{draftState.error}</p>}
+            <textarea ref={bioRef} id="bio" name="bio" rows={3} maxLength={500}
               defaultValue={initial.bio ?? ""} placeholder="A few lines about you." className={field} />
           </div>
 
           <div>
             <label htmlFor="goals" className={label}>Goals</label>
-            <textarea id="goals" name="goals" rows={2} maxLength={500}
+            <textarea ref={goalsRef} id="goals" name="goals" rows={2} maxLength={500}
               defaultValue={initial.goals ?? ""} placeholder="What are you working toward?" className={field} />
           </div>
 
