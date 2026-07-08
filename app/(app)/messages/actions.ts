@@ -136,11 +136,13 @@ function facts(p: FactSource, school: string | null): string {
     .join("; ");
 }
 
-// Pro-only: draft a first DM grounded in what the sender and recipient share.
-// Every read goes through the session client (RLS), and the header fields used
+// Draft a first DM grounded in what the sender and recipient share. Every
+// read goes through the session client (RLS), and the header fields used
 // here are exactly what the profile page already exposes to any signed-in
-// viewer — no new unrestricted fetch, no hidden field leaks. `locked` for
-// non-Pro; `error` when blocked, AI is off, or the call fails.
+// viewer — no new unrestricted fetch, no hidden field leaks. Metered: free
+// caps at 3/day, Pro is effectively unlimited. `locked` now means "out of
+// free tries today" (upsell to Pro), not "not Pro". `error` when blocked,
+// AI is off, or the call fails.
 export async function icebreaker(peerId: string): Promise<IcebreakerResult> {
   if (!peerId) return { error: true };
 
@@ -156,9 +158,15 @@ export async function icebreaker(peerId: string): Promise<IcebreakerResult> {
     .select("is_pro, year, major, bio, goals, skills, courses")
     .eq("id", user.id)
     .single();
-  if (!isPro(me ?? { is_pro: false })) return { locked: true };
   if (!me) return { error: true };
   if (!aiEnabled()) return { error: true };
+
+  const pro = isPro(me);
+  const { data: allowed } = await supabase.rpc("use_ai_quota", {
+    p_kind: "icebreaker",
+    p_cap: pro ? 9999 : 3,
+  });
+  if (!allowed) return { locked: true };
 
   // Don't draft to someone the viewer has blocked (a peer blocking the viewer is
   // enforced by RLS on the eventual insert).
@@ -172,14 +180,12 @@ export async function icebreaker(peerId: string): Promise<IcebreakerResult> {
   ]);
   if (!peer) return { error: true };
 
-  await supabase.rpc("use_ai_quota", { p_kind: "icebreaker", p_cap: 9999 });
-
   const peerName = peer.display_name ?? peer.username;
   const prompt =
     `Sender (you): ${facts(me, mySchool?.school ?? null)}. ` +
     `Recipient (${peerName}): ${facts(peer, peerSchool?.school ?? null)}.`;
 
-  const text = await generateText(ICEBREAKER_SYSTEM, prompt, { model: modelForTier(true), maxTokens: 140 });
+  const text = await generateText(ICEBREAKER_SYSTEM, prompt, { model: modelForTier(pro), maxTokens: 140 });
   return text ? { text } : { error: true };
 }
 

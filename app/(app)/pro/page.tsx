@@ -28,7 +28,7 @@ const GROUPS: { title: string; subtitle: string; features: string[] }[] = [
       "Unlimited natural-language people search",
       "Unlimited AI on a stronger model",
       "Improve my post: AI rewrites your draft",
-      "AI icebreaker for your first message",
+      "Unlimited AI icebreaker for first messages",
     ],
   },
   {

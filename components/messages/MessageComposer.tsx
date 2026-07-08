@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useRef, useTransition } from "react";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { sendMessage, icebreaker, type SendMessageState } from "@/app/(app)/messages/actions";
 import { IconSend } from "@/components/icons";
 import { useSubmitShortcut } from "@/lib/useSubmitShortcut";
@@ -30,6 +30,7 @@ export default function MessageComposer({
   const ref = useRef<HTMLFormElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [drafting, startDraft] = useTransition();
+  const [draftNotice, setDraftNotice] = useState<"locked" | "error" | null>(null);
 
   useEffect(() => {
     if (state.ok) {
@@ -44,18 +45,26 @@ export default function MessageComposer({
 
   useSubmitShortcut(textareaRef, () => ref.current?.requestSubmit(), !pending);
 
-  // Pro-only: drop an AI-drafted intro into the (editable) composer.
+  // Available to everyone: drop an AI-drafted intro into the (editable)
+  // composer. Free users get a metered taste (3/day); Pro is unlimited —
+  // gating happens server-side in the action, not here.
   function onDraftIntro() {
     if (!peerId || drafting) return;
+    setDraftNotice(null);
     startDraft(async () => {
       const res = await icebreaker(peerId);
-      const el = textareaRef.current;
-      if ("text" in res && el) {
-        el.value = res.text;
-        resizeTextarea(el);
-        el.focus();
+      if ("text" in res) {
+        const el = textareaRef.current;
+        if (el) {
+          el.value = res.text;
+          resizeTextarea(el);
+          el.focus();
+        }
+      } else if ("locked" in res) {
+        setDraftNotice("locked");
+      } else {
+        setDraftNotice("error");
       }
-      // locked can't reach here (button links to /pro); error → leave empty.
     });
   }
 
@@ -64,23 +73,26 @@ export default function MessageComposer({
       <input type="hidden" name="conversation_id" value={conversationId} />
       {empty && peerId && (
         <div className="mb-2 px-1">
-          {viewerIsPro ? (
-            <button
-              type="button"
-              onClick={onDraftIntro}
-              disabled={drafting}
-              className="text-xs font-medium text-[var(--blue)] underline disabled:opacity-50"
-            >
-              {drafting ? "Drafting…" : "✦ Draft an intro"}
-            </button>
-          ) : (
-            <Link
-              href="/pro"
-              title="Draft an intro is a Pro feature"
-              className="text-xs font-medium text-[var(--ink-muted)] underline"
-            >
-              ✦ Draft an intro <span className="text-[var(--ink-faint)]">(Pro)</span>
-            </Link>
+          <button
+            type="button"
+            onClick={onDraftIntro}
+            disabled={drafting}
+            className="text-xs font-medium text-[var(--blue)] underline disabled:opacity-50"
+          >
+            {drafting ? "Drafting…" : "✦ Draft an intro"}
+            {viewerIsPro && <span className="text-[var(--ink-faint)]"> (unlimited)</span>}
+          </button>
+          {draftNotice === "locked" && (
+            <p className="mt-1 text-xs text-[var(--ink-muted)]">
+              Out of free suggestions today.{" "}
+              <Link href="/pro" className="font-medium text-[var(--blue)] underline">
+                Go Pro for unlimited
+              </Link>
+              .
+            </p>
+          )}
+          {draftNotice === "error" && (
+            <p className="mt-1 text-xs text-[var(--ink-faint)]">Couldn&apos;t draft an intro. Try again.</p>
           )}
         </div>
       )}
