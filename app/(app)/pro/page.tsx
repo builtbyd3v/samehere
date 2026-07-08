@@ -10,9 +10,19 @@ const BILLING_ENABLED = process.env.NEXT_PUBLIC_BILLING_ENABLED === "true";
 const PAYMENT_LINK_MONTHLY = "https://buy.stripe.com/14A9AUcQm0gqeQH9r02wU00";
 const PAYMENT_LINK_SEMESTER = "https://buy.stripe.com/cNi00k4jQ0gq8sj7iS2wU01";
 
-const GROUPS: { title: string; features: string[] }[] = [
+const GROUPS: { title: string; subtitle: string; features: string[] }[] = [
   {
-    title: "Smarter AI",
+    title: "Express",
+    subtitle: "Make your profile yours",
+    features: [
+      "Pro badge on your profile",
+      "Custom profile accent color",
+      "Animated profile picture (GIF / animated-webp)",
+    ],
+  },
+  {
+    title: "Connect",
+    subtitle: "Let AI find your people",
     features: [
       "Unlimited AI on a stronger model",
       "Improve my post: AI rewrites your draft",
@@ -20,22 +30,20 @@ const GROUPS: { title: string; features: string[] }[] = [
     ],
   },
   {
-    title: "Stand out",
+    title: "Belong",
+    subtitle: "See and be seen",
     features: [
-      "Pro badge on profile",
-      "Custom profile accent color",
-      "Animated profile picture (GIF / animated-webp)",
+      "See who viewed your profile",
+      "Founder / Campus Founder status",
     ],
-  },
-  {
-    title: "Insights",
-    features: ["See who viewed your profile"],
   },
 ];
 
 const COMING_SOON_TO_PRO = [
   "Natural-language people search",
-  "Early access to new features",
+  "Weekly “3 people to meet”",
+  "Profile themes",
+  "Profile banner",
 ];
 
 const NEVER_GATED = [
@@ -87,6 +95,10 @@ export default async function ProPage({
           </span>
         )}
       </div>
+
+      <p className="mb-6 text-[15px] leading-relaxed text-[var(--ink-muted)]">
+        Express who you are. Let AI find your people. Unlimited.
+      </p>
 
       {/* Pricing */}
       <div className="grid gap-4 sm:grid-cols-2">
@@ -166,6 +178,7 @@ export default async function ProPage({
         {GROUPS.map((g) => (
           <div key={g.title} className="card p-6">
             <h2 className="text-sm font-semibold text-[var(--ink)]">{g.title}</h2>
+            <p className="mt-0.5 text-xs text-[var(--ink-faint)]">{g.subtitle}</p>
             <ul className="mt-3 space-y-2 text-sm text-[var(--ink-muted)]">
               {g.features.map((f) => (
                 <li key={f} className="flex gap-2">
