@@ -89,14 +89,20 @@ summary {
   }
 }
 
-/* Ambient breathing wash — two radial blobs drift on opposite phases. */
+/* Ambient breathing wash — two radial blobs drift on opposite phases. The
+ * container masks to transparent at its base so the whole wash melts into the
+ * canvas with no falloff seam. Radials ramp through a midpoint for a soft edge. */
+.canvas-wash {
+  -webkit-mask-image: linear-gradient(to bottom, #000 50%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 50%, transparent 100%);
+}
 .canvas-blob { opacity: 0.85; will-change: transform; }
 .canvas-blob-a {
-  background: radial-gradient(60% 80% at 18% 0%, rgba(255, 148, 112, 0.2), transparent 64%);
+  background: radial-gradient(62% 82% at 18% 0%, rgba(255, 148, 112, 0.2) 0%, rgba(255, 148, 112, 0.08) 34%, transparent 72%);
 }
 .canvas-blob-b {
   opacity: 0.7;
-  background: radial-gradient(55% 72% at 86% 3%, rgba(120, 170, 255, 0.14), transparent 60%);
+  background: radial-gradient(58% 74% at 86% 3%, rgba(120, 170, 255, 0.14) 0%, rgba(120, 170, 255, 0.05) 36%, transparent 70%);
 }
 @media (prefers-reduced-motion: no-preference) {
   .canvas-blob-a { animation: blob-a 20s ease-in-out infinite; }
