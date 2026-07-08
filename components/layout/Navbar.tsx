@@ -1,7 +1,7 @@
 import Link from "next/link";
 import NavMenu from "./NavMenu";
 import NavIconBadge from "./NavIconBadge";
-import { IconBell, IconBolt, IconCrown, IconMail } from "@/components/icons";
+import { IconBell, IconBolt, IconMail, IconTrophy } from "@/components/icons";
 import { getNotificationUnreadCount } from "@/app/(app)/notifications/actions";
 
 export default function Navbar({
@@ -40,7 +40,7 @@ export default function Navbar({
           {username && (
             <>
               <NavIconBadge href="/leaderboard" title="Leaderboard" count={0}>
-                <IconCrown className="h-5 w-5" />
+                <IconTrophy className="h-5 w-5" />
               </NavIconBadge>
               <NavIconBadge href="/messages" title="Messages" count={dmUnread}>
                 <IconMail />

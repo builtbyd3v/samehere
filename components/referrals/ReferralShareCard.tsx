@@ -84,32 +84,38 @@ export default function ReferralShareCard({
         </button>
       </div>
 
-      <div className="mt-5">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-[var(--ink)]">Referrals</span>
-          <span className="font-semibold text-[var(--ink)]">{referralCount}</span>
-        </div>
-        {isCampusFounder ? (
-          <div className="mt-3">
-            <div className="flex items-center gap-2">
-              <IconGradCap className="h-5 w-5 text-[var(--campus-founder)]" />
-              <span className="text-sm font-semibold text-[var(--ink)]">Campus Founder</span>
-            </div>
-            <p className="mt-1 text-xs text-[var(--ink-muted)]">Earned — thanks for growing samehere.</p>
+      {/* Campus Founder badge — always showcased; locked (grey) until earned, then green */}
+      <div className="mt-5 flex items-start gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-4">
+        <IconGradCap
+          className={`h-9 w-9 shrink-0 ${
+            isCampusFounder ? "text-[var(--campus-founder)]" : "text-[var(--ink-faint)]"
+          }`}
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-sm font-semibold text-[var(--ink)]">Campus Founder</span>
+            <span className="text-sm font-semibold text-[var(--ink)]">
+              {Math.min(referralCount, GOAL)}/{GOAL}
+            </span>
           </div>
-        ) : (
-          <>
-            <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-[var(--featured-surface)]">
-              <div
-                className="h-full rounded-full bg-[var(--campus-founder)] transition-[width]"
-                style={{ width: `${Math.min(100, (referralCount / GOAL) * 100)}%` }}
-              />
-            </div>
-            <p className="mt-1.5 text-xs text-[var(--ink-muted)]">
-              {Math.max(0, GOAL - referralCount)} more to Campus Founder
+          {isCampusFounder ? (
+            <p className="mt-1 text-xs font-medium text-[var(--campus-founder)]">
+              Earned — thanks for growing samehere.
             </p>
-          </>
-        )}
+          ) : (
+            <>
+              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-[var(--featured-surface)]">
+                <div
+                  className="h-full rounded-full bg-[var(--campus-founder)] transition-[width]"
+                  style={{ width: `${Math.min(100, (referralCount / GOAL) * 100)}%` }}
+                />
+              </div>
+              <p className="mt-1.5 text-xs text-[var(--ink-muted)]">
+                {Math.max(0, GOAL - referralCount)} more to unlock
+              </p>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
