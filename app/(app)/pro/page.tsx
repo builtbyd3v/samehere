@@ -25,6 +25,7 @@ const GROUPS: { title: string; subtitle: string; features: string[] }[] = [
     title: "Connect",
     subtitle: "Let AI find your people",
     features: [
+      "Unlimited natural-language people search",
       "Unlimited AI on a stronger model",
       "Improve my post: AI rewrites your draft",
       "AI icebreaker for your first message",
@@ -40,7 +41,6 @@ const GROUPS: { title: string; subtitle: string; features: string[] }[] = [
 ];
 
 const COMING_SOON_TO_PRO = [
-  "Natural-language people search",
   "Weekly “3 people to meet”",
   "Profile themes",
 ];

@@ -28,6 +28,13 @@ export const ICEBREAKER_SYSTEM =
   "Anchor it in something they genuinely share from the facts, such as a course, school, major, year, or skill, and end with a light, specific question. One or two sentences, first person, casual. " +
   "Return only the message body the sender can edit and send. No \"Hi [name]\" boilerplate, no subject line, no options.";
 
+// Natural-language people search (Pro engine). Ranks candidate students against
+// a free-text description and returns STRICT JSON (parsed defensively server-side).
+export const PEOPLE_SEARCH_SYSTEM =
+  "You match a student to peers on a student networking app. You are given a natural-language description of who the searcher wants to meet, and a list of candidate students with their profile facts (id, handle, year, major, school, skills, courses, goals, bio). " +
+  "Rank the candidates that genuinely fit the description, best first, at most 8. For each, write one plain, concrete sentence of at most 20 words, peer voice, no flattery, no emoji, no em dashes, naming the specific overlap that makes them a fit, grounded only in the given facts. " +
+  "Return ONLY a JSON array in exactly this shape, no prose, no markdown, no code fences: [{\"id\":\"<candidate id>\",\"reason\":\"<one sentence>\"}]. Use only ids from the candidate list. If none fit, return [].";
+
 // Rewrite the author's own draft post (Pro). Preserve their voice and every
 // fact; never add claims. Return only the rewritten post.
 export const IMPROVE_SYSTEM =

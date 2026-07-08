@@ -19,6 +19,7 @@ import FeedTimeline from "@/components/feed/FeedTimeline";
 import { mergeFeedTimeline } from "@/lib/feed-timeline";
 import { fetchQuotedReposts } from "@/lib/feed-quotes";
 import { FeedSearchForm, FeedSearchResults } from "@/components/feed/FeedSearch";
+import PeopleSearch from "@/components/feed/PeopleSearch";
 
 // Twitter-style feed: Latest (global recency) and Following (followed users'
 // posts + follow requests + suggested users — formerly the dashboard). Only
@@ -52,10 +53,14 @@ export default async function FeedPage({
         <FeedToolbar
           title={<h1 className="text-xl font-semibold tracking-[-0.02em] sm:text-2xl">Feed</h1>}
           search={
-            <>
-              <FeedSearchForm q={q} tab={tab} />
-              <FeedSearchResults q={q} />
-            </>
+            <PeopleSearch
+              keyword={
+                <>
+                  <FeedSearchForm q={q} tab={tab} />
+                  <FeedSearchResults q={q} />
+                </>
+              }
+            />
           }
           composer={<PostComposer isPro={composerPro} />}
         />
