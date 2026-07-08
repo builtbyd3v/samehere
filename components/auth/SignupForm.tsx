@@ -8,6 +8,7 @@ import AuthAlert from "./AuthAlert";
 import AuthCard from "./AuthCard";
 import AuthSubmitButton from "./AuthSubmitButton";
 import SignupSuccess from "./SignupSuccess";
+import PasswordField from "./PasswordField";
 import { authHint, authInput, authInputError, authLabel } from "./auth-fields";
 
 export default function SignupForm() {
@@ -38,6 +39,7 @@ export default function SignupForm() {
             aria-invalid={hasError}
             className={hasError ? authInputError : authInput}
           />
+          <p className={authHint}>Only used to verify you&apos;re a student. Never shown on your profile.</p>
         </div>
 
         <div className="mb-4">
@@ -61,16 +63,13 @@ export default function SignupForm() {
           <label htmlFor="password" className={authLabel}>
             Password
           </label>
-          <input
+          <PasswordField
             id="password"
             name="password"
-            type="password"
             autoComplete="new-password"
-            required
             minLength={8}
             placeholder="At least 8 characters"
-            aria-invalid={hasError}
-            className={hasError ? authInputError : authInput}
+            hasError={hasError}
           />
         </div>
 
@@ -102,7 +101,7 @@ export function SignupFooter() {
   return (
     <p>
       Already have an account?{" "}
-      <Link href="/login" className="text-[var(--ink)] underline">
+      <Link href="/login" className="font-medium text-[var(--blue)] hover:underline">
         Log in
       </Link>
     </p>

@@ -4,32 +4,55 @@ import Link from "next/link";
 import { motion, useReducedMotion } from "motion/react";
 import CanvasGradient from "@/components/landing/CanvasGradient";
 
+// Hero-style highlight — Fraunces italic in the SameHere blue, carried over from
+// the landing so the front door feels like the same product.
+function Accent({ children }: { children: React.ReactNode }) {
+  return <span className="font-display italic text-[var(--blue)]">{children}</span>;
+}
+
 const COPY = {
   login: {
-    headline: "Welcome back.",
+    headline: (
+      <>
+        Welcome <Accent>back</Accent>.
+      </>
+    ),
     sub: "Jump back into your feed.",
   },
   signup: {
-    headline: "You're not the only one.",
+    headline: (
+      <>
+        You&apos;re not the <Accent>only</Accent> one.
+      </>
+    ),
     sub: "Verified students only, .edu required. Takes a minute.",
   },
   forgot: {
-    headline: "Locked out?",
+    headline: (
+      <>
+        Locked <Accent>out</Accent>?
+      </>
+    ),
     sub: "We'll send a link to get you back in.",
   },
   updatePassword: {
-    headline: "New password.",
+    headline: (
+      <>
+        New <Accent>password</Accent>.
+      </>
+    ),
     sub: "Almost back in.",
   },
-} as const;
+};
 
 type Props = {
   variant: keyof typeof COPY;
   children: React.ReactNode;
   footer: React.ReactNode;
+  aside?: React.ReactNode;
 };
 
-export default function AuthShell({ variant, children, footer }: Props) {
+export default function AuthShell({ variant, children, footer, aside }: Props) {
   const reduce = useReducedMotion();
   const { headline, sub } = COPY[variant];
 
@@ -38,8 +61,9 @@ export default function AuthShell({ variant, children, footer }: Props) {
       <CanvasGradient height="min(100%, 640px)" />
 
       <div className="relative mx-auto flex min-h-[100dvh] max-w-[1200px] flex-col px-5 py-8 md:py-12 lg:px-8">
-        <Link href="/" className="text-lg font-semibold tracking-[-0.02em]">
-          samehere
+        <Link href="/" className="text-lg font-semibold tracking-[-0.03em]" aria-label="samehere home">
+          <span className="text-[var(--ink)]">same</span>
+          <span className="text-[var(--blue)]">here</span>
         </Link>
 
         <div className="mt-10 flex flex-1 flex-col justify-center gap-10 md:mt-12 md:grid md:grid-cols-2 md:items-center md:gap-16 lg:gap-20">
@@ -50,6 +74,7 @@ export default function AuthShell({ variant, children, footer }: Props) {
             <p className="mt-4 max-w-[36ch] text-base leading-relaxed text-[var(--ink-muted)] md:text-lg">
               {sub}
             </p>
+            {aside}
           </div>
 
           <motion.div

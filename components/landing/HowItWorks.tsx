@@ -6,42 +6,34 @@ import { landingH2 } from "@/lib/landing/styles";
 const STEPS = [
   {
     title: "Verify with your .edu",
-    body: "One real student email gets you in. No fake accounts, no randoms.",
+    body: "One real student email gets you in. No bots, no impostors, only verified students.",
   },
   {
-    title: "Post and connect",
-    body: "Share what's actually going on. React with Like or SameHere, follow people, or keep it private.",
+    title: "Post, react, and build your heatmap",
+    body: "Share what's going on and react with SameHere. Every post, comment, and connection lands on your contribution heatmap, plus streaks and your school's leaderboard. A year of real effort, not a highlight reel.",
   },
   {
-    title: "Build your heatmap",
-    body: "Every post, comment, and connection lands on your heatmap. Keep a streak going and climb your school's leaderboard. A year of real activity, not a highlight reel.",
-  },
-  {
-    title: "Get AI matched",
-    body: "We read the overlap in school, major, skills, and goals, then tell you exactly why someone's worth following.",
-  },
-  {
-    title: "DM your people",
-    body: "Matched with someone worth talking to? Message them directly. No cold outreach into the void.",
+    title: "Get AI-matched and DM your people",
+    body: "We read the overlap in school, major, skills, and goals, tell you exactly why someone's worth following, then you message them directly. No cold outreach into the void.",
   },
 ] as const;
 
 export default function HowItWorks() {
   return (
-    <section className="mx-auto max-w-3xl px-5 py-20">
+    <section id="how" className="scroll-mt-[5.5rem] mx-auto max-w-3xl px-5 py-20">
       <Reveal>
         <h2 className={landingH2}>How it works.</h2>
       </Reveal>
 
-      <Stagger className="mt-10 divide-y divide-[var(--border)] border-y border-[var(--border)]">
+      <Stagger className="mt-8 space-y-1">
         {STEPS.map((step, i) => (
           <RevealItem key={step.title} index={i}>
-            <div className="flex gap-5 py-6 sm:gap-8">
-              <span className="shrink-0 text-2xl font-semibold leading-none tracking-[-0.02em] text-[var(--ink-faint)] sm:text-3xl">
+            <div className="group flex gap-5 rounded-2xl px-3 py-6 transition-colors hover:bg-[var(--featured-surface)] sm:gap-8 sm:px-5">
+              <span className="shrink-0 text-3xl font-semibold leading-none tracking-[-0.02em] text-[var(--blue)] sm:text-4xl">
                 {i + 1}
               </span>
               <div className="min-w-0">
-                <h3 className="font-medium text-[var(--ink)]">{step.title}</h3>
+                <h3 className="text-[17px] font-medium text-[var(--ink)]">{step.title}</h3>
                 <p className="mt-1.5 max-w-[52ch] text-sm leading-relaxed text-[var(--ink-muted)] sm:text-base">
                   {step.body}
                 </p>

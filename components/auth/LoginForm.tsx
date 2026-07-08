@@ -6,6 +6,7 @@ import { logIn, type AuthState } from "@/app/(auth)/actions";
 import AuthAlert from "./AuthAlert";
 import AuthCard from "./AuthCard";
 import AuthSubmitButton from "./AuthSubmitButton";
+import PasswordField from "./PasswordField";
 import { authInput, authInputError, authLabel } from "./auth-fields";
 
 export default function LoginForm() {
@@ -37,15 +38,12 @@ export default function LoginForm() {
           <label htmlFor="password" className={authLabel}>
             Password
           </label>
-          <input
+          <PasswordField
             id="password"
             name="password"
-            type="password"
             autoComplete="current-password"
-            required
             placeholder="Your password"
-            aria-invalid={hasError}
-            className={hasError ? authInputError : authInput}
+            hasError={hasError}
           />
         </div>
 
@@ -67,7 +65,7 @@ export function LoginFooter() {
   return (
     <p>
       New here?{" "}
-      <Link href="/signup" className="text-[var(--ink)] underline">
+      <Link href="/signup" className="font-medium text-[var(--blue)] hover:underline">
         Create an account
       </Link>
     </p>

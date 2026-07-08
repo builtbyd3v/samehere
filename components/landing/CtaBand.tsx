@@ -19,9 +19,14 @@ export default function CtaBand() {
           Verified students only, and it&apos;s free forever.
         </p>
         <motion.div
-          className="mt-8"
+          className="relative mt-8 inline-block"
           whileTap={reduce ? undefined : { scale: 0.98 }}
         >
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-0 -z-10 rounded-full blur-xl"
+            style={{ background: "var(--blue-glow)" }}
+          />
           <Link href="/signup" className={signupCta}>
             Join with .edu
           </Link>

@@ -83,6 +83,55 @@ export const DEMO_POSTS: DemoPost[] = [
   },
 ];
 
+/** Lightweight peers for the hero cluster — real-feeling, vulnerable, and
+ *  aimed squarely at the target segments (commuter / online / transfer /
+ *  first-gen). Each reads as one reachable student. `pos` places the card in the
+ *  drifting scatter; `mobile: false` hides the outermost cards on small screens. */
+export type HeroPeer = {
+  name: string;
+  username: string;
+  school: string;
+  avatarSeed: string;
+  line: string;
+  same: number;
+  pos: { x: number; y: number; scale: number; op: number; z: number };
+  float: { fx: string; fy: string; fr: string; dur: number; delay: number };
+  mobile: boolean;
+};
+
+export const HERO_PEERS: HeroPeer[] = [
+  { name: "Priya Raman", username: "priyar", school: "UT Austin", avatarSeed: "priya-samehere",
+    line: "Feel behind in CS even when your grades say you're fine?", same: 31,
+    pos: { x: 16, y: 20, scale: 1.0, op: 1, z: 30 }, float: { fx: "8px", fy: "-12px", fr: "-1.5deg", dur: 9, delay: 0 }, mobile: true },
+  { name: "Marcus Webb", username: "mwebb", school: "Georgia Tech", avatarSeed: "marcus-samehere",
+    line: "Third all-nighter this week. Everyone else looks like they have it together.", same: 47,
+    pos: { x: 50, y: 11, scale: 1.06, op: 1, z: 40 }, float: { fx: "-6px", fy: "-14px", fr: "1.2deg", dur: 11, delay: 0.6 }, mobile: true },
+  { name: "Sofia Delgado", username: "sofiad", school: "Miami Dade (transfer)", avatarSeed: "sofia-samehere",
+    line: "Transferred in and I don't know a single person here yet.", same: 52,
+    pos: { x: 83, y: 19, scale: 0.94, op: 0.95, z: 28 }, float: { fx: "-9px", fy: "-10px", fr: "-1deg", dur: 10, delay: 1.1 }, mobile: false },
+  { name: "Devon Clarke", username: "devonc", school: "First-gen · Rutgers", avatarSeed: "devon-samehere",
+    line: "First in my family to go. Figuring it all out live.", same: 61,
+    pos: { x: 31, y: 43, scale: 1.02, op: 1, z: 36 }, float: { fx: "10px", fy: "-9px", fr: "1.5deg", dur: 8.5, delay: 0.3 }, mobile: true },
+  { name: "Aisha Nour", username: "aishan", school: "Commuter · CSULB", avatarSeed: "aisha-samehere",
+    line: "2-hour commute each way. Hard to feel part of campus.", same: 44,
+    pos: { x: 69, y: 41, scale: 1.0, op: 1, z: 35 }, float: { fx: "-8px", fy: "-12px", fr: "-1.2deg", dur: 9.5, delay: 0.9 }, mobile: true },
+  { name: "Lena Park", username: "lenap", school: "ASU Online", avatarSeed: "lena-samehere",
+    line: "Fully online. Some days I forget I'm even in college.", same: 39,
+    pos: { x: 9, y: 60, scale: 0.9, op: 0.85, z: 20 }, float: { fx: "7px", fy: "-11px", fr: "1deg", dur: 12, delay: 1.4 }, mobile: false },
+  { name: "Omar Haddad", username: "omarh", school: "De Anza (transfer)", avatarSeed: "omar-samehere",
+    line: "Anyone else eat lunch alone between classes?", same: 57,
+    pos: { x: 51, y: 71, scale: 0.98, op: 0.98, z: 30 }, float: { fx: "-7px", fy: "-13px", fr: "-1.4deg", dur: 10.5, delay: 0.5 }, mobile: true },
+  { name: "Tyler Brooks", username: "tylerb", school: "Ohio State", avatarSeed: "tyler-samehere",
+    line: "Everyone's got internships lined up. I've got imposter syndrome.", same: 28,
+    pos: { x: 85, y: 58, scale: 0.85, op: 0.8, z: 16 }, float: { fx: "-6px", fy: "-9px", fr: "1.3deg", dur: 11.5, delay: 1.7 }, mobile: false },
+  { name: "Nina Alvarez", username: "ninaa", school: "Arizona State", avatarSeed: "nina-samehere",
+    line: "Small wins count too, right? Posting mine so I remember them.", same: 15,
+    pos: { x: 26, y: 80, scale: 0.9, op: 0.86, z: 22 }, float: { fx: "9px", fy: "-10px", fr: "-1deg", dur: 9, delay: 2.0 }, mobile: false },
+  { name: "Jordan Kim", username: "jkim", school: "UCLA", avatarSeed: "jordan-samehere",
+    line: "Shipped my first side project at 2am. Just wanted it to exist.", same: 18,
+    pos: { x: 78, y: 78, scale: 0.9, op: 0.86, z: 24 }, float: { fx: "-8px", fy: "-11px", fr: "1.2deg", dur: 10, delay: 1.2 }, mobile: true },
+];
+
 export const DEMO_VIEWER_PROFILE: DemoProfile = {
   name: "Alex Chen",
   username: "alexc",

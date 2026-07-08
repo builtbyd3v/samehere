@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { motion, useReducedMotion } from "motion/react";
 import Reveal from "./Reveal";
-import { IconBolt, IconCrown } from "@/components/icons";
+import { IconBolt } from "@/components/icons";
 import { landingCard, landingH2 } from "@/lib/landing/styles";
 import { signupCta } from "./cta";
 const FREE_FEATURES = [
@@ -68,14 +68,23 @@ export default function Pricing() {
 
         <Reveal className="h-full" delay={0.08}>
           <motion.div
-            className={`${card} border-[var(--border-strong)] bg-[var(--featured-surface)]`}
+            className={`${card} relative overflow-hidden border-[var(--blue)]/45 ring-1 ring-[var(--blue)]/25 [&>:not([aria-hidden])]:relative`}
             whileHover={reduce ? undefined : { y: -2 }}
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
           >
-            <div className="flex flex-wrap items-center gap-2">
+            {/* soft blue bloom — Pro reads as the premium material */}
+            <span
+              aria-hidden
+              className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full blur-3xl"
+              style={{ background: "var(--blue-glow)" }}
+            />
+            <div className="relative flex flex-wrap items-center justify-between gap-2">
               <span className="flex items-center gap-1.5 text-sm font-medium">
                 <IconBolt className="h-4 w-4 text-[var(--blue)]" />
                 Pro
+              </span>
+              <span className="rounded-full bg-[var(--blue)] px-2.5 py-0.5 text-xs font-medium text-white">
+                Most popular
               </span>
             </div>
             <p className="mt-2 text-[48px] font-semibold leading-none tracking-[-0.03em]">$4.99<span className="text-lg font-normal text-[var(--ink-muted)]">/mo</span></p>
@@ -106,17 +115,6 @@ export default function Pricing() {
           </motion.div>
         </Reveal>
       </div>
-
-      <Reveal className="mt-6" delay={0.12}>
-        <div className="flex items-start gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-5 py-4">
-          <IconCrown className="mt-0.5 h-5 w-5 shrink-0 text-[var(--blue)]" />
-          <p className="text-sm leading-relaxed text-[var(--ink-muted)]">
-            <span className="font-medium text-[var(--ink)]">Founder badge</span> for the first 100
-            students to sign up. Earn <span className="font-medium text-[var(--ink)]">Campus Founder</span>{" "}
-            when your referral link brings 100 students from your own school. Both permanent, any plan.
-          </p>
-        </div>
-      </Reveal>
     </section>
   );
 }

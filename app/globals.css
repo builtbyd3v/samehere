@@ -22,6 +22,14 @@
   --campus-founder: #1f8a4d;
   --danger: #c0392b;
   --hm0: rgba(28, 28, 28, 0.06); --hm1: #bcd8f5; --hm2: #5fa0e8; --hm3: #0075de;
+  /* Signature warm accent — pulled from the ambient wash coral, deepened for AA
+     on cream (passes for large display text + non-text touches; NOT button text).
+     Blue stays reserved for the heatmap; coral acts, blue measures. */
+  --accent: #cf5a30;
+  --accent-glow: rgba(207, 90, 48, 0.24);
+  /* Blue is the SameHere signature (reaction + heatmap) — used for the hero
+     highlight word, the same-here indicator, and the CTA glow. */
+  --blue-glow: rgba(0, 117, 222, 0.20);
 }
 
 .dark {
@@ -42,6 +50,9 @@
   --campus-founder: #5fce8f;
   --danger: #e88;
   --hm0: rgba(247, 244, 237, 0.07); --hm1: #1e3a5f; --hm2: #2f6db0; --hm3: #4f9fe8;
+  --accent: #f0865a;
+  --accent-glow: rgba(240, 134, 90, 0.20);
+  --blue-glow: rgba(79, 159, 232, 0.18);
 }
 
 .light {
@@ -67,6 +78,9 @@
     --campus-founder: #5fce8f;
     --danger: #e88;
     --hm0: rgba(247, 244, 237, 0.07); --hm1: #1e3a5f; --hm2: #2f6db0; --hm3: #4f9fe8;
+    --accent: #f0865a;
+    --accent-glow: rgba(240, 134, 90, 0.20);
+    --blue-glow: rgba(79, 159, 232, 0.18);
   }
 }
 
@@ -127,6 +141,67 @@ summary {
 @keyframes blob-b {
   0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.7; }
   50%      { transform: translate3d(-4%, 4%, 0) scale(1.12); opacity: 0.85; }
+}
+
+/* Editorial display face (Fraunces) — headline voice. Body stays Figtree. */
+.font-display {
+  font-family: var(--font-display), ui-serif, Georgia, "Times New Roman", serif;
+  font-optical-sizing: auto;
+}
+
+/* Tactile "paper" depth — warm-tinted soft shadow (never pure black) so cards
+   sit on the cream like paper on a desk. Wow-surfaces only; calm surfaces keep
+   border-only depth. */
+.shadow-paper {
+  box-shadow:
+    0 1px 1px rgba(60, 40, 30, 0.04),
+    0 8px 20px -8px rgba(60, 40, 30, 0.18),
+    0 2px 6px -2px rgba(60, 40, 30, 0.10);
+}
+.dark .shadow-paper {
+  box-shadow:
+    inset 0 1px 0 rgba(247, 244, 237, 0.06),
+    0 1px 1px rgba(0, 0, 0, 0.20),
+    0 12px 28px -8px rgba(0, 0, 0, 0.55),
+    0 2px 6px -2px rgba(0, 0, 0, 0.35);
+}
+
+/* Hero peer-cluster — cards drift on gentle, individually-phased loops (params
+   via --fx/--fy/--fr/--dur/--delay per card) and lift on hover. Depth base z is
+   a var so :hover can raise a card above the inline-set stacking order. */
+@keyframes cluster-float {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  50%      { transform: translate3d(var(--fx, 0), var(--fy, -10px), 0) rotate(var(--fr, 0deg)); }
+}
+.cluster-float {
+  animation: cluster-float var(--dur, 9s) ease-in-out var(--delay, 0s) infinite;
+  will-change: transform;
+}
+.cluster-card {
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 220ms ease;
+}
+/* Dark canvas is near-black and warm drop-shadows vanish on it — lift the cards
+   with a distinctly brighter surface + visible rim so the pile still reads. */
+.dark .cluster-card {
+  background: #2b2721;
+  border-color: rgba(247, 244, 237, 0.18);
+}
+.cluster-card:hover {
+  transform: translateY(-7px) scale(1.04);
+  box-shadow:
+    0 2px 2px rgba(60, 40, 30, 0.05),
+    0 18px 40px -12px rgba(60, 40, 30, 0.28),
+    0 4px 10px -4px rgba(60, 40, 30, 0.14);
+}
+.dark .cluster-card:hover {
+  box-shadow:
+    0 2px 2px rgba(0, 0, 0, 0.30),
+    0 18px 40px -12px rgba(0, 0, 0, 0.55),
+    0 4px 10px -4px rgba(0, 0, 0, 0.40);
+}
+.cluster-item:hover { --z: 60; }
+@media (prefers-reduced-motion: reduce) {
+  .cluster-float { animation: none; }
 }
 
 /* Heatmap fill wave — cells cascade in on a top-left→bottom-right diagonal.

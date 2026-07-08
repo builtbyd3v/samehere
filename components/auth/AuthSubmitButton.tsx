@@ -8,11 +8,17 @@ type Props = {
 // so the "front door" feels consistent between login/signup/reset/update.
 export default function AuthSubmitButton({ pending, pendingLabel, children }: Props) {
   return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="btn-primary w-full py-2.5 text-[15px]"
-    >
+    <div className="relative">
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-10 rounded-md blur-lg"
+        style={{ background: "var(--blue-glow)" }}
+      />
+      <button
+        type="submit"
+        disabled={pending}
+        className="btn-primary w-full py-2.5 text-[15px]"
+      >
       {pending && (
         <svg
           className="h-4 w-4 motion-safe:animate-spin"
@@ -28,7 +34,8 @@ export default function AuthSubmitButton({ pending, pendingLabel, children }: Pr
           />
         </svg>
       )}
-      <span>{pending ? pendingLabel : children}</span>
-    </button>
+        <span>{pending ? pendingLabel : children}</span>
+      </button>
+    </div>
   );
 }

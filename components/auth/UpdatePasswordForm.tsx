@@ -7,7 +7,8 @@ import { createClient } from "@/lib/supabase/client";
 import AuthAlert from "./AuthAlert";
 import AuthCard from "./AuthCard";
 import AuthSubmitButton from "./AuthSubmitButton";
-import { authInput, authInputError, authLabel } from "./auth-fields";
+import PasswordField from "./PasswordField";
+import { authLabel } from "./auth-fields";
 
 export default function UpdatePasswordForm() {
   const router = useRouter();
@@ -84,16 +85,13 @@ export default function UpdatePasswordForm() {
           <label htmlFor="password" className={authLabel}>
             New password
           </label>
-          <input
+          <PasswordField
             id="password"
             name="password"
-            type="password"
             autoComplete="new-password"
-            required
             minLength={8}
             placeholder="At least 8 characters"
-            aria-invalid={!!error}
-            className={error ? authInputError : authInput}
+            hasError={!!error}
           />
         </div>
 
@@ -101,16 +99,13 @@ export default function UpdatePasswordForm() {
           <label htmlFor="confirm" className={authLabel}>
             Confirm password
           </label>
-          <input
+          <PasswordField
             id="confirm"
             name="confirm"
-            type="password"
             autoComplete="new-password"
-            required
             minLength={8}
             placeholder="Repeat your password"
-            aria-invalid={!!error}
-            className={error ? authInputError : authInput}
+            hasError={!!error}
           />
         </div>
 

@@ -1,67 +1,27 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useInView, useReducedMotion } from "motion/react";
-import Reveal from "./Reveal";
+import { Stagger, RevealItem } from "./Reveal";
 
-const CLAIMS = [".edu only", "0 fake followers", "52 weeks tracked"] as const;
-
-// easeOutQuint — confident deceleration, matches the page's motion curve.
-const easeOutQuint = (p: number) => 1 - Math.pow(1 - p, 5);
-
-function Count({ to }: { to: number }) {
-  const reduce = useReducedMotion();
-  const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true, amount: 0.6 });
-  const [n, setN] = useState(0);
-
-  useEffect(() => {
-    if (reduce) {
-      setN(to);
-      return;
-    }
-    if (!inView) return;
-    let raf = 0;
-    let start = 0;
-    const dur = 900;
-    const tick = (t: number) => {
-      if (!start) start = t;
-      const p = Math.min((t - start) / dur, 1);
-      setN(Math.round(easeOutQuint(p) * to));
-      if (p < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [inView, reduce, to]);
-
-  return <span ref={ref}>{n}</span>;
-}
-
-/** Leading integer (if any) counts up; the rest is static text. */
-function Claim({ text }: { text: string }) {
-  const m = text.match(/^(\d+)(.*)$/);
-  if (!m) return <>{text}</>;
-  return (
-    <>
-      <Count to={parseInt(m[1], 10)} />
-      {m[2]}
-    </>
-  );
-}
+// Benefit tiles — the three reasons to join, scannable in one beat under the hero.
+const VALUES = [
+  { title: "Verified students only", body: ".edu required. Zero bots, zero impostors." },
+  { title: "Effort made visible", body: "A year of real activity on your contribution heatmap." },
+  { title: "AI finds your people", body: "Matched on school, major, skills, and goals." },
+] as const;
 
 export default function StatsBar() {
   return (
-    <section className="border-y border-[var(--border)]">
-      <Reveal className="mx-auto max-w-[1200px] px-5 py-6">
-        <p className="text-center text-sm leading-relaxed text-[var(--ink-muted)]">
-          {CLAIMS.map((c, i) => (
-            <span key={c}>
-              {i > 0 && <span className="mx-3 text-[var(--ink-faint)]">·</span>}
-              <Claim text={c} />
-            </span>
-          ))}
-        </p>
-      </Reveal>
+    <section className="mx-auto max-w-[1200px] px-5 py-14">
+      <Stagger className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {VALUES.map((v, i) => (
+          <RevealItem key={v.title} index={i}>
+            <div className="card-hover h-full rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] px-6 py-6 shadow-paper">
+              <p className="text-[17px] font-semibold text-[var(--ink)]">{v.title}</p>
+              <p className="mt-1.5 text-sm leading-relaxed text-[var(--ink-muted)]">{v.body}</p>
+            </div>
+          </RevealItem>
+        ))}
+      </Stagger>
     </section>
   );
 }

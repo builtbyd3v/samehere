@@ -32,7 +32,7 @@ export default function LandingComposerDemo() {
   return (
     <form
       onSubmit={(e) => e.preventDefault()}
-      className="rounded-xl border border-[var(--border)] bg-[var(--surface-card)] p-4 sm:p-5"
+      className="rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] p-4 shadow-paper sm:p-5"
     >
       {hint && (
         <button

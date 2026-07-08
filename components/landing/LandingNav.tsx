@@ -6,8 +6,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { signupCtaSm } from "./cta";
 
 const LINKS = [
-  { href: "#features", id: "features", label: "Profiles" },
-  { href: "#ai", id: "ai", label: "AI" },
+  { href: "#how", id: "how", label: "How it works" },
+  { href: "#pricing", id: "pricing", label: "Pricing" },
   { href: "#faq", id: "faq", label: "FAQ" },
 ] as const;
 
@@ -39,6 +39,11 @@ export default function LandingNav() {
   const headerRef = useRef<HTMLElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [scrolled, setScrolled] = useState(false);
+  // While a nav click is smooth-scrolling, freeze the scroll-spy so intermediate
+  // positions can't override (or flicker) the clicked link's active state.
+  const spyLocked = useRef(false);
+  const lockTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const scrollBehavior = reduceMotion ? "auto" : "smooth";
 
@@ -48,6 +53,13 @@ export default function LandingNav() {
   }, []);
 
   const updateActive = useCallback(() => {
+    // Nav lifts off the page once you leave the very top (blends into the hero,
+    // then gains the warm paper shadow) — ties into the landing's depth system.
+    setScrolled(window.scrollY > 8);
+
+    // Click-driven scroll in flight — keep the clicked link active, ignore spy.
+    if (spyLocked.current) return;
+
     if (window.scrollY < HERO_CLEARANCE) {
       setActiveId(null);
       return;
@@ -83,16 +95,26 @@ export default function LandingNav() {
       }
     }
 
+    // A genuine user scroll (wheel/touch) releases the click-lock immediately so
+    // the spy resumes; programmatic smooth-scroll fires neither of these.
+    function releaseLock() {
+      spyLocked.current = false;
+    }
+
     const ro = new ResizeObserver(onScroll);
     ro.observe(el);
 
     updateActive();
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll, { passive: true });
+    window.addEventListener("wheel", releaseLock, { passive: true });
+    window.addEventListener("touchmove", releaseLock, { passive: true });
     return () => {
       ro.disconnect();
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
+      window.removeEventListener("wheel", releaseLock);
+      window.removeEventListener("touchmove", releaseLock);
     };
   }, [updateActive, menuOpen]);
 
@@ -121,10 +143,21 @@ export default function LandingNav() {
     setMenuOpen(false);
   }
 
+  // Freeze the spy while a click scrolls; auto-release after the smooth scroll
+  // settles (a real user scroll releases it early — see the effect below).
+  function lockSpy() {
+    spyLocked.current = true;
+    if (lockTimer.current) clearTimeout(lockTimer.current);
+    lockTimer.current = setTimeout(() => {
+      spyLocked.current = false;
+    }, 700);
+  }
+
   function scrollToTop(e: React.MouseEvent<HTMLAnchorElement>) {
     e.preventDefault();
     closeMenu();
     setActiveId(null);
+    lockSpy();
     window.scrollTo({ top: 0, behavior: scrollBehavior });
     window.history.replaceState(null, "", "/");
   }
@@ -136,6 +169,7 @@ export default function LandingNav() {
 
     closeMenu();
     setActiveId(id);
+    lockSpy();
     const bottom = headerRef.current?.getBoundingClientRect().bottom ?? 76;
     const top = sectionTop(el) - bottom - 8;
     window.scrollTo({ top: Math.max(0, top), behavior: scrollBehavior });
@@ -143,7 +177,7 @@ export default function LandingNav() {
   }
 
   const linkText = (id: string) =>
-    activeId === id ? "font-medium text-[var(--ink)]" : "text-[var(--ink-muted)] hover:text-[var(--ink)]";
+    activeId === id ? "font-medium text-[var(--blue)]" : "text-[var(--ink-muted)] hover:text-[var(--ink)]";
 
   return (
     <>
@@ -158,32 +192,39 @@ export default function LandingNav() {
 
       {/* top-3 = floating inset when pinned; scrolls with page until it reaches that offset */}
       <header ref={headerRef} className="sticky top-3 z-50 px-4 pb-2">
-        <div className="relative mx-auto max-w-[1200px] overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--canvas)]/90 backdrop-blur-md">
+        <div
+          className={`relative mx-auto max-w-[1200px] overflow-hidden rounded-2xl border border-[var(--border)] backdrop-blur-md transition-[background-color,box-shadow] duration-300 ${
+            scrolled ? "bg-[var(--canvas)]/95 shadow-paper" : "bg-[var(--canvas)]/60"
+          }`}
+        >
           <div className="relative flex h-14 items-center justify-between gap-3 px-4 sm:px-5">
             <Link
               href="/"
-              className="shrink-0 text-lg font-semibold tracking-[-0.02em] text-[var(--ink)] transition hover:opacity-80"
+              className="shrink-0 text-lg font-semibold tracking-[-0.03em] transition hover:opacity-80"
               onClick={scrollToTop}
+              aria-label="samehere home"
             >
-              samehere
+              <span className="text-[var(--ink)]">same</span>
+              <span className="text-[var(--blue)]">here</span>
             </Link>
 
-            <nav className="absolute left-1/2 hidden -translate-x-1/2 md:flex" aria-label="Page sections">
-              <div className="flex items-center gap-0.5 rounded-full border border-[var(--border)] p-1">
-                {LINKS.map((link) => (
-                  <a
-                    key={link.id}
-                    href={link.href}
-                    onClick={(e) => scrollToSection(e, link.id)}
-                    className={`relative rounded-full px-3.5 py-1.5 text-sm transition-colors ${linkText(link.id)}`}
-                  >
-                    {activeId === link.id && (
-                      <span className="absolute inset-0 rounded-full bg-[var(--featured-surface)]" aria-hidden />
-                    )}
-                    <span className="relative z-10">{link.label}</span>
-                  </a>
-                ))}
-              </div>
+            <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 md:flex" aria-label="Page sections">
+              {LINKS.map((link) => (
+                <a
+                  key={link.id}
+                  href={link.href}
+                  onClick={(e) => scrollToSection(e, link.id)}
+                  className={`relative px-3 py-1.5 text-sm transition-colors ${linkText(link.id)}`}
+                >
+                  {link.label}
+                  {activeId === link.id && (
+                    <span
+                      className="absolute inset-x-3 -bottom-0.5 h-[2px] rounded-full bg-[var(--blue)]"
+                      aria-hidden
+                    />
+                  )}
+                </a>
+              ))}
             </nav>
 
             <div className="flex shrink-0 items-center gap-2 sm:gap-3">
@@ -193,10 +234,17 @@ export default function LandingNav() {
               >
                 Log in
               </Link>
-              <Link href="/signup" className={signupCtaSm}>
-                <span className="hidden sm:inline">Join with .edu</span>
-                <span className="sm:hidden">Join</span>
-              </Link>
+              <span className="relative">
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 -z-10 rounded-full blur-md"
+                  style={{ background: "var(--blue-glow)" }}
+                />
+                <Link href="/signup" className={signupCtaSm}>
+                  <span className="hidden sm:inline">Join with .edu</span>
+                  <span className="sm:hidden">Join</span>
+                </Link>
+              </span>
               <button
                 type="button"
                 className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[var(--border)] text-[var(--ink)] transition hover:bg-[var(--featured-surface)] md:hidden"
@@ -224,7 +272,7 @@ export default function LandingNav() {
                       onClick={(e) => scrollToSection(e, link.id)}
                       className={`flex items-center rounded-lg px-3 py-2.5 text-[15px] transition ${
                         activeId === link.id
-                          ? "bg-[var(--featured-surface)] font-medium text-[var(--ink)]"
+                          ? "bg-[var(--featured-surface)] font-medium text-[var(--blue)]"
                           : "text-[var(--ink-muted)] hover:bg-[var(--featured-surface)] hover:text-[var(--ink)]"
                       }`}
                     >
