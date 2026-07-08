@@ -99,7 +99,7 @@ export default function PostCard({
 
   const shell = embedded
     ? "rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3"
-    : "rounded-2xl border border-[var(--border)] bg-[var(--surface-post)] p-4 sm:p-5";
+    : "rounded-2xl border border-[var(--border)] bg-[var(--surface-post)] p-4 transition-colors duration-200 hover:border-[var(--border-strong)] sm:p-5";
 
   const body = (
     <article className={shell}>

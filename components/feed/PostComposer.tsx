@@ -219,7 +219,7 @@ export default function PostComposer({ isPro = false }: { isPro?: boolean }) {
     <form
       ref={ref}
       onSubmit={onSubmit}
-      className="rounded-xl border border-[var(--border)] bg-[var(--surface-card)] p-4 transition-colors focus-within:border-[var(--border-strong)] sm:p-5"
+      className="rounded-2xl border border-[var(--border)] bg-[var(--surface-card)] p-4 transition-colors focus-within:border-[var(--border-strong)] sm:p-5"
     >
       {hint && (
         <button
