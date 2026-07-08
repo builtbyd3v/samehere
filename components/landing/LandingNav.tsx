@@ -8,7 +8,6 @@ import { signupCtaSm } from "./cta";
 const LINKS = [
   { href: "#features", id: "features", label: "Profiles" },
   { href: "#ai", id: "ai", label: "AI" },
-  { href: "#pricing", id: "pricing", label: "Pricing" },
   { href: "#faq", id: "faq", label: "FAQ" },
 ] as const;
 
