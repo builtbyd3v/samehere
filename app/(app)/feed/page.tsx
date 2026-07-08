@@ -22,6 +22,7 @@ import { FeedSearchForm, FeedSearchResults } from "@/components/feed/FeedSearch"
 import PeopleSearch from "@/components/feed/PeopleSearch";
 import { getWeeklyPrompt } from "@/lib/weekly-prompt";
 import WeeklyPromptCard from "@/components/feed/WeeklyPromptCard";
+import WeeklyRecap from "@/components/feed/WeeklyRecap";
 
 // Twitter-style feed: Latest (global recency) and Following (followed users'
 // posts + follow requests + suggested users — formerly the dashboard). Only
@@ -84,6 +85,8 @@ export default async function FeedPage({
       )}
 
       <WeeklyPromptCard prompt={weeklyPrompt.prompt} weekKey={weeklyPrompt.weekKey} />
+
+      {user && <WeeklyRecap userId={user.id} />}
 
       {tab === "latest" ? (
         <LatestTab viewerId={viewerId} />
