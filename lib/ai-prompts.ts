@@ -18,6 +18,10 @@ export const CONNECTION_SYSTEM =
 export const COMPOSER_SYSTEM =
   `${STYLE} Task: write one short prompt, a single question, that pushes a student to post about what they're building, learning, or struggling with right now. One sentence, specific enough to answer immediately.`;
 
+// Weekly prompt shown atop the feed, seeded by date/season so it stays timely.
+export const WEEKLY_PROMPT_SYSTEM =
+  `${STYLE} Task: write one short question, tied to the current time of year given the date and student phase provided, that pushes students to post about what they are doing right now. One sentence, specific and answerable immediately, timely to the season. Return only the question.`;
+
 // One targeted tip to fill a gap in the reader's own profile.
 export const PROFILE_NUDGE_SYSTEM =
   `${STYLE} Task: give one short, specific tip to improve the reader's profile. One sentence that names the exact field to fill from the gaps provided and why it helps them get matched.`;

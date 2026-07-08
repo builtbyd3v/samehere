@@ -20,6 +20,7 @@ import { mergeFeedTimeline } from "@/lib/feed-timeline";
 import { fetchQuotedReposts } from "@/lib/feed-quotes";
 import { FeedSearchForm, FeedSearchResults } from "@/components/feed/FeedSearch";
 import PeopleSearch from "@/components/feed/PeopleSearch";
+import { getWeeklyPrompt } from "@/lib/weekly-prompt";
 
 // Twitter-style feed: Latest (global recency) and Following (followed users'
 // posts + follow requests + suggested users — formerly the dashboard). Only
@@ -46,6 +47,7 @@ export default async function FeedPage({
   const onboardingCounts = user
     ? await supabase.rpc("get_profile_counts", { p_profile_id: user.id })
     : { data: null };
+  const weeklyPrompt = await getWeeklyPrompt();
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8">
@@ -78,6 +80,11 @@ export default async function FeedPage({
           followingCount={Number(onboardingCounts.data?.[0]?.following ?? 0)}
         />
       )}
+
+      <div className="card mb-6 p-4">
+        <p className="text-xs font-medium uppercase tracking-wide text-[var(--ink-faint)]">This week</p>
+        <p className="mt-1 text-[var(--ink)]">{weeklyPrompt}</p>
+      </div>
 
       {tab === "latest" ? (
         <LatestTab viewerId={viewerId} />
