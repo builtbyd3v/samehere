@@ -35,7 +35,7 @@ const FALLBACK_BY_PHASE: Record<string, string> = {
 // Cached per ISO week in `weekly_prompts`. Reads use the session client (RLS:
 // authed-read only); writes go through the admin client since there is no
 // client insert policy by design (see migration comment).
-export async function getWeeklyPrompt(): Promise<string> {
+export async function getWeeklyPrompt(): Promise<{ prompt: string; weekKey: string }> {
   const now = new Date();
   const key = weekKey(now);
   const phase = phaseFor(now.getUTCMonth());
@@ -47,9 +47,9 @@ export async function getWeeklyPrompt(): Promise<string> {
     .select("prompt")
     .eq("week_key", key)
     .maybeSingle();
-  if (cached?.prompt) return cached.prompt;
+  if (cached?.prompt) return { prompt: cached.prompt, weekKey: key };
 
-  if (!aiEnabled()) return fallback;
+  if (!aiEnabled()) return { prompt: fallback, weekKey: key };
 
   const isoDate = now.toISOString().slice(0, 10);
   const generated = await generateText(
@@ -75,5 +75,5 @@ export async function getWeeklyPrompt(): Promise<string> {
     .select("prompt")
     .eq("week_key", key)
     .maybeSingle();
-  return reread?.prompt || prompt;
+  return { prompt: reread?.prompt || prompt, weekKey: key };
 }

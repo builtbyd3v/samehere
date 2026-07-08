@@ -10,12 +10,14 @@ export default function FeedToolbar({
   title,
   search,
   composer,
+  initialComposeOpen = false,
 }: {
   title: React.ReactNode;
   search: React.ReactNode;
   composer: React.ReactNode;
+  initialComposeOpen?: boolean;
 }) {
-  const [composeOpen, setComposeOpen] = useState(false);
+  const [composeOpen, setComposeOpen] = useState(initialComposeOpen);
 
   return (
     <>

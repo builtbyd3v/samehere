@@ -21,6 +21,7 @@ import { fetchQuotedReposts } from "@/lib/feed-quotes";
 import { FeedSearchForm, FeedSearchResults } from "@/components/feed/FeedSearch";
 import PeopleSearch from "@/components/feed/PeopleSearch";
 import { getWeeklyPrompt } from "@/lib/weekly-prompt";
+import WeeklyPromptCard from "@/components/feed/WeeklyPromptCard";
 
 // Twitter-style feed: Latest (global recency) and Following (followed users'
 // posts + follow requests + suggested users — formerly the dashboard). Only
@@ -28,7 +29,7 @@ import { getWeeklyPrompt } from "@/lib/weekly-prompt";
 export default async function FeedPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; q?: string; search?: string }>;
+  searchParams: Promise<{ tab?: string; q?: string; search?: string; compose?: string }>;
 }) {
   const params = await searchParams;
   const tab = params.tab === "following" ? "following" : "latest";
@@ -66,6 +67,7 @@ export default async function FeedPage({
             />
           }
           composer={<PostComposer isPro={composerPro} />}
+          initialComposeOpen={params.compose === "1"}
         />
         <div className="mt-3">
           <FeedTabs tab={tab} />
@@ -81,10 +83,7 @@ export default async function FeedPage({
         />
       )}
 
-      <div className="card mb-6 p-4">
-        <p className="text-xs font-medium uppercase tracking-wide text-[var(--ink-faint)]">This week</p>
-        <p className="mt-1 text-[var(--ink)]">{weeklyPrompt}</p>
-      </div>
+      <WeeklyPromptCard prompt={weeklyPrompt.prompt} weekKey={weeklyPrompt.weekKey} />
 
       {tab === "latest" ? (
         <LatestTab viewerId={viewerId} />
