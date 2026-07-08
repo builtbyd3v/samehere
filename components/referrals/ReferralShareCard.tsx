@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import posthog from "posthog-js";
 import { updateReferralCode, type ReferralCodeState } from "@/app/(app)/referrals/actions";
+import { IconGradCap } from "@/components/icons";
 
 const GOAL = 100;
 
@@ -89,14 +90,18 @@ export default function ReferralShareCard({
           <span className="font-semibold text-[var(--ink)]">{referralCount}</span>
         </div>
         {isCampusFounder ? (
-          <p className="mt-2 text-sm font-medium text-[var(--blue)]">
-            Campus Founder earned. Thanks for growing samehere.
-          </p>
+          <div className="mt-3">
+            <div className="flex items-center gap-2">
+              <IconGradCap className="h-5 w-5 text-[var(--campus-founder)]" />
+              <span className="text-sm font-semibold text-[var(--ink)]">Campus Founder</span>
+            </div>
+            <p className="mt-1 text-xs text-[var(--ink-muted)]">Earned — thanks for growing samehere.</p>
+          </div>
         ) : (
           <>
             <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-[var(--featured-surface)]">
               <div
-                className="h-full rounded-full bg-[var(--blue)] transition-[width]"
+                className="h-full rounded-full bg-[var(--campus-founder)] transition-[width]"
                 style={{ width: `${Math.min(100, (referralCount / GOAL) * 100)}%` }}
               />
             </div>

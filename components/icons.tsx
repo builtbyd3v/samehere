@@ -55,7 +55,15 @@ export const IconCrown = ({ className = "h-4 w-4" }: { className?: string }) => 
   </svg>
 );
 
-/** Campus Founder badge — 100 referred signups at one school. Distinct from IconCrown (global Founder). */
+/** Campus Founder badge — 100 referred signups at one school (graduation cap; distinct from IconCrown = global Founder). */
+export const IconGradCap = ({ className = "h-4 w-4" }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
+    <path d="M12 3 1 9l11 6 9-4.91V17h2V9L12 3z" />
+    <path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z" />
+  </svg>
+);
+
+// Retained: still referenced by the landing profile demo (owned by the landing worktree).
 export const IconFlag = ({ className = "h-4 w-4" }: { className?: string }) => (
   <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
     <path d="M6 2a1 1 0 0 1 1 1v18a1 1 0 1 1-2 0V3a1 1 0 0 1 1-1Z" />

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isPro } from "@/lib/pro";
-import { IconBolt, IconCrown } from "@/components/icons";
+import { IconBolt } from "@/components/icons";
 import { joinProWaitlist, openBillingPortal } from "./actions";
 
 const BILLING_ENABLED = process.env.NEXT_PUBLIC_BILLING_ENABLED === "true";
@@ -34,7 +34,6 @@ const GROUPS: { title: string; subtitle: string; features: string[] }[] = [
     subtitle: "See and be seen",
     features: [
       "See who viewed your profile",
-      "Founder / Campus Founder status",
     ],
   },
 ];
@@ -70,7 +69,7 @@ export default async function ProPage({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("is_pro, wants_pro, is_founder")
+    .select("is_pro, wants_pro")
     .eq("id", user.id)
     .single();
   if (!profile) redirect("/login");
@@ -88,12 +87,6 @@ export default async function ProPage({
       <div className="mb-6 flex items-center gap-2">
         <IconBolt className="h-5 w-5 text-[var(--blue)]" />
         <h1 className="text-2xl font-semibold tracking-[-0.02em] text-[var(--ink)]">Pro</h1>
-        {profile.is_founder && (
-          <span className="inline-flex items-center gap-1 rounded-full border border-[var(--border-strong)] px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--ink-muted)]">
-            <IconCrown className="h-3 w-3 text-[var(--blue)]" />
-            Founder
-          </span>
-        )}
       </div>
 
       <p className="mb-6 text-[15px] leading-relaxed text-[var(--ink-muted)]">
@@ -202,16 +195,6 @@ export default async function ProPage({
             </li>
           ))}
         </ul>
-      </div>
-
-      {/* Founder badge callout */}
-      <div className="mt-4 flex items-start gap-3 card px-5 py-4">
-        <IconCrown className="mt-0.5 h-5 w-5 shrink-0 text-[var(--blue)]" />
-        <p className="text-sm leading-relaxed text-[var(--ink-muted)]">
-          <span className="font-medium text-[var(--ink)]">Founder badge</span> for the first 100
-          students to sign up. Earn <span className="font-medium text-[var(--ink)]">Campus Founder</span>{" "}
-          when your referral link brings 100 students from your school. Both permanent, on any plan.
-        </p>
       </div>
 
       {/* Never gated */}
