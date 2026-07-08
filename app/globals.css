@@ -281,6 +281,18 @@ summary {
   box-shadow: rgba(0, 0, 0, 0.1) 0 4px 12px, 0 0 0 3px rgba(59, 130, 246, 0.35);
 }
 
+/* iOS Safari zooms the page when focusing any text field under 16px. The app's
+   inputs are 15px (and some 14px), so every focus caused a zoom-and-reflow.
+   Force >=16px on mobile only; !important beats the Tailwind text-[15px]/text-sm
+   utilities on the elements. Desktop keeps its smaller, denser sizing. */
+@media (max-width: 640px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
 /* Component classes below sit in @layer components so a stacked Tailwind
    utility (e.g. `<Skeleton className="rounded-full">`) still wins the cascade. */
 @layer components {
