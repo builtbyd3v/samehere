@@ -4,7 +4,7 @@ import { IconCrown } from "@/components/icons";
 export function SignupFounderPill({ spotsLeft }: { spotsLeft?: number }) {
   if (spotsLeft == null || spotsLeft <= 0) return null;
   return (
-    <p className="mt-7 inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface-raised)] px-3.5 py-1.5 text-sm shadow-paper">
+    <p className="mt-5 inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface-raised)] px-3.5 py-1.5 text-sm shadow-paper">
       <IconCrown className="h-4 w-4 text-[var(--founder)]" />
       <span>
         <span className="font-semibold text-[var(--founder)]">{spotsLeft}</span>

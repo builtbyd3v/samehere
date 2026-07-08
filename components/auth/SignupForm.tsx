@@ -25,7 +25,7 @@ export default function SignupForm() {
       <form action={formAction}>
         {state.error && <AuthAlert message={state.error} />}
 
-        <div className="mb-4">
+        <div className="mb-3">
           <label htmlFor="email" className={authLabel}>
             School email (.edu required)
           </label>
@@ -39,10 +39,10 @@ export default function SignupForm() {
             aria-invalid={hasError}
             className={hasError ? authInputError : authInput}
           />
-          <p className={authHint}>Only used to verify you&apos;re a student. Never shown on your profile.</p>
+          <p className={authHint}>Only used to verify you&apos;re a student.</p>
         </div>
 
-        <div className="mb-4">
+        <div className="mb-3">
           <label htmlFor="username" className={authLabel}>
             Username
           </label>
@@ -56,10 +56,10 @@ export default function SignupForm() {
             aria-invalid={hasError}
             className={hasError ? authInputError : authInput}
           />
-          <p className={authHint}>3-20 characters: lowercase letters, numbers, or underscores.</p>
+          <p className={`${authHint} hidden sm:block`}>3-20 characters: lowercase letters, numbers, or underscores.</p>
         </div>
 
-        <div className="mb-5">
+        <div className="mb-4">
           <label htmlFor="password" className={authLabel}>
             Password
           </label>
@@ -73,7 +73,7 @@ export default function SignupForm() {
           />
         </div>
 
-        <div className="mb-5">
+        <div className="mb-4">
           <label htmlFor="ref_code" className={authLabel}>
             Referral code <span className="font-normal text-[var(--ink-muted)]">(optional)</span>
           </label>
@@ -86,7 +86,7 @@ export default function SignupForm() {
             placeholder="friendcode"
             className={authInput}
           />
-          <p className={authHint}>Have a referral code? Enter it here.</p>
+          <p className={`${authHint} hidden sm:block`}>Have a referral code? Enter it here.</p>
         </div>
 
         <AuthSubmitButton pending={pending} pendingLabel="Creating account…">
