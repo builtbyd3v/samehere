@@ -161,20 +161,18 @@ export default function ContributionHeatmap({
                       cell.future ? (
                         <Spacer key={cell.date} className={`${SLOT} shrink-0`} />
                       ) : (
+                        // role="img" + aria-label makes each day readable by screen
+                        // readers in reading mode. Deliberately NOT a tab stop: 365
+                        // focus stops is itself a keyboard anti-pattern (GitHub's graph
+                        // does the same — labeled cells, not 365 stops).
                         <div
                           key={cell.date}
-                          tabIndex={0}
                           role="img"
                           aria-label={cellAriaLabel(cell)}
                           onMouseEnter={(e) => setHovered({ cell, x: e.clientX, y: e.clientY })}
                           onMouseLeave={() => setHovered(null)}
-                          onFocus={(e) => {
-                            const rect = e.currentTarget.getBoundingClientRect();
-                            setHovered({ cell, x: rect.left + rect.width / 2, y: rect.top });
-                          }}
-                          onBlur={() => setHovered(null)}
                           style={animate ? ({ "--i": i + row } as CSSProperties) : undefined}
-                          className={`${SLOT} shrink-0 rounded-[2px] outline outline-1 outline-offset-0 outline-transparent transition hover:scale-110 hover:outline-[var(--border-strong)] focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#3b82f6] sm:rounded-[3px] ${CELL[level(cell.points)]} ${animate ? "hm-cell" : ""}`}
+                          className={`${SLOT} shrink-0 rounded-[2px] outline outline-1 outline-offset-0 outline-transparent transition hover:scale-110 hover:outline-[var(--border-strong)] sm:rounded-[3px] ${CELL[level(cell.points)]} ${animate ? "hm-cell" : ""}`}
                         />
                       ),
                     )}
