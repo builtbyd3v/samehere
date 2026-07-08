@@ -21,7 +21,7 @@ export default function UserBadges({
         </span>
       )}
       {isCampusFounder && (
-        <span title="Campus Founder" className="text-amber-500">
+        <span title="Campus Founder" className="text-[var(--founder)]">
           <IconFlag className={className} />
         </span>
       )}
