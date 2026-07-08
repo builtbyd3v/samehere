@@ -90,25 +90,25 @@ summary {
 }
 
 /* Ambient breathing wash — two radial blobs drift on opposite phases. */
-.canvas-blob { opacity: 0.5; will-change: transform; }
+.canvas-blob { opacity: 0.85; will-change: transform; }
 .canvas-blob-a {
-  background: radial-gradient(50% 70% at 20% 0%, rgba(255, 150, 120, 0.12), transparent 60%);
+  background: radial-gradient(60% 80% at 18% 0%, rgba(255, 148, 112, 0.2), transparent 64%);
 }
 .canvas-blob-b {
-  opacity: 0.45;
-  background: radial-gradient(45% 65% at 85% 5%, rgba(120, 170, 255, 0.1), transparent 55%);
+  opacity: 0.7;
+  background: radial-gradient(55% 72% at 86% 3%, rgba(120, 170, 255, 0.14), transparent 60%);
 }
 @media (prefers-reduced-motion: no-preference) {
   .canvas-blob-a { animation: blob-a 20s ease-in-out infinite; }
   .canvas-blob-b { animation: blob-b 26s ease-in-out infinite; }
 }
 @keyframes blob-a {
-  0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.5; }
-  50%      { transform: translate3d(4%, 3%, 0) scale(1.12); opacity: 0.62; }
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.85; }
+  50%      { transform: translate3d(4%, 3%, 0) scale(1.14); opacity: 1; }
 }
 @keyframes blob-b {
-  0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.45; }
-  50%      { transform: translate3d(-4%, 4%, 0) scale(1.1); opacity: 0.6; }
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.7; }
+  50%      { transform: translate3d(-4%, 4%, 0) scale(1.12); opacity: 0.85; }
 }
 
 /* Heatmap fill wave — cells cascade in on a top-left→bottom-right diagonal.
