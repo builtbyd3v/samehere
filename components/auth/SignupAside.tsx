@@ -1,5 +1,19 @@
 import { IconCrown } from "@/components/icons";
 
+// Founder-spots pill — stays directly under the headline on every breakpoint.
+export function SignupFounderPill({ spotsLeft }: { spotsLeft?: number }) {
+  if (spotsLeft == null || spotsLeft <= 0) return null;
+  return (
+    <p className="mt-7 inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface-raised)] px-3.5 py-1.5 text-sm shadow-paper">
+      <IconCrown className="h-4 w-4 text-[var(--founder)]" />
+      <span>
+        <span className="font-semibold text-[var(--founder)]">{spotsLeft}</span>
+        <span className="text-[var(--ink-muted)]"> of 100 founding spots left</span>
+      </span>
+    </p>
+  );
+}
+
 function Check() {
   return (
     <svg viewBox="0 0 24 24" className="mt-0.5 h-4 w-4 shrink-0 text-[var(--blue)]" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -14,26 +28,16 @@ const POINTS = [
   "We only use your email to verify you're a student",
 ] as const;
 
-export default function SignupAside({ spotsLeft }: { spotsLeft?: number }) {
+// Reassurance bullets — left column on desktop, below the form on mobile.
+export default function SignupReassurance() {
   return (
-    <div className="mt-8">
-      {spotsLeft != null && spotsLeft > 0 && (
-        <p className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface-raised)] px-3.5 py-1.5 text-sm shadow-paper">
-          <IconCrown className="h-4 w-4 text-[var(--founder)]" />
-          <span>
-            <span className="font-semibold text-[var(--founder)]">{spotsLeft}</span>
-            <span className="text-[var(--ink-muted)]"> of 100 founding spots left</span>
-          </span>
-        </p>
-      )}
-      <ul className="mt-6 space-y-3 text-sm leading-relaxed text-[var(--ink-muted)]">
-        {POINTS.map((p) => (
-          <li key={p} className="flex items-start gap-2.5">
-            <Check />
-            <span>{p}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <ul className="space-y-3 text-sm leading-relaxed text-[var(--ink-muted)]">
+      {POINTS.map((p) => (
+        <li key={p} className="flex items-start gap-2.5">
+          <Check />
+          <span>{p}</span>
+        </li>
+      ))}
+    </ul>
   );
 }

@@ -49,10 +49,11 @@ type Props = {
   variant: keyof typeof COPY;
   children: React.ReactNode;
   footer: React.ReactNode;
-  aside?: React.ReactNode;
+  aside?: React.ReactNode; // pinned under the headline on all breakpoints (e.g. founder pill)
+  asideExtra?: React.ReactNode; // left column on desktop, below the form on mobile (e.g. bullets)
 };
 
-export default function AuthShell({ variant, children, footer, aside }: Props) {
+export default function AuthShell({ variant, children, footer, aside, asideExtra }: Props) {
   const reduce = useReducedMotion();
   const { headline, sub } = COPY[variant];
 
@@ -74,7 +75,10 @@ export default function AuthShell({ variant, children, footer, aside }: Props) {
             <p className="mt-4 max-w-[36ch] text-base leading-relaxed text-[var(--ink-muted)] md:text-lg">
               {sub}
             </p>
+            {/* founder pill: pinned under the headline on every breakpoint */}
             {aside}
+            {/* bullets: left column on desktop only */}
+            {asideExtra && <div className="mt-6 hidden md:block">{asideExtra}</div>}
           </div>
 
           <motion.div
@@ -85,6 +89,8 @@ export default function AuthShell({ variant, children, footer, aside }: Props) {
           >
             {children}
             <div className="mt-5 w-full max-w-md text-sm text-[var(--ink-muted)]">{footer}</div>
+            {/* bullets: below the form on mobile so the form fits one screen */}
+            {asideExtra && <div className="mt-6 w-full max-w-md md:hidden">{asideExtra}</div>}
           </motion.div>
         </div>
       </div>
