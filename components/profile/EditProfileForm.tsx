@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useActionState, useEffect, useState } from "react";
-import { updateProfile, uploadAvatar, type AvatarState, type EditState } from "@/app/(app)/profile/edit/actions";
+import { updateProfile, uploadAvatar, uploadBanner, type AvatarState, type EditState } from "@/app/(app)/profile/edit/actions";
 import { isPro } from "@/lib/pro";
 import AvatarImage from "@/components/ui/AvatarImage";
 import ProfileNudgePanel from "@/components/profile/ProfileNudgePanel";
@@ -13,6 +13,7 @@ export type EditInitial = {
   username: string;
   display_name: string | null;
   avatar_url: string | null;
+  banner_url: string | null;
   school: string;
   year: string | null;
   major: string | null;
@@ -45,6 +46,8 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(initial.avatar_url);
   const [avatarState, avatarAction, avatarBusy] = useActionState<AvatarState, FormData>(uploadAvatar, {});
+  const [bannerUrl, setBannerUrl] = useState<string | null>(initial.banner_url);
+  const [bannerState, bannerAction, bannerBusy] = useActionState<AvatarState, FormData>(uploadBanner, {});
   const [accentColor, setAccentColor] = useState<string | null>(initial.accent_color);
   const pro = isPro(initial);
 
@@ -54,6 +57,10 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
     if (avatarState.url) setAvatarUrl(avatarState.url);
   }, [avatarState.url]);
 
+  useEffect(() => {
+    if (bannerState.url) setBannerUrl(bannerState.url);
+  }, [bannerState.url]);
+
   function onAvatar(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = ""; // let the same file be re-picked after an error
@@ -61,6 +68,15 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
     const fd = new FormData();
     fd.set("avatar", file);
     avatarAction(fd);
+  }
+
+  function onBanner(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const fd = new FormData();
+    fd.set("banner", file);
+    bannerAction(fd);
   }
 
   return (
@@ -91,6 +107,39 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
             {state.error}
           </p>
         )}
+
+        {/* Banner (Pro) */}
+        <div className="mb-6 border-b border-[var(--border)] pb-6">
+          <label className={label}>Profile banner</label>
+          {pro ? (
+            <>
+              <div className="mt-1.5 aspect-[3/1] w-full overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--canvas)]">
+                {bannerUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={bannerUrl} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <div className="grid h-full place-items-center text-xs text-[var(--ink-faint)]">No banner yet</div>
+                )}
+              </div>
+              <div className="mt-2 flex items-center gap-3">
+                <label className="btn-ghost inline-flex cursor-pointer !py-1.5 text-sm">
+                  <input type="file" accept="image/jpeg,image/png,image/webp" onChange={onBanner} disabled={bannerBusy} className="hidden" />
+                  {bannerBusy ? "Uploading…" : "Change banner"}
+                </label>
+                <p className={bannerState.error ? "text-xs text-[var(--danger)]" : hint}>
+                  {bannerState.error ?? "JPG, PNG, or WebP. Max 4 MB."}
+                </p>
+              </div>
+            </>
+          ) : (
+            <div className="mt-1.5">
+              <div className="aspect-[3/1] w-full rounded-lg border border-[var(--border)] bg-[var(--canvas)] opacity-50" />
+              <Link href="/pro" className="mt-2 inline-block text-sm text-[var(--ink-muted)] underline">
+                Profile banner · Pro
+              </Link>
+            </div>
+          )}
+        </div>
 
         {/* Avatar */}
         <div className="mb-6 flex items-center gap-4 border-b border-[var(--border)] pb-6">

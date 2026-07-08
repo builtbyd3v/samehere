@@ -17,6 +17,7 @@ const GROUPS: { title: string; subtitle: string; features: string[] }[] = [
     features: [
       "Pro badge on your profile",
       "Custom profile accent color",
+      "Profile banner",
       "Animated profile picture (GIF / animated-webp)",
     ],
   },
@@ -42,7 +43,6 @@ const COMING_SOON_TO_PRO = [
   "Natural-language people search",
   "Weekly “3 people to meet”",
   "Profile themes",
-  "Profile banner",
 ];
 
 const NEVER_GATED = [

@@ -12,6 +12,8 @@ const YEARS = ["freshman", "sophomore", "junior", "senior", "grad"];
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 const ALLOWED_AVATAR_MIME = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
+const ALLOWED_BANNER_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
+const MAX_BANNER_BYTES = 4 * 1024 * 1024;
 
 export type EditState = { error?: string };
 export type AvatarState = { error?: string; url?: string };
@@ -163,6 +165,40 @@ export async function uploadAvatar(_prev: AvatarState, formData: FormData): Prom
     .from("profiles")
     .update({ avatar_url: url, avatar_is_animated: animated })
     .eq("id", user.id);
+  if (dbErr) return { error: "Saved the image but couldn't update your profile." };
+
+  return { url };
+}
+
+// Upload a profile banner. Pro-only perk — gated server-side here AND frozen
+// for non-Pro rows by the guard_profile_privileged trigger. Stored in the same
+// public avatars bucket at <uid>/banner (owner-scoped upload policy covers it).
+export async function uploadBanner(_prev: AvatarState, formData: FormData): Promise<AvatarState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be logged in." };
+
+  const { data: proRow } = await supabase.from("profiles").select("is_pro").eq("id", user.id).single();
+  if (!proRow?.is_pro) return { error: "Profile banners are a Pro perk." };
+
+  const file = formData.get("banner");
+  if (!(file instanceof File) || file.size === 0) return { error: "Choose an image file." };
+  if (!ALLOWED_BANNER_MIME.has(file.type)) return { error: "Choose a JPG, PNG, or WebP image." };
+  if (file.size > MAX_BANNER_BYTES) return { error: "Image must be under 4 MB." };
+
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const path = `${user.id}/banner`;
+  const { error: upErr } = await supabase.storage
+    .from("avatars")
+    .upload(path, bytes, { upsert: true, cacheControl: "3600", contentType: file.type });
+  if (upErr) return { error: "Upload failed. Try again." };
+
+  const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
+  const url = `${pub.publicUrl}?v=${Date.now()}`;
+
+  const { error: dbErr } = await supabase.from("profiles").update({ banner_url: url }).eq("id", user.id);
   if (dbErr) return { error: "Saved the image but couldn't update your profile." };
 
   return { url };

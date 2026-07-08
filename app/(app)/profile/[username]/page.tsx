@@ -84,7 +84,7 @@ export default async function ProfilePage({
     supabase
       .from("profiles")
       .select(
-        "id, username, display_name, avatar_url, year, major, bio, goals, skills, courses, is_private, heatmap_visibility, is_pro, is_founder, is_campus_founder, accent_color"
+        "id, username, display_name, avatar_url, banner_url, year, major, bio, goals, skills, courses, is_private, heatmap_visibility, is_pro, is_founder, is_campus_founder, accent_color"
       )
       .eq("username", username)
       .maybeSingle(),
@@ -167,6 +167,12 @@ export default async function ProfilePage({
 
   return (
     <main className="page-enter mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8">
+      {profile.banner_url && (
+        <div className="mb-4 aspect-[3/1] w-full overflow-hidden rounded-xl border border-[var(--border)]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={profile.banner_url} alt="" className="h-full w-full object-cover" />
+        </div>
+      )}
       {/* Identity */}
       <section className="card p-5 sm:p-6">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
