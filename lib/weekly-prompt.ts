@@ -42,6 +42,15 @@ export async function getWeeklyPrompt(): Promise<{ prompt: string; weekKey: stri
   const fallback = FALLBACK_BY_PHASE[phase] ?? "What are you working on this week?";
 
   const supabase = await createClient();
+
+  // Defense-in-depth: the AI generation + service-role cache write below are
+  // trusted server work — only run them for an authed request (every caller is
+  // proxy-gated today, but don't rely solely on that).
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { prompt: fallback, weekKey: key };
+
   const { data: cached } = await supabase
     .from("weekly_prompts")
     .select("prompt")
@@ -49,6 +58,9 @@ export async function getWeeklyPrompt(): Promise<{ prompt: string; weekKey: stri
     .maybeSingle();
   if (cached?.prompt) return { prompt: cached.prompt, weekKey: key };
 
+  // ponytail: no single-flight lock — a burst of first-of-week loads can each
+  // generate once before the first upsert lands (upsert is race-safe; only the
+  // AI spend isn't deduped). Bounded to once/week; add a lock only if it matters.
   if (!aiEnabled()) return { prompt: fallback, weekKey: key };
 
   const isoDate = now.toISOString().slice(0, 10);

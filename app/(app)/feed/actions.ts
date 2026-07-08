@@ -307,7 +307,13 @@ export async function peopleSearch(query: string): Promise<PeopleSearchState> {
   const pro = isPro(viewer ?? { is_pro: false });
 
   // Prefilter: token ilike over the same fields keyword search uses, plus goals/bio.
-  const tokens = safe.split(/\s+/).filter(Boolean).slice(0, 8);
+  // Tokens are allowlist-sanitized to [a-z0-9] so nothing can escape the PostgREST
+  // .or() filter grammar (safe, above, keeps punctuation only for the AI query text).
+  const tokens = safe
+    .split(/\s+/)
+    .map((t) => t.replace(/[^a-z0-9]/gi, ""))
+    .filter(Boolean)
+    .slice(0, 8);
   const orFilter = tokens
     .flatMap((t) => [
       `username.ilike.%${t}%`,
