@@ -17,6 +17,8 @@ import { mergeFeedTimeline } from "@/lib/feed-timeline";
 import UserBadges from "@/components/profile/UserBadges";
 import AvatarImage from "@/components/ui/AvatarImage";
 import { isPro } from "@/lib/pro";
+import type { MatchSignal } from "@/lib/match";
+import { cachedConnectionPrompts, connectionPrompt } from "@/lib/connection-prompt";
 
 const YEAR_LABEL: Record<string, string> = {
   freshman: "Freshman",
@@ -104,7 +106,7 @@ export default async function ProfilePage({
     });
   }
 
-  const [schoolRes, countRes, relRes, postsRes, quotesRes, repostsRes, heatRes, streakRes, blockedIdsRes, myBlockRes, viewsRes] = await Promise.all([
+  const [schoolRes, countRes, relRes, postsRes, quotesRes, repostsRes, heatRes, streakRes, blockedIdsRes, myBlockRes, viewsRes, viewerSignalRes] = await Promise.all([
     supabase.from("profile_school").select("school").eq("profile_id", profile.id).maybeSingle(),
     supabase.rpc("get_profile_counts", { p_profile_id: profile.id }),
     user && !isOwner
@@ -134,6 +136,14 @@ export default async function ProfilePage({
       : Promise.resolve({ data: null as { id: string } | null }),
     // Owner-only RPC — returns empty for everyone else, so only bother calling it for the owner.
     isOwner ? supabase.rpc("get_profile_views", { p_profile: profile.id }) : Promise.resolve({ data: [] as ProfileViewer[] }),
+    // Viewer's own match signal — only needed to build the "why you two match" line below.
+    user && !isOwner
+      ? supabase
+          .from("profiles")
+          .select("year, major, skills, goals, bio, courses, is_pro, profile_school(school)")
+          .eq("id", user.id)
+          .maybeSingle()
+      : Promise.resolve({ data: null as { year: string | null; major: string | null; skills: string[] | null; goals: string | null; bio: string | null; courses: string[] | null; is_pro: boolean; profile_school: { school: string | null } | null } | null }),
   ]);
 
   const viewerId = user?.id ?? null;
@@ -154,6 +164,42 @@ export default async function ProfilePage({
   const contentHidden = (profile.is_private && !isOwner && !isAcceptedFollower) || isBlocked;
   const timeline = contentHidden ? [] : mergeFeedTimeline(posts, quotesRes, repostsRes).slice(0, 20);
   const canSeeHeatmap = isOwner || isAcceptedFollower || profile.heatmap_visibility === "public";
+
+  // "Why you two match" — only where post content would be visible to this viewer
+  // (mirrors contentHidden: excludes private-non-follower and blocked). Reuses the
+  // same connection-prompt infra as the feed's suggested-follow cards.
+  let matchPrompt: string | null = null;
+  if (user && !isOwner && !contentHidden) {
+    const viewerSignal: MatchSignal = {
+      year: viewerSignalRes.data?.year ?? null,
+      major: viewerSignalRes.data?.major ?? null,
+      skills: viewerSignalRes.data?.skills ?? null,
+      goals: viewerSignalRes.data?.goals ?? null,
+      bio: viewerSignalRes.data?.bio ?? null,
+      school: viewerSignalRes.data?.profile_school?.school ?? null,
+      courses: viewerSignalRes.data?.courses ?? null,
+    };
+    const cache = await cachedConnectionPrompts(supabase, user.id, [profile.id]);
+    matchPrompt =
+      cache.get(profile.id) ??
+      (await connectionPrompt(
+        supabase,
+        user.id,
+        viewerSignal,
+        {
+          id: profile.id,
+          name: displayName,
+          year: profile.year,
+          major: profile.major,
+          skills: profile.skills,
+          goals: profile.goals,
+          bio: profile.bio,
+          school,
+          courses: profile.courses,
+        },
+        isPro(viewerSignalRes.data ?? { is_pro: false })
+      ));
+  }
 
   const metaParts = [
     school,
@@ -214,6 +260,12 @@ export default async function ProfilePage({
 
             {metaLine && (
               <p className="mt-2 text-sm text-[var(--ink-muted)]">{metaLine}</p>
+            )}
+
+            {matchPrompt && (
+              <p className="mt-2 text-sm text-[var(--ink-muted)]">
+                <span aria-hidden="true">✦</span> {matchPrompt}
+              </p>
             )}
 
             <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1">
