@@ -9,7 +9,7 @@ import UserBadges from "@/components/profile/UserBadges";
 import { attachSignedMedia } from "@/lib/media";
 import { scoreOverlap, type MatchSignal } from "@/lib/match";
 import { isPro } from "@/lib/pro";
-import { connectionPrompt } from "@/lib/connection-prompt";
+import { cachedConnectionPrompts, connectionPrompt } from "@/lib/connection-prompt";
 import FeedToolbar from "@/components/feed/FeedToolbar";
 import FeedTabs from "@/components/feed/FeedTabs";
 import AvatarImage from "@/components/ui/AvatarImage";
@@ -253,19 +253,22 @@ async function FollowingTab({
     .sort((a, b) => b._score - a._score || ((a.created_at ?? "") < (b.created_at ?? "") ? 1 : -1))
     .slice(0, 5);
 
+  const promptCache = await cachedConnectionPrompts(supabase, userId, suggested.map((s) => s.id));
   const prompts = await Promise.all(
     suggested.map((s) =>
-      connectionPrompt(supabase, userId, viewerSignal, {
-        id: s.id,
-        name: s.display_name ?? s.username,
-        year: s.year,
-        major: s.major,
-        skills: s.skills,
-        goals: s.goals,
-        bio: s.bio,
-        school: s.profile_school?.school ?? null,
-        courses: s.courses,
-      }, viewerPro)
+      promptCache.has(s.id)
+        ? Promise.resolve(promptCache.get(s.id)!)
+        : connectionPrompt(supabase, userId, viewerSignal, {
+            id: s.id,
+            name: s.display_name ?? s.username,
+            year: s.year,
+            major: s.major,
+            skills: s.skills,
+            goals: s.goals,
+            bio: s.bio,
+            school: s.profile_school?.school ?? null,
+            courses: s.courses,
+          }, viewerPro)
     )
   );
   const suggestedWithPrompt = suggested.map((s, i) => ({ ...s, _prompt: prompts[i] }));

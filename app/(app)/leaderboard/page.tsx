@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getCachedLeaderboard } from "@/lib/leaderboard";
 import AvatarImage from "@/components/ui/AvatarImage";
 import UserBadges from "@/components/profile/UserBadges";
 import EmptyState from "@/components/ui/EmptyState";
@@ -30,11 +31,7 @@ export default async function LeaderboardPage({
 
   const scope = params.scope === "school" && viewerSchool ? "school" : "global";
 
-  const { data } = await supabase.rpc("get_leaderboard", {
-    p_scope: scope,
-    p_school: scope === "school" ? viewerSchool ?? undefined : undefined,
-  });
-  const rows = data ?? [];
+  const rows = await getCachedLeaderboard(supabase, scope, viewerSchool);
 
   return (
     <main className="page-enter mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8">

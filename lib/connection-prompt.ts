@@ -7,6 +7,25 @@ function norm(s: string | null): string {
   return s?.trim().toLowerCase() ?? "";
 }
 
+// Batched cache read for a viewer's candidates — one query instead of one per
+// candidate. Callers should use this first and only fall through to
+// connectionPrompt() (which generates + caches via AI) for cache misses.
+export async function cachedConnectionPrompts(
+  supabase: SupabaseClient,
+  viewerId: string,
+  candidateIds: string[]
+): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  if (candidateIds.length === 0) return map;
+  const { data } = await supabase
+    .from("ai_connection_prompts")
+    .select("candidate_id, prompt")
+    .eq("viewer_id", viewerId)
+    .in("candidate_id", candidateIds);
+  for (const row of data ?? []) map.set(row.candidate_id, row.prompt);
+  return map;
+}
+
 // One sentence on why the viewer should follow candidate, grounded in shared
 // public profile facts only (never bio/goals text or post content). Cached
 // per (viewer, candidate); falls back to a deterministic template when AI is

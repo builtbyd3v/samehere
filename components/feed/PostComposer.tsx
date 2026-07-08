@@ -22,6 +22,37 @@ const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif", "video/mp
 
 type Picked = { file: File; type: "image" | "video"; url: string };
 
+const MAX_DIM = 1600;
+const WEBP_QUALITY = 0.82;
+
+// Shrinks an oversized photo before upload so we're not shipping full-res JPEGs
+// over the wire on every view. Static raster images only — never call this on
+// GIFs (flattens animation to one frame) or video (not an image at all); the
+// call site below gates on `type === "image" && file.type !== "image/gif"`.
+// ponytail: best-effort client-side resize; the bucket's MIME/size limit is the
+// real backstop, this just saves bytes on the common case.
+async function downscaleImage(file: File): Promise<File> {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, MAX_DIM / Math.max(bitmap.width, bitmap.height));
+  if (scale === 1) {
+    bitmap.close();
+    return file; // already small enough
+  }
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    bitmap.close();
+    return file;
+  }
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/webp", WEBP_QUALITY));
+  if (!blob) return file; // encode failed, fall back to the original file
+  return new File([blob], file.name.replace(/\.\w+$/, "") + ".webp", { type: "image/webp" });
+}
+
 export default function PostComposer({ isPro = false }: { isPro?: boolean }) {
   const [state, formAction, pending] = useActionState<ComposerState, FormData>(createPost, {});
   const ref = useRef<HTMLFormElement>(null);
@@ -164,9 +195,12 @@ export default function PostComposer({ isPro = false }: { isPro?: boolean }) {
 
       const media: { path: string; type: "image" | "video" }[] = [];
       for (const { file, type } of files) {
-        const ext = file.name.includes(".") ? file.name.split(".").pop() : file.type.split("/")[1];
+        // GIFs and video pass through untouched — canvas would flatten a GIF to
+        // one frame, and video isn't an image at all. Only static images resize.
+        const upload = type === "image" && file.type !== "image/gif" ? await downscaleImage(file) : file;
+        const ext = upload.name.includes(".") ? upload.name.split(".").pop() : upload.type.split("/")[1];
         const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
-        const { error: upErr } = await supabase.storage.from("post-media").upload(path, file);
+        const { error: upErr } = await supabase.storage.from("post-media").upload(path, upload);
         if (upErr) {
           setUploading(false);
           return setMediaErr("Media upload failed. Try again.");
