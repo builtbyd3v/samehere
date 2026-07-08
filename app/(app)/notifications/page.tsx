@@ -21,7 +21,7 @@ export default async function NotificationsPage() {
       <NotificationsMarkRead />
       <h1 className="mb-5 text-2xl font-semibold tracking-[-0.02em] text-[var(--ink)]">Notifications</h1>
 
-      <section className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface-card)]">
+      <section className="card overflow-hidden">
         <NotificationList items={(items ?? []) as NotificationRow[]} />
       </section>
     </main>

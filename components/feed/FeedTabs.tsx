@@ -16,7 +16,7 @@ export default function FeedTabs({ tab }: { tab: "latest" | "following" }) {
         aria-selected={tab === "latest"}
         className={
           tab === "latest"
-            ? `${pill} bg-[var(--featured-surface)] text-[var(--ink)]`
+            ? `${pill} bg-[color-mix(in_srgb,var(--blue)_12%,transparent)] text-[var(--blue)]`
             : `${pill} text-[var(--ink-muted)] hover:text-[var(--ink)]`
         }
       >
@@ -28,7 +28,7 @@ export default function FeedTabs({ tab }: { tab: "latest" | "following" }) {
         aria-selected={tab === "following"}
         className={
           tab === "following"
-            ? `${pill} bg-[var(--featured-surface)] text-[var(--ink)]`
+            ? `${pill} bg-[color-mix(in_srgb,var(--blue)_12%,transparent)] text-[var(--blue)]`
             : `${pill} text-[var(--ink-muted)] hover:text-[var(--ink)]`
         }
       >

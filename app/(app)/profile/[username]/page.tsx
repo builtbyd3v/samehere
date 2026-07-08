@@ -213,55 +213,63 @@ export default async function ProfilePage({
 
   return (
     <main className="page-enter mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8">
-      {profile.banner_url && (
-        <div className="mb-4 aspect-[3/1] w-full overflow-hidden rounded-xl border border-[var(--border)]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={profile.banner_url} alt="" className="h-full w-full object-cover" />
-        </div>
-      )}
-      {/* Identity */}
-      <section className="card p-5 sm:p-6">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-          {profile.avatar_url ? (
-            <AvatarImage
-              src={profile.avatar_url}
-              alt=""
-              style={profile.accent_color ? { borderColor: profile.accent_color } : undefined}
-              className="h-20 w-20 shrink-0 rounded-full border-2 border-[var(--border)] object-cover sm:h-24 sm:w-24"
-            />
-          ) : (
-            <div
-              style={profile.accent_color ? { borderColor: profile.accent_color } : undefined}
-              className="grid h-20 w-20 shrink-0 place-items-center rounded-full border-2 border-[var(--border)] bg-[var(--featured-surface)] text-2xl font-semibold text-[var(--ink-muted)] sm:h-24 sm:w-24"
-            >
-              {displayName.charAt(0).toUpperCase()}
-            </div>
-          )}
+      {/* Identity header — banner with the avatar overlapping its bottom edge */}
+      <section className="card overflow-hidden">
+        {profile.banner_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={profile.banner_url} alt="" className="aspect-[3/1] w-full object-cover" />
+        ) : (
+          <div
+            aria-hidden
+            className="aspect-[4/1] w-full"
+            style={{ background: "linear-gradient(120deg, color-mix(in srgb, var(--blue) 14%, var(--surface-card)) 0%, var(--surface-card) 62%)" }}
+          />
+        )}
 
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                  <h1 className="text-2xl font-semibold tracking-[-0.025em] sm:text-[28px]">{displayName}</h1>
-                  <UserBadges isPro={profile.is_pro} isFounder={profile.is_founder} isCampusFounder={profile.is_campus_founder} />
-                </div>
-                <p className="mt-0.5 text-[15px] text-[var(--ink-muted)]">@{profile.username}</p>
+        <div className="px-5 pb-5 sm:px-6 sm:pb-6">
+          {/* avatar pulls up over the banner; primary action sits to its right */}
+          <div className="flex items-end justify-between gap-3">
+            {profile.avatar_url ? (
+              <AvatarImage
+                src={profile.avatar_url}
+                alt=""
+                style={profile.accent_color ? { borderColor: profile.accent_color } : undefined}
+                className="-mt-12 h-24 w-24 shrink-0 rounded-full border-4 border-[var(--surface-card)] object-cover sm:-mt-14 sm:h-28 sm:w-28"
+              />
+            ) : (
+              <div
+                style={profile.accent_color ? { borderColor: profile.accent_color } : undefined}
+                className="-mt-12 grid h-24 w-24 shrink-0 place-items-center rounded-full border-4 border-[var(--surface-card)] bg-[var(--featured-surface)] text-3xl font-semibold text-[var(--ink-muted)] sm:-mt-14 sm:h-28 sm:w-28"
+              >
+                {displayName.charAt(0).toUpperCase()}
               </div>
-
-              {isOwner && (
-                <Link
-                  href="/profile/edit"
-                  className="btn-ghost shrink-0 !rounded-full !px-4 !py-1.5 text-sm"
-                >
-                  Edit profile
-                </Link>
-              )}
-            </div>
-
-            {metaLine && (
-              <p className="mt-2 text-sm text-[var(--ink-muted)]">{metaLine}</p>
             )}
 
+            {isOwner ? (
+              <Link href="/profile/edit" className="btn-ghost shrink-0 !rounded-full !px-4 !py-1.5 text-sm">
+                Edit profile
+              </Link>
+            ) : user ? (
+              <div className="shrink-0">
+                <ProfileActions
+                  username={profile.username}
+                  targetId={profile.id}
+                  followState={followState}
+                  blocked={isBlocked}
+                  amIBlocking={amIBlocking}
+                />
+              </div>
+            ) : null}
+          </div>
+
+          <div className="mt-3">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+              <h1 className="text-2xl font-semibold tracking-[-0.025em] sm:text-[28px]">{displayName}</h1>
+              <UserBadges isPro={profile.is_pro} isFounder={profile.is_founder} isCampusFounder={profile.is_campus_founder} />
+            </div>
+            <p className="mt-0.5 text-[15px] text-[var(--ink-muted)]">@{profile.username}</p>
+
+            {metaLine && <p className="mt-2 text-sm text-[var(--ink-muted)]">{metaLine}</p>}
             {matchPrompt && (
               <p className="mt-2 text-sm text-[var(--ink-muted)]">
                 <span aria-hidden="true">✦</span> {matchPrompt}
@@ -273,95 +281,87 @@ export default async function ProfilePage({
               <Stat value={Number(counts.followers)} label="followers" />
               <Stat value={Number(counts.following)} label="following" />
             </div>
-
-            {!isOwner && user && (
-              <div className="mt-5 border-t border-[var(--border)] pt-5">
-                <ProfileActions
-                  username={profile.username}
-                  targetId={profile.id}
-                  followState={followState}
-                  blocked={isBlocked}
-                  amIBlocking={amIBlocking}
-                />
-              </div>
-            )}
           </div>
-        </div>
 
-        {profile.bio && (
-          <p className="mt-5 max-w-[65ch] whitespace-pre-line break-words text-[16px] leading-[1.55] text-[var(--ink)]">
-            {profile.bio}
-          </p>
-        )}
-
-        {profile.goals && (
-          <div className="mt-5 border-t border-[var(--border)] pt-5">
-            <p className="text-sm font-semibold text-[var(--ink)]">Goals</p>
-            <p className="mt-1.5 max-w-[65ch] whitespace-pre-line break-words text-[15px] leading-[1.55] text-[var(--ink-muted)]">
-              {profile.goals}
-            </p>
-          </div>
-        )}
-
-        {profile.skills && profile.skills.length > 0 && (
-          <div className="mt-5 flex flex-wrap gap-2 border-t border-[var(--border)] pt-5">
-            {profile.skills.map((s) => (
-              <span
-                key={s}
-                className="rounded-full border border-[var(--border)] bg-[var(--canvas)] px-3 py-1 text-sm text-[var(--ink-muted)]"
-              >
-                {s}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {/* ponytail: mirrors the skills chips above (same treatment), courses is the same text[] shape */}
-        {profile.courses && profile.courses.length > 0 && (
-          <div className="mt-5 flex flex-wrap gap-2 border-t border-[var(--border)] pt-5">
-            {profile.courses.map((c) => (
-              <span
-                key={c}
-                className="rounded-full border border-[var(--border)] bg-[var(--canvas)] px-3 py-1 text-sm text-[var(--ink-muted)]"
-              >
-                {c}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {!isOwner && user && (!isBlocked || amIBlocking) && (
-          <div className="mt-5 flex justify-end border-t border-[var(--border)] pt-4">
-            <BlockButton targetId={profile.id} initialBlocked={amIBlocking} />
-          </div>
-        )}
-      </section>
-
-      {canSeeHeatmap && (
-        <section className="card mt-3 p-5 sm:p-6">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold text-[var(--ink)]">Activity</h2>
-            {streak && (streak.current_streak > 0 || streak.longest_streak > 0) && (
-              <p className="text-sm text-[var(--ink-muted)]">
-                <b className="font-semibold text-[var(--blue)]">{streak.current_streak}-day streak</b>
-                {streak.longest_streak > streak.current_streak ? ` · best ${streak.longest_streak}` : ""}
-              </p>
-            )}
-          </div>
-          <ContributionHeatmap data={heatmap} />
-          {isOwner && streak && streak.current_streak > 0 && !streak.today_earned && (
-            <p className="mt-4 rounded-lg border border-[var(--border)] bg-[var(--canvas)] px-3 py-2 text-sm text-[var(--ink-muted)]">
-              Post today to keep your {streak.current_streak}-day streak.
+          {profile.bio && (
+            <p className="mt-5 max-w-[60ch] whitespace-pre-line break-words text-[17px] leading-[1.6] text-[var(--ink)]">
+              {profile.bio}
             </p>
           )}
-        </section>
+        </div>
+      </section>
+
+      {/* Identity canvas — activity, goals, skills, courses as tactile tiles */}
+      {(canSeeHeatmap || profile.goals || (profile.skills?.length ?? 0) > 0 || (profile.courses?.length ?? 0) > 0) && (
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {canSeeHeatmap && (
+            <section className="card card-hover p-5 shadow-paper sm:col-span-2 sm:p-6">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-sm font-semibold text-[var(--ink)]">Activity</h2>
+                {streak && (streak.current_streak > 0 || streak.longest_streak > 0) && (
+                  <p className="text-sm text-[var(--ink-muted)]">
+                    <b className="font-semibold text-[var(--blue)]">{streak.current_streak}-day streak</b>
+                    {streak.longest_streak > streak.current_streak ? ` · best ${streak.longest_streak}` : ""}
+                  </p>
+                )}
+              </div>
+              <ContributionHeatmap data={heatmap} />
+              {isOwner && streak && streak.current_streak > 0 && !streak.today_earned && (
+                <p className="mt-4 rounded-lg border border-[var(--border)] bg-[var(--canvas)] px-3 py-2 text-sm text-[var(--ink-muted)]">
+                  Post today to keep your {streak.current_streak}-day streak.
+                </p>
+              )}
+            </section>
+          )}
+
+          {profile.goals && (
+            <section className="card card-hover p-5 shadow-paper sm:col-span-2 sm:p-6">
+              <h2 className="text-sm font-semibold text-[var(--ink)]">Goals</h2>
+              <p className="mt-1.5 whitespace-pre-line break-words text-[15px] leading-[1.55] text-[var(--ink-muted)]">
+                {profile.goals}
+              </p>
+            </section>
+          )}
+
+          {profile.skills && profile.skills.length > 0 && (
+            <section className={`card card-hover p-5 shadow-paper sm:p-6 ${profile.courses && profile.courses.length > 0 ? "" : "sm:col-span-2"}`}>
+              <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">Skills</h2>
+              <div className="flex flex-wrap gap-2">
+                {profile.skills.map((s) => (
+                  <span key={s} className="rounded-full border border-[var(--border)] bg-[var(--canvas)] px-3 py-1 text-sm text-[var(--ink-muted)]">
+                    {s}
+                  </span>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {profile.courses && profile.courses.length > 0 && (
+            <section className={`card card-hover p-5 shadow-paper sm:p-6 ${profile.skills && profile.skills.length > 0 ? "" : "sm:col-span-2"}`}>
+              <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">Courses</h2>
+              <div className="flex flex-wrap gap-2">
+                {profile.courses.map((c) => (
+                  <span key={c} className="rounded-full border border-[var(--border)] bg-[var(--canvas)] px-3 py-1 text-sm text-[var(--ink-muted)]">
+                    {c}
+                  </span>
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+      )}
+
+      {!isOwner && user && (!isBlocked || amIBlocking) && (
+        <div className="mt-3 flex justify-end">
+          <BlockButton targetId={profile.id} initialBlocked={amIBlocking} />
+        </div>
       )}
 
       {isOwner && (
         <ProfileViewers
           isPro={profileIsPro}
           count={profileViews.length}
-          recent={profileIsPro ? profileViews.slice(0, 5) : []}
+          recent={profileIsPro ? profileViews.slice(0, 30) : []}
         />
       )}
 

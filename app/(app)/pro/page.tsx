@@ -55,6 +55,15 @@ const NEVER_GATED = [
   "reactions",
 ];
 
+// Inline check glyph — matches the project's inline-SVG icon convention.
+function Check() {
+  return (
+    <svg viewBox="0 0 20 20" className="mt-0.5 h-4 w-4 shrink-0 text-[var(--blue)]" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M4 10.5 8 14.5 16 5.5" />
+    </svg>
+  );
+}
+
 export default async function ProPage({
   searchParams,
 }: {
@@ -102,15 +111,15 @@ export default async function ProPage({
           </p>
           <p className="mt-1 text-sm text-[var(--ink-muted)]">Billed monthly.</p>
         </div>
-        <div className="card relative border-[var(--border-strong)] bg-[var(--featured-surface)] p-6">
-          <span className="absolute right-4 top-4 rounded-full border border-[var(--border-strong)] px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--ink-muted)]">
+        <div className="card shadow-paper relative bg-[var(--featured-surface)] p-6">
+          <span className="absolute right-4 top-4 rounded-full bg-[color-mix(in_srgb,var(--blue)_12%,transparent)] px-2.5 py-0.5 text-xs font-medium text-[var(--blue)]">
             Best value
           </span>
           <p className="text-sm font-medium text-[var(--ink)]">Semester</p>
           <p className="mt-2 text-[36px] font-semibold leading-none tracking-[-0.03em] text-[var(--ink)]">
             $12.99<span className="text-lg font-normal text-[var(--ink-muted)]">/semester</span>
           </p>
-          <p className="mt-1 text-sm text-[var(--ink-muted)]">Billed each semester.</p>
+          <p className="mt-1 text-sm text-[var(--ink-muted)]">One payment covers the whole term.</p>
         </div>
       </div>
 
@@ -119,7 +128,7 @@ export default async function ProPage({
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-medium text-[var(--ink)]">samehere Pro</span>
           {!pro && !BILLING_ENABLED && (
-            <span className="rounded-full border border-[var(--border-strong)] px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--ink-muted)]">
+            <span className="rounded-full bg-[var(--featured-surface)] px-2.5 py-0.5 text-xs font-medium text-[var(--ink-muted)]">
               Coming soon
             </span>
           )}
@@ -166,17 +175,19 @@ export default async function ProPage({
         </div>
       </div>
 
-      {/* Feature groups */}
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        {GROUPS.map((g) => (
-          <div key={g.title} className="card p-6">
-            <h2 className="text-sm font-semibold text-[var(--ink)]">{g.title}</h2>
-            <p className="mt-0.5 text-xs text-[var(--ink-faint)]">{g.subtitle}</p>
-            <ul className="mt-3 space-y-2 text-sm text-[var(--ink-muted)]">
+      {/* What's included — grouped as divided sections, not a grid of identical cards */}
+      <div className="mt-4 card shadow-paper overflow-hidden">
+        {GROUPS.map((g, i) => (
+          <div key={g.title} className={i > 0 ? "border-t border-[var(--border)] p-6" : "p-6"}>
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 className="text-[15px] font-semibold text-[var(--ink)]">{g.title}</h2>
+              <p className="text-[13px] text-[var(--ink-muted)]">{g.subtitle}</p>
+            </div>
+            <ul className="mt-3.5 grid gap-2.5 sm:grid-cols-2">
               {g.features.map((f) => (
-                <li key={f} className="flex gap-2">
-                  <span className="text-[var(--ink-faint)]">+</span>
-                  {f}
+                <li key={f} className="flex items-start gap-2.5 text-sm text-[var(--ink-muted)]">
+                  <Check />
+                  <span>{f}</span>
                 </li>
               ))}
             </ul>
@@ -186,11 +197,10 @@ export default async function ProPage({
 
       {/* Coming soon */}
       <div className="mt-4 card p-6">
-        <h2 className="text-sm font-semibold text-[var(--ink)]">Coming soon to Pro</h2>
-        <ul className="mt-3 space-y-2 text-sm text-[var(--ink-muted)]">
+        <h2 className="text-[15px] font-semibold text-[var(--ink)]">Coming soon to Pro</h2>
+        <ul className="mt-3 flex flex-wrap gap-2">
           {COMING_SOON_TO_PRO.map((f) => (
-            <li key={f} className="flex gap-2">
-              <span className="text-[var(--ink-faint)]">+</span>
+            <li key={f} className="rounded-full border border-[var(--border)] bg-[var(--canvas)] px-3 py-1 text-sm text-[var(--ink-muted)]">
               {f}
             </li>
           ))}

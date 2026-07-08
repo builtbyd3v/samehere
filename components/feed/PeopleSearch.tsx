@@ -16,7 +16,7 @@ const inputCls =
 function tab(active: boolean): string {
   return `rounded-full px-2.5 py-1 font-medium transition ${
     active
-      ? "bg-[var(--surface-card)] text-[var(--ink)]"
+      ? "bg-[color-mix(in_srgb,var(--blue)_12%,transparent)] text-[var(--blue)]"
       : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
   }`;
 }

@@ -23,8 +23,8 @@ export default function Navbar({
     <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--canvas)]/80 backdrop-blur">
       <nav className="mx-auto flex h-14 max-w-2xl items-center justify-between px-5">
         <div className="flex items-center gap-2">
-          <Link href="/feed" className="font-semibold tracking-[-0.02em] transition hover:opacity-80">
-            samehere
+          <Link href="/feed" aria-label="samehere home" className="font-semibold tracking-[-0.03em] transition hover:opacity-80">
+            <span className="text-[var(--ink)]">same</span><span className="text-[var(--blue)]">here</span>
           </Link>
           {isPro && (
             <Link

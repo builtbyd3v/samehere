@@ -393,7 +393,7 @@ summary {
 /* Cards ---------------------------------------------------------------- */
 
 .card {
-  border-radius: 12px;
+  border-radius: 16px; /* rounded-2xl — matches the landing card radius app-wide */
   border: 1px solid var(--border);
   background: var(--surface-card);
 }

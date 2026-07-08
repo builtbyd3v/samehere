@@ -294,7 +294,7 @@ async function FollowingTab({
       {visibleRequests.length > 0 && <FollowRequests requests={visibleRequests} />}
 
       {timeline.length > 0 && suggestedWithPrompt.length > 0 && (
-        <section className="mb-3 rounded-xl border border-[var(--border)] bg-[var(--surface-card)] p-4 sm:p-5">
+        <section className="card mb-3 p-4 sm:p-5">
           <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">People to follow</h2>
           <div className="flex flex-col gap-2">{suggestedWithPrompt.map(suggestedCard)}</div>
         </section>
@@ -305,7 +305,7 @@ async function FollowingTab({
           <FeedTimeline items={timeline} viewerId={viewerId} />
         </div>
       ) : suggestedWithPrompt.length > 0 ? (
-        <section className="rounded-xl border border-[var(--border)] bg-[var(--surface-card)] px-4 py-8 text-center sm:px-6">
+        <section className="card px-4 py-8 text-center sm:px-6">
           <p className="font-medium text-[var(--ink)]">Your feed is empty</p>
           <p className="mx-auto mt-1.5 max-w-sm text-sm text-[var(--ink-muted)]">
             Follow a few students below to start seeing their posts here.

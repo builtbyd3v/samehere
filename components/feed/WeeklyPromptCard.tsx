@@ -23,9 +23,9 @@ export default function WeeklyPromptCard({ prompt, weekKey }: { prompt: string; 
   }
 
   return (
-    <div className="card mb-6 p-4">
+    <div className="card mb-3 p-4">
       <div className="flex items-start justify-between gap-3">
-        <p className="text-xs font-medium uppercase tracking-wide text-[var(--ink-faint)]">This week</p>
+        <p className="text-xs font-medium text-[var(--ink-muted)]">This week&rsquo;s prompt</p>
         <button
           type="button"
           onClick={dismiss}

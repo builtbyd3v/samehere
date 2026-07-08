@@ -52,7 +52,7 @@ export default async function LeaderboardPage({
             aria-selected={scope === "global"}
             className={
               scope === "global"
-                ? `${pill} bg-[var(--featured-surface)] text-[var(--ink)]`
+                ? `${pill} bg-[color-mix(in_srgb,var(--blue)_12%,transparent)] text-[var(--blue)]`
                 : `${pill} text-[var(--ink-muted)] hover:text-[var(--ink)]`
             }
           >
@@ -64,7 +64,7 @@ export default async function LeaderboardPage({
             aria-selected={scope === "school"}
             className={
               scope === "school"
-                ? `${pill} bg-[var(--featured-surface)] text-[var(--ink)]`
+                ? `${pill} bg-[color-mix(in_srgb,var(--blue)_12%,transparent)] text-[var(--blue)]`
                 : `${pill} text-[var(--ink-muted)] hover:text-[var(--ink)]`
             }
           >

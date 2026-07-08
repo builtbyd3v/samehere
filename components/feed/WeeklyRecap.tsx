@@ -30,16 +30,22 @@ export default async function WeeklyRecap({ userId }: { userId: string }) {
 
   if (posts === 0 && comments === 0 && connections === 0 && currentStreak === 0) return null;
 
-  const parts: string[] = [];
-  if (posts > 0) parts.push(pluralize(posts, "post"));
-  if (comments > 0) parts.push(pluralize(comments, "comment"));
-  if (connections > 0) parts.push(`${connections} new connection${connections === 1 ? "" : "s"}`);
-  if (currentStreak > 0) parts.push(`${currentStreak}-day streak`);
+  // Streak is rendered separately in blue (the samehere accent); the rest are
+  // plain activity stats.
+  const stats: string[] = [];
+  if (posts > 0) stats.push(pluralize(posts, "post"));
+  if (comments > 0) stats.push(pluralize(comments, "comment"));
+  if (connections > 0) stats.push(`${connections} new connection${connections === 1 ? "" : "s"}`);
 
   return (
-    <section className="card p-4">
-      <p className="text-xs font-medium uppercase tracking-wide text-[var(--ink-faint)]">Your week</p>
-      <p className="mt-1 text-sm text-[var(--ink)]">{parts.join(" · ")}</p>
+    <section className="card mb-3 p-4">
+      <p className="text-sm text-[var(--ink-muted)]">
+        <span className="font-semibold text-[var(--ink)]">Your week</span>
+        {stats.length > 0 && <> · {stats.join(" · ")}</>}
+        {currentStreak > 0 && (
+          <> · <span className="font-semibold text-[var(--blue)]">{currentStreak}-day streak</span></>
+        )}
+      </p>
     </section>
   );
 }
