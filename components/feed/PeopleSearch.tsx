@@ -21,7 +21,7 @@ function tab(active: boolean): string {
   }`;
 }
 
-export default function PeopleSearch({ keyword }: { keyword: ReactNode }) {
+export default function PeopleSearch({ keyword, isPro = false }: { keyword: ReactNode; isPro?: boolean }) {
   const [smart, setSmart] = useState(false);
   const [q, setQ] = useState("");
   const [state, setState] = useState<PeopleSearchState>({});
@@ -54,7 +54,7 @@ export default function PeopleSearch({ keyword }: { keyword: ReactNode }) {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               maxLength={TEXT_LIMITS.searchQuery}
-              placeholder="Describe who you want to meet — e.g. CS juniors into ML"
+              placeholder="Describe who you want to meet, like CS juniors into ML"
               className={inputCls}
             />
             <button type="submit" disabled={pending} className="btn-primary shrink-0">
@@ -62,7 +62,7 @@ export default function PeopleSearch({ keyword }: { keyword: ReactNode }) {
             </button>
           </form>
           <p className="mt-1.5 text-xs text-[var(--ink-faint)]">
-            AI finds students that fit your description. Free: 1/day.
+            AI finds students that fit your description.{isPro ? " Unlimited on Pro." : " Free searches: 1 a day."}
           </p>
 
           {state.error && <p className="mt-2 text-sm text-[var(--danger)]">{state.error}</p>}

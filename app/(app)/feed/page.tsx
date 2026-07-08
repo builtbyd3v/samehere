@@ -54,6 +54,7 @@ export default async function FeedPage({
           title={<h1 className="text-xl font-semibold tracking-[-0.02em] sm:text-2xl">Feed</h1>}
           search={
             <PeopleSearch
+              isPro={composerPro}
               keyword={
                 <>
                   <FeedSearchForm q={q} tab={tab} />
