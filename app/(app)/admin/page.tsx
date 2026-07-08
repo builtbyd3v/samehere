@@ -26,7 +26,7 @@ export default async function AdminPage() {
       <p className="mb-5 text-sm text-[var(--ink-muted)]">{rows.length} open report{rows.length === 1 ? "" : "s"}</p>
 
       {rows.length === 0 ? (
-        <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-card)] px-4 py-10 text-center text-sm text-[var(--ink-muted)]">
+        <div className="card px-4 py-10 text-center text-sm text-[var(--ink-muted)]">
           Nothing to review.
         </div>
       ) : (
@@ -34,7 +34,7 @@ export default async function AdminPage() {
           {rows.map((r) => (
             <li
               key={r.report_id}
-              className="rounded-xl border border-[var(--border)] bg-[var(--surface-card)] p-4"
+              className="card p-4"
             >
               <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[var(--ink-muted)]">
                 <span className="rounded-full bg-[var(--featured-surface)] px-2 py-0.5 font-medium text-[var(--ink)]">

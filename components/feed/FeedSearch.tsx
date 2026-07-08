@@ -70,7 +70,7 @@ export async function FeedSearchResults({ q }: { q: string }) {
 
   if (results.length === 0) {
     return (
-      <div className="mt-4 rounded-xl border border-[var(--border)] bg-[var(--surface-card)] px-6 py-10 text-center">
+      <div className="card mt-4 px-6 py-10 text-center">
         <p className="font-medium text-[var(--ink)]">No students found</p>
         <p className="mt-1.5 text-sm text-[var(--ink-muted)]">
           Nothing matched &ldquo;{q}&rdquo;. Try a different name, username, major, or skill.

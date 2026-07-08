@@ -91,7 +91,7 @@ export default function QuoteRepostModal({
       onClick={onClose}
     >
       <div
-        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-[var(--border)] bg-[var(--surface-card)] p-4 shadow-lg animate-[modal-in_180ms_ease] motion-reduce:animate-none sm:p-5"
+        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--surface-card)] p-4 shadow-paper animate-[modal-in_180ms_ease] motion-reduce:animate-none sm:p-5"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-lg font-semibold">Quote repost</h2>

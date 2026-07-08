@@ -7,7 +7,7 @@ export default function LeaderboardLoading() {
       <Skeleton className="mt-2 h-4 w-64" />
       <Skeleton className="mt-4 h-9 w-40 rounded-full" />
 
-      <div className="card mt-5 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface-card)]">
+      <div className="card mt-5 overflow-hidden">
         <ul className="divide-y divide-[var(--border)]">
           {[0, 1, 2, 3, 4, 5].map((i) => (
             <li key={i} className="flex items-center gap-3 px-4 py-3.5">

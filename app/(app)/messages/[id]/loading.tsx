@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 export default function MessageThreadLoading() {
   return (
     <main className="mx-auto flex min-h-[calc(100dvh-3.5rem)] max-w-2xl flex-col px-4 py-4 sm:px-5 sm:py-6">
-      <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface-card)]">
+      <section className="card flex min-h-0 flex-1 flex-col overflow-hidden">
         <div className="flex items-center gap-2 border-b border-[var(--border)] px-3 py-2.5 sm:px-4">
           <Skeleton className="h-9 w-9 rounded-full" />
           <div className="flex items-center gap-2.5">

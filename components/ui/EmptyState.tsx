@@ -10,7 +10,7 @@ export default function EmptyState({
   action?: { label: string; href: string };
 }) {
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-card)] px-6 py-16 text-center">
+    <div className="card px-6 py-16 text-center">
       <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-[var(--featured-surface)] text-[var(--ink-faint)]">
         <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" aria-hidden>
           <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />

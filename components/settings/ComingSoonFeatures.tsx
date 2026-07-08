@@ -1,6 +1,6 @@
 export default function ComingSoonFeatures() {
   return (
-    <section className="mb-6 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6">
+    <section className="card mb-6 p-6">
       <h2 className="mb-1 text-lg font-semibold">Coming soon</h2>
       <p className="mb-4 text-sm text-[var(--ink-muted)]">Planned for a later release.</p>
       <div className="rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-4">

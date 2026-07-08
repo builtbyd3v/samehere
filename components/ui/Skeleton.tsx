@@ -4,7 +4,7 @@ export function Skeleton({ className = "" }: { className?: string }) {
 
 export function PostCardSkeleton() {
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-post)] p-4 sm:p-5">
+    <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-post)] p-4 sm:p-5">
       <div className="flex gap-3">
         <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
         <div className="min-w-0 flex-1 space-y-2">
@@ -26,7 +26,7 @@ export function PostCardSkeleton() {
 export function ProfileSkeleton() {
   return (
     <div className="space-y-3">
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-card)] p-6">
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-card)] p-6">
         <div className="flex gap-5">
           <Skeleton className="h-20 w-20 shrink-0 rounded-full sm:h-24 sm:w-24" />
           <div className="flex-1 space-y-2">
@@ -36,7 +36,7 @@ export function ProfileSkeleton() {
           </div>
         </div>
       </div>
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-card)] p-6">
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-card)] p-6">
         <Skeleton className="mb-4 h-4 w-20" />
         <Skeleton className="h-24 w-full" />
       </div>

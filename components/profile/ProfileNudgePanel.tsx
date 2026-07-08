@@ -39,7 +39,7 @@ export default function ProfileNudgePanel({ profile }: { profile: ProfileForComp
   }
 
   return (
-    <section className="mb-6 rounded-xl border border-[var(--border)] bg-[var(--surface-card)] p-4 sm:p-5">
+    <section className="card mb-6 p-4 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold text-[var(--ink)]">Profile completeness</h2>
