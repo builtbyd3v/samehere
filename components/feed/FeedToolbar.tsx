@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { IconCompose } from "@/components/icons";
 
 const iconBtn =
@@ -18,6 +19,14 @@ export default function FeedToolbar({
   initialComposeOpen?: boolean;
 }) {
   const [composeOpen, setComposeOpen] = useState(initialComposeOpen);
+  const searchParams = useSearchParams();
+
+  // A soft nav to ?compose=1 (e.g. the weekly prompt's "Post about this") changes
+  // the param without remounting this client component, so open the composer in
+  // response to the param, not just from the initial state.
+  useEffect(() => {
+    if (searchParams.get("compose") === "1") setComposeOpen(true);
+  }, [searchParams]);
 
   return (
     <>
