@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      weekly_prompts: {
+        Row: {
+          created_at: string
+          prompt: string
+          week_key: string
+        }
+        Insert: {
+          created_at?: string
+          prompt: string
+          week_key: string
+        }
+        Update: {
+          created_at?: string
+          prompt?: string
+          week_key?: string
+        }
+        Relationships: []
+      }
       ai_connection_prompts: {
         Row: {
           candidate_id: string
