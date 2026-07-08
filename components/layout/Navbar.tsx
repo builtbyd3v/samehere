@@ -1,7 +1,7 @@
 import Link from "next/link";
 import NavMenu from "./NavMenu";
 import NavIconBadge from "./NavIconBadge";
-import { IconBell, IconBolt, IconCrown, IconMail } from "@/components/icons";
+import { IconBell, IconBolt, IconCrown, IconMail, IconSearch } from "@/components/icons";
 import { getNotificationUnreadCount } from "@/app/(app)/notifications/actions";
 
 export default function Navbar({
@@ -39,6 +39,14 @@ export default function Navbar({
         <div className="flex items-center gap-1 text-sm sm:gap-1.5">
           {username && (
             <>
+              <Link
+                href="/feed?search=1"
+                title="Search"
+                aria-label="Search students"
+                className="grid h-9 w-9 place-items-center rounded-full text-[var(--ink-muted)] transition hover:bg-[var(--featured-surface)] hover:text-[var(--ink)]"
+              >
+                <IconSearch />
+              </Link>
               <NavIconBadge href="/leaderboard" title="Leaderboard" count={0}>
                 <IconCrown className="h-5 w-5" />
               </NavIconBadge>
