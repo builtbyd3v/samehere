@@ -53,9 +53,8 @@ export function FeedSearchForm({ q, tab }: { q: string; tab: string }) {
         name="q"
         defaultValue={q}
         maxLength={TEXT_LIMITS.searchQuery}
-        placeholder="Search by name, username, major, or skill"
+        placeholder="Search students by name, username, major, or skill"
         className={input}
-        autoFocus
       />
       <button type="submit" className="btn-primary shrink-0">
         Search

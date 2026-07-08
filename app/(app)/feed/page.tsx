@@ -32,7 +32,6 @@ export default async function FeedPage({
   const params = await searchParams;
   const tab = params.tab === "following" ? "following" : "latest";
   const q = (params.q ?? "").trim();
-  const searchOpen = params.search === "1" || !!q;
   const type = params.type === "teammate" ? "teammate" : null;
   const supabase = await createClient();
 
@@ -54,7 +53,6 @@ export default async function FeedPage({
       <div className="sticky top-14 z-30 -mx-4 mb-6 border-b border-[var(--border)] bg-[var(--canvas)]/95 px-4 pb-4 backdrop-blur sm:-mx-5 sm:px-5">
         <FeedToolbar
           title={<h1 className="text-xl font-semibold tracking-[-0.02em] sm:text-2xl">Feed</h1>}
-          initialSearchOpen={searchOpen}
           search={
             <>
               <FeedSearchForm q={q} tab={tab} />
