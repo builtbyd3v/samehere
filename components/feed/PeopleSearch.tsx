@@ -62,7 +62,7 @@ export default function PeopleSearch({ keyword, isPro = false }: { keyword: Reac
             </button>
           </form>
           <p className="mt-1.5 text-xs text-[var(--ink-faint)]">
-            AI finds students that fit your description.{isPro ? " Unlimited on Pro." : " Free searches: 1 a day."}
+            AI finds students that fit your description.{isPro ? " 150 a day on Pro." : " Free searches: 1 a day."}
           </p>
 
           {state.error && <p className="mt-2 text-sm text-[var(--danger)]">{state.error}</p>}
@@ -71,7 +71,7 @@ export default function PeopleSearch({ keyword, isPro = false }: { keyword: Reac
             <div className="mt-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] px-4 py-3 text-sm">
               <p className="text-[var(--ink)]">You&apos;ve used today&apos;s free smart search.</p>
               <Link href="/pro" className="mt-1 inline-block text-[var(--ink-muted)] underline">
-                Go Pro for unlimited
+                Go Pro for 150 a day
               </Link>
             </div>
           )}

@@ -21,10 +21,10 @@ const GROUPS: { title: string; subtitle: string; features: string[] }[] = [
     title: "Connect",
     subtitle: "Let AI find your people",
     features: [
-      "Unlimited natural-language people search",
-      "Unlimited AI on a stronger model",
+      "150 natural-language people searches a day",
+      "A stronger AI model, 150 uses a day",
       "Improve my post: AI rewrites your draft",
-      "Unlimited AI icebreaker for first messages",
+      "AI icebreakers for first messages",
     ],
   },
   {
@@ -98,7 +98,7 @@ export default async function ProPage({
       </div>
 
       <p className="mb-6 text-[15px] leading-relaxed text-[var(--ink-muted)]">
-        Express who you are. Let AI find your people. Unlimited.
+        Express who you are. Let AI find your people.
       </p>
 
       {/* Pricing */}

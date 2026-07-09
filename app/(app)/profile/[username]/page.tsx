@@ -249,7 +249,7 @@ export async function generateMetadata({
   // it to anyone who sees the link — and it stays in their unfurl caches long
   // after the account goes private. The card itself carries the identity; the
   // description just says what the link is for.
-  const description = `Join @${username} on samehere — verified students only.`;
+  const description = `Join @${username} on samehere. Verified students only.`;
 
   // Deliberately NO `images` here. An explicit openGraph.images overrides the
   // file-based opengraph-image route, which is what renders the heatmap card —

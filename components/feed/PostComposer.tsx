@@ -234,7 +234,7 @@ export default function PostComposer({ isPro = false }: { isPro?: boolean }) {
         <p className="mb-2 text-xs text-[var(--ink-muted)]">
           Out of AI prompts for today.{" "}
           <Link href="/pro" className="font-medium text-[var(--ink)] underline">
-            Upgrade for unlimited + smarter AI
+            Upgrade for a smarter model
           </Link>
           .
         </p>

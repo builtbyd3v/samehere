@@ -63,7 +63,7 @@ export default async function AdminPage() {
                 ) : (
                   <p className="mb-3 whitespace-pre-wrap rounded-lg border border-[var(--border)] border-dashed bg-[var(--canvas)] p-3 text-sm text-[var(--ink-muted)]">
                     {r.snapshot ? clip(r.snapshot) : "(post deleted)"}
-                    <span className="mt-1 block text-xs text-[var(--ink-faint)]">post deleted — snapshot at report time</span>
+                    <span className="mt-1 block text-xs text-[var(--ink-faint)]">post deleted, snapshot at report time</span>
                   </p>
                 ))}
 
@@ -75,7 +75,7 @@ export default async function AdminPage() {
                       ? clip(r.snapshot)
                       : "(message deleted)"}
                   {!r.message_content && (
-                    <span className="mt-1 block text-xs text-[var(--ink-faint)]">message deleted — snapshot at report time</span>
+                    <span className="mt-1 block text-xs text-[var(--ink-faint)]">message deleted, snapshot at report time</span>
                   )}
                 </p>
               )}

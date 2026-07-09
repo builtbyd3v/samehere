@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { ImageResponse } from "next/og";
 
 // Site-wide OG card — what samehere.dev itself unfurls as.
@@ -8,9 +9,29 @@ import { ImageResponse } from "next/og";
 // `.dark` block in app/globals.css — Satori has no CSS variables, so they are
 // duplicated here on purpose. If the app is restyled, this card will not follow.
 
+export const runtime = "nodejs"; // reads the font files off disk
+
 export const alt = "samehere: the network for verified students";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+
+// The app is set in Figtree (app/layout.tsx). Satori ships no fonts and falls
+// back to a generic sans, which renders 600-weight as something closer to 400 —
+// that is why the wordmark looked thin next to the real navbar.
+//
+// Resolved with `new URL(..., import.meta.url)`, which Next traces statically.
+// `join(process.cwd(), ...)` is a runtime string: it works locally and the file
+// is missing from the deployed bundle, so the route 500s only in production.
+const fonts = async () => {
+  const [regular, semibold] = await Promise.all([
+    readFile(new URL("./fonts/Figtree-Regular.ttf", import.meta.url)),
+    readFile(new URL("./fonts/Figtree-SemiBold.ttf", import.meta.url)),
+  ]);
+  return [
+    { name: "Figtree", data: regular, weight: 400 as const, style: "normal" as const },
+    { name: "Figtree", data: semibold, weight: 600 as const, style: "normal" as const },
+  ];
+};
 
 // --- .dark tokens, app/globals.css ---
 const CANVAS = "#141310";
@@ -56,8 +77,9 @@ function Wordmark({ size: s }: { size: number }) {
   );
 }
 
-export default function OgImage() {
+export default async function OgImage() {
   const weeks = Array.from({ length: WEEKS }, (_, w) => Array.from({ length: 7 }, (_, d) => density(w, d)));
+  const font = await fonts();
 
   return new ImageResponse(
     (
@@ -69,6 +91,7 @@ export default function OgImage() {
           flexDirection: "column",
           background: CANVAS,
           padding: 44,
+          fontFamily: "Figtree",
         }}
       >
         <div
@@ -122,7 +145,8 @@ export default function OgImage() {
             {/* Product, not decoration. The contribution graph is the thing people
                 screenshot, so the site card shows the same object the profile card does. */}
             <div style={{ display: "flex", flexDirection: "column" }}>
-              <div style={{ fontSize: 19, fontWeight: 600, color: INK }}>Contribution activity</div>
+              {/* "Activity" is the app's own heading — see the h2 in profile/[username]/page.tsx. */}
+              <div style={{ fontSize: 19, fontWeight: 600, color: INK }}>Activity</div>
               <div style={{ display: "flex", marginTop: 20, gap: GAP }}>
                 {weeks.map((col, w) => (
                   <div key={w} style={{ display: "flex", flexDirection: "column", gap: GAP }}>
@@ -161,6 +185,6 @@ export default function OgImage() {
         </div>
       </div>
     ),
-    { ...size },
+    { ...size, fonts: font },
   );
 }

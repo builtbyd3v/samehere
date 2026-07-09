@@ -16,8 +16,8 @@ const FREE_FEATURES = [
 ] as const;
 
 const PRO_FEATURES: { label: string; icon?: "bolt" }[] = [
-  { label: "Unlimited natural-language people search" },
-  { label: "Unlimited AI on a stronger model" },
+  { label: "150 natural-language people searches a day" },
+  { label: "A stronger AI model, 150 uses a day" },
   { label: "Improve my post and AI icebreakers" },
   { label: "See who viewed your profile" },
   { label: "Custom accent color, banner, and animated avatar" },

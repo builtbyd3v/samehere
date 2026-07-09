@@ -82,7 +82,7 @@ export default function ProfileNudgePanel({ profile }: { profile: ProfileForComp
         <p className="mt-3 text-sm text-[var(--ink-muted)]">
           You&apos;re out of AI suggestions for today.{" "}
           <Link href="/pro" className="font-medium text-[var(--ink)] underline">
-            Upgrade for unlimited + smarter AI
+            Upgrade for a smarter model
           </Link>
           .
         </p>

@@ -80,13 +80,13 @@ export default function MessageComposer({
             className="text-xs font-medium text-[var(--blue)] underline disabled:opacity-50"
           >
             {drafting ? "Drafting…" : "✦ Draft an intro"}
-            {viewerIsPro && <span className="text-[var(--ink-faint)]"> (unlimited)</span>}
+            {viewerIsPro && <span className="text-[var(--ink-faint)]"> (150 a day)</span>}
           </button>
           {draftNotice === "locked" && (
             <p className="mt-1 text-xs text-[var(--ink-muted)]">
               Out of free suggestions today.{" "}
               <Link href="/pro" className="font-medium text-[var(--blue)] underline">
-                Go Pro for unlimited
+                Go Pro for 150 a day
               </Link>
               .
             </p>

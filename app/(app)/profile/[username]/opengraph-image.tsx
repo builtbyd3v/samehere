@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { ImageResponse } from "next/og";
 import { createClient } from "@supabase/supabase-js";
 import sharp from "sharp";
@@ -43,6 +44,26 @@ const GREEN = "#5fce8f"; // --campus-founder (Social Butterfly)
 const HM = ["rgba(247, 244, 237, 0.07)", "#1e3a5f", "#2f6db0", "#4f9fe8"]; // --hm0..3
 
 const level = (points: number) => (points === 0 ? 0 : points <= 3 ? 1 : points <= 7 ? 2 : 3);
+
+// The app is set in Figtree (app/layout.tsx). Satori ships no fonts and falls
+// back to a generic sans, which renders 600-weight as something closer to 400 —
+// that is why the wordmark looked thin next to the real navbar.
+//
+// Resolved with `new URL(..., import.meta.url)`, which Next traces statically.
+// `join(process.cwd(), ...)` is a runtime string, so the font would be missing
+// from the deployed bundle: fine locally, a 500 in production. This route is
+// dynamic (its key is `/profile/[username]/opengraph-image-<hash>`), so unlike
+// the root card it is not prerendered and really does read this at request time.
+const fonts = async () => {
+  const [regular, semibold] = await Promise.all([
+    readFile(new URL("../../../fonts/Figtree-Regular.ttf", import.meta.url)),
+    readFile(new URL("../../../fonts/Figtree-SemiBold.ttf", import.meta.url)),
+  ]);
+  return [
+    { name: "Figtree", data: regular, weight: 400 as const, style: "normal" as const },
+    { name: "Figtree", data: semibold, weight: 600 as const, style: "normal" as const },
+  ];
+};
 
 type HeatmapRow = { day: string; points: number };
 type Profile = {
@@ -253,8 +274,10 @@ function Identity({ profile, avatar, counts }: { profile: Profile; avatar: strin
 function Heatmap({ weeks, streak }: { weeks: number[][]; streak: number }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
+      {/* "Activity" and "{n}-day streak" are the app's own strings — see the h2 in
+          profile/[username]/page.tsx and ProfileActivitySection. */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ fontSize: 20, fontWeight: 600, color: INK }}>Contribution activity</div>
+        <div style={{ fontSize: 20, fontWeight: 600, color: INK }}>Activity</div>
         {streak > 0 && (
           <div
             style={{
@@ -268,7 +291,7 @@ function Heatmap({ weeks, streak }: { weeks: number[][]; streak: number }) {
               padding: "5px 14px",
             }}
           >
-            {streak === 1 ? "1 day streak" : `${streak} day streak`}
+            {`${streak}-day streak`}
           </div>
         )}
       </div>
@@ -344,6 +367,8 @@ export default async function OgImage({ params }: { params: Promise<{ username: 
   const { data: rows } = await supabase.rpc("get_public_profile", { p_username: username });
   const profile = (rows as Profile[] | null)?.[0] ?? null;
 
+  const font = await fonts();
+
   // No such user: brand card, nothing personal.
   if (!profile) {
     return new ImageResponse(
@@ -358,13 +383,14 @@ export default async function OgImage({ params }: { params: Promise<{ username: 
             padding: 80,
             background: CANVAS,
             color: INK,
+            fontFamily: "Figtree",
           }}
         >
           <Wordmark size={60} />
           <div style={{ marginTop: 18, fontSize: 26, color: INK_MUTED }}>Verified students only.</div>
         </div>
       ),
-      { ...size },
+      { ...size, fonts: font },
     );
   }
 
@@ -390,6 +416,7 @@ export default async function OgImage({ params }: { params: Promise<{ username: 
           flexDirection: "column",
           background: CANVAS,
           padding: 44,
+          fontFamily: "Figtree",
         }}
       >
         <div
@@ -420,6 +447,6 @@ export default async function OgImage({ params }: { params: Promise<{ username: 
         </div>
       </div>
     ),
-    { ...size },
+    { ...size, fonts: font },
   );
 }
