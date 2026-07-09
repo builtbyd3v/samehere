@@ -218,6 +218,7 @@ export type Database = {
           id: string
           metadata: Json | null
           points: number
+          source_id: string | null
           user_id: string | null
         }
         Insert: {
@@ -227,6 +228,7 @@ export type Database = {
           id?: string
           metadata?: Json | null
           points: number
+          source_id?: string | null
           user_id?: string | null
         }
         Update: {
@@ -236,6 +238,7 @@ export type Database = {
           id?: string
           metadata?: Json | null
           points?: number
+          source_id?: string | null
           user_id?: string | null
         }
         Relationships: [
@@ -512,6 +515,7 @@ export type Database = {
       }
       posts: {
         Row: {
+          answers_prompt: boolean
           content: string
           created_at: string | null
           hidden: boolean
@@ -521,6 +525,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          answers_prompt?: boolean
           content: string
           created_at?: string | null
           hidden?: boolean
@@ -530,6 +535,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          answers_prompt?: boolean
           content?: string
           created_at?: string | null
           hidden?: boolean
@@ -634,6 +640,7 @@ export type Database = {
           skills: string[] | null
           stripe_customer_id: string | null
           username: string
+          verified_student: boolean
           wants_pro: boolean
           year: string | null
         }
@@ -666,6 +673,7 @@ export type Database = {
           skills?: string[] | null
           stripe_customer_id?: string | null
           username: string
+          verified_student?: boolean
           wants_pro?: boolean
           year?: string | null
         }
@@ -698,6 +706,7 @@ export type Database = {
           skills?: string[] | null
           stripe_customer_id?: string | null
           username?: string
+          verified_student?: boolean
           wants_pro?: boolean
           year?: string | null
         }
@@ -927,23 +936,46 @@ export type Database = {
           },
         ]
       }
-      signup_allowlist: {
+      school_email_verifications: {
         Row: {
+          attempts: number
+          code_hash: string
           created_at: string
           email: string
-          note: string | null
+          expires_at: string
+          last_request_at: string
+          requests_today: number
+          user_id: string
         }
         Insert: {
+          attempts?: number
+          code_hash: string
           created_at?: string
           email: string
-          note?: string | null
+          expires_at: string
+          last_request_at?: string
+          requests_today?: number
+          user_id: string
         }
         Update: {
+          attempts?: number
+          code_hash?: string
           created_at?: string
           email?: string
-          note?: string | null
+          expires_at?: string
+          last_request_at?: string
+          requests_today?: number
+          user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "school_email_verifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stripe_events: {
         Row: {
@@ -991,6 +1023,7 @@ export type Database = {
           p_action_type: string
           p_metadata?: Json
           p_points: number
+          p_source_id: string
           p_user: string
         }
         Returns: undefined
@@ -1025,6 +1058,10 @@ export type Database = {
       admin_unhide_post: { Args: { p_post_id: string }; Returns: undefined }
       admin_unsuspend_user: { Args: { p_user: string }; Returns: undefined }
       block_user: { Args: { target: string }; Returns: undefined }
+      confirm_school_verification: {
+        Args: { p_code: string }
+        Returns: boolean
+      }
       current_is_admin: { Args: never; Returns: boolean }
       current_is_suspended: { Args: never; Returns: boolean }
       expire_lapsed_pro: { Args: never; Returns: number }
@@ -1050,7 +1087,7 @@ export type Database = {
         }[]
       }
       get_leaderboard: {
-        Args: { p_school?: string; p_scope: string }
+        Args: { p_scope: string }
         Returns: {
           accent_color: string
           avatar_url: string
@@ -1062,6 +1099,7 @@ export type Database = {
           rank: number
           school: string
           username: string
+          verified_student: boolean
           weekly_points: number
         }[]
       }
@@ -1153,6 +1191,7 @@ export type Database = {
           is_pro: boolean
           school: string
           username: string
+          verified_student: boolean
         }[]
       }
       get_public_profile_counts: {
@@ -1179,10 +1218,6 @@ export type Database = {
           today_earned: boolean
         }[]
       }
-      has_same_day_connection: {
-        Args: { p_day: string; p_user: string }
-        Returns: boolean
-      }
       insert_notification: {
         Args: {
           p_actor_id: string
@@ -1193,7 +1228,6 @@ export type Database = {
         }
         Returns: undefined
       }
-      is_allowed_signup_email: { Args: { p_email: string }; Returns: boolean }
       is_conversation_member: {
         Args: { p_conversation_id: string }
         Returns: boolean
@@ -1243,11 +1277,16 @@ export type Database = {
         Args: { p_media: Json; p_user: string }
         Returns: boolean
       }
+      qualifying_length: { Args: { p_content: string }; Returns: number }
       record_profile_view: { Args: { p_viewed: string }; Returns: undefined }
       reject_follow: { Args: { p_follower: string }; Returns: undefined }
       request_follow: { Args: { p_target: string }; Returns: string }
+      request_school_verification: {
+        Args: { p_code_hash: string; p_email: string }
+        Returns: undefined
+      }
       revoke_contribution_same_day: {
-        Args: { p_action: string; p_created: string; p_user: string }
+        Args: { p_action: string; p_source: string; p_user: string }
         Returns: undefined
       }
       set_referral_code: { Args: { p_code: string }; Returns: string }
