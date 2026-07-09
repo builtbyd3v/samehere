@@ -92,7 +92,11 @@ export async function POST(req: Request) {
         // has no subscription to manage, and that absence is what hides the
         // billing-portal button on /pro.
         if (session.mode === "payment") {
-          const proUntil = new Date();
+          // Anchor the term to the session's own creation time, not to now().
+          // Stripe redelivers events on retry, and `new Date()` would push
+          // pro_until further out on every redelivery — silently gifting term.
+          // Derived from the event, so replays are idempotent.
+          const proUntil = new Date(session.created * 1000);
           proUntil.setMonth(proUntil.getMonth() + SEMESTER_MONTHS);
           await admin
             .from("profiles")

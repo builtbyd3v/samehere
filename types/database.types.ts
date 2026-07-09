@@ -952,6 +952,7 @@ export type Database = {
         }[]
       }
       get_dm_unread_total: { Args: never; Returns: number }
+      get_founder_spots_left: { Args: never; Returns: number }
       get_heatmap: {
         Args: { p_profile_id: string }
         Returns: {
