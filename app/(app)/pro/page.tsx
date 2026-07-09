@@ -2,13 +2,9 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isPro } from "@/lib/pro";
 import { IconBolt } from "@/components/icons";
-import { joinProWaitlist, openBillingPortal } from "./actions";
+import { joinProWaitlist, openBillingPortal, startCheckout } from "./actions";
 
 const BILLING_ENABLED = process.env.NEXT_PUBLIC_BILLING_ENABLED === "true";
-
-// ponytail: live payment links; swap for test links via env if a test flow is needed
-const PAYMENT_LINK_MONTHLY = "https://buy.stripe.com/14A9AUcQm0gqeQH9r02wU00";
-const PAYMENT_LINK_SEMESTER = "https://buy.stripe.com/cNi00k4jQ0gq8sj7iS2wU01";
 
 const GROUPS: { title: string; subtitle: string; features: string[] }[] = [
   {
@@ -85,12 +81,6 @@ export default async function ProPage({
 
   const pro = isPro(profile);
 
-  const refParams = `client_reference_id=${encodeURIComponent(user.id)}${
-    user.email ? `&prefilled_email=${encodeURIComponent(user.email)}` : ""
-  }`;
-  const monthlyHref = `${PAYMENT_LINK_MONTHLY}?${refParams}`;
-  const semesterHref = `${PAYMENT_LINK_SEMESTER}?${refParams}`;
-
   return (
     <main className="page-enter mx-auto max-w-2xl px-5 py-10">
       <div className="mb-6 flex items-center gap-2">
@@ -154,12 +144,18 @@ export default async function ProPage({
             )
           ) : BILLING_ENABLED ? (
             <div className="flex flex-col gap-2 sm:flex-row">
-              <a href={monthlyHref} className="btn-primary flex-1 text-center">
-                Subscribe monthly
-              </a>
-              <a href={semesterHref} className="btn-primary flex-1 text-center">
-                Subscribe for a semester
-              </a>
+              <form action={startCheckout} className="flex-1">
+                <input type="hidden" name="plan" value="monthly" />
+                <button type="submit" className="btn-primary w-full">
+                  Subscribe monthly
+                </button>
+              </form>
+              <form action={startCheckout} className="flex-1">
+                <input type="hidden" name="plan" value="semester" />
+                <button type="submit" className="btn-primary w-full">
+                  Subscribe for a semester
+                </button>
+              </form>
             </div>
           ) : profile.wants_pro ? (
             <p className="text-sm text-[var(--ink-muted)]">

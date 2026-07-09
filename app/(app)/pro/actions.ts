@@ -4,8 +4,21 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getPostHogServerClient } from "@/lib/posthog-server";
+import { isPro } from "@/lib/pro";
 import { stripe } from "@/lib/stripe";
 import { SITE_URL } from "@/lib/site";
+
+// ponytail: live price ids inline, env override for test mode. Same call the
+// old hardcoded payment links made — price ids are not secrets.
+const PRICES = {
+  monthly: process.env.STRIPE_PRICE_MONTHLY ?? "price_1Tq3OeIKoFZaqPVsqyJtUpFU",
+  semester: process.env.STRIPE_PRICE_SEMESTER ?? "price_1Tq3OqIKoFZaqPVsajVfUOvC",
+} as const;
+
+type Plan = keyof typeof PRICES;
+
+const isPlan = (v: FormDataEntryValue | null): v is Plan =>
+  v === "monthly" || v === "semester";
 
 // Sets the signed-in user's wants_pro flag. Session client under RLS — no
 // service_role, no billing (v1.1 wires Stripe on top of this flag).
@@ -28,6 +41,56 @@ export async function joinProWaitlist() {
   });
 
   revalidatePath("/pro");
+}
+
+// Creates a Stripe Checkout Session for the signed-in user.
+//
+// The subscriber identity (client_reference_id + metadata.supabase_id) is bound
+// here, from the server session. It is never carried in a URL the browser can
+// edit, so a checkout can only ever be attributed to the account that started it.
+// The webhook re-checks that both markers agree before granting Pro.
+export async function startCheckout(formData: FormData) {
+  const plan = formData.get("plan");
+  if (!isPlan(plan)) redirect("/pro");
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_pro, stripe_customer_id")
+    .eq("id", user.id)
+    .single();
+  if (!profile) redirect("/login");
+  if (isPro(profile)) redirect("/pro");
+
+  const session = await stripe.checkout.sessions.create({
+    mode: "subscription",
+    line_items: [{ price: PRICES[plan], quantity: 1 }],
+    client_reference_id: user.id,
+    metadata: { supabase_id: user.id },
+    // Mirrored onto the subscription so later subscription.* events can be
+    // attributed even before the checkout row lands.
+    subscription_data: { metadata: { supabase_id: user.id } },
+    ...(profile.stripe_customer_id
+      ? { customer: profile.stripe_customer_id }
+      : { customer_email: user.email }),
+    success_url: `${SITE_URL}/pro?upgraded=1`,
+    cancel_url: `${SITE_URL}/pro`,
+  });
+
+  const posthog = getPostHogServerClient();
+  posthog?.capture({
+    distinctId: user.id,
+    event: "stripe_checkout_started",
+    properties: { billing_provider: "stripe", plan },
+  });
+
+  if (!session.url) redirect("/pro");
+  redirect(session.url);
 }
 
 // Opens the Stripe Customer Portal for the signed-in user's existing subscription.

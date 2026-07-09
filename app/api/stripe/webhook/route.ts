@@ -19,6 +19,9 @@ async function setProByCustomerId(
   fields: { is_pro: boolean; pro_until: string | null }
 ) {
   const admin = createAdminClient();
+  // `stripe_customer_id` is uniquely indexed, so this matches at most one row.
+  // Zero rows is normal: subscription.* can arrive before checkout.session.completed
+  // has stamped the customer id onto the profile.
   await admin.from("profiles").update(fields).eq("stripe_customer_id", customerId);
 }
 
@@ -47,8 +50,7 @@ export async function POST(req: Request) {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
-        const supabaseId =
-          session.client_reference_id ?? session.metadata?.supabase_id ?? null;
+        const supabaseId = session.client_reference_id;
         const customerId =
           typeof session.customer === "string" ? session.customer : session.customer?.id;
         const subscriptionId =
@@ -57,6 +59,15 @@ export async function POST(req: Request) {
             : session.subscription?.id;
 
         if (!supabaseId || !customerId) break;
+
+        // Only sessions created by `startCheckout` carry BOTH markers, set from
+        // the server session. A hosted Payment Link can only ever set
+        // client_reference_id (a URL query param the buyer controls), never
+        // metadata — so a mismatch means the id was not bound by us. Refuse it
+        // rather than grant Pro on a browser-supplied account id.
+        if (session.metadata?.supabase_id !== supabaseId) {
+          return NextResponse.json({ error: "Unverified session subject" }, { status: 400 });
+        }
 
         let proUntil: string | null = null;
         if (subscriptionId) {
