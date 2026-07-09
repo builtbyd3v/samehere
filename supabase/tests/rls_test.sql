@@ -1,16 +1,15 @@
--- RLS regression harness — FIX_PLAN.md Wave 0.3.
--- Spec: REVIEW.md (findings C1, C2, H1, H2, M3, M4).
+-- RLS regression harness — FIX_PLAN.md Wave 0.3, extended for the hardening
+-- round that followed REVIEW.md (2026-07-09).
 --
--- One failing assertion per finding, run against TODAY's database (before any
--- fix lands). C1, C2, H1, H2, M3 (x2) are expected to FAIL today — that is
--- the intended, correct outcome: it proves the hole is real. When a fix
--- migration lands, its assertion flips to PASS with zero edits to this file.
--- M4 is also expected to FAIL today (fabricated follower_id on accept).
--- Two known-sound behaviors are asserted PASS as regression guards.
+-- Every finding below (C1, C2, H1, H2, H5, H5b, M3, M4, M5, M8) has a landed,
+-- applied-to-prod fix (see the migrations from 20260711100000 onward). This
+-- file now asserts the world AS IT IS: every row in the PASS/FAIL table at
+-- the bottom is expected to read PASS, and a clean run exits 0. A FAIL here
+-- means a fixed hole regressed — treat it as a live incident, not a
+-- known-red test.
 --
 -- Run:   psql "$SUPABASE_DB_URL" -f supabase/tests/rls_test.sql
--- CI use (once fixes have landed and this should gate green/red):
---        psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/rls_test.sql
+-- CI:    psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/rls_test.sql
 -- Never mutates data: everything below runs inside one transaction that is
 -- rolled back at the end, win or lose.
 
@@ -32,11 +31,23 @@ $$;
 create temporary table tests_fixture (key text primary key, id uuid not null);
 create temporary table tests_results (finding text primary key, passed boolean not null, note text);
 
+-- Every assertion below runs some of its body as `authenticated` or `anon`
+-- (tests.as_user / tests.as_anon), and reads its fixture ids and writes its
+-- result while wearing that role. Temp tables are owned by the connecting
+-- superuser and grant nothing by default, so without these the very first
+-- impersonated block dies with "permission denied for table tests_fixture".
+-- Found the first time this file was actually executed. Do not remove.
+grant select, insert, update, delete on tests_fixture to authenticated, anon;
+grant select, insert, update, delete on tests_results to authenticated, anon;
+
 -- ============ fixtures (seeded as the connecting superuser, bypasses RLS) ============
 -- A: private account, owns a private post + one post-media object, and
 --    comments/reacts on a public post by C (used for the M3 block-mirroring check).
--- B: the attacker / blocked user.
--- C: a public, unrelated third account.
+-- B: the attacker / blocked user. Owns a public post and a repost of C's
+--    public post (used by H5), and is the sender of a DM to A over a
+--    pre-seeded conversation (used by H5b / M8).
+-- C: a public, unrelated third account. Owns a public post (post_public) and
+--    an admin-hidden post (post_hidden, used by the public-surface checks).
 do $$
 declare
   v_a uuid := gen_random_uuid();
@@ -44,6 +55,11 @@ declare
   v_c uuid := gen_random_uuid();
   v_post_private uuid;
   v_post_public uuid;
+  v_post_b uuid;
+  v_repost_b uuid;
+  v_post_hidden uuid;
+  v_conv uuid;
+  v_msg uuid;
 begin
   insert into auth.users (
     instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -80,21 +96,42 @@ begin
   insert into public.comments (post_id, user_id, content) values (v_post_public, v_a, 'comment by A on C''s post');
   insert into public.reactions (post_id, user_id, type) values (v_post_public, v_a, 'like');
 
+  -- H5 fixture: B's own public post + a repost of C's public post, so a
+  -- block's effect on BOTH surfaces can be asserted.
+  insert into public.posts (user_id, content) values (v_b, 'public post by B') returning id into v_post_b;
+  insert into public.reposts (post_id, user_id) values (v_post_public, v_b) returning id into v_repost_b;
+
+  -- public-surface fixture: an admin-hidden post by a public author.
+  -- get_public_post must return zero rows for it even though C is public.
+  insert into public.posts (user_id, content, hidden) values (v_c, 'hidden post by C', true) returning id into v_post_hidden;
+
+  -- H5b / M8 fixture: a DM thread with one message from B to A, seeded
+  -- BEFORE any block exists (get_or_create_dm would itself refuse once
+  -- blocked — inserting directly as superuser sidesteps that entirely).
+  insert into public.conversations default values returning id into v_conv;
+  insert into public.conversation_members (conversation_id, user_id) values (v_conv, v_a), (v_conv, v_b);
+  insert into public.dm_pairs (user_a, user_b, conversation_id) values (least(v_a, v_b), greatest(v_a, v_b), v_conv);
+  insert into public.messages (conversation_id, sender_id, content)
+  values (v_conv, v_b, 'harassing message from B to A')
+  returning id into v_msg;
+
   insert into tests_fixture (key, id) values
     ('a', v_a), ('b', v_b), ('c', v_c),
-    ('post_private', v_post_private), ('post_public', v_post_public);
+    ('post_private', v_post_private), ('post_public', v_post_public),
+    ('post_b', v_post_b), ('repost_b', v_repost_b), ('post_hidden', v_post_hidden),
+    ('conv_ab', v_conv), ('msg_b_to_a', v_msg);
 end $$;
 
 -- ============ C1 — a non-.edu account can actually be created ============
 -- The real finding is "auth.signUp() with a gmail address creates a verified
 -- account", so exercise the thing itself: insert a non-.edu auth.users row (as
 -- superuser here — auth.signUp is superuser-equivalent for row creation) and
--- assert handle_new_user aborts the transaction. Today the trigger never reads
--- new.email, so the insert commits -> FAIL. The function-existence proxy below
--- (C1_helper) stays as a secondary, human-readable signal.
--- NOTE: the fixture users use @school.edu on purpose, so they still seed cleanly
--- once this gate lands. Do NOT "tidy" them to @example.com — that would break
--- the whole file the day C1 is fixed.
+-- assert handle_new_user aborts the transaction. handle_new_user now gates on
+-- new.email via is_allowed_signup_email(), so the insert raises -> PASS. The
+-- function-existence proxy below (C1_helper) stays as a secondary,
+-- human-readable signal.
+-- NOTE: the fixture users use @school.edu on purpose — the .edu gate is live,
+-- so @example.com would abort the whole file. Do NOT "tidy" them.
 do $$
 declare
   v_raised boolean := false;
@@ -144,21 +181,75 @@ exception when others then
   insert into tests_results values ('C1_helper', false, sqlerrm);
 end $$;
 
--- ============ H1 — log_contribution is directly callable by any logged-in user ============
+-- ============ H1 — contribution points cannot be minted by a direct RPC call ============
+-- log_contribution(text,jsonb) was DROPPED by 20260711110100_contribution_from_rows.sql.
+-- Points are now a byproduct of AFTER INSERT/UPDATE triggers reading the real
+-- row (posts_award_contribution / comments_award_contribution /
+-- profiles_award_contribution), which call the internal primitive
+-- _log_contribution(uuid,text,int,jsonb) — SECURITY DEFINER, revoked from
+-- public/anon/authenticated, reachable only from inside another definer
+-- function's body (as the function owner), never directly over PostgREST.
+-- Assert both halves: the old forgeable RPC is gone, and its replacement is
+-- not directly callable either.
 do $$
 declare
-  v_oid oid := to_regprocedure('public.log_contribution(text,jsonb)');
+  v_old_oid oid := to_regprocedure('public.log_contribution(text,jsonb)');
+  v_new_oid oid := to_regprocedure('public._log_contribution(uuid,text,int,jsonb)');
 begin
-  -- Passes in both worlds: the function is dropped (v_oid is null), OR it still
-  -- exists but is not EXECUTE-able by authenticated. Fails only if a logged-in
-  -- client can still call it directly to mint points.
-  if v_oid is not null and has_function_privilege('authenticated', v_oid, 'execute') then
-    raise exception 'H1 REGRESSION: authenticated role can EXECUTE public.log_contribution(text,jsonb) directly — a client can call it with a fabricated character_count and mint heatmap/streak/leaderboard points with no real post/comment behind them';
+  if v_old_oid is not null then
+    raise exception 'H1 REGRESSION: public.log_contribution(text,jsonb) still exists — the forgeable client-callable RPC was supposed to be dropped by 20260711110100';
+  end if;
+  if v_new_oid is null then
+    raise exception 'H1 SETUP: public._log_contribution(uuid,text,int,jsonb) does not exist — the expected replacement primitive is missing';
+  end if;
+  if has_function_privilege('authenticated', v_new_oid, 'execute') then
+    raise exception 'H1 REGRESSION: authenticated role can EXECUTE public._log_contribution(uuid,text,int,jsonb) directly — a client could call it with a fabricated action_type/points and mint heatmap/streak/leaderboard points with no real post/comment/connection behind them';
   end if;
   insert into tests_results values ('H1', true, 'ok');
 exception when others then
   insert into tests_results values ('H1', false, sqlerrm);
 end $$;
+
+-- ============ H1_positive — a real post correctly earns/loses its point; a short one earns nothing ============
+select tests.as_user(id) from tests_fixture where key = 'c';
+do $$
+declare
+  v_c uuid := (select id from tests_fixture where key = 'c');
+  v_today date := (now() at time zone 'America/New_York')::date;
+  v_short_id uuid;
+  v_long_id uuid;
+  v_cnt int;
+  v_points int;
+begin
+  -- a short (well under 150 chars) post earns nothing.
+  insert into public.posts (user_id, content) values (v_c, 'too short to earn a heatmap point') returning id into v_short_id;
+  select count(*) into v_cnt from public.contribution_log
+   where user_id = v_c and date = v_today and action_type = 'post';
+  if v_cnt <> 0 then
+    raise exception 'H1_positive REGRESSION: a short post created % contribution_log row(s) — short posts must earn zero points', v_cnt;
+  end if;
+
+  -- a 200-char (>=150) post earns exactly one row worth 5 points.
+  insert into public.posts (user_id, content) values (v_c, repeat('x', 200)) returning id into v_long_id;
+  select count(*), max(points) into v_cnt, v_points from public.contribution_log
+   where user_id = v_c and date = v_today and action_type = 'post';
+  if v_cnt <> 1 or v_points <> 5 then
+    raise exception 'H1_positive REGRESSION: a 200-char post produced % contribution_log row(s) with points=% — expected exactly 1 row with points=5', v_cnt, v_points;
+  end if;
+
+  -- deleting the qualifying post revokes the same-day point.
+  delete from public.posts where id = v_long_id;
+  select count(*) into v_cnt from public.contribution_log
+   where user_id = v_c and date = v_today and action_type = 'post';
+  if v_cnt <> 0 then
+    raise exception 'H1_positive REGRESSION: deleting the qualifying post left % contribution_log row(s) behind — revoke_contribution_same_day did not clean up', v_cnt;
+  end if;
+
+  insert into tests_results values ('H1_positive', true, 'ok');
+exception when others then
+  insert into tests_results values ('H1_positive', false, sqlerrm);
+end $$;
+reset role;
 
 -- ============ setup: A blocks B ============
 select tests.as_user(id) from tests_fixture where key = 'a';
@@ -227,9 +318,7 @@ reset role;
 -- ============ C2_forgery — a post's media paths must live under the author's own folder ============
 -- The TypeScript-only path check (app/(app)/feed/actions.ts:72) is not a
 -- security control: as B, insert a post whose media path points into A's
--- {uid}/ folder. The `posts_media_paths_owned` CHECK constraint (added by a
--- sibling agent) must reject it. Today, with no constraint, the insert commits
--- -> FAIL, which is the proof that the path check is app-only.
+-- {uid}/ folder. The `posts_media_paths_owned` CHECK constraint must reject it.
 select tests.as_user(id) from tests_fixture where key = 'b';
 do $$
 declare
@@ -299,12 +388,237 @@ exception when others then
 end $$;
 reset role;
 
+-- ============ H5 setup: isolate "author blocked viewer" direction ============
+-- 20260711110000's own header explains the exact defect: the pre-fix posts
+-- policy checked blocks via a raw `blocks` subquery, which runs under the
+-- CALLER's own RLS. `blocks` has one SELECT policy — owner read
+-- (auth.uid() = blocker_id) — so the caller only ever sees rows THEY
+-- authored. If the AUTHOR (not the viewer) is the one who placed the block,
+-- that row belongs to the author; the viewer can't see it under blocks' own
+-- RLS, so the `not exists` check silently passed. Isolate that exact
+-- direction: drop the "A blocks B" fixture row so ONLY "B blocks A" exists,
+-- then prove A still sees none of B's posts/reposts.
+set local role postgres;
+delete from public.blocks
+ where blocker_id = (select id from tests_fixture where key = 'a')
+   and blocked_id = (select id from tests_fixture where key = 'b');
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$ begin perform public.block_user((select id from tests_fixture where key = 'a')); end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'a';
+do $$
+declare
+  v_b uuid := (select id from tests_fixture where key = 'b');
+  v_posts int;
+  v_reposts int;
+begin
+  select count(*) into v_posts from public.posts where user_id = v_b;
+  select count(*) into v_reposts from public.reposts where user_id = v_b;
+  if v_posts <> 0 or v_reposts <> 0 then
+    raise exception 'H5 REGRESSION: B blocked A (author-initiated block — the direction the old raw `blocks` subquery missed), but A can still see % of B''s post(s) and % of B''s repost(s)', v_posts, v_reposts;
+  end if;
+  insert into tests_results values ('H5', true, 'ok');
+exception when others then
+  insert into tests_results values ('H5', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ H5_reverse: the other direction (viewer-initiated block) still holds ============
+set local role postgres;
+delete from public.blocks
+ where blocker_id = (select id from tests_fixture where key = 'b')
+   and blocked_id = (select id from tests_fixture where key = 'a');
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'a';
+do $$ begin perform public.block_user((select id from tests_fixture where key = 'b')); end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'a';
+do $$
+declare
+  v_b uuid := (select id from tests_fixture where key = 'b');
+  v_posts int;
+begin
+  select count(*) into v_posts from public.posts where user_id = v_b;
+  if v_posts <> 0 then
+    raise exception 'H5_reverse REGRESSION: A blocked B (viewer-initiated), but A can still see % of B''s post(s)', v_posts;
+  end if;
+  insert into tests_results values ('H5_reverse', true, 'ok');
+exception when others then
+  insert into tests_results values ('H5_reverse', false, sqlerrm);
+end $$;
+reset role;
+-- state after this point: A blocks B (matches the rest of the file's
+-- assumption, same as before H5 ran).
+
+-- ============ H5b — a block stops the SEND, not just the read ============
+-- Live body used a raw JOIN against `blocks`, which — same mechanism as
+-- H5 — runs under the SENDER's own RLS and only ever sees blocks the sender
+-- authored. "A blocked B" is a row B never authored, so it was invisible to
+-- B's own read of `blocks`, and B's send sailed through. Fixed by routing
+-- through get_blocked_ids() (SECURITY DEFINER, bidirectional).
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+declare
+  v_conv uuid := (select id from tests_fixture where key = 'conv_ab');
+  v_inserted boolean := false;
+  v_state text;
+begin
+  begin
+    insert into public.messages (conversation_id, sender_id, content)
+    values (v_conv, (select auth.uid()), 'trying to message despite the block');
+    v_inserted := true;
+  exception when others then
+    v_inserted := false;
+    v_state := sqlstate;
+  end;
+  if v_inserted then
+    raise exception 'H5b REGRESSION: B (blocked by A) inserted a message into their shared conversation — the messages INSERT with_check''s blocks JOIN only ever sees blocks the SENDER authored, so "A blocked B" never matched';
+  end if;
+  if v_state <> '42501' then
+    raise exception 'H5b WRONG REASON: message insert raised SQLSTATE % — expected 42501 (RLS block clause on "member send message")', v_state;
+  end if;
+  insert into tests_results values ('H5b', true, 'ok');
+exception when others then
+  insert into tests_results values ('H5b', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ M8_multi_target — a report must reference exactly one target ============
+select tests.as_user(id) from tests_fixture where key = 'c';
+do $$
+declare
+  v_post uuid := (select id from tests_fixture where key = 'post_public');
+  v_b uuid := (select id from tests_fixture where key = 'b');
+  v_raised boolean := false;
+  v_state text;
+begin
+  begin
+    insert into public.reports (reporter_id, reason, target_type, post_id, reported_user_id)
+    values ((select auth.uid()), 'multi-target forgery', 'post', v_post, v_b);
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised then
+    raise exception 'M8_multi_target REGRESSION: a report row was created with two non-null targets (post_id AND reported_user_id) — reports_assert_target''s num_nonnulls check is not enforced';
+  end if;
+  -- reports_assert_target raises a plain `raise exception` with no errcode,
+  -- so Postgres assigns the generic P0001 (raise_exception).
+  if v_state <> 'P0001' then
+    raise exception 'M8_multi_target WRONG REASON: insert raised SQLSTATE % — expected P0001 (reports_assert_target''s plain raise exception)', v_state;
+  end if;
+  insert into tests_results values ('M8_multi_target', true, 'ok');
+exception when others then
+  insert into tests_results values ('M8_multi_target', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ M8_snapshot setup: B reports C's public post with a forged snapshot ============
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+declare
+  v_report_id uuid;
+begin
+  insert into public.reports (reporter_id, reason, target_type, post_id, snapshot)
+  values (
+    (select auth.uid()), 'spam', 'post',
+    (select id from tests_fixture where key = 'post_public'),
+    'FORGED SNAPSHOT TEXT'
+  )
+  returning id into v_report_id;
+  insert into tests_fixture (key, id) values ('report_post', v_report_id);
+end $$;
+reset role;
+
+-- ============ M8_snapshot — the trigger, not the client, writes snapshot ============
+set local role postgres;
+do $$
+declare
+  v_snapshot text;
+begin
+  select snapshot into v_snapshot from public.reports
+   where id = (select id from tests_fixture where key = 'report_post');
+  if v_snapshot is distinct from 'public post by C' then
+    raise exception 'M8_snapshot REGRESSION: client-supplied snapshot survived the insert — expected the trigger to overwrite it with the real post content, got %', v_snapshot;
+  end if;
+  insert into tests_results values ('M8_snapshot', true, 'ok');
+exception when others then
+  insert into tests_results values ('M8_snapshot', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ M8_no_column_privilege — authenticated cannot select reports.snapshot ============
+do $$
+begin
+  if has_column_privilege('authenticated', 'public.reports', 'snapshot', 'select') then
+    raise exception 'M8_no_column_privilege REGRESSION: authenticated has SELECT on reports.snapshot — a reporter could read back evidence they should not see, undermining the reporter/admin boundary';
+  end if;
+  insert into tests_results values ('M8_no_column_privilege', true, 'ok');
+exception when others then
+  insert into tests_results values ('M8_no_column_privilege', false, sqlerrm);
+end $$;
+
+-- ============ M8_block_then_report — the flow that matters most ============
+-- A has blocked B (state carried from H5_reverse). A must still be able to
+-- report B's message — a block is the victim's OWN action and must not
+-- disarm their ability to report. reports_assert_target's message branch
+-- re-checks conversation membership only, deliberately ignoring blocks.
+select tests.as_user(id) from tests_fixture where key = 'a';
+do $$
+declare
+  v_msg uuid := (select id from tests_fixture where key = 'msg_b_to_a');
+  v_report_id uuid;
+begin
+  insert into public.reports (reporter_id, reason, target_type, message_id)
+  values ((select auth.uid()), 'harassment via DM', 'message', v_msg)
+  returning id into v_report_id;
+  insert into tests_fixture (key, id) values ('report_msg', v_report_id);
+  insert into tests_results values ('M8_block_then_report', true, 'ok');
+exception when others then
+  insert into tests_results values ('M8_block_then_report', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ M8_evidence_survives — deleting the message does not destroy the report ============
+set local role postgres;
+do $$
+declare
+  v_msg_id uuid := (select id from tests_fixture where key = 'msg_b_to_a');
+  v_report uuid := (select id from tests_fixture where key = 'report_msg');
+  v_after_message_id uuid;
+  v_after_snapshot text;
+begin
+  delete from public.messages where id = v_msg_id;
+
+  select message_id, snapshot into v_after_message_id, v_after_snapshot
+  from public.reports where id = v_report;
+
+  if v_after_message_id is not null then
+    raise exception 'M8_evidence_survives REGRESSION: report.message_id still points at a deleted message (expected ON DELETE SET NULL), got %', v_after_message_id;
+  end if;
+  if v_after_snapshot is distinct from 'harassing message from B to A' then
+    raise exception 'M8_evidence_survives REGRESSION: snapshot does not match the original message content, got %', v_after_snapshot;
+  end if;
+
+  insert into tests_results values ('M8_evidence_survives', true, 'ok');
+exception when others then
+  insert into tests_results values ('M8_evidence_survives', false, sqlerrm);
+end $$;
+reset role;
+
 -- ============ decouple M4 from H2 ============
--- H2's insert of (follower=B, following=A) SUCCEEDS today (that's the hole).
--- follows has unique(follower_id, following_id), so M4's `update ... set
--- follower_id = B` below would hit that surviving row and fail on a UNIQUE
--- violation — reporting M4 FAIL for the wrong reason, and hiding itself once
--- H2 is fixed. Delete the H2 row as superuser so M4 tests only the M4 defect.
+-- Pre-fix, H2's insert of (follower=B, following=A) SUCCEEDED (that was the
+-- hole), and follows has unique(follower_id, following_id), so M4's `update
+-- ... set follower_id = B` below would hit that surviving row and fail on a
+-- UNIQUE violation — reporting M4 FAIL for the wrong reason. Post-fix, H2's
+-- insert is rejected by RLS and no row survives, so this delete is now a
+-- harmless no-op — but it is left in place (rather than removed) so this
+-- file keeps working regardless of which side of the H2 fix it runs against.
 -- DO NOT remove this delete: it is the seam between the two findings.
 set local role postgres;
 delete from public.follows
@@ -341,7 +655,63 @@ exception when others then
 end $$;
 reset role;
 
--- ============ regression guard (should PASS today): logged-out caller sees zero posts ============
+-- ============ M5 setup: suspend B ============
+set local role postgres;
+update public.profiles set is_suspended = true where id = (select id from tests_fixture where key = 'b');
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+begin
+  perform public.record_profile_view((select id from tests_fixture where key = 'c'));
+end $$;
+reset role;
+
+-- ============ M5_profile_view — a suspended user cannot record_profile_view ============
+set local role postgres;
+do $$
+declare
+  v_cnt int;
+begin
+  select count(*) into v_cnt from public.profile_views
+   where viewer_id = (select id from tests_fixture where key = 'b')
+     and viewed_id = (select id from tests_fixture where key = 'c');
+  if v_cnt <> 0 then
+    raise exception 'M5_profile_view REGRESSION: a suspended user''s record_profile_view() call still landed them in the target''s who-viewed-you list (% row(s))', v_cnt;
+  end if;
+  insert into tests_results values ('M5_profile_view', true, 'ok');
+exception when others then
+  insert into tests_results values ('M5_profile_view', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ M5_write — a suspended user cannot insert a post (regression guard) ============
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+declare
+  v_inserted boolean := false;
+  v_state text;
+begin
+  begin
+    insert into public.posts (user_id, content) values ((select auth.uid()), 'trying to post while suspended');
+    v_inserted := true;
+  exception when others then
+    v_inserted := false;
+    v_state := sqlstate;
+  end;
+  if v_inserted then
+    raise exception 'M5_write REGRESSION: a suspended user inserted a post';
+  end if;
+  if v_state <> '42501' then
+    raise exception 'M5_write WRONG REASON: post insert raised SQLSTATE % — expected 42501 (current_is_suspended() clause on "authed users create posts")', v_state;
+  end if;
+  insert into tests_results values ('M5_write', true, 'ok');
+exception when others then
+  insert into tests_results values ('M5_write', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ regression guard (should PASS): logged-out caller sees zero posts ============
 select tests.as_anon();
 do $$
 declare v_cnt int;
@@ -356,7 +726,7 @@ exception when others then
 end $$;
 reset role;
 
--- ============ regression guard (should PASS today): non-follower sees zero private-account posts ============
+-- ============ regression guard (should PASS): non-follower sees zero private-account posts ============
 select tests.as_user(id) from tests_fixture where key = 'c';
 do $$
 declare
@@ -373,6 +743,98 @@ exception when others then
 end $$;
 reset role;
 
+-- ============ public_surface — anon reads exactly what get_public_* intends, nothing more ============
+-- get_public_profile / get_public_post / get_public_profile_counts are the
+-- DELIBERATE anon-facing surface added by 20260711140000. The base tables
+-- must NOT have moved: anon still gets zero rows off `posts` directly.
+select tests.as_anon();
+do $$
+declare
+  v_post_public uuid := (select id from tests_fixture where key = 'post_public');
+  v_post_hidden uuid := (select id from tests_fixture where key = 'post_hidden');
+  v_post_private uuid := (select id from tests_fixture where key = 'post_private');
+  v_cnt int;
+begin
+  select count(*) into v_cnt from public.get_public_profile('rls_test_c');
+  if v_cnt <> 1 then
+    raise exception 'public_surface REGRESSION: get_public_profile(''rls_test_c'') returned % row(s) as anon, expected 1', v_cnt;
+  end if;
+
+  select count(*) into v_cnt from public.get_public_post(v_post_public);
+  if v_cnt <> 1 then
+    raise exception 'public_surface REGRESSION: get_public_post() on a visible public post returned % row(s) as anon, expected 1', v_cnt;
+  end if;
+
+  select count(*) into v_cnt from public.get_public_post(v_post_hidden);
+  if v_cnt <> 0 then
+    raise exception 'public_surface REGRESSION: get_public_post() on an admin-hidden post returned % row(s) as anon, expected 0', v_cnt;
+  end if;
+
+  select count(*) into v_cnt from public.get_public_post(v_post_private);
+  if v_cnt <> 0 then
+    raise exception 'public_surface REGRESSION: get_public_post() on a private author''s post returned % row(s) as anon, expected 0', v_cnt;
+  end if;
+
+  select count(*) into v_cnt from public.get_public_post(gen_random_uuid());
+  if v_cnt <> 0 then
+    raise exception 'public_surface REGRESSION: get_public_post() on a nonexistent id returned % row(s) as anon, expected 0', v_cnt;
+  end if;
+
+  select count(*) into v_cnt from public.posts;
+  if v_cnt <> 0 then
+    raise exception 'public_surface REGRESSION: anon can select % row(s) directly off public.posts — the new anon-granted get_public_* RPCs must not widen the base table''s SELECT policy', v_cnt;
+  end if;
+
+  insert into tests_results values ('public_surface', true, 'ok');
+exception when others then
+  insert into tests_results values ('public_surface', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ get_public_profile_privacy — a private account exposes identity only ============
+select tests.as_anon();
+do $$
+declare
+  r record;
+  v_sig text := pg_get_function_result(to_regprocedure('public.get_public_profile(text)'));
+begin
+  select * into r from public.get_public_profile('rls_test_a');
+  if r.bio is not null or r.goals is not null or r.school is not null
+     or r.year is not null or r.major is not null then
+    raise exception 'get_public_profile_privacy REGRESSION: a private account''s bio/goals/school/year/major leaked to an anonymous caller (bio=%, goals=%, school=%, year=%, major=%)', r.bio, r.goals, r.school, r.year, r.major;
+  end if;
+  if v_sig ilike '%skills%' or v_sig ilike '%courses%' then
+    raise exception 'get_public_profile_privacy REGRESSION: get_public_profile''s return type still includes skills/courses — %', v_sig;
+  end if;
+  insert into tests_results values ('get_public_profile_privacy', true, 'ok');
+exception when others then
+  insert into tests_results values ('get_public_profile_privacy', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ storage_post_media_policy_count — exactly one post-media SELECT policy ============
+-- Two migrations (20260703170000, 20260705190000, 20260711100100) each
+-- dropped-then-recreated the post-media SELECT policy under a different
+-- name. If any drop was missed, Postgres ORs the surviving permissive
+-- policies and silently widens access back open — count is the guard.
+set local role postgres;
+do $$
+declare
+  v_cnt int;
+begin
+  select count(*) into v_cnt
+  from pg_policies
+  where schemaname = 'storage' and tablename = 'objects'
+    and cmd = 'SELECT' and policyname like 'post-media%';
+  if v_cnt <> 1 then
+    raise exception 'storage_post_media_policy_count REGRESSION: found % SELECT polic(ies) on storage.objects named post-media% — expected exactly 1', v_cnt;
+  end if;
+  insert into tests_results values ('storage_post_media_policy_count', true, 'ok');
+exception when others then
+  insert into tests_results values ('storage_post_media_policy_count', false, sqlerrm);
+end $$;
+reset role;
+
 -- ============ report ============
 -- Print the PASS/FAIL table FIRST so the operator sees exactly which assertions
 -- failed, then raise so psql exits non-zero and the harness actually gates.
@@ -382,18 +844,15 @@ from tests_results
 order by finding;
 
 -- Gate on exit code. `raise exception` (not `warning`) is what makes psql return
--- 1 — a warning prints and still exits 0, gating nothing. Today, with the six
--- holes open, this raises -> exit 1, and the file loudly says the holes are real.
--- Once every fix lands, no rows fail -> no raise -> exit 0.
--- The raise aborts the transaction, which rolls back the fixtures anyway, so the
--- explicit `rollback` below only runs on the all-pass path. Both paths mutate
--- nothing. Run with -v ON_ERROR_STOP=1 in CI so the raise is the gate.
+-- 1 — a warning prints and still exits 0, gating nothing. Every fix landed, so
+-- this should find zero failing rows -> no raise -> exit 0. A FAIL means a
+-- shipped fix regressed.
 do $$
 declare v_failed int;
 begin
   select count(*) into v_failed from tests_results where not passed;
   if v_failed > 0 then
-    raise exception '% assertion(s) failed — see table above. Expected today (pre-fix): C1, C2, C2_forgery, H1, H2, M3_comments, M3_reactions, M4 all FAIL until their fixes land.', v_failed;
+    raise exception '% assertion(s) failed — see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count.', v_failed;
   end if;
 end $$;
 
