@@ -77,6 +77,9 @@ export async function startCheckout(formData: FormData) {
   const session = await stripe.checkout.sessions.create({
     mode: MODES[plan],
     line_items: [{ price: PRICES[plan], quantity: 1 }],
+    // The retired Payment Links had this on; Checkout Sessions default it off.
+    // Without it there is no "Add promotion code" field at all.
+    allow_promotion_codes: true,
     client_reference_id: user.id,
     metadata: { supabase_id: user.id, plan },
     // Subscriptions only: mirrored onto the subscription so later subscription.*

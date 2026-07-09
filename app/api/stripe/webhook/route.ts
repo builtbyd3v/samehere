@@ -73,9 +73,15 @@ export async function POST(req: Request) {
           return NextResponse.json({ error: "Unverified session subject" }, { status: 400 });
         }
 
-        // Ignore anything not actually paid (async payment methods settle later
-        // via checkout.session.async_payment_succeeded, which we don't accept).
-        if (session.payment_status !== "paid") break;
+        // Ignore anything not settled. "no_payment_required" is a SUCCESS state:
+        // a 100%-off promotion code brings the total to zero, so Stripe collects
+        // nothing and never reports "paid". Treating it as unpaid would silently
+        // withhold Pro from a valid free checkout. Unsettled async payment
+        // methods land on checkout.session.async_payment_succeeded, which we
+        // don't handle, so they correctly grant nothing here.
+        if (session.payment_status !== "paid" && session.payment_status !== "no_payment_required") {
+          break;
+        }
 
         const admin = createAdminClient();
 
