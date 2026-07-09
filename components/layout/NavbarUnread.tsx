@@ -12,6 +12,11 @@ export default async function NavbarUnread(props: {
   isPro: boolean;
   isAdmin: boolean;
 }) {
+  // Anon has no session to meter — skip both RPCs rather than round-trip for 0s.
+  if (!props.username) {
+    return <Navbar {...props} dmUnread={0} notificationUnread={0} />;
+  }
+
   const supabase = await createClient();
   const [{ data: dmUnread }, { data: notificationUnread }] = await Promise.all([
     supabase.rpc("get_dm_unread_total"),

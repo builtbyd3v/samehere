@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense, cache } from "react";
 import { notFound } from "next/navigation";
 import { after } from "next/server";
+import { createClient as createAnonClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import type { FollowState } from "@/components/profile/FollowButton";
 import ProfileActions from "@/components/profile/ProfileActions";
@@ -19,6 +20,7 @@ import { fetchPlainReposts } from "@/lib/feed-reposts";
 import { mergeFeedTimeline } from "@/lib/feed-timeline";
 import UserBadges from "@/components/profile/UserBadges";
 import AvatarImage from "@/components/ui/AvatarImage";
+import ContributionHeatmap, { type HeatmapDay } from "@/components/profile/ContributionHeatmap";
 import { isPro } from "@/lib/pro";
 
 const PROFILE_SELECT =
@@ -51,6 +53,163 @@ function Stat({ value, label }: { value: number; label: string }) {
   );
 }
 
+// Logged-out render. Uses a plain anon supabase-js client (not the cookie-bound
+// session client) so RLS/definer-fn checks run as true anon — same pattern as
+// lib/founder.ts. The RPCs below (get_public_profile, get_public_profile_counts,
+// get_public_heatmap) are SECURITY DEFINER + anon-granted and enforce privacy
+// themselves; this component renders exactly what they return and never
+// re-derives the is_private field-nulling rule itself.
+function anonSupabase() {
+  return createAnonClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
+
+// The RPCs below are anon-granted SECURITY DEFINER functions not yet present
+// in the generated Database types (types/database.types.ts hasn't been
+// regenerated since the migration landed). A plain (untyped) client can't call
+// `.rpc(name, args)` with useful inference either way, so cast once here and
+// take rows ourselves instead of chaining `.returns()`/`.maybeSingle()` (which
+// needs the real generated types to resolve correctly).
+function callRpc<T>(supabase: ReturnType<typeof anonSupabase>, fn: string, args: Record<string, unknown>) {
+  const rpc = supabase.rpc.bind(supabase) as unknown as (
+    fn: string,
+    args: Record<string, unknown>,
+  ) => PromiseLike<{ data: T[] | null }>;
+  return rpc(fn, args).then((r) => r.data ?? []);
+}
+
+type PublicProfile = {
+  id: string;
+  username: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  is_pro: boolean;
+  is_founder: boolean;
+  is_campus_founder: boolean;
+  is_private: boolean;
+  heatmap_visibility: string;
+  year: string | null;
+  major: string | null;
+  bio: string | null;
+  goals: string | null;
+  school: string | null;
+};
+
+type PublicCounts = { posts: number; followers: number; following: number };
+
+async function PublicProfileView({ username }: { username: string }) {
+  const supabase = anonSupabase();
+  const profile = (await callRpc<PublicProfile>(supabase, "get_public_profile", { p_username: username }))[0] ?? null;
+
+  if (!profile) notFound();
+
+  const counts = (await callRpc<PublicCounts>(supabase, "get_public_profile_counts", { p_profile_id: profile.id }))[0];
+  const c = counts ?? { posts: 0, followers: 0, following: 0 };
+
+  // Private accounts render nothing past this — get_public_profile already
+  // nulled every other field for them, so this heatmap call is the only extra
+  // gate we add ourselves (it's a separate RPC, not a field on the profile row).
+  const showHeatmap = !profile.is_private && profile.heatmap_visibility === "public";
+  const heatmapRaw = showHeatmap
+    ? await callRpc<{ day: string; points: number }>(supabase, "get_public_heatmap", { p_profile_id: profile.id })
+    : [];
+  const heatmap: HeatmapDay[] = heatmapRaw.map((d) => ({ ...d, breakdown: {} }));
+
+  const displayName = profile.display_name ?? profile.username;
+  const metaParts = [profile.school, profile.year ? YEAR_LABEL[profile.year] : null, profile.major].filter(Boolean);
+  const metaLine =
+    metaParts.length <= 1 ? metaParts[0] ?? null : `${metaParts[0]} · ${metaParts.slice(1).join(", ")}`;
+
+  return (
+    <main className="page-enter mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8">
+      <section className="card overflow-hidden">
+        <div
+          aria-hidden
+          className="aspect-[4/1] w-full"
+          style={{ background: "linear-gradient(120deg, color-mix(in srgb, var(--blue) 14%, var(--surface-card)) 0%, var(--surface-card) 62%)" }}
+        />
+        <div className="px-5 pb-5 sm:px-6 sm:pb-6">
+          {profile.avatar_url ? (
+            <AvatarImage
+              src={profile.avatar_url}
+              alt=""
+              pro={profile.is_pro}
+              className="-mt-12 h-24 w-24 shrink-0 rounded-full border-4 border-[var(--surface-card)] object-cover sm:-mt-14 sm:h-28 sm:w-28"
+            />
+          ) : (
+            <div className="-mt-12 grid h-24 w-24 shrink-0 place-items-center rounded-full border-4 border-[var(--surface-card)] bg-[var(--featured-surface)] text-3xl font-semibold text-[var(--ink-muted)] sm:-mt-14 sm:h-28 sm:w-28">
+              {displayName.charAt(0).toUpperCase()}
+            </div>
+          )}
+
+          <div className="mt-3">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+              <h1 className="text-2xl font-semibold tracking-[-0.025em] sm:text-[28px]">{displayName}</h1>
+              <UserBadges isPro={profile.is_pro} isFounder={profile.is_founder} isCampusFounder={profile.is_campus_founder} />
+            </div>
+            <p className="mt-0.5 text-[15px] text-[var(--ink-muted)]">@{profile.username}</p>
+            {metaLine && <p className="mt-2 text-sm text-[var(--ink-muted)]">{metaLine}</p>}
+
+            <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1">
+              <Stat value={Number(c.posts)} label="posts" />
+              <Stat value={Number(c.followers)} label="followers" />
+              <Stat value={Number(c.following)} label="following" />
+            </div>
+          </div>
+
+          {profile.bio && (
+            <p className="mt-5 max-w-[60ch] whitespace-pre-line break-words text-[17px] leading-[1.6] text-[var(--ink)]">
+              {profile.bio}
+            </p>
+          )}
+        </div>
+      </section>
+
+      {profile.is_private ? (
+        <div className="card mt-3 px-6 py-8 text-center">
+          <p className="font-medium text-[var(--ink)]">This account is private</p>
+        </div>
+      ) : (
+        (showHeatmap || profile.goals) && (
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {showHeatmap && (
+              <section className="card p-5 shadow-paper sm:col-span-2 sm:p-6">
+                <h2 className="mb-4 text-sm font-semibold text-[var(--ink)]">Activity</h2>
+                <ContributionHeatmap data={heatmap} />
+              </section>
+            )}
+
+            {profile.goals && (
+              <section className="card card-hover p-5 shadow-paper sm:col-span-2 sm:p-6">
+                <h2 className="text-sm font-semibold text-[var(--ink)]">Goals</h2>
+                <p className="mt-1.5 whitespace-pre-line break-words text-[15px] leading-[1.55] text-[var(--ink-muted)]">
+                  {profile.goals}
+                </p>
+              </section>
+            )}
+          </div>
+        )
+      )}
+
+      <section className="mt-6">
+        <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">Posts</h2>
+        <div className="card px-6 py-12 text-center">
+          <p className="font-medium text-[var(--ink)]">Sign in to see their posts</p>
+          <div className="mt-4 flex justify-center gap-2">
+            <Link href="/login" className="btn-ghost !rounded-full !px-4 !py-1.5 text-sm">
+              Sign in
+            </Link>
+            <Link href="/signup" className="btn-primary !rounded-full !px-4 !py-1.5 text-sm">
+              Sign up
+            </Link>
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -59,7 +218,13 @@ export async function generateMetadata({
   const { username } = await params;
   const profile = await getProfileByUsername(username);
 
-  if (!profile) return { title: "Profile not found" };
+  // noindex/nofollow, not disabled: link-preview crawlers (Twitterbot,
+  // Slackbot, etc.) fetch the page and parse <head> directly — they don't
+  // consult robots — so OG/Twitter unfurls below still work. This only keeps
+  // the page out of search indexes. Flipping it on is a one-line product call.
+  const robots = { index: false, follow: false };
+
+  if (!profile) return { title: "Profile not found", robots };
 
   const name = profile.display_name ?? username;
   const description = profile.bio?.slice(0, 160) ?? `${name} (@${username}) on samehere`;
@@ -67,6 +232,7 @@ export async function generateMetadata({
   return {
     title: `${name} (@${username})`,
     description,
+    robots,
     openGraph: {
       title: `${name} on samehere`,
       description,
@@ -94,6 +260,8 @@ export default async function ProfilePage({
     supabase.auth.getUser(),
     getProfileByUsername(username),
   ]);
+
+  if (!user) return <PublicProfileView username={username} />;
 
   if (!profile) notFound();
 

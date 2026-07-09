@@ -3,6 +3,7 @@ import NavMenu from "./NavMenu";
 import NavIconBadge from "./NavIconBadge";
 import { IconBell, IconBolt, IconMail, IconTrophy } from "@/components/icons";
 import { getNotificationUnreadCount } from "@/app/(app)/notifications/actions";
+import { signupCtaSm, ghostCtaSm } from "@/components/landing/cta";
 
 export default function Navbar({
   username,
@@ -23,7 +24,7 @@ export default function Navbar({
     <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--canvas)]/80 backdrop-blur">
       <nav className="mx-auto flex h-14 max-w-2xl items-center justify-between px-5">
         <div className="flex items-center gap-2">
-          <Link href="/feed" aria-label="samehere home" className="font-semibold tracking-[-0.03em] transition hover:opacity-80">
+          <Link href={username ? "/feed" : "/"} aria-label="samehere home" className="font-semibold tracking-[-0.03em] transition hover:opacity-80">
             <span className="text-[var(--ink)]">same</span><span className="text-[var(--blue)]">here</span>
           </Link>
           {isPro && (
@@ -36,30 +37,37 @@ export default function Navbar({
             </Link>
           )}
         </div>
-        <div className="flex items-center gap-1 text-sm sm:gap-1.5">
-          {username && (
-            <>
-              <NavIconBadge href="/leaderboard" title="Leaderboard" count={0}>
-                <IconTrophy className="h-5 w-5" />
-              </NavIconBadge>
-              <NavIconBadge href="/messages" title="Messages" count={dmUnread}>
-                <IconMail />
-              </NavIconBadge>
-              <NavIconBadge href="/notifications" title="Notifications" count={notificationUnread} poll={getNotificationUnreadCount} realtimeTable="notifications">
-                <IconBell />
-              </NavIconBadge>
-            </>
-          )}
-          {!isPro && (
-            <Link
-              href="/pro"
-              className="rounded-full px-2.5 py-1 font-medium text-[var(--blue)] transition hover:bg-[var(--featured-surface)]"
-            >
-              Join Pro
+        {username ? (
+          <div className="flex items-center gap-1 text-sm sm:gap-1.5">
+            <NavIconBadge href="/leaderboard" title="Leaderboard" count={0}>
+              <IconTrophy className="h-5 w-5" />
+            </NavIconBadge>
+            <NavIconBadge href="/messages" title="Messages" count={dmUnread}>
+              <IconMail />
+            </NavIconBadge>
+            <NavIconBadge href="/notifications" title="Notifications" count={notificationUnread} poll={getNotificationUnreadCount} realtimeTable="notifications">
+              <IconBell />
+            </NavIconBadge>
+            {!isPro && (
+              <Link
+                href="/pro"
+                className="rounded-full px-2.5 py-1 font-medium text-[var(--blue)] transition hover:bg-[var(--featured-surface)]"
+              >
+                Join Pro
+              </Link>
+            )}
+            <NavMenu username={username} avatarUrl={avatarUrl} isAdmin={isAdmin} isPro={isPro} />
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 text-sm">
+            <Link href="/login" className={ghostCtaSm}>
+              Sign in
             </Link>
-          )}
-          {username && <NavMenu username={username} avatarUrl={avatarUrl} isAdmin={isAdmin} isPro={isPro} />}
-        </div>
+            <Link href="/signup" className={signupCtaSm}>
+              Sign up
+            </Link>
+          </div>
+        )}
       </nav>
     </header>
   );

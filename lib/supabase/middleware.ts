@@ -38,7 +38,14 @@ export async function updateSession(request: NextRequest) {
   // a route group like `(app)` (see next/dist/lib/metadata/get-metadata-route.js) — that
   // suffixed path is the real URL Next puts in <head>, so match it too.
   const isMetadataImage = /\/(?:opengraph-image|twitter-image|icon|apple-icon)(?:-[0-9a-z]{1,6})?$/.test(path)
-  const isPublic =
+  // Single-segment only, so `/profile/edit` (the edit page — `edit` is also a
+  // reserved username) and `/post/x/anything` never match.
+  const isPublicProfile = path !== '/profile/edit' && /^\/profile\/[^/]+$/.test(path)
+  const isPublicPost = /^\/post\/[^/]+$/.test(path)
+  // "May an ANONYMOUS visitor reach this?" — the public surface + the two
+  // opened read routes (shared profile/post links preview + land for logged-out
+  // crawlers and visitors).
+  const isAnonAllowed =
     path === '/' ||
     path === '/pricing' ||
     path === '/login' ||
@@ -50,6 +57,20 @@ export async function updateSession(request: NextRequest) {
     path === '/suspended' ||
     path.startsWith('/auth/') ||
     path === '/api/stripe/webhook' ||
+    isMetadataImage ||
+    isPublicProfile ||
+    isPublicPost
+  // "May a SUSPENDED (logged-in) user reach this?" — a much smaller set.
+  // Profiles/posts are deliberately NOT here: suspension is a READ gate, and
+  // those pages render the full authenticated view to a logged-in caller
+  // (including the private post list an anon can't see). A suspended account
+  // must not get that. Only the suspension notice, legal pages, and auth/logout
+  // flow are exempt so the redirect can't recurse and sign-out can't be trapped.
+  const isSuspensionExempt =
+    path === '/suspended' ||
+    path === '/terms' ||
+    path === '/privacy' ||
+    path.startsWith('/auth/') ||
     isMetadataImage
 
   if (user && (path === '/' || path === '/login' || path === '/signup')) {
@@ -58,15 +79,15 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  if (!user && !isPublic) {
+  if (!user && !isAnonAllowed) {
     const url = request.nextUrl.clone()
     url.pathname = '/signup'
     return NextResponse.redirect(url)
   }
 
-  // Suspension gate. `/suspended` is fully public (see isPublic above) so it
-  // never recurses here, and its own log-out form posts back to `/suspended`
-  // itself — also public — so signing out can never get caught by this check.
+  // Suspension gate. `/suspended` is in isSuspensionExempt so it never recurses
+  // here, and its own log-out form posts back to `/suspended` itself — also
+  // exempt — so signing out can never get caught by this check.
   //
   // Cost: getUser() already does one network round trip to validate the
   // session; this adds a second, targeted round trip (one column, one row)
@@ -77,7 +98,7 @@ export async function updateSession(request: NextRequest) {
   // shows up in cost/latency: sync is_suspended into a custom JWT claim via
   // a Supabase Auth Hook so this becomes a free read off `user.app_metadata`
   // — no such hook exists yet, out of scope here.
-  if (user && !isPublic) {
+  if (user && !isSuspensionExempt) {
     const { data: profile } = await supabase
       .from('profiles')
       .select('is_suspended')
