@@ -80,16 +80,35 @@ export async function startCheckout(formData: FormData) {
     // The retired Payment Links had this on; Checkout Sessions default it off.
     // Without it there is no "Add promotion code" field at all.
     allow_promotion_codes: true,
+    // Restored from the retired Payment Links, which had all three on. Checkout
+    // Sessions default them off, so they were dropped by accident in ae9365e.
+    automatic_tax: { enabled: true },
+    phone_number_collection: { enabled: true },
+    name_collection: { individual: { enabled: true } },
     client_reference_id: user.id,
     metadata: { supabase_id: user.id, plan },
-    // Subscriptions only: mirrored onto the subscription so later subscription.*
-    // events can be attributed even before the checkout row lands. Stripe
-    // rejects subscription_data on a one-time payment session.
+    // Subscriptions only. Two things here:
+    //  - subscription_data mirrors supabase_id so later subscription.* events
+    //    are attributable even before the checkout row lands. Stripe rejects
+    //    subscription_data on a one-time payment session.
+    //  - payment_method_collection: "if_required" skips card entry entirely when
+    //    a promotion code takes the total to $0. Stripe only accepts it in
+    //    subscription mode; a payment-mode session with a $0 total already
+    //    collects nothing, so both plans get the behavior.
     ...(plan === "monthly"
-      ? { subscription_data: { metadata: { supabase_id: user.id } } }
+      ? {
+          subscription_data: { metadata: { supabase_id: user.id } },
+          payment_method_collection: "if_required" as const,
+        }
       : {}),
+    // automatic_tax needs an address on the customer. When we pass an existing
+    // customer, Stripe requires explicit permission to write the one collected
+    // at checkout back onto it, or the session errors.
     ...(profile.stripe_customer_id
-      ? { customer: profile.stripe_customer_id }
+      ? {
+          customer: profile.stripe_customer_id,
+          customer_update: { address: "auto" as const, name: "auto" as const },
+        }
       : { customer_email: user.email }),
     success_url: `${SITE_URL}/pro?upgraded=1`,
     cancel_url: `${SITE_URL}/pro`,
