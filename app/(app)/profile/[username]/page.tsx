@@ -98,6 +98,14 @@ type PublicProfile = {
 
 type PublicCounts = { posts: number; followers: number; following: number };
 
+// generateMetadata runs with no session (crawlers, logged-out visitors), so it
+// must read through the anon-granted definer, not the cookie-bound client.
+// cache() dedupes it against PublicProfileView within one render pass.
+const getPublicProfileMeta = cache(async (username: string) => {
+  const rows = await callRpc<PublicProfile>(anonSupabase(), "get_public_profile", { p_username: username });
+  return rows[0] ?? null;
+});
+
 async function PublicProfileView({ username }: { username: string }) {
   const supabase = anonSupabase();
   const profile = (await callRpc<PublicProfile>(supabase, "get_public_profile", { p_username: username }))[0] ?? null;
@@ -216,7 +224,15 @@ export async function generateMetadata({
   params: Promise<{ username: string }>;
 }): Promise<Metadata> {
   const { username } = await params;
-  const profile = await getProfileByUsername(username);
+
+  // Metadata is generated for crawlers and for logged-out visitors, i.e. with NO
+  // session. The session client can't see `profiles` at all (its SELECT policy
+  // requires auth.uid() is not null), so reading through it returned null and
+  // every shared link unfurled as "Profile not found". Read the same anon-granted
+  // definer the page body uses. It nulls a private account's fields itself, so a
+  // private profile falls back to the generic description below rather than
+  // leaking a bio into a link preview.
+  const profile = await getPublicProfileMeta(username);
 
   // noindex/nofollow, not disabled: link-preview crawlers (Twitterbot,
   // Slackbot, etc.) fetch the page and parse <head> directly — they don't
@@ -229,22 +245,16 @@ export async function generateMetadata({
   const name = profile.display_name ?? username;
   const description = profile.bio?.slice(0, 160) ?? `${name} (@${username}) on samehere`;
 
+  // Deliberately NO `images` here. An explicit openGraph.images overrides the
+  // file-based opengraph-image route, which is what renders the heatmap card —
+  // the whole point of the share image. Setting it to the avatar would silently
+  // replace a 1200x630 contribution graph with a small round photo.
   return {
     title: `${name} (@${username})`,
     description,
     robots,
-    openGraph: {
-      title: `${name} on samehere`,
-      description,
-      type: "profile",
-      ...(profile.avatar_url ? { images: [{ url: profile.avatar_url, alt: name }] } : {}),
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: `${name} on samehere`,
-      description,
-      ...(profile.avatar_url ? { images: [profile.avatar_url] } : {}),
-    },
+    openGraph: { title: `${name} on samehere`, description, type: "profile" },
+    twitter: { card: "summary_large_image", title: `${name} on samehere`, description },
   };
 }
 

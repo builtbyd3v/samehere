@@ -26,8 +26,41 @@ type Comment = {
 // etc.) fetch and parse <head> directly, bypassing robots, so unfurls still
 // work; this only keeps posts out of search indexes. Flipping it on later is a
 // one-line change.
-export function generateMetadata(): Metadata {
-  return { robots: { index: false, follow: false } };
+// Runs with no session (crawlers, logged-out visitors), so it reads the same
+// anon-granted definer the page body uses. get_public_post returns zero rows for
+// a missing id, a hidden post, AND a private author's post alike — so all three
+// unfurl identically and the metadata can't be used as an oracle to confirm
+// which uuids are real posts by private students.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const rows = await callRpc<PublicPost>(anonSupabase(), "get_public_post", { p_id: id });
+  const post = rows[0] ?? null;
+
+  // noindex, but crawlers still parse <head>, so unfurls work. See the profile page.
+  const robots = { index: false, follow: false };
+  if (!post) return { title: "Post not found", robots };
+
+  const name = post.author_display_name ?? post.author_username;
+  const description = post.content.length > 160 ? `${post.content.slice(0, 157)}...` : post.content;
+
+  // The tab title goes through the root `template: "%s · samehere"`, so it must
+  // NOT say "samehere" itself. og:/twitter: titles have no template and do.
+  const tabTitle = `${name} (@${post.author_username})`;
+  const shareTitle = `${tabTitle} on samehere`;
+
+  // No `images`: the root opengraph-image route supplies the card. An explicit
+  // images entry here would override it.
+  return {
+    title: tabTitle,
+    description,
+    robots,
+    openGraph: { title: shareTitle, description, type: "article", publishedTime: post.created_at },
+    twitter: { card: "summary_large_image", title: shareTitle, description },
+  };
 }
 
 // Logged-out render. Plain anon supabase-js client (not the cookie-bound session
