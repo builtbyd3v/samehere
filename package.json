@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/check-og-tokens.mjs && next build",
+    "check:og-tokens": "node scripts/check-og-tokens.mjs",
     "start": "next start",
     "lint": "eslint"
   },

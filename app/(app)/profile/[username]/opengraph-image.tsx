@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { ImageResponse } from "next/og";
 import { createClient } from "@supabase/supabase-js";
 import sharp from "sharp";
+import { BLUE, BORDER, CANVAS, CARD, GOLD, GREEN, HM, INK, INK_FAINT, INK_MUTED } from "@/lib/og-tokens";
 
 // Dynamic per-profile OG card — the shareable, screenshot-worthy asset.
 //
@@ -15,8 +16,8 @@ import sharp from "sharp";
 //
 // Dark by default: an unfurl sits in Discord, Slack and Twitter, which are dark
 // for most people. A cream card in a dark feed reads as a blown-out rectangle.
-// Tokens below are lifted verbatim from the `.dark` block in app/globals.css —
-// Satori has no CSS variables, so they are duplicated here on purpose.
+// Colours come from lib/og-tokens.ts, which mirrors the `.dark` block in
+// app/globals.css — Satori has no CSS variables, so the values must exist in TS.
 //
 // sharp is a direct dependency for exactly one reason: Satori decodes PNG and
 // JPEG only, and avatars are uploaded as WebP, which it silently draws as
@@ -30,18 +31,6 @@ export const runtime = "nodejs"; // sharp is not available on the edge runtime.
 export const alt = "samehere profile";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
-
-// --- .dark tokens, app/globals.css ---
-const CANVAS = "#141310";
-const CARD = "#1c1a16";
-const INK = "#f2efe6";
-const INK_MUTED = "#a8a49a";
-const INK_FAINT = "rgba(242, 239, 230, 0.40)";
-const BORDER = "rgba(247, 244, 237, 0.10)";
-const BLUE = "#4f9fe8";
-const GOLD = "#ecc94b"; // --founder
-const GREEN = "#5fce8f"; // --campus-founder (Social Butterfly)
-const HM = ["rgba(247, 244, 237, 0.07)", "#1e3a5f", "#2f6db0", "#4f9fe8"]; // --hm0..3
 
 const level = (points: number) => (points === 0 ? 0 : points <= 3 ? 1 : points <= 7 ? 2 : 3);
 

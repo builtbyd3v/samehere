@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { ImageResponse } from "next/og";
+import { BLUE, BORDER, CANVAS, CARD, FEATURED, INK, INK_FAINT, INK_MUTED, POST } from "@/lib/og-tokens";
 
 // Site-wide OG card — what samehere.dev itself unfurls as.
 //
@@ -13,9 +14,8 @@ import { ImageResponse } from "next/og";
 //
 // Dark by default: an unfurl lives in Discord, Slack and Twitter, which are dark
 // for most people, and a cream card in a dark feed reads as a blown-out
-// rectangle. Tokens are lifted verbatim from the `.dark` block in
-// app/globals.css — Satori has no CSS variables, so they are duplicated here on
-// purpose. If the app is restyled, this card will not follow.
+// rectangle. Colours come from lib/og-tokens.ts, which mirrors the `.dark` block
+// in app/globals.css — Satori has no CSS variables, so the values must exist in TS.
 
 export const runtime = "nodejs"; // reads the font files off disk
 
@@ -38,17 +38,6 @@ const fonts = async () => {
     { name: "Figtree", data: semibold, weight: 600 as const, style: "normal" as const },
   ];
 };
-
-// --- .dark tokens, app/globals.css ---
-const CANVAS = "#141310";
-const CARD = "#1c1a16";
-const POST = "#232018"; // --surface-post
-const FEATURED = "rgba(247, 244, 237, 0.06)"; // --featured-surface: the active reaction pill
-const INK = "#f2efe6";
-const INK_MUTED = "#a8a49a";
-const INK_FAINT = "rgba(242, 239, 230, 0.40)";
-const BORDER = "rgba(247, 244, 237, 0.10)";
-const BLUE = "#4f9fe8";
 
 // Reaction glyphs, traced from components/icons.tsx: soft fully-rounded strokes,
 // and the fillable ones go solid when active. SameHere is the two-people mark.
