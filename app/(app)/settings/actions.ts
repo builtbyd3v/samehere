@@ -101,7 +101,14 @@ export async function confirmSchoolVerification(_prev: VerificationState, formDa
   if (!code) return { error: "Enter the code." };
 
   const { data, error } = await supabase.rpc("confirm_school_verification", { p_code: code });
-  if (error) return { error: error.message };
+  // The only expected raise is the attempt cap; anything else (timeout, outage)
+  // must not surface Postgres internals to the client.
+  if (error)
+    return {
+      error: error.message.includes("too many attempts")
+        ? "Too many attempts. Request a new code."
+        : "Something went wrong. Try again.",
+    };
   if (!data) return { error: "Wrong or expired code." };
 
   revalidatePath("/settings");

@@ -143,7 +143,7 @@ export default function ReferralShareCard({
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-[var(--ink)]">Free semester of Pro</p>
             {proEarned ? (
-              <p className="mt-1 text-xs font-medium text-[var(--campus-founder)]">Earned — applied to your account</p>
+              <p className="mt-1 text-xs font-medium text-[var(--campus-founder)]">Earned. Applied to your account.</p>
             ) : (
               <p className="mt-1 text-xs text-[var(--ink-muted)]">Reach 100 referrals</p>
             )}
