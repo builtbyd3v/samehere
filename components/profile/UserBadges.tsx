@@ -1,4 +1,4 @@
-import { IconBolt, IconCrown, IconGradCap } from "@/components/icons";
+import { IconBolt, IconButterfly, IconCrown } from "@/components/icons";
 
 // ponytail: one badge component, all surfaces import it
 export default function UserBadges({
@@ -21,8 +21,8 @@ export default function UserBadges({
         </span>
       )}
       {isCampusFounder && (
-        <span title="Campus Founder" className="text-[var(--campus-founder)]">
-          <IconGradCap className={className} />
+        <span role="img" aria-label="Social Butterfly" title="Social Butterfly" className="text-[var(--campus-founder)]">
+          <IconButterfly className={className} />
         </span>
       )}
       {isPro && (

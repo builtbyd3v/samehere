@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Reveal, { Stagger, RevealItem } from "./Reveal";
-import { IconCrown, IconGradCap } from "@/components/icons";
+import { IconButterfly, IconCrown } from "@/components/icons";
 import { landingH2 } from "@/lib/landing/styles";
 import { signupCta } from "./cta";
 
@@ -64,17 +64,17 @@ export default function Founders({ spotsLeft }: { spotsLeft?: number }) {
           </div>
         </RevealItem>
 
-        {/* Campus Founder — referral program */}
+        {/* Social Butterfly — referral program */}
         <RevealItem index={1}>
           <div className="card-hover flex h-full flex-col rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] p-6 shadow-paper sm:p-8">
             <BadgePreview>
-              <IconGradCap className="h-[18px] w-[18px] text-[var(--campus-founder)]" />
+              <IconButterfly className="h-[18px] w-[18px] text-[var(--campus-founder)]" />
             </BadgePreview>
 
-            <h3 className="mt-5 text-xl font-semibold tracking-[-0.01em] text-[var(--ink)]">Campus Founder</h3>
+            <h3 className="mt-5 text-xl font-semibold tracking-[-0.01em] text-[var(--ink)]">Social Butterfly</h3>
             <p className="mt-2 text-sm leading-relaxed text-[var(--ink-muted)]">
-              Bring your school with you. Share your referral link, and when 100 students join from it,
-              you earn a permanent green badge as your campus&apos;s founder.
+              Share your referral link, and when 100 students join from it,
+              you earn a permanent green badge for growing samehere.
             </p>
 
             {/* referral-program preview — mirrors the in-app share card */}
@@ -86,7 +86,7 @@ export default function Founders({ spotsLeft }: { spotsLeft?: number }) {
                 <span className="btn-ghost shrink-0 !rounded-full !px-3 !py-1 text-sm">Copy link</span>
               </div>
               <div className="mt-4 flex items-center justify-between text-xs">
-                <span className="font-medium text-[var(--ink)]">Campus Founder</span>
+                <span className="font-medium text-[var(--ink)]">Social Butterfly</span>
                 <span className="font-medium text-[var(--ink)]">0 / 100</span>
               </div>
               <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-[var(--featured-surface)]">

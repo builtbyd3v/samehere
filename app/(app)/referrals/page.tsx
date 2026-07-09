@@ -19,7 +19,7 @@ export default async function ReferralsPage() {
     <main className="page-enter mx-auto max-w-xl px-5 py-10">
       <h1 className="mb-1 text-2xl font-semibold tracking-[-0.02em] text-[var(--ink)]">Invite friends</h1>
       <p className="mb-6 text-sm text-[var(--ink-muted)]">
-        Share your link. Reach 100 referrals and earn the Campus Founder badge.
+        Share your link. Reach 100 referrals and earn the Social Butterfly badge.
       </p>
       <ReferralShareCard
         initialCode={stats.code}

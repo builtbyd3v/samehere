@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import posthog from "posthog-js";
 import { updateReferralCode, type ReferralCodeState } from "@/app/(app)/referrals/actions";
-import { IconGradCap } from "@/components/icons";
+import { IconButterfly } from "@/components/icons";
 
 const GOAL = 100;
 
@@ -84,12 +84,12 @@ export default function ReferralShareCard({
         </button>
       </div>
 
-      {/* Campus Founder badge — always showcased; locked (grey) until earned, then green */}
+      {/* Social Butterfly badge — always showcased; locked (grey) until earned, then green */}
       <div className="mt-5 flex items-start gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-4">
-        <IconGradCap className="h-9 w-9 shrink-0 text-[var(--campus-founder)]" />
+        <IconButterfly className="h-9 w-9 shrink-0 text-[var(--campus-founder)]" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-sm font-semibold text-[var(--ink)]">Campus Founder</span>
+            <span className="text-sm font-semibold text-[var(--ink)]">Social Butterfly</span>
             <span className="text-sm font-semibold text-[var(--ink)]">
               {Math.min(referralCount, GOAL)}/{GOAL}
             </span>

@@ -228,7 +228,7 @@ function HeatmapCard({
                     marginRight: 8,
                   }}
                 >
-                  Campus Founder
+                  Social Butterfly
                 </div>
               )}
               {profile.is_pro && (

@@ -62,11 +62,33 @@ export const IconTrophy = ({ className = "h-4 w-4" }: { className?: string }) =>
   </svg>
 );
 
-/** Campus Founder badge — 100 referred signups at one school (graduation cap; distinct from IconCrown = global Founder). */
-export const IconGradCap = ({ className = "h-4 w-4" }: { className?: string }) => (
+/**
+ * Social Butterfly badge — 100 confirmed referrals.
+ * (Distinct from IconCrown = Founder and IconBolt = Pro.)
+ *
+ * Three-quarter view, caught mid-lift: the only badge in the row that moves.
+ *
+ * The wings separate by TONE, not by negative space. A hairline gap that reads
+ * correctly at 64px is sub-pixel at `h-4 w-4` (16px) — it closes, and the mark
+ * collapses into a blob. So the far forewing and hindwing sit behind at 45%
+ * fill-opacity. That composites against whatever is behind it, so the icon still
+ * inherits `currentColor` and needs no second colour token in either theme.
+ *
+ * ponytail: opacity, not a second fill. Don't "simplify" it back to one alpha.
+ */
+export const IconButterfly = ({ className = "h-4 w-4" }: { className?: string }) => (
   <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
-    <path d="M12 3 1 9l11 6 9-4.91V17h2V9L12 3z" />
-    <path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z" />
+    {/* far forewing — set back */}
+    <path fillOpacity="0.45" d="M11 3.4C9 4.6 7.8 7 8.2 9.4c.4 2.3 2.1 3.8 4 4.1-.5-2.1-.5-5 .1-7.3.3-1.2-.3-2.3-1.3-2.8Z" />
+    {/* hindwing — set back */}
+    <path fillOpacity="0.45" d="M13.5 14.6c-1.6-.8-4.5-1.2-6.5-.3-2.4 1-2.7 3.7-.5 4.6 2.3 1 5.3-.7 6.9-3 .2-.5.2-.9.1-1.3Z" />
+    {/* near forewing — solid, sits in front */}
+    <path d="M14.6 2.6c2.6.6 4.8 3.4 5 6.8.2 3-1.2 5-3 5.9-1.4-1.1-3-3.3-3.6-5.7-.5-2.2.2-5.2 1.6-7Z" />
+    {/* abdomen, thorax, antenna */}
+    <path d="M17 16.2c-1 1.2-3 2.8-5 3.8-1.4.7-2.6 1-3 .7-.1-.5 1-1.3 2.4-2.1 2-1.2 4-2.2 5-3Z" />
+    <circle cx="17.4" cy="15.2" r="1.15" />
+    <path d="M18 14.4c1-1.2 2-2 2.7-2.3" stroke="currentColor" strokeWidth="1" strokeLinecap="round" fill="none" />
+    <circle cx="21" cy="11.9" r="0.75" />
   </svg>
 );
 

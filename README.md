@@ -85,7 +85,7 @@ Each action type counts once per day. Daily square intensity reflects total poin
 - Promo codes are supported, including 100%-off checkouts that skip card entry and still grant Pro
 - `NEXT_PUBLIC_BILLING_ENABLED` flips the `/pro` page between waitlist and live Checkout; pricing also has its own `/pricing` page
 - The mission (peer discovery / connecting) is never paywalled
-- Referrals: each user gets a referral link/code, tracks progress to 100, and earns a Campus Founder badge. The first 100 signups platform-wide get the Founder badge (live "spots left" counter on the landing and signup pages)
+- Referrals: each user gets a referral link/code, tracks progress to 100, and earns a Social Butterfly badge. The first 100 signups platform-wide get the Founder badge (live "spots left" counter on the landing and signup pages)
 
 ### Onboarding & growth
 - Dismissable onboarding checklist (avatar, bio, first post, first follow)
