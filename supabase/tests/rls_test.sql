@@ -146,8 +146,13 @@ end $$;
 
 -- ============ H1 — log_contribution is directly callable by any logged-in user ============
 do $$
+declare
+  v_oid oid := to_regprocedure('public.log_contribution(text,jsonb)');
 begin
-  if has_function_privilege('authenticated', 'public.log_contribution(text,jsonb)', 'execute') then
+  -- Passes in both worlds: the function is dropped (v_oid is null), OR it still
+  -- exists but is not EXECUTE-able by authenticated. Fails only if a logged-in
+  -- client can still call it directly to mint points.
+  if v_oid is not null and has_function_privilege('authenticated', v_oid, 'execute') then
     raise exception 'H1 REGRESSION: authenticated role can EXECUTE public.log_contribution(text,jsonb) directly — a client can call it with a fabricated character_count and mint heatmap/streak/leaderboard points with no real post/comment behind them';
   end if;
   insert into tests_results values ('H1', true, 'ok');

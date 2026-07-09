@@ -9,8 +9,9 @@ export type CommentState = { error?: string; ok?: boolean };
 const MAX = TEXT_LIMITS.comment;
 
 // Create a comment. Any non-empty length is allowed; 50 chars only decides the
-// heatmap point (gated inside log_contribution). Insert goes through the session
-// client so RLS pins user_id to the author.
+// heatmap point, awarded by the comments_award_contribution AFTER INSERT trigger
+// from the row's own length. Insert goes through the session client so RLS pins
+// user_id to the author.
 // ponytail: the comment INSERT policy checks only ownership, not post
 // visibility, so a user could technically comment on a post they can't read
 // (blind — they still can't SELECT it back). Add a visibility check in the
@@ -31,11 +32,6 @@ export async function createComment(_prev: CommentState, formData: FormData): Pr
 
   const { error } = await supabase.from("comments").insert({ post_id: postId, user_id: user.id, content });
   if (error) return { error: "Could not post your comment. Try again." };
-
-  await supabase.rpc("log_contribution", {
-    p_action_type: "comment",
-    p_metadata: { character_count: content.length },
-  });
 
   revalidatePath(`/post/${postId}`);
   return { ok: true };

@@ -10,8 +10,8 @@ import { TEXT_LIMITS } from "@/lib/utils/validation";
 import MentionTextarea from "@/components/ui/MentionTextarea";
 
 // 150 chars earns a heatmap point, it does NOT gate posting.
-const POINT_AT = 150; // ponytail: mirrors log_contribution post threshold
-const AWARD = 5; // ponytail: mirrors log_contribution post points
+const POINT_AT = 150; // ponytail: mirrors posts_award_contribution post threshold
+const AWARD = 5; // ponytail: mirrors posts_award_contribution post points
 const MAX = TEXT_LIMITS.post;
 
 const MAX_FILES = 4;

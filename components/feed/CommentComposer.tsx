@@ -8,8 +8,8 @@ import { submitShortcutLabel } from "@/lib/keyboard";
 import { TEXT_LIMITS } from "@/lib/utils/validation";
 import MentionTextarea from "@/components/ui/MentionTextarea";
 
-const POINT_AT = 50; // ponytail: mirrors log_contribution comment threshold
-const AWARD = 3; // ponytail: mirrors log_contribution comment points
+const POINT_AT = 50; // ponytail: mirrors comments_award_contribution comment threshold
+const AWARD = 3; // ponytail: mirrors comments_award_contribution comment points
 const MAX = TEXT_LIMITS.comment;
 
 export default function CommentComposer({ postId, quoteId }: { postId?: string; quoteId?: string }) {

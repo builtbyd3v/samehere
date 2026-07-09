@@ -65,9 +65,9 @@ export async function updateProfile(_prev: EditState, formData: FormData): Promi
     .upsert({ profile_id: user.id, school }, { onConflict: "profile_id" });
   if (sErr) return { error: "Could not save your school. Try again." };
 
-  // 1 pt for a profile update; the 7-day cooldown + dedupe live inside the
-  // definer function, so calling it on every save is safe (can't be farmed).
-  await supabase.rpc("log_contribution", { p_action_type: "profile_update" });
+  // 1 pt for a profile update is awarded by the profiles_award_contribution
+  // AFTER UPDATE trigger (fires only when a meaningful content field changed;
+  // 7-day cooldown + dedupe live in the trigger) — nothing to call here.
 
   const { data: prof } = await supabase
     .from("profiles")

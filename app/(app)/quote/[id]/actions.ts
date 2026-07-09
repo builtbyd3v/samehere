@@ -25,11 +25,6 @@ export async function createQuoteComment(_prev: CommentState, formData: FormData
   const { error } = await supabase.from("comments").insert({ repost_id: repostId, user_id: user.id, content });
   if (error) return { error: "Could not post your comment. Try again." };
 
-  await supabase.rpc("log_contribution", {
-    p_action_type: "comment",
-    p_metadata: { character_count: content.length },
-  });
-
   revalidatePath(`/quote/${repostId}`);
   return { ok: true };
 }

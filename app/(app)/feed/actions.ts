@@ -38,9 +38,9 @@ const MAX = TEXT_LIMITS.post;
 
 // Create a post. Any non-empty content is allowed — the 150-char threshold only
 // decides whether it earns a heatmap point, not whether it can be posted. Insert
-// goes through the session client so RLS pins user_id to the author. We always
-// call log_contribution with the true length; the function awards the point only
-// when it qualifies (>=150) and dedupes per day.
+// goes through the session client so RLS pins user_id to the author. The heatmap
+// point is awarded by the posts_award_contribution AFTER INSERT trigger, which
+// measures the row's own length — a client can no longer request a point.
 export async function createPost(_prev: ComposerState, formData: FormData): Promise<ComposerState> {
   const supabase = await createClient();
   const {
@@ -91,11 +91,6 @@ export async function createPost(_prev: ComposerState, formData: FormData): Prom
       media_count: media.length,
       character_count: content.length,
     },
-  });
-
-  await supabase.rpc("log_contribution", {
-    p_action_type: "post",
-    p_metadata: { character_count: content.length },
   });
 
   revalidatePath("/feed");
