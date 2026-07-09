@@ -47,6 +47,7 @@ export async function updateSession(request: NextRequest) {
     path === '/update-password' ||
     path === '/terms' ||
     path === '/privacy' ||
+    path === '/suspended' ||
     path.startsWith('/auth/') ||
     path === '/api/stripe/webhook' ||
     isMetadataImage
@@ -61,6 +62,32 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = '/signup'
     return NextResponse.redirect(url)
+  }
+
+  // Suspension gate. `/suspended` is fully public (see isPublic above) so it
+  // never recurses here, and its own log-out form posts back to `/suspended`
+  // itself — also public — so signing out can never get caught by this check.
+  //
+  // Cost: getUser() already does one network round trip to validate the
+  // session; this adds a second, targeted round trip (one column, one row)
+  // ONLY for authenticated requests to non-public routes — logged-out
+  // traffic and static/public pages never pay it.
+  // ponytail: real per-request DB call, not free. Ceiling is one extra
+  // `profiles` read per authenticated navigation. Upgrade path if this ever
+  // shows up in cost/latency: sync is_suspended into a custom JWT claim via
+  // a Supabase Auth Hook so this becomes a free read off `user.app_metadata`
+  // — no such hook exists yet, out of scope here.
+  if (user && !isPublic) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_suspended')
+      .eq('id', user.id)
+      .maybeSingle()
+    if (profile?.is_suspended) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/suspended'
+      return NextResponse.redirect(url)
+    }
   }
 
   return supabaseResponse

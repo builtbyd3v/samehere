@@ -96,7 +96,7 @@ export default function QuoteMenu({
 
       <Modal open={reportOpen} onClose={() => setReportOpen(false)} title="Report quote">
         <ReportForm
-          postId={originalPostId}
+          target={{ kind: "post", postId: originalPostId }}
           viewerId={viewerId}
           context={`Quote repost ${quoteId}: ${quoteText.trim().slice(0, 280)}`}
         />

@@ -2,6 +2,8 @@ import Link from "next/link";
 import AvatarImage from "@/components/ui/AvatarImage";
 import { IconChevronLeft } from "@/components/icons";
 import MessageTime from "@/components/messages/MessageTime";
+import DmMessageReport from "@/components/messages/DmMessageReport";
+import DmThreadMenu from "@/components/messages/DmThreadMenu";
 import type { DmMessage } from "@/lib/messages";
 
 export default function MessageThread({
@@ -24,7 +26,7 @@ export default function MessageThread({
       {messages.map((m) => {
         const mine = m.sender_id === viewerId;
         return (
-          <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+          <div key={m.id} className={`group flex items-start gap-1 ${mine ? "justify-end" : "justify-start"}`}>
             <div className={`max-w-[min(82%,24rem)] ${mine ? "items-end" : "items-start"} flex flex-col`}>
               <div
                 className={`whitespace-pre-wrap break-words px-3.5 py-2.5 text-[15px] leading-relaxed ${
@@ -37,6 +39,11 @@ export default function MessageThread({
               </div>
               <MessageTime iso={m.created_at} className="mt-1 px-1 text-[11px] text-[var(--ink-faint)]" />
             </div>
+            {!mine && (
+              <div className="mt-0.5 opacity-0 transition focus-within:opacity-100 group-hover:opacity-100">
+                <DmMessageReport messageId={m.id} viewerId={viewerId} />
+              </div>
+            )}
           </div>
         );
       })}
@@ -45,11 +52,13 @@ export default function MessageThread({
 }
 
 export function MessageThreadHeader({
+  conversationId,
   username,
   displayName,
   avatarUrl,
   isPro = false,
 }: {
+  conversationId: string;
   username: string;
   displayName: string;
   avatarUrl: string | null;
@@ -81,6 +90,7 @@ export function MessageThreadHeader({
           <p className="truncate text-xs text-[var(--ink-muted)]">@{username}</p>
         </div>
       </Link>
+      <DmThreadMenu conversationId={conversationId} />
     </header>
   );
 }

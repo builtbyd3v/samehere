@@ -224,6 +224,7 @@ export default async function ProfilePage({
                 <ProfileActions
                   username={profile.username}
                   targetId={profile.id}
+                  viewerId={user.id}
                   followState={followState}
                   blocked={isBlocked}
                   amIBlocking={amIBlocking}

@@ -7,6 +7,8 @@ import ReportActions from "./ReportActions";
 
 export const metadata: Metadata = { title: "Admin" };
 
+const clip = (s: string | null) => ((s ?? "").length > 280 ? `${(s ?? "").slice(0, 280)}…` : (s ?? ""));
+
 export default async function AdminPage() {
   const supabase = await createClient();
   const {
@@ -40,6 +42,7 @@ export default async function AdminPage() {
                 <span className="rounded-full bg-[var(--featured-surface)] px-2 py-0.5 font-medium text-[var(--ink)]">
                   {r.reason ?? "report"}
                 </span>
+                <span className="rounded-full border border-[var(--border)] px-2 py-0.5">{r.target_type}</span>
                 <span>
                   by @{r.reporter_username ?? "deleted"} · <LocalTime iso={r.created_at} />
                 </span>
@@ -49,23 +52,48 @@ export default async function AdminPage() {
 
               {r.detail && <p className="mb-2 text-sm text-[var(--ink-muted)]">&ldquo;{r.detail}&rdquo;</p>}
 
-              <Link
-                href={`/post/${r.post_id}`}
-                className="mb-3 block whitespace-pre-wrap rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3 text-sm text-[var(--ink)] transition hover:border-[var(--border-strong)]"
-              >
-                {r.post_content.length > 280 ? `${r.post_content.slice(0, 280)}…` : r.post_content}
-              </Link>
+              {r.target_type === "post" &&
+                (r.post_id ? (
+                  <Link
+                    href={`/post/${r.post_id}`}
+                    className="mb-3 block whitespace-pre-wrap rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3 text-sm text-[var(--ink)] transition hover:border-[var(--border-strong)]"
+                  >
+                    {clip(r.post_content)}
+                  </Link>
+                ) : (
+                  <p className="mb-3 whitespace-pre-wrap rounded-lg border border-[var(--border)] border-dashed bg-[var(--canvas)] p-3 text-sm text-[var(--ink-muted)]">
+                    {r.snapshot ? clip(r.snapshot) : "(post deleted)"}
+                    <span className="mt-1 block text-xs text-[var(--ink-faint)]">post deleted — snapshot at report time</span>
+                  </p>
+                ))}
+
+              {r.target_type === "message" && (
+                <p className="mb-3 whitespace-pre-wrap rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3 text-sm text-[var(--ink)]">
+                  {r.message_content
+                    ? clip(r.message_content)
+                    : r.snapshot
+                      ? clip(r.snapshot)
+                      : "(message deleted)"}
+                  {!r.message_content && (
+                    <span className="mt-1 block text-xs text-[var(--ink-faint)]">message deleted — snapshot at report time</span>
+                  )}
+                </p>
+              )}
 
               <div className="mb-3 text-xs text-[var(--ink-muted)]">
-                author{" "}
-                <Link href={`/profile/${r.author_username}`} className="text-[var(--ink)] hover:underline">
-                  @{r.author_username}
-                </Link>
+                {r.target_type === "post" ? "author" : "user"}{" "}
+                {r.author_username ? (
+                  <Link href={`/profile/${r.author_username}`} className="text-[var(--ink)] hover:underline">
+                    @{r.author_username}
+                  </Link>
+                ) : (
+                  <span>deleted</span>
+                )}
               </div>
 
               <ReportActions
                 reportId={r.report_id}
-                postId={r.post_id}
+                postId={r.target_type === "post" ? r.post_id : null}
                 authorId={r.author_id}
                 postHidden={r.post_hidden}
                 authorSuspended={r.author_suspended}

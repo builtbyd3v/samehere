@@ -6,14 +6,20 @@ import { TEXT_LIMITS } from "@/lib/utils/validation";
 
 const REASONS = ["Spam", "Harassment", "Hate speech", "Sexual content", "Self-harm", "Other"];
 
-// Report form body — insert logic lives here once so PostMenu (the only
-// caller now) doesn't duplicate it. Caller supplies its own Modal wrapper.
+/** What is being reported. One target column is set per report (DB CHECK). */
+export type ReportTarget =
+  | { kind: "post"; postId: string }
+  | { kind: "user"; userId: string }
+  | { kind: "message"; messageId: string };
+
+// Report form body — insert logic lives here once so every caller (post menu,
+// profile header, DM thread) shares it. Caller supplies its own Modal wrapper.
 export function ReportForm({
-  postId,
+  target,
   viewerId,
   context,
 }: {
-  postId: string;
+  target: ReportTarget;
   viewerId: string;
   /** Prepended to optional details — e.g. quote repost being reported. */
   context?: string;
@@ -34,8 +40,18 @@ export function ReportForm({
     setError(null);
     const supabase = createClient();
     const detailParts = [context?.trim(), detail.trim()].filter(Boolean);
+    const targetCol =
+      target.kind === "post"
+        ? { post_id: target.postId }
+        : target.kind === "user"
+          ? { reported_user_id: target.userId }
+          : { message_id: target.messageId };
+    // snapshot is captured server-side by the reports_assert_target trigger —
+    // never sent from here (a client-supplied snapshot would be forgeable, and
+    // it's the only evidence left once ON DELETE SET NULL nulls the target).
     const { error: err } = await supabase.from("reports").insert({
-      post_id: postId,
+      ...targetCol,
+      target_type: target.kind,
       reporter_id: viewerId,
       reason,
       detail: detailParts.length ? detailParts.join("\n\n").slice(0, TEXT_LIMITS.reportDetail) : null,

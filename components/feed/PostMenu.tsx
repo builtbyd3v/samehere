@@ -94,7 +94,7 @@ export default function PostMenu({
       />
 
       <Modal open={reportOpen} onClose={() => setReportOpen(false)} title="Report post">
-        {viewerId && <ReportForm postId={postId} viewerId={viewerId} />}
+        {viewerId && <ReportForm target={{ kind: "post", postId }} viewerId={viewerId} />}
       </Modal>
     </>
   );

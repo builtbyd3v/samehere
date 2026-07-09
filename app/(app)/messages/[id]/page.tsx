@@ -65,6 +65,7 @@ export default async function MessageThreadPage({
       <MessageMarkRead conversationId={id} />
       <section className="card flex min-h-0 flex-1 flex-col overflow-hidden">
         <MessageThreadHeader
+          conversationId={id}
           username={peer.peer_username}
           isPro={peer.peer_is_pro ?? false}
           displayName={displayName}

@@ -15,8 +15,9 @@ export default function ReportActions({
   authorSuspended,
 }: {
   reportId: string;
-  postId: string;
-  authorId: string;
+  /** null for user/message reports — there is no post to hide. */
+  postId: string | null;
+  authorId: string | null;
   postHidden: boolean;
   authorSuspended: boolean;
 }) {
@@ -35,24 +36,26 @@ export default function ReportActions({
 
   return (
     <div className="flex flex-wrap gap-2">
-      {postHidden ? (
-        <button type="button" disabled={pending} className={btn} onClick={run(() => unhidePost(postId))}>
-          Unhide post
-        </button>
-      ) : (
-        <button type="button" disabled={pending} className={btn} onClick={run(() => hidePost(postId))}>
-          Hide post
-        </button>
-      )}
-      {authorSuspended ? (
-        <button type="button" disabled={pending} className={btn} onClick={run(() => unsuspendUser(authorId))}>
-          Unsuspend author
-        </button>
-      ) : (
-        <button type="button" disabled={pending} className={btn} onClick={run(() => suspendUser(authorId))}>
-          Suspend author
-        </button>
-      )}
+      {postId &&
+        (postHidden ? (
+          <button type="button" disabled={pending} className={btn} onClick={run(() => unhidePost(postId))}>
+            Unhide post
+          </button>
+        ) : (
+          <button type="button" disabled={pending} className={btn} onClick={run(() => hidePost(postId))}>
+            Hide post
+          </button>
+        ))}
+      {authorId &&
+        (authorSuspended ? (
+          <button type="button" disabled={pending} className={btn} onClick={run(() => unsuspendUser(authorId))}>
+            Unsuspend author
+          </button>
+        ) : (
+          <button type="button" disabled={pending} className={btn} onClick={run(() => suspendUser(authorId))}>
+            Suspend author
+          </button>
+        ))}
       <button type="button" disabled={pending} className={btn} onClick={run(() => resolveReport(reportId))}>
         Dismiss report
       </button>

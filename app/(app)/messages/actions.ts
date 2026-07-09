@@ -190,6 +190,18 @@ export async function icebreaker(peerId: string): Promise<IcebreakerResult> {
   return text ? { text } : { error: true };
 }
 
+export async function leaveConversation(conversationId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  await supabase.rpc("leave_conversation", { p_conversation_id: conversationId });
+  revalidatePath("/messages");
+  redirect("/messages");
+}
+
 export async function markDmRead(conversationId: string) {
   const supabase = await createClient();
   const {

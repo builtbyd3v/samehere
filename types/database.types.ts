@@ -271,18 +271,21 @@ export type Database = {
           conversation_id: string
           created_at: string
           last_read_at: string | null
+          left_at: string | null
           user_id: string
         }
         Insert: {
           conversation_id: string
           created_at?: string
           last_read_at?: string | null
+          left_at?: string | null
           user_id: string
         }
         Update: {
           conversation_id?: string
           created_at?: string
           last_read_at?: string | null
+          left_at?: string | null
           user_id?: string
         }
         Relationships: [
@@ -852,28 +855,40 @@ export type Database = {
           created_at: string | null
           detail: string | null
           id: string
+          message_id: string | null
           post_id: string | null
           reason: string | null
+          reported_user_id: string | null
           reporter_id: string | null
+          snapshot: string | null
           status: string
+          target_type: string
         }
         Insert: {
           created_at?: string | null
           detail?: string | null
           id?: string
+          message_id?: string | null
           post_id?: string | null
           reason?: string | null
+          reported_user_id?: string | null
           reporter_id?: string | null
+          snapshot?: string | null
           status?: string
+          target_type: string
         }
         Update: {
           created_at?: string | null
           detail?: string | null
           id?: string
+          message_id?: string | null
           post_id?: string | null
           reason?: string | null
+          reported_user_id?: string | null
           reporter_id?: string | null
+          snapshot?: string | null
           status?: string
+          target_type?: string
         }
         Relationships: [
           {
@@ -946,12 +961,16 @@ export type Database = {
           author_username: string
           created_at: string
           detail: string
+          message_content: string
+          message_id: string
           post_content: string
           post_hidden: boolean
           post_id: string
           reason: string
           report_id: string
           reporter_username: string
+          snapshot: string
+          target_type: string
         }[]
       }
       admin_resolve_report: {
@@ -1003,6 +1022,7 @@ export type Database = {
       }
       get_notification_unread_total: { Args: never; Returns: number }
       get_or_create_dm: { Args: { p_recipient: string }; Returns: string }
+      leave_conversation: { Args: { p_conversation_id: string }; Returns: undefined }
       get_profile_counts: {
         Args: { p_profile_id: string }
         Returns: {
