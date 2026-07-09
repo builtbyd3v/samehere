@@ -16,14 +16,18 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   } = await supabase.auth.getUser();
 
   const { data: profile } = user
-    ? await supabase.from("profiles").select("username, avatar_url, is_pro, pro_until, is_admin").eq("id", user.id).single()
+    ? await supabase.from("profiles").select("username, avatar_url, is_pro, pro_until").eq("id", user.id).single()
     : { data: null };
+
+  // is_admin is a privileged column (revoked from the authenticated role); read
+  // it through the own-status definer instead, same as app/(app)/admin/page.tsx.
+  const { data: isAdmin } = user ? await supabase.rpc("current_is_admin") : { data: false };
 
   const navbarProps = {
     username: profile?.username ?? null,
     avatarUrl: profile?.avatar_url ?? null,
     isPro: profile ? isPro(profile) : false,
-    isAdmin: profile?.is_admin ?? false,
+    isAdmin: isAdmin ?? false,
   };
 
   return (

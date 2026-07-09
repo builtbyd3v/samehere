@@ -1020,6 +1020,16 @@ export type Database = {
           weekly_points: number
         }[]
       }
+      get_my_billing: {
+        Args: never
+        Returns: {
+          is_pro: boolean
+          pro_until: string | null
+          pro_source: string | null
+          stripe_customer_id: string | null
+          wants_pro: boolean
+        }[]
+      }
       get_notification_unread_total: { Args: never; Returns: number }
       get_or_create_dm: { Args: { p_recipient: string }; Returns: string }
       leave_conversation: { Args: { p_conversation_id: string }; Returns: undefined }
@@ -1142,7 +1152,7 @@ export type Database = {
       }
       set_referral_code: { Args: { p_code: string }; Returns: string }
       use_ai_quota: {
-        Args: { p_cap: number; p_kind: string }
+        Args: { p_kind: string }
         Returns: boolean
       }
     }

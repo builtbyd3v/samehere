@@ -72,7 +72,7 @@ export async function connectionPrompt(
   const hasSharedFact = !!(school || major || year || sharedSkills.length > 0 || sharedCourses.length > 0);
 
   if (aiEnabled() && hasSharedFact) {
-    const { data: withinCap } = await supabase.rpc("use_ai_quota", { p_kind: "connection_prompt", p_cap: viewerIsPro ? 9999 : 3 });
+    const { data: withinCap } = await supabase.rpc("use_ai_quota", { p_kind: "connection_prompt" });
     if (withinCap) {
       const facts = [
         sharedCourses.length > 0 && `same courses: ${sharedCourses.join(", ")}`,

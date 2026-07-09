@@ -72,11 +72,9 @@ export default async function ProPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("is_pro, wants_pro, pro_until, pro_source, stripe_customer_id")
-    .eq("id", user.id)
-    .single();
+  // wants_pro / pro_source / stripe_customer_id are privileged columns (revoked
+  // from the authenticated role); read own billing state through the definer.
+  const { data: profile } = await supabase.rpc("get_my_billing").maybeSingle();
   if (!profile) redirect("/login");
 
   const pro = isPro(profile);

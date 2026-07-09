@@ -163,10 +163,7 @@ export async function icebreaker(peerId: string): Promise<IcebreakerResult> {
   if (!aiEnabled()) return { error: true };
 
   const pro = isPro(me);
-  const { data: allowed } = await supabase.rpc("use_ai_quota", {
-    p_kind: "icebreaker",
-    p_cap: pro ? 9999 : 3,
-  });
+  const { data: allowed } = await supabase.rpc("use_ai_quota", { p_kind: "icebreaker" });
   if (!allowed) return { locked: true };
 
   // Don't draft to someone the viewer has blocked (a peer blocking the viewer is

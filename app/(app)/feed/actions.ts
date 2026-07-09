@@ -123,10 +123,7 @@ export async function composerNudge(): Promise<AiResult> {
   if (aiEnabled()) {
     const { data: profile } = await supabase.from("profiles").select("is_pro, pro_until").eq("id", user.id).single();
     const pro = isPro(profile ?? { is_pro: false, pro_until: null });
-    const { data: allowed } = await supabase.rpc("use_ai_quota", {
-      p_kind: "composer_nudge",
-      p_cap: pro ? 9999 : 3,
-    });
+    const { data: allowed } = await supabase.rpc("use_ai_quota", { p_kind: "composer_nudge" });
     // Free user out of quota → upsell; Pro can't realistically hit the cap.
     if (!allowed) return pro ? { text: randomFallback() } : { overCap: true };
     const text = await generateText(
@@ -159,8 +156,9 @@ export async function improvePost(draft: string): Promise<ImproveResult> {
   if (!isPro(profile ?? { is_pro: false, pro_until: null })) return { locked: true };
   if (!aiEnabled()) return { error: true };
 
-  // Metered for telemetry; Pro's 9999 cap never blocks.
-  await supabase.rpc("use_ai_quota", { p_kind: "improve_post", p_cap: 9999 });
+  // Metered for telemetry only, not enforcement -- the locked check above already
+  // gates this to Pro; the cap lives inside use_ai_quota now (150/day for Pro).
+  await supabase.rpc("use_ai_quota", { p_kind: "improve_post" });
 
   const text = await generateText(IMPROVE_SYSTEM, trimmed, { model: modelForTier(true), maxTokens: 512 });
   return text ? { text } : { error: true };
@@ -349,11 +347,8 @@ export async function peopleSearch(query: string): Promise<PeopleSearchState> {
   // AI off → return the prefilter pool as-is, no quota consumed.
   if (!aiEnabled()) return { results: candidates.slice(0, 8).map(toResult) };
 
-  const { data: allowed } = await supabase.rpc("use_ai_quota", {
-    p_kind: "people_search",
-    p_cap: pro ? 9999 : 1,
-  });
-  // Free user out of their 1/day → upsell; Pro can't realistically hit 9999.
+  const { data: allowed } = await supabase.rpc("use_ai_quota", { p_kind: "people_search" });
+  // Free user out of their 1/day → upsell; Pro cap is 150/day.
   if (!allowed) return pro ? { results: candidates.slice(0, 8).map(toResult) } : { overCap: true };
 
   const list = candidates.map(compactCandidate).join("\n");

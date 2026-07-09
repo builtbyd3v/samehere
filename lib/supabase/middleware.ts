@@ -99,12 +99,10 @@ export async function updateSession(request: NextRequest) {
   // a Supabase Auth Hook so this becomes a free read off `user.app_metadata`
   // — no such hook exists yet, out of scope here.
   if (user && !isSuspensionExempt) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('is_suspended')
-      .eq('id', user.id)
-      .maybeSingle()
-    if (profile?.is_suspended) {
+    // is_suspended is a privileged column (revoked from the authenticated role).
+    // Read own status through the definer instead of selecting profiles directly.
+    const { data: suspended } = await supabase.rpc('current_is_suspended')
+    if (suspended) {
       const url = request.nextUrl.clone()
       url.pathname = '/suspended'
       return NextResponse.redirect(url)

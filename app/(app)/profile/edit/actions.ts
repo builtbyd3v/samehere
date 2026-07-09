@@ -111,10 +111,7 @@ export async function profileNudge(): Promise<AiResult> {
 
   if (aiEnabled()) {
     const pro = isPro(profile ?? { is_pro: false, pro_until: null });
-    const { data: allowed } = await supabase.rpc("use_ai_quota", {
-      p_kind: "profile_nudge",
-      p_cap: pro ? 9999 : 3,
-    });
+    const { data: allowed } = await supabase.rpc("use_ai_quota", { p_kind: "profile_nudge" });
     // Free user out of quota → upsell; Pro can't realistically hit the cap.
     if (!allowed) return pro ? { text: fallbackProfileNudge(gaps) } : { overCap: true };
     const missing = gaps.map((g) => g.replace("_", " ")).join(", ");
@@ -146,7 +143,7 @@ export async function draftProfileText(): Promise<DraftState> {
     supabase.from("profile_school").select("school").eq("profile_id", user.id).maybeSingle(),
   ]);
   const pro = isPro(p ?? { is_pro: false, pro_until: null });
-  const { data: allowed } = await supabase.rpc("use_ai_quota", { p_kind: "profile_nudge", p_cap: pro ? 9999 : 3 });
+  const { data: allowed } = await supabase.rpc("use_ai_quota", { p_kind: "profile_nudge" });
   if (!allowed) return pro ? { error: "Try again." } : { overCap: true };
 
   const facts = [

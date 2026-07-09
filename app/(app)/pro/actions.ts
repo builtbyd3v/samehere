@@ -74,11 +74,9 @@ export async function startCheckout(formData: FormData) {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("is_pro, pro_until, stripe_customer_id")
-    .eq("id", user.id)
-    .single();
+  // stripe_customer_id is privileged (revoked from the authenticated role);
+  // read own billing state through the definer.
+  const { data: profile } = await supabase.rpc("get_my_billing").maybeSingle();
   if (!profile) redirect("/login");
   if (isPro(profile)) redirect("/pro");
 
@@ -143,11 +141,9 @@ export async function openBillingPortal() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("stripe_customer_id, pro_source")
-    .eq("id", user.id)
-    .single();
+  // stripe_customer_id and pro_source are privileged (revoked from the
+  // authenticated role); read own billing state through the definer.
+  const { data: profile } = await supabase.rpc("get_my_billing").maybeSingle();
 
   // A one-time semester buyer may still carry a customer id from an earlier
   // subscription. The portal would open on past receipts with nothing to manage,
