@@ -1,15 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import Image from "next/image";
 import { Suspense, cache } from "react";
 import { notFound } from "next/navigation";
 import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { isAnimatedAvatarUrl } from "@/lib/avatar";
 import type { FollowState } from "@/components/profile/FollowButton";
 import ProfileActions from "@/components/profile/ProfileActions";
 import BlockButton from "@/components/profile/BlockButton";
-import PostCard, { POST_SELECT, type FeedPost } from "@/components/feed/PostCard";
+import { POST_SELECT, type FeedPost } from "@/components/feed/PostCard";
 import FeedTimeline from "@/components/feed/FeedTimeline";
 import ProfileMatchPrompt from "@/components/profile/ProfileMatchPrompt";
 import ProfileActivitySection from "@/components/profile/ProfileActivitySection";
@@ -181,18 +179,14 @@ export default async function ProfilePage({
       {/* Identity header — banner with the avatar overlapping its bottom edge */}
       <section className="card overflow-hidden">
         {bannerUrl ? (
-          <div className="relative aspect-[3/1] w-full">
-            <Image
-              src={bannerUrl}
-              alt=""
-              fill
-              sizes="(min-width: 672px) 672px, 100vw"
-              className="object-cover"
-              // Animated banners must bypass the optimizer, which would flatten
-              // them to a single re-encoded frame. Same rule as AvatarImage.
-              unoptimized={isAnimatedAvatarUrl(bannerUrl)}
-            />
-          </div>
+          // ponytail: plain <img>, not next/image. `fill` is position:absolute,
+          // which paints above the in-flow avatar that pulls up over the banner
+          // with a negative margin. The optimizer also flattened animated
+          // banners to one re-encoded frame. Both problems vanish with an
+          // in-flow <img>, and banners are user uploads the optimizer barely
+          // helps. Revisit only if banner bytes become a real cost.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={bannerUrl} alt="" className="aspect-[3/1] w-full object-cover" />
         ) : (
           <div
             aria-hidden
