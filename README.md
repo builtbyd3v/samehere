@@ -13,9 +13,10 @@ Students don't have a dedicated space that combines verified peer identity, real
 ## What's built
 
 ### Authentication and access
-- `.edu` email verification enforced server-side before the account is created
+- `.edu` email verification enforced **in the database**, by the `handle_new_user` trigger on `auth.users`, so a signup with a non-`.edu` address aborts the transaction. The check in the signup Server Action is UX only — the anon key is public, so any control that lives only in app code can be skipped by talking to Supabase directly. Out-of-band accounts (a dashboard invite) are exempted through a definer-only `signup_allowlist` table, not an env var
 - Supabase Auth: sign up, sign in, email confirmation, password reset (forgot / update)
-- Twitter-style gate: logged-out users reach only the landing, login, signup, and auth routes — everything else redirects to signup, enforced in both middleware (`proxy.ts`) and Row Level Security
+- Logged-out visitors reach the landing, auth routes, `/profile/[username]`, and `/post/[id]` — nothing else. Profiles show identity, school, year, major, bio, goals, counts and the heatmap, never posts; a single post shows its content, author and reaction counts, never comments or media. Private accounts expose identity and counts only. Both surfaces are served by `SECURITY DEFINER` functions that return one row for one id; the `posts` SELECT policy still requires `auth.uid() is not null`, so the anon key cannot enumerate the corpus. Both carry `robots: noindex` — link previews do not consult it
+- Suspension is a read gate as well as a write gate: a suspended account is redirected out of every content route and cannot record a profile view
 
 ### Student profiles
 - Username, display name, school, year, major, bio, skills, goals, courses
@@ -78,7 +79,7 @@ Each action type counts once per day. Daily square intensity reflects total poin
 - **Admin moderation** (`/admin`, gated to admins): triage open reports, soft-hide posts, suspend/unsuspend users — all via `is_admin`-gated `SECURITY DEFINER` functions; privileged columns are frozen against self-grant
 
 ### Pro tier & billing
-- Live perks: Pro badge, accent color, profile banner, who-viewed-you, animated avatar, stronger + unlimited AI — every cosmetic is server-gated on the owner's `is_pro` and frozen against direct writes by a trigger
+- Live perks: Pro badge, accent color, profile banner, who-viewed-you, animated avatar, and a stronger AI model with a 150/day cap per feature (a human cannot reach it; a script can). Every cosmetic is server-gated on `is_pro_now(is_pro, pro_until)` — one rule, used by the app, the privileged-column trigger, and the avatar RPCs, so the flag and the expiry cannot disagree — and frozen against direct writes by a trigger
 - Stripe billing: hosted Checkout, Customer Portal, and one signature-verified webhook that sets `is_pro` / `pro_until`. Checkout identity is bound server-side (no payment links), and the Stripe customer id is unique per profile
 - Pricing: **$4.99/mo · $12.99/semester**. Monthly is a subscription; semester is a one-time charge for a 6-month term, expired by a `pg_cron` job with a grace day so a late renewal webhook can't revoke a paying subscriber
 - Promo codes are supported, including 100%-off checkouts that skip card entry and still grant Pro
@@ -120,18 +121,31 @@ samehere needs environment variables that are **never committed**. Copy `.env.ex
 
 **Required environment:**
 - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase project (public by design; security rests on RLS, not secrecy)
-- `SUPABASE_SERVICE_ROLE_KEY` — server-only; used **only** by the Stripe webhook and the delete-account edge function, never in app or client code
+- `SUPABASE_SERVICE_ROLE_KEY` — server-only, never in app or client code. Three call sites: the Stripe webhook, the delete-account edge function, and `lib/weekly-prompt.ts` (which upserts a cache table holding no user data, behind an `auth.getUser()` check). Every other privileged read goes through a `SECURITY DEFINER` function keyed on `auth.uid()`
 - `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `OPENAI_MODEL`, `OPENAI_MODEL_PRO` — AI provider (OpenAI-compatible endpoint)
 - `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_MONTHLY`, `STRIPE_PRICE_SEMESTER` — billing
 - `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN`, `NEXT_PUBLIC_POSTHOG_HOST` — analytics
 - `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_BILLING_ENABLED` — app config
-- `SIGNUP_ALLOWLIST` — testing only; comma-separated emails exempt from the `.edu` gate. Leave empty in normal operation
+
+> `SIGNUP_ALLOWLIST` is gone. It was a process env, and a Postgres trigger cannot read one — so the app and the database disagreed about who could sign up. Exemptions now live in the definer-only `public.signup_allowlist` table, seeded from the SQL editor.
 
 **Intentionally excluded from the repo:**
 - `.env*` (all secrets; only `.env.example` with blank names is committed)
 - Internal working docs (agent, design-system, and strategy notes) — not required to run the app
 
 The database schema and RLS policies live in `supabase/migrations/` and are public on purpose — the security model is enforced by Row Level Security and `SECURITY DEFINER` functions, not by hiding the schema.
+
+`supabase/tests/rls_test.sql` is the regression suite for that model: 25 assertions covering the `.edu` gate, private-account visibility, blocks in both directions, contribution-point integrity, the report/evidence flow, suspension, and the anonymous public surface. It seeds fixtures, impersonates `authenticated` and `anon` the way PostgREST does, and rolls the whole thing back. Rejection assertions pin the expected `SQLSTATE`, so a fix cannot pass for the wrong reason — an insert blocked by a rate limiter is not an insert blocked by a policy.
+
+```
+psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/rls_test.sql
+```
+
+Two rules the schema is built on, both learned the hard way:
+
+**A policy subquery runs as the caller.** `comments` mirroring `posts` visibility works *because* `posts` RLS filters the subquery to what the caller may see. The same mechanism silently broke blocks: `blocks` has an owner-read policy, so `not exists (select 1 from blocks ...)` only ever saw rows the *caller* wrote, and "someone blocked me" matched nothing. Block checks go through `get_blocked_ids()`, a definer, for exactly this reason. Column grants apply to those subqueries too.
+
+**A `SECURITY DEFINER` bypasses RLS, so every predicate it skips must be rewritten by hand.** `get_public_post` re-checks that the post exists, the author is not private, and the post is not hidden — and returns zero rows for all three, so they are indistinguishable to a caller. Adding a field to a public RPC is a new public disclosure.
 
 ## Why this project
 
