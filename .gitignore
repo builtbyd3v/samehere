@@ -52,3 +52,9 @@ supabase/.temp
 supabase/.branches
 
 /.remember
+
+# local docs/specs/plans (never committed)
+plans/
+docs/
+PRODUCT.md
+.impeccable/
