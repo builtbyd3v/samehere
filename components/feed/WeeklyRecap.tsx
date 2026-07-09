@@ -1,9 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
+import { easternDateParts } from "@/lib/weekly-prompt";
 
-// ponytail: 7-day window computed from UTC "now" — coarse, not tz-exact vs the
-// Eastern day-boundary the streak/heatmap use. Fine for a rough weekly nudge.
-function sevenDaysAgoUTC(): string {
-  const d = new Date();
+// 7-day window keyed off the Eastern civil date (same day boundary as
+// contribution_log/streak/heatmap), so the recap matches the streak it summarizes.
+function sevenDaysAgoEastern(): string {
+  const { year, month, day } = easternDateParts(new Date());
+  const d = new Date(Date.UTC(year, month - 1, day));
   d.setUTCDate(d.getUTCDate() - 7);
   return d.toISOString().slice(0, 10);
 }
@@ -16,7 +18,7 @@ export default async function WeeklyRecap({ userId }: { userId: string }) {
   const supabase = await createClient();
 
   const [logRes, streakRes] = await Promise.all([
-    supabase.from("contribution_log").select("action_type").eq("user_id", userId).gte("date", sevenDaysAgoUTC()),
+    supabase.from("contribution_log").select("action_type").eq("user_id", userId).gte("date", sevenDaysAgoEastern()),
     supabase.rpc("get_streak", { p_profile_id: userId }),
   ]);
 

@@ -3,17 +3,37 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { generateText, aiEnabled } from "@/lib/ai";
 import { WEEKLY_PROMPT_SYSTEM } from "@/lib/ai-prompts";
 
-// ISO-8601 week key, e.g. "2026-W28". UTC so it's stable regardless of server tz.
+// Eastern (America/New_York) civil date parts for an instant — DST-aware, the
+// one tz constant this project uses for day-boundary logic (see
+// supabase/migrations/20260705130000_growth_wave_b_contribution.sql). Exported
+// so WeeklyRecap.tsx can key its window off the same day boundary.
+export function easternDateParts(d: Date): { year: number; month: number; day: number } {
+  // en-CA formats as YYYY-MM-DD, giving zero-padded parts to parse.
+  const [year, month, day] = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  })
+    .format(d)
+    .split("-")
+    .map(Number);
+  return { year, month, day };
+}
+
+// ISO-8601 week key, e.g. "2026-W28", keyed off the Eastern civil date so the
+// week rolls over at Eastern midnight — same boundary as streak/heatmap.
 export function weekKey(d: Date): string {
-  const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-  const day = date.getUTCDay() || 7; // Mon=1..Sun=7
-  date.setUTCDate(date.getUTCDate() + 4 - day); // move to this week's Thursday
+  const { year, month, day } = easternDateParts(d);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  const dow = date.getUTCDay() || 7; // Mon=1..Sun=7
+  date.setUTCDate(date.getUTCDate() + 4 - dow); // move to this week's Thursday
   const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
   const week = Math.ceil(((date.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
   return `${date.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
 }
 
-// Coarse academic phase from UTC month (0-11). // ponytail: coarse month->phase map, refine if it feels off.
+// Coarse academic phase from Eastern month (0-11). // ponytail: coarse month->phase map, refine if it feels off.
 export function phaseFor(month: number): string {
   if (month === 11 || month === 0) return "winter break / new semester";
   if (month >= 1 && month <= 3) return "mid-semester";
@@ -38,7 +58,7 @@ const FALLBACK_BY_PHASE: Record<string, string> = {
 export async function getWeeklyPrompt(): Promise<{ prompt: string; weekKey: string }> {
   const now = new Date();
   const key = weekKey(now);
-  const phase = phaseFor(now.getUTCMonth());
+  const phase = phaseFor(easternDateParts(now).month - 1);
   const fallback = FALLBACK_BY_PHASE[phase] ?? "What are you working on this week?";
 
   const supabase = await createClient();
@@ -88,4 +108,35 @@ export async function getWeeklyPrompt(): Promise<{ prompt: string; weekKey: stri
     .eq("week_key", key)
     .maybeSingle();
   return { prompt: reread?.prompt || prompt, weekKey: key };
+}
+
+// ponytail: run `npx tsx lib/weekly-prompt.ts` to sanity-check the Eastern
+// day-boundary math across both 2026 DST transitions.
+if (process.argv[1]?.endsWith("weekly-prompt.ts")) {
+  const ymd = (d: Date) => {
+    const { year, month, day } = easternDateParts(d);
+    return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  };
+
+  // Spring-forward, 2026-03-08: EST (UTC-5) still in effect at the midnight
+  // boundary (the 2am local jump to EDT happens later the same day).
+  console.assert(ymd(new Date("2026-03-08T04:59:00Z")) === "2026-03-07", "just before Eastern midnight, pre-DST-jump day");
+  console.assert(ymd(new Date("2026-03-08T05:00:00Z")) === "2026-03-08", "just after Eastern midnight, pre-DST-jump day");
+
+  // Fall-back, 2026-11-01: EDT (UTC-4) still in effect at the midnight
+  // boundary (the 2am local fall-back to EST happens later the same day).
+  console.assert(ymd(new Date("2026-11-01T03:59:00Z")) === "2026-10-31", "just before Eastern midnight, fall-back day");
+  console.assert(ymd(new Date("2026-11-01T04:00:00Z")) === "2026-11-01", "just after Eastern midnight, fall-back day");
+
+  // weekKey must not roll over early: 2026-03-08 is a Sunday. 23:30 Eastern
+  // that Sunday is already Monday 03:30 UTC — the old UTC-based weekKey would
+  // wrongly call that the next ISO week. Both instants are Eastern-Sunday, so
+  // both must land in the same week as Sunday noon Eastern (unambiguous in UTC too).
+  console.assert(
+    weekKey(new Date("2026-03-09T03:30:00Z")) === weekKey(new Date("2026-03-08T16:00:00Z")),
+    "Sunday-night-Eastern must not roll to next week's key",
+  );
+  console.assert(phaseFor(2) === "mid-semester", "phaseFor(2) is mid-semester");
+
+  console.log("weekly-prompt tz self-check passed");
 }
