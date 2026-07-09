@@ -3,13 +3,13 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { isEduEmail, usernameError } from "@/lib/utils/validation";
+import { usernameError } from "@/lib/utils/validation";
 
 // Shared shape for useActionState on the auth forms.
 export type AuthState = { error?: string; ok?: boolean; email?: string };
 
-// Signup: server-side gate on .edu + username + password, then Supabase creates
-// the user and (with email confirmations on) sends a confirmation link.
+// Signup: any email works (no .edu gate — see docs/superpowers/specs/2026-07-09-open-signup-design.md).
+// A .edu address auto-earns the Verified Student badge server-side (handle_new_user trigger).
 // The handle_new_user trigger claims profiles.username from user_metadata, so
 // username MUST be valid + unique here or the DB rejects the whole signup.
 export async function signUp(_prev: AuthState, formData: FormData): Promise<AuthState> {
@@ -18,8 +18,7 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
   const username = String(formData.get("username") ?? "").trim().toLowerCase();
   const refCode = String(formData.get("ref_code") ?? "").trim().toLowerCase();
 
-  // UX only — the gate is is_allowed_signup_email() in handle_new_user.
-  if (!isEduEmail(email)) return { error: "Enter a valid .edu school email address." };
+  if (!email) return { error: "Enter your email address." };
   const uErr = usernameError(username);
   if (uErr) return { error: uErr };
   if (password.length < 8) return { error: "Password must be at least 8 characters." };

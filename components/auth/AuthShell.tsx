@@ -24,7 +24,7 @@ const COPY = {
         You&apos;re not the <Accent>only</Accent> one.
       </>
     ),
-    sub: "Verified students only, .edu required. Takes a minute.",
+    sub: "Built for students. Takes a minute.",
   },
   forgot: {
     headline: (

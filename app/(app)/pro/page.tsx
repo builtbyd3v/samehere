@@ -42,7 +42,7 @@ const COMING_SOON_TO_PRO = [
 ];
 
 const NEVER_GATED = [
-  ".edu verify",
+  "student verification",
   "posting",
   "following",
   "DMs",

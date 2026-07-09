@@ -23,9 +23,9 @@ function Check() {
 }
 
 const POINTS = [
-  "Verified students only, .edu required",
+  "Sign up with .edu and you're a verified student",
   "Free forever: post, follow, and discover",
-  "We only use your email to verify you're a student",
+  "Any email works. Verify with .edu anytime in settings",
 ] as const;
 
 // Reassurance bullets — left column on desktop, below the form on mobile.

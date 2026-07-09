@@ -5,8 +5,8 @@ import { landingH2 } from "@/lib/landing/styles";
 
 const STEPS = [
   {
-    title: "Verify with your .edu",
-    body: "One real student email gets you in. No bots, no impostors, only verified students.",
+    title: "Join free",
+    body: "Sign up with any email in a few seconds. Verify a .edu, now or later in settings, and get the verified student badge.",
   },
   {
     title: "Post, react, and build your heatmap",

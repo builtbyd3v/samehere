@@ -122,64 +122,103 @@ begin
     ('conv_ab', v_conv), ('msg_b_to_a', v_msg);
 end $$;
 
--- ============ C1 — a non-.edu account can actually be created ============
--- The real finding is "auth.signUp() with a gmail address creates a verified
--- account", so exercise the thing itself: insert a non-.edu auth.users row (as
--- superuser here — auth.signUp is superuser-equivalent for row creation) and
--- assert handle_new_user aborts the transaction. handle_new_user now gates on
--- new.email via is_allowed_signup_email(), so the insert raises -> PASS. The
--- function-existence proxy below (C1_helper) stays as a secondary,
--- human-readable signal.
--- NOTE: the fixture users use @school.edu on purpose — the .edu gate is live,
--- so @example.com would abort the whole file. Do NOT "tidy" them.
+-- ============ C1 — open signup: any email creates an account, unverified ============
+-- 20260713100000 reversed the .edu gate. A gmail signup must now SUCCEED, land
+-- with verified_student = false, and record its email_domain. A signup with NO
+-- username metadata (the OAuth shape) must succeed too, with a generated handle
+-- that satisfies the username CHECK. Both rows are deleted at the end (cascade
+-- clears profiles).
+-- NOTE: the fixture users keep @school.edu addresses — that now also exercises
+-- the verified_student backfill/trigger (see C1_verified below).
 do $$
 declare
-  v_raised boolean := false;
-  v_state  text;
+  v_id1 uuid := gen_random_uuid();
+  v_id2 uuid := gen_random_uuid();
+  v_p   public.profiles%rowtype;
 begin
-  begin
-    insert into auth.users (
-      instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
-      raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
-      confirmation_token, recovery_token, email_change_token_new, email_change
-    ) values (
-      '00000000-0000-0000-0000-000000000000', gen_random_uuid(), 'authenticated', 'authenticated',
-      'rls-test-attacker@gmail.com', '', now(), '{"provider":"email","providers":["email"]}',
-      jsonb_build_object('username', 'rls_test_attacker'), now(), now(), '', '', '', ''
-    );
-  exception when others then
-    v_raised := true;
-    v_state  := sqlstate; -- pin the REASON, not just "an error happened"
-  end;
-  if not v_raised then
-    raise exception 'C1 REGRESSION: a non-.edu (gmail) account was created — handle_new_user does not gate on new.email, so auth.signUp() with the public anon key bypasses the .edu check entirely';
+  insert into auth.users (
+    instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+    raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+    confirmation_token, recovery_token, email_change_token_new, email_change
+  ) values (
+    '00000000-0000-0000-0000-000000000000', v_id1, 'authenticated', 'authenticated',
+    'rls-test-open@gmail.com', '', now(), '{"provider":"email","providers":["email"]}',
+    jsonb_build_object('username', 'rls_test_open'), now(), now(), '', '', '', ''
+  );
+  select * into v_p from public.profiles where id = v_id1;
+  if not found then
+    raise exception 'C1 REGRESSION: gmail signup created no profile — handle_new_user still gates on .edu';
   end if;
-  -- handle_new_user gates with `raise ... using errcode = ''22023''` (see
-  -- 20260711100000_close_edu_gate.sql). Anyone changing that errcode must update
-  -- this line. A different code = it raised for the wrong reason (username
-  -- collision, a new NOT NULL column on auth.users, a GoTrue schema change), and
-  -- accepting that as PASS would falsely certify a gate that does not exist.
-  if v_state <> '22023' then
-    raise exception 'C1 WRONG REASON: signup raised SQLSTATE % — expected 22023 from the .edu gate, not an unrelated error', v_state;
+  if v_p.verified_student then
+    raise exception 'C1 REGRESSION: a gmail signup landed with verified_student = true';
   end if;
+  if v_p.email_domain <> 'gmail.com' then
+    raise exception 'C1 REGRESSION: email_domain recorded as %, expected gmail.com', v_p.email_domain;
+  end if;
+
+  -- OAuth shape: no username in metadata -> generated handle passing the CHECK.
+  insert into auth.users (
+    instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+    raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+    confirmation_token, recovery_token, email_change_token_new, email_change
+  ) values (
+    '00000000-0000-0000-0000-000000000000', v_id2, 'authenticated', 'authenticated',
+    'RLS.Test-OAuth+x@gmail.com', '', now(), '{"provider":"google","providers":["google"]}',
+    '{}'::jsonb, now(), now(), '', '', '', ''
+  );
+  select * into v_p from public.profiles where id = v_id2;
+  if not found then
+    raise exception 'C1 REGRESSION: OAuth-shaped signup (no username metadata) created no profile';
+  end if;
+  if v_p.username !~ '^[a-z0-9_]{3,20}$' then
+    raise exception 'C1 REGRESSION: generated username % violates the charset/length CHECK', v_p.username;
+  end if;
+
+  delete from auth.users where id in (v_id1, v_id2);
   insert into tests_results values ('C1', true, 'ok');
 exception when others then
+  delete from auth.users where id in (v_id1, v_id2);
   insert into tests_results values ('C1', false, sqlerrm);
 end $$;
 
--- ============ C1_helper — the DB-side domain check exists and rejects gmail ============
+-- ============ C1_helper — the dead gate machinery is actually gone ============
 do $$
 begin
-  if to_regprocedure('public.is_allowed_signup_email(text)') is null then
-    raise exception 'C1_helper NOT FIXED: public.is_allowed_signup_email(text) does not exist — no DB-side .edu check to back the trigger';
+  if to_regprocedure('public.is_allowed_signup_email(text)') is not null then
+    raise exception 'C1_helper REGRESSION: public.is_allowed_signup_email(text) still exists — 20260713100000 should have dropped it with the gate';
   end if;
-  if (select public.is_allowed_signup_email('x@gmail.com')) then
-    raise exception 'C1_helper REGRESSION: is_allowed_signup_email(''x@gmail.com'') returned true for a non-.edu address';
+  if to_regclass('public.signup_allowlist') is not null then
+    raise exception 'C1_helper REGRESSION: public.signup_allowlist still exists — dead once the gate is open';
   end if;
   insert into tests_results values ('C1_helper', true, 'ok');
 exception when others then
   insert into tests_results values ('C1_helper', false, sqlerrm);
 end $$;
+
+-- ============ C1_verified — .edu fixtures are verified; the flag is client-frozen ============
+-- Backfill/trigger: the @school.edu fixture users must carry verified_student =
+-- true. Freeze: a logged-in user flipping their OWN verified_student must be
+-- silently reverted by guard_profile_privileged (same contract as is_pro).
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+declare
+  v_b uuid := (select id from tests_fixture where key = 'b');
+  v_flag boolean;
+begin
+  select verified_student into v_flag from public.profiles where id = v_b;
+  if not v_flag then
+    raise exception 'C1_verified REGRESSION: fixture b signed up @school.edu but verified_student is false — signup trigger/backfill missing';
+  end if;
+  update public.profiles set verified_student = false where id = v_b;
+  select verified_student into v_flag from public.profiles where id = v_b;
+  if not v_flag then
+    raise exception 'C1_verified REGRESSION: an authenticated user changed their own verified_student — guard_profile_privileged does not freeze it';
+  end if;
+  insert into tests_results values ('C1_verified', true, 'ok');
+exception when others then
+  insert into tests_results values ('C1_verified', false, sqlerrm);
+end $$;
+reset role;
 
 -- ============ H1 — contribution points cannot be minted by a direct RPC call ============
 -- log_contribution(text,jsonb) was DROPPED by 20260711110100_contribution_from_rows.sql.

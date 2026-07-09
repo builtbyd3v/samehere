@@ -4,7 +4,7 @@ import { Stagger, RevealItem } from "./Reveal";
 
 // Benefit tiles — the three reasons to join, scannable in one beat under the hero.
 const VALUES = [
-  { title: "Verified students only", body: ".edu required. Zero bots, zero impostors." },
+  { title: "Built for students", body: "Free to join. Verify a .edu email for the student badge." },
   { title: "Effort made visible", body: "A year of real activity on your contribution heatmap." },
   { title: "AI finds your people", body: "Matched on school, major, skills, and goals." },
 ] as const;

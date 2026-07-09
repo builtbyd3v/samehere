@@ -8,7 +8,7 @@ import AvatarImage from "@/components/ui/AvatarImage";
 
 export type FollowRequest = {
   follower_id: string;
-  requester: { username: string; display_name: string | null; avatar_url: string | null; is_pro: boolean; is_founder: boolean; is_campus_founder: boolean } | null;
+  requester: { username: string; display_name: string | null; avatar_url: string | null; is_pro: boolean; is_founder: boolean; is_campus_founder: boolean; verified_student: boolean } | null;
 };
 
 export default function FollowRequests({ requests }: { requests: FollowRequest[] }) {
@@ -57,7 +57,7 @@ export default function FollowRequests({ requests }: { requests: FollowRequest[]
                   ) : (
                     <span className="font-medium">{name}</span>
                   )}
-                  {r.requester && <UserBadges isPro={r.requester.is_pro} isFounder={r.requester.is_founder} isCampusFounder={r.requester.is_campus_founder} />}
+                  {r.requester && <UserBadges isPro={r.requester.is_pro} isFounder={r.requester.is_founder} isCampusFounder={r.requester.is_campus_founder} isVerifiedStudent={r.requester.verified_student} />}
                   {r.requester && <span className="text-[var(--ink-muted)]">@{r.requester.username}</span>}
                 </div>
               </div>

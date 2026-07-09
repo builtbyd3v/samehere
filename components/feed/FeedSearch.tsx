@@ -15,6 +15,7 @@ type SearchResult = {
   is_pro: boolean;
   is_founder: boolean;
   is_campus_founder: boolean;
+  verified_student: boolean;
 };
 
 async function searchProfiles(q: string): Promise<SearchResult[]> {
@@ -36,7 +37,7 @@ async function searchProfiles(q: string): Promise<SearchResult[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("profiles")
-    .select("id, username, display_name, avatar_url, is_pro, is_founder, is_campus_founder")
+    .select("id, username, display_name, avatar_url, is_pro, is_founder, is_campus_founder, verified_student")
     .or(orFilter)
     .limit(20)
     .returns<SearchResult[]>();
@@ -104,7 +105,7 @@ export async function FeedSearchResults({ q }: { q: string }) {
               <div className="min-w-0 text-sm">
                 <p className="flex flex-wrap items-center gap-x-1.5 font-medium">
                   {name}
-                  <UserBadges isPro={p.is_pro} isFounder={p.is_founder} isCampusFounder={p.is_campus_founder} />
+                  <UserBadges isPro={p.is_pro} isFounder={p.is_founder} isCampusFounder={p.is_campus_founder} isVerifiedStudent={p.verified_student} />
                 </p>
                 <p className="text-[var(--ink-muted)]">@{p.username}</p>
               </div>

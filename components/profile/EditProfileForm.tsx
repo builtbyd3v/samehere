@@ -188,6 +188,13 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
 
         <div className="flex flex-col gap-4">
           <div>
+            <label htmlFor="username" className={label}>Username</label>
+            <input id="username" name="username" type="text" autoComplete="username" required maxLength={20}
+              defaultValue={initial.username} placeholder="yourname" className={field} />
+            <p className={hint}>3-20 characters: lowercase letters, numbers, or underscores.</p>
+          </div>
+
+          <div>
             <label htmlFor="display_name" className={label}>Display name</label>
             <input id="display_name" name="display_name" type="text" maxLength={50}
               defaultValue={initial.display_name ?? ""} placeholder="Your name" className={field} />

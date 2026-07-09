@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { getCachedLeaderboard } from "@/lib/leaderboard";
+import { getCachedLeaderboard, getPeersLeaderboard } from "@/lib/leaderboard";
 import AvatarImage from "@/components/ui/AvatarImage";
 import UserBadges from "@/components/profile/UserBadges";
 import EmptyState from "@/components/ui/EmptyState";
@@ -8,8 +8,7 @@ import EmptyState from "@/components/ui/EmptyState";
 const pill = "rounded-full px-4 py-1.5 text-sm font-medium transition active:scale-[0.97]";
 
 // Weekly points leaderboard. Scope switches via ?scope= searchParam (server-rendered,
-// no client state) — same pattern as FeedTabs. Global always shows; "Your school"
-// only appears once the viewer has a school on file.
+// no client state) — same pattern as FeedTabs. Global + Peers always both show.
 export default async function LeaderboardPage({
   searchParams,
 }: {
@@ -22,16 +21,10 @@ export default async function LeaderboardPage({
   } = await supabase.auth.getUser();
   if (!user) return null; // proxy already gates this route
 
-  const { data: viewerSchoolRow } = await supabase
-    .from("profile_school")
-    .select("school")
-    .eq("profile_id", user.id)
-    .maybeSingle();
-  const viewerSchool = viewerSchoolRow?.school ?? null;
+  const scope = params.scope === "peers" ? "peers" : "global";
 
-  const scope = params.scope === "school" && viewerSchool ? "school" : "global";
-
-  const rows = await getCachedLeaderboard(supabase, scope, viewerSchool);
+  const rows =
+    scope === "peers" ? await getPeersLeaderboard(supabase) : await getCachedLeaderboard(supabase);
 
   return (
     <main className="page-enter mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8">
@@ -40,44 +33,46 @@ export default async function LeaderboardPage({
         Ranked by points earned this week. Resets every Monday.
       </p>
 
-      {viewerSchool && (
-        <div
-          className="mt-4 inline-flex gap-0.5 rounded-full border border-[var(--border)] p-0.5"
-          role="tablist"
-          aria-label="Leaderboard scope"
+      <div
+        className="mt-4 inline-flex gap-0.5 rounded-full border border-[var(--border)] p-0.5"
+        role="tablist"
+        aria-label="Leaderboard scope"
+      >
+        <Link
+          href="/leaderboard"
+          role="tab"
+          aria-selected={scope === "global"}
+          className={
+            scope === "global"
+              ? `${pill} bg-[color-mix(in_srgb,var(--blue)_12%,transparent)] text-[var(--blue)]`
+              : `${pill} text-[var(--ink-muted)] hover:text-[var(--ink)]`
+          }
         >
-          <Link
-            href="/leaderboard"
-            role="tab"
-            aria-selected={scope === "global"}
-            className={
-              scope === "global"
-                ? `${pill} bg-[color-mix(in_srgb,var(--blue)_12%,transparent)] text-[var(--blue)]`
-                : `${pill} text-[var(--ink-muted)] hover:text-[var(--ink)]`
-            }
-          >
-            Global
-          </Link>
-          <Link
-            href="/leaderboard?scope=school"
-            role="tab"
-            aria-selected={scope === "school"}
-            className={
-              scope === "school"
-                ? `${pill} bg-[color-mix(in_srgb,var(--blue)_12%,transparent)] text-[var(--blue)]`
-                : `${pill} text-[var(--ink-muted)] hover:text-[var(--ink)]`
-            }
-          >
-            Your school
-          </Link>
-        </div>
-      )}
+          Global
+        </Link>
+        <Link
+          href="/leaderboard?scope=peers"
+          role="tab"
+          aria-selected={scope === "peers"}
+          className={
+            scope === "peers"
+              ? `${pill} bg-[color-mix(in_srgb,var(--blue)_12%,transparent)] text-[var(--blue)]`
+              : `${pill} text-[var(--ink-muted)] hover:text-[var(--ink)]`
+          }
+        >
+          Peers
+        </Link>
+      </div>
 
       <div className="card mt-5">
         {rows.length === 0 ? (
           <EmptyState
             title="No points on the board yet"
-            description="Be the first this week. Post something and earn your spot."
+            description={
+              scope === "peers"
+                ? "Follow people who follow you back and your peers show up here."
+                : "Be the first this week. Post something and earn your spot."
+            }
             action={{ label: "Go post", href: "/feed" }}
           />
         ) : (
@@ -114,11 +109,16 @@ export default async function LeaderboardPage({
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-x-1.5">
                         <span className="truncate font-medium text-[var(--ink)]">{name}</span>
-                        <UserBadges isPro={row.is_pro} isFounder={row.is_founder} isCampusFounder={row.is_campus_founder} />
+                        <UserBadges
+                          isPro={row.is_pro}
+                          isFounder={row.is_founder}
+                          isCampusFounder={row.is_campus_founder}
+                          isVerifiedStudent={row.verified_student}
+                        />
                       </div>
                       <p className="truncate text-xs text-[var(--ink-muted)]">
                         @{row.username}
-                        {scope === "global" && row.school ? ` · ${row.school}` : ""}
+                        {row.school ? ` · ${row.school}` : ""}
                       </p>
                     </div>
                     <span className="shrink-0 text-sm font-semibold text-[var(--ink)]">

@@ -16,7 +16,7 @@ export default function CtaBand() {
           Find your people.
         </h2>
         <p className="mx-auto mt-4 max-w-[40ch] text-base leading-relaxed text-[var(--ink-muted)]">
-          Verified students only, and it&apos;s free forever.
+          Built for students, and it&apos;s free forever.
         </p>
         <motion.div
           className="relative mt-8 inline-block"
@@ -28,7 +28,7 @@ export default function CtaBand() {
             style={{ background: "var(--blue-glow)" }}
           />
           <Link href="/signup" className={signupCta}>
-            Join with .edu
+            Join free
           </Link>
         </motion.div>
       </Reveal>

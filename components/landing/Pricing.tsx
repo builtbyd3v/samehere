@@ -7,7 +7,7 @@ import { IconBolt } from "@/components/icons";
 import { landingCard, landingH2 } from "@/lib/landing/styles";
 import { signupCta } from "./cta";
 const FREE_FEATURES = [
-  "Verified .edu signup",
+  "Optional .edu verification badge",
   "Profiles, feed, and reactions",
   "Follow, DMs, and private accounts",
   "Streaks, leaderboards, and your heatmap",
@@ -34,7 +34,7 @@ export default function Pricing() {
   return (
     <section id="pricing" className="scroll-mt-[5.5rem] mx-auto max-w-[1200px] px-5 py-20">
       <Reveal>
-        <h2 className={`text-balance ${landingH2}`}>Free for every verified student.</h2>
+        <h2 className={`text-balance ${landingH2}`}>Free for every student.</h2>
         <p className="mt-4 max-w-[48ch] text-base leading-relaxed text-[var(--ink-muted)]">
           Posting, following, and private accounts are never paywalled. Pro is optional.
         </p>
@@ -49,7 +49,7 @@ export default function Pricing() {
           >
             <p className="text-sm text-[var(--ink-muted)]">Free</p>
             <p className="mt-2 text-[48px] font-semibold leading-none tracking-[-0.03em]">$0</p>
-            <p className="mt-1 text-sm text-[var(--ink-muted)]">Always free for verified students</p>
+            <p className="mt-1 text-sm text-[var(--ink-muted)]">Always free to join</p>
             <ul className="mt-6 flex-1 space-y-2.5 text-sm text-[var(--ink-muted)]">
               {FREE_FEATURES.map((f) => (
                 <li key={f} className="flex gap-2">
@@ -60,7 +60,7 @@ export default function Pricing() {
             </ul>
             <div className="mt-8">
               <Link href="/signup" className={signupCta}>
-                Join with .edu
+                Join free
               </Link>
             </div>
           </motion.div>

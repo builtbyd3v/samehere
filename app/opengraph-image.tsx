@@ -19,7 +19,7 @@ import { BLUE, BORDER, CANVAS, CARD, FEATURED, INK, INK_FAINT, INK_MUTED, POST }
 
 export const runtime = "nodejs"; // reads the font files off disk
 
-export const alt = "samehere: the network for verified students";
+export const alt = "samehere: the social network built for students";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -203,7 +203,7 @@ export default async function OgImage() {
                   padding: "6px 15px",
                 }}
               >
-                .edu verified
+                Verified students
               </div>
 
               <div
@@ -239,7 +239,7 @@ export default async function OgImage() {
           >
             <div style={{ display: "flex", flexDirection: "column" }}>
               <Wordmark size={26} />
-              <div style={{ marginTop: 3, fontSize: 17, color: INK_MUTED }}>Verified students only.</div>
+              <div style={{ marginTop: 3, fontSize: 17, color: INK_MUTED }}>Built for students.</div>
             </div>
             <div style={{ fontSize: 17, color: INK_FAINT }}>samehere.dev</div>
           </div>

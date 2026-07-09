@@ -6,6 +6,7 @@ import { updateReferralCode, type ReferralCodeState } from "@/app/(app)/referral
 import { IconButterfly } from "@/components/icons";
 
 const GOAL = 100;
+const BUTTERFLY_MILESTONE = 50;
 
 export default function ReferralShareCard({
   initialCode,
@@ -23,6 +24,10 @@ export default function ReferralShareCard({
   const [copied, setCopied] = useState(false);
   const code = state.code ?? initialCode;
   const shareLink = `${origin}/signup?ref=${code}`;
+
+  const butterflyEarned = isCampusFounder || referralCount >= BUTTERFLY_MILESTONE;
+  const proEarned = referralCount >= GOAL;
+  const progress = Math.min(referralCount, GOAL);
 
   function copyLink() {
     navigator.clipboard.writeText(shareLink);
@@ -84,33 +89,65 @@ export default function ReferralShareCard({
         </button>
       </div>
 
-      {/* Social Butterfly badge — always showcased; locked (grey) until earned, then green */}
-      <div className="mt-5 flex items-start gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-4">
-        <IconButterfly className="h-9 w-9 shrink-0 text-[var(--campus-founder)]" />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-sm font-semibold text-[var(--ink)]">Social Butterfly</span>
+      {/* Progress and milestones section */}
+      <div className="mt-5 space-y-4">
+        {/* Progress counter and bar */}
+        <div>
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <span className="text-sm font-semibold text-[var(--ink)]">Progress</span>
             <span className="text-sm font-semibold text-[var(--ink)]">
-              {Math.min(referralCount, GOAL)}/{GOAL}
+              {progress} of {GOAL}
             </span>
           </div>
-          {isCampusFounder ? (
-            <p className="mt-1 text-xs font-medium text-[var(--campus-founder)]">
-              Earned — thanks for growing samehere.
-            </p>
-          ) : (
-            <>
-              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-[var(--featured-surface)]">
-                <div
-                  className="h-full rounded-full bg-[var(--campus-founder)] transition-[width]"
-                  style={{ width: `${Math.min(100, (referralCount / GOAL) * 100)}%` }}
-                />
-              </div>
-              <p className="mt-1.5 text-xs text-[var(--ink-muted)]">
-                {Math.max(0, GOAL - referralCount)} more to unlock
-              </p>
-            </>
-          )}
+
+          {/* Progress bar with tick at 50% */}
+          <div className="relative h-2 w-full overflow-hidden rounded-full bg-[var(--featured-surface)]">
+            <div
+              className="h-full rounded-full bg-[var(--campus-founder)] transition-[width]"
+              style={{ width: `${(progress / GOAL) * 100}%` }}
+            />
+            {/* Tick marker at 50% */}
+            <div className="absolute top-0 h-full w-0.5 bg-[var(--ink-muted)] opacity-30" style={{ left: "50%" }} />
+          </div>
+
+          {/* Progress message */}
+          <p className="mt-1.5 text-xs text-[var(--ink-muted)]">
+            {proEarned
+              ? "You have earned a free semester of Pro"
+              : butterflyEarned
+              ? `${Math.max(0, GOAL - referralCount)} more to a free semester of Pro`
+              : `${Math.max(0, BUTTERFLY_MILESTONE - referralCount)} more to the Social Butterfly badge`}
+          </p>
+        </div>
+
+        {/* Milestone 1: Social Butterfly */}
+        <div className="flex items-start gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-4">
+          <IconButterfly
+            className={`h-9 w-9 shrink-0 ${butterflyEarned ? "text-[var(--campus-founder)]" : "text-[var(--ink-muted)]"}`}
+          />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-[var(--ink)]">Social Butterfly badge</p>
+            {butterflyEarned ? (
+              <p className="mt-1 text-xs font-medium text-[var(--campus-founder)]">Earned at 50 referrals</p>
+            ) : (
+              <p className="mt-1 text-xs text-[var(--ink-muted)]">Reach 50 referrals</p>
+            )}
+          </div>
+        </div>
+
+        {/* Milestone 2: Free semester of Pro */}
+        <div className="flex items-start gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-4">
+          <div className="h-9 w-9 shrink-0 rounded-lg bg-[var(--featured-surface)] flex items-center justify-center text-sm font-bold text-[var(--ink)]">
+            P
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-[var(--ink)]">Free semester of Pro</p>
+            {proEarned ? (
+              <p className="mt-1 text-xs font-medium text-[var(--campus-founder)]">Earned — applied to your account</p>
+            ) : (
+              <p className="mt-1 text-xs text-[var(--ink-muted)]">Reach 100 referrals</p>
+            )}
+          </div>
         </div>
       </div>
     </div>

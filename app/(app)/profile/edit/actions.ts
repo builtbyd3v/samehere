@@ -6,6 +6,7 @@ import { aiEnabled, generateText, modelForTier, type AiResult } from "@/lib/ai";
 import { PROFILE_DRAFT_SYSTEM, PROFILE_NUDGE_SYSTEM } from "@/lib/ai-prompts";
 import { isPro } from "@/lib/pro";
 import { fallbackProfileNudge, getProfileGaps } from "@/lib/profile-completion";
+import { usernameError } from "@/lib/utils/validation";
 import type { TablesUpdate } from "@/types/database.types";
 
 const YEARS = ["freshman", "sophomore", "junior", "senior", "grad"];
@@ -32,9 +33,17 @@ export async function updateProfile(_prev: EditState, formData: FormData): Promi
   // Trim + cap every free-text field at the trust boundary.
   const str = (k: string, max: number) => String(formData.get(k) ?? "").trim().slice(0, max);
 
+  // OAuth signups get an auto-generated handle; this lets them (and everyone
+  // else) fix it. The DB unique constraint + reserved-word CHECK is the real
+  // guard — usernameError just gives a fast, specific form error.
+  const username = str("username", 20).toLowerCase();
+  const uErr = usernameError(username);
+  if (uErr) return { error: uErr };
+
   const yearRaw = str("year", 20);
 
   const updates: TablesUpdate<"profiles"> = {
+    username,
     display_name: str("display_name", 50) || null,
     major: str("major", 100) || null,
     bio: str("bio", 500) || null,
@@ -57,7 +66,10 @@ export async function updateProfile(_prev: EditState, formData: FormData): Promi
     .from("profiles")
     .update(updates)
     .eq("id", user.id);
-  if (pErr) return { error: "Could not save your profile. Try again." };
+  if (pErr) {
+    if (pErr.code === "23505") return { error: "That username is taken." };
+    return { error: "Could not save your profile. Try again." };
+  }
 
   const school = str("school", 100) || null;
   const { error: sErr } = await supabase

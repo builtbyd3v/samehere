@@ -108,7 +108,7 @@ export default function PeopleSearch({ keyword, isPro = false }: { keyword: Reac
                         <div className="min-w-0 text-sm">
                           <p className="flex flex-wrap items-center gap-x-1.5 font-medium">
                             {name}
-                            <UserBadges isPro={p.is_pro} isFounder={p.is_founder} isCampusFounder={p.is_campus_founder} />
+                            <UserBadges isPro={p.is_pro} isFounder={p.is_founder} isCampusFounder={p.is_campus_founder} isVerifiedStudent={p.verified_student} />
                           </p>
                           <p className="text-[var(--ink-muted)]">@{p.username}</p>
                           {p.reason && <p className="mt-0.5 text-xs text-[var(--ink-muted)]">{p.reason}</p>}

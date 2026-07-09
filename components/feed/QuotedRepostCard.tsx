@@ -24,6 +24,7 @@ export type QuotedRepost = {
     is_pro: boolean;
     is_founder: boolean;
     is_campus_founder: boolean;
+    verified_student: boolean;
   };
   original: FeedPost;
   reactions: { user_id: string; type: string }[];
@@ -71,7 +72,7 @@ export default function QuotedRepostCard({
                 <ProfileHoverLink href={`/profile/${r.username}`} username={r.username} className="font-semibold hover:underline">
                   {name}
                 </ProfileHoverLink>
-                <UserBadges isPro={r.is_pro} isFounder={r.is_founder} isCampusFounder={r.is_campus_founder} />
+                <UserBadges isPro={r.is_pro} isFounder={r.is_founder} isCampusFounder={r.is_campus_founder} isVerifiedStudent={r.verified_student} />
                 <span className="text-[13px] text-[var(--ink-muted)]">@{r.username}</span>
                 <span className="text-[13px] text-[var(--ink-faint)]">·</span>
                 {linked ? (

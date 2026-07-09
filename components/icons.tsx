@@ -92,6 +92,14 @@ export const IconButterfly = ({ className = "h-4 w-4" }: { className?: string })
   </svg>
 );
 
+/** Verified Student badge — confirmed .edu affiliation (signup or /settings). */
+export const IconGraduationCap = ({ className = "h-4 w-4" }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
+    <path d="M12 3 1 8l11 5 9-4.09V17h2V8Z" />
+    <path d="M5 10.18V15c0 1.66 3.13 3 7 3s7-1.34 7-3v-4.82l-7 3.18Z" />
+  </svg>
+);
+
 // Retained: still referenced by the landing profile demo (owned by the landing worktree).
 export const IconFlag = ({ className = "h-4 w-4" }: { className?: string }) => (
   <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>

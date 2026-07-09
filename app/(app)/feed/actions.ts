@@ -198,6 +198,7 @@ export type PeopleSearchResult = {
   is_pro: boolean;
   is_founder: boolean;
   is_campus_founder: boolean;
+  verified_student: boolean;
   reason: string | null;
 };
 export type PeopleSearchState = {
@@ -215,6 +216,7 @@ type Candidate = {
   is_pro: boolean;
   is_founder: boolean;
   is_campus_founder: boolean;
+  verified_student: boolean;
   year: string | null;
   major: string | null;
   skills: string[] | null;
@@ -226,7 +228,7 @@ type Candidate = {
 
 const AI_SEARCH_POOL = 40;
 const CAND_SELECT =
-  "id, username, display_name, avatar_url, is_pro, is_founder, is_campus_founder, year, major, skills, courses, goals, bio, profile_school(school)";
+  "id, username, display_name, avatar_url, is_pro, is_founder, is_campus_founder, verified_student, year, major, skills, courses, goals, bio, profile_school(school)";
 
 function toResult(c: Candidate): PeopleSearchResult {
   return {
@@ -237,6 +239,7 @@ function toResult(c: Candidate): PeopleSearchResult {
     is_pro: c.is_pro,
     is_founder: c.is_founder,
     is_campus_founder: c.is_campus_founder,
+    verified_student: c.verified_student,
     reason: null,
   };
 }

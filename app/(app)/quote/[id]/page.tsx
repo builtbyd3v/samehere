@@ -16,7 +16,7 @@ type Comment = {
   content: string;
   created_at: string;
   user_id: string;
-  author: { username: string; display_name: string | null; avatar_url: string | null; is_pro: boolean; is_founder: boolean; is_campus_founder: boolean } | null;
+  author: { username: string; display_name: string | null; avatar_url: string | null; is_pro: boolean; is_founder: boolean; is_campus_founder: boolean; verified_student: boolean } | null;
 };
 
 export default async function QuotePage({ params }: { params: Promise<{ id: string }> }) {
@@ -28,7 +28,7 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
     fetchQuotedRepostById(supabase, id),
     supabase
       .from("comments")
-      .select("id, content, created_at, user_id, author:profiles!comments_user_id_fkey(username, display_name, avatar_url, is_pro, is_founder, is_campus_founder)")
+      .select("id, content, created_at, user_id, author:profiles!comments_user_id_fkey(username, display_name, avatar_url, is_pro, is_founder, is_campus_founder, verified_student)")
       .eq("repost_id", id)
       .order("created_at", { ascending: true })
       .returns<Comment[]>(),
@@ -96,7 +96,7 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
                     ) : (
                       <span className="font-medium">{cname}</span>
                     )}
-                    {c.author && <UserBadges isPro={c.author.is_pro} isFounder={c.author.is_founder} isCampusFounder={c.author.is_campus_founder} />}
+                    {c.author && <UserBadges isPro={c.author.is_pro} isFounder={c.author.is_founder} isCampusFounder={c.author.is_campus_founder} isVerifiedStudent={c.author.verified_student} />}
                     {c.author && <span className="text-[var(--ink-muted)]">@{c.author.username}</span>}
                     <div className="ml-auto">
                       <DeleteCommentButton commentId={c.id} canDelete={viewerId === c.user_id} />

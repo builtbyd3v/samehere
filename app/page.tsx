@@ -3,13 +3,13 @@ import LandingPage from "@/components/landing/LandingPage";
 import { getFounderSpotsLeft } from "@/lib/founder";
 
 export const metadata: Metadata = {
-  title: "samehere: the network for verified students",
+  title: "samehere: the social network built for students",
   description:
-    "Verified students only, .edu required. Post what's real, react with SameHere, and find people who get it.",
+    "Built for students. Join free, post what's real, react with SameHere, and find people who get it.",
   openGraph: {
     title: "samehere: you're not the only one",
     description:
-      "Verified students only. Post what's real and find people who say same here.",
+      "Built for students. Post what's real and find people who say same here.",
     type: "website",
     siteName: "samehere",
   },
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "samehere: you're not the only one",
     description:
-      "Verified students only. Post what's real and find people who say same here.",
+      "Built for students. Post what's real and find people who say same here.",
   },
 };
 

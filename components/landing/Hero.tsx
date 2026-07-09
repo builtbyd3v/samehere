@@ -28,7 +28,7 @@ export default function Hero() {
             style={{ ["--y" as string]: "12px" }}
           >
             <span className="h-1.5 w-1.5 rounded-full bg-[var(--blue)]" />
-            Verified students only · .edu required
+            Built for students · free to join
           </p>
 
           <h1 className="text-balance text-[44px] font-semibold leading-[1.02] tracking-[-0.03em] sm:text-[56px] md:text-[68px] md:tracking-[-0.04em]">
@@ -65,7 +65,7 @@ export default function Hero() {
                 style={{ background: "var(--blue-glow)" }}
               />
               <Link href="/signup" className={`group relative overflow-hidden ${signupCta}`}>
-                <span className="relative z-10">Join with .edu</span>
+                <span className="relative z-10">Join free</span>
                 {!reduce && (
                   <span
                     aria-hidden

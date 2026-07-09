@@ -7,6 +7,7 @@ import DeleteAccountSection from "@/components/settings/DeleteAccountSection";
 import AvatarImage from "@/components/ui/AvatarImage";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import ComingSoonFeatures from "@/components/settings/ComingSoonFeatures";
+import StudentVerification from "@/components/settings/StudentVerification";
 import { unblockUser } from "./actions";
 
 type BlockedRow = {
@@ -24,7 +25,7 @@ export default async function SettingsPage() {
   const [{ data: profile }, { data: blocks }] = await Promise.all([
     supabase
       .from("profiles")
-      .select("username, is_private, hide_school, heatmap_visibility, leaderboard_opt_out")
+      .select("username, is_private, hide_school, heatmap_visibility, leaderboard_opt_out, verified_student")
       .eq("id", user.id)
       .single(),
     supabase
@@ -49,6 +50,11 @@ export default async function SettingsPage() {
         <section className="card p-6">
           <h2 className="mb-4 text-lg font-semibold text-[var(--ink)]">Privacy</h2>
           <PrivacyForm initial={profile} />
+        </section>
+
+        <section className="card p-6">
+          <h2 className="mb-4 text-lg font-semibold text-[var(--ink)]">Student verification</h2>
+          <StudentVerification verified={profile.verified_student} />
         </section>
 
         <section className="card p-6">

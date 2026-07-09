@@ -24,7 +24,7 @@ import ContributionHeatmap, { type HeatmapDay } from "@/components/profile/Contr
 import { isPro } from "@/lib/pro";
 
 const PROFILE_SELECT =
-  "id, username, display_name, avatar_url, banner_url, year, major, bio, goals, skills, courses, is_private, heatmap_visibility, is_pro, pro_until, is_founder, is_campus_founder, accent_color";
+  "id, username, display_name, avatar_url, banner_url, year, major, bio, goals, skills, courses, is_private, heatmap_visibility, is_pro, pro_until, is_founder, is_campus_founder, accent_color, verified_student";
 
 // Shared by generateMetadata and the page component so they hit one query
 // instead of two — React's cache() dedupes by argument (username) within a
@@ -94,6 +94,7 @@ type PublicProfile = {
   bio: string | null;
   goals: string | null;
   school: string | null;
+  verified_student: boolean;
 };
 
 type PublicCounts = { posts: number; followers: number; following: number };
@@ -154,7 +155,7 @@ async function PublicProfileView({ username }: { username: string }) {
           <div className="mt-3">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
               <h1 className="text-2xl font-semibold tracking-[-0.025em] sm:text-[28px]">{displayName}</h1>
-              <UserBadges isPro={profile.is_pro} isFounder={profile.is_founder} isCampusFounder={profile.is_campus_founder} />
+              <UserBadges isPro={profile.is_pro} isFounder={profile.is_founder} isCampusFounder={profile.is_campus_founder} isVerifiedStudent={profile.verified_student} />
             </div>
             <p className="mt-0.5 text-[15px] text-[var(--ink-muted)]">@{profile.username}</p>
             {metaLine && <p className="mt-2 text-sm text-[var(--ink-muted)]">{metaLine}</p>}
@@ -420,7 +421,7 @@ export default async function ProfilePage({
           <div className="mt-3">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
               <h1 className="text-2xl font-semibold tracking-[-0.025em] sm:text-[28px]">{displayName}</h1>
-              <UserBadges isPro={profile.is_pro} isFounder={profile.is_founder} isCampusFounder={profile.is_campus_founder} />
+              <UserBadges isPro={profile.is_pro} isFounder={profile.is_founder} isCampusFounder={profile.is_campus_founder} isVerifiedStudent={profile.verified_student} />
             </div>
             <p className="mt-0.5 text-[15px] text-[var(--ink-muted)]">@{profile.username}</p>
 

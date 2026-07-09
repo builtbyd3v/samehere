@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   // rendered "Pricing — samehere · samehere".
   title: "Pricing",
   description:
-    "Free for every verified student. Pro adds a stronger AI model, who viewed you, a profile banner, and an animated avatar. $4.99/mo or $12.99/semester.",
+    "Free for every student. Pro adds a stronger AI model, who viewed you, a profile banner, and an animated avatar. $4.99/mo or $12.99/semester.",
 };
 
 export default function PricingPage() {
@@ -20,7 +20,7 @@ export default function PricingPage() {
           samehere
         </Link>
         <Link href="/signup" className={signupCtaSm}>
-          Join with .edu
+          Join free
         </Link>
       </header>
       <Pricing />

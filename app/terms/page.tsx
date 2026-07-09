@@ -24,10 +24,11 @@ export default function TermsPage() {
         <section>
           <h2 className="text-lg font-semibold text-[var(--ink)]">1. Eligibility</h2>
           <p className="mt-2">
-            samehere is for verified students. To create an account you must (a) be at least 18 years old, and
-            (b) sign up with a valid school-issued email address ending in <code>.edu</code>. A confirmed{" "}
-            <code>.edu</code> email is a signup requirement; it is not a guarantee of current enrollment, and we
-            may suspend accounts we reasonably believe are ineligible.
+            samehere is open to everyone and built for students. To create an account you must be at least 18
+            years old. If you verify a school-issued email address ending in <code>.edu</code>, at signup or
+            later in settings, you receive a verified student badge on your profile. A confirmed{" "}
+            <code>.edu</code> email is not a guarantee of current enrollment, and we may suspend accounts or
+            remove badges we reasonably believe are ineligible or fraudulent.
           </p>
         </section>
 

@@ -24,9 +24,10 @@ export default function PrivacyPage() {
           <h2 className="text-lg font-semibold text-[var(--ink)]">1. Information we collect</h2>
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li>
-              <strong className="text-[var(--ink)]">Account &amp; profile:</strong> your <code>.edu</code>{" "}
-              email, username, display name, and any profile details you add (school, major, year, bio, skills,
-              goals, courses, avatar).
+              <strong className="text-[var(--ink)]">Account &amp; profile:</strong> your email address,
+              username, display name, and any profile details you add (school, major, year, bio, skills,
+              goals, courses, avatar). If you verify a <code>.edu</code> email for the verified student badge,
+              we store that too.
             </li>
             <li>
               <strong className="text-[var(--ink)]">Content:</strong> posts, comments, reactions, reposts,
@@ -52,7 +53,7 @@ export default function PrivacyPage() {
           <h2 className="text-lg font-semibold text-[var(--ink)]">2. How we use information</h2>
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li>operate core features: profiles, feed, follows, messaging, heatmap, and search;</li>
-            <li>verify eligibility (confirming a valid <code>.edu</code> email);</li>
+            <li>verify optional student status (confirming a valid <code>.edu</code> email) for the verified student badge;</li>
             <li>power AI features such as connection suggestions and writing prompts;</li>
             <li>process Pro subscriptions and prevent fraud and abuse;</li>
             <li>maintain security, enforce rate limits, and respond to reports;</li>

@@ -1,26 +1,44 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { Suspense, useActionState } from "react";
+import { useSearchParams } from "next/navigation";
 import { logIn, type AuthState } from "@/app/(auth)/actions";
 import AuthAlert from "./AuthAlert";
 import AuthCard from "./AuthCard";
 import AuthSubmitButton from "./AuthSubmitButton";
 import PasswordField from "./PasswordField";
+import OAuthButtons, { OAuthDivider } from "./OAuthButtons";
 import { authInput, authInputError, authLabel } from "./auth-fields";
 
+// useSearchParams (for ?error=oauth) requires a Suspense boundary in a
+// statically-prerendered page; app/(auth)/login/page.tsx doesn't provide one,
+// so LoginForm wraps its own body rather than touching that file.
 export default function LoginForm() {
+  return (
+    <Suspense fallback={<AuthCard title="Log in">{null}</AuthCard>}>
+      <LoginFormInner />
+    </Suspense>
+  );
+}
+
+function LoginFormInner() {
   const [state, formAction, pending] = useActionState<AuthState, FormData>(logIn, {});
-  const hasError = !!state.error;
+  const oauthError = useSearchParams().get("error") === "oauth";
+  const hasError = !!state.error || oauthError;
 
   return (
     <AuthCard title="Log in">
       <form action={formAction}>
         {state.error && <AuthAlert message={state.error} />}
+        {!state.error && oauthError && <AuthAlert message="Sign-in failed, try again." />}
+
+        <OAuthButtons />
+        <OAuthDivider />
 
         <div className="mb-4">
           <label htmlFor="email" className={authLabel}>
-            School email
+            Email
           </label>
           <input
             id="email"

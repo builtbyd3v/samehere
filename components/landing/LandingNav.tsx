@@ -241,7 +241,7 @@ export default function LandingNav() {
                   style={{ background: "var(--blue-glow)" }}
                 />
                 <Link href="/signup" className={signupCtaSm}>
-                  <span className="hidden sm:inline">Join with .edu</span>
+                  <span className="hidden sm:inline">Join free</span>
                   <span className="sm:hidden">Join</span>
                 </Link>
               </span>

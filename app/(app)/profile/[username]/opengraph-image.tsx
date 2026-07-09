@@ -68,6 +68,7 @@ type Profile = {
   year: string | null;
   major: string | null;
   school: string | null;
+  verified_student: boolean;
 };
 type Counts = { posts: number; followers: number; following: number };
 
@@ -162,6 +163,16 @@ function IconBolt({ color }: { color: string }) {
   );
 }
 
+/** Same drawing as components/icons.tsx IconGraduationCap. */
+function IconGradCap({ color }: { color: string }) {
+  return (
+    <svg width={ICON} height={ICON} viewBox="0 0 24 24">
+      <path fill={color} d="M12 3 1 8l11 5 9-4.09V17h2V8Z" />
+      <path fill={color} d="M5 10.18V15c0 1.66 3.13 3 7 3s7-1.34 7-3v-4.82l-7 3.18Z" />
+    </svg>
+  );
+}
+
 /** Same drawing as components/icons.tsx — wings separate by tone, not by gaps. */
 function IconButterfly({ color }: { color: string }) {
   return (
@@ -215,6 +226,7 @@ function NameRow({ name, profile }: { name: string; profile: Profile }) {
       </div>
       {profile.is_founder && <IconCrown color={GOLD} />}
       {profile.is_campus_founder && <IconButterfly color={GREEN} />}
+      {profile.verified_student && <IconGradCap color={INK_MUTED} />}
       {profile.is_pro && <IconBolt color={BLUE} />}
     </div>
   );

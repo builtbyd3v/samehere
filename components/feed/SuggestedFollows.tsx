@@ -21,6 +21,7 @@ export type SuggestedProfile = {
   is_pro: boolean;
   is_founder: boolean;
   is_campus_founder: boolean;
+  verified_student: boolean;
   profile_school: { school: string | null } | null;
 };
 
@@ -53,7 +54,7 @@ function SuggestedCard({
           <Link href={`/profile/${s.username}`} className="font-medium hover:underline">
             {name}
           </Link>
-          <UserBadges isPro={s.is_pro} isFounder={s.is_founder} isCampusFounder={s.is_campus_founder} />
+          <UserBadges isPro={s.is_pro} isFounder={s.is_founder} isCampusFounder={s.is_campus_founder} isVerifiedStudent={s.verified_student} />
           <span className="text-[var(--ink-muted)]">@{s.username}</span>
         </div>
         {loading ? (

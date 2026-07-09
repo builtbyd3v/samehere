@@ -7,7 +7,7 @@ import type { Database } from "@/types/database.types";
 const QUOTE_ENGAGEMENT =
   "reactions(user_id, type), bookmarks(user_id), comments(count)";
 
-export const REPOST_QUOTE_SELECT = `id, quote_text, created_at, user_id, ${QUOTE_ENGAGEMENT}, reposter:profiles!reposts_user_id_fkey(username, display_name, avatar_url, is_pro, is_founder, is_campus_founder), post:posts(${POST_SELECT})`;
+export const REPOST_QUOTE_SELECT = `id, quote_text, created_at, user_id, ${QUOTE_ENGAGEMENT}, reposter:profiles!reposts_user_id_fkey(username, display_name, avatar_url, is_pro, is_founder, is_campus_founder, verified_student), post:posts(${POST_SELECT})`;
 
 type QuoteRow = {
   id: string;

@@ -9,6 +9,7 @@ import AuthCard from "./AuthCard";
 import AuthSubmitButton from "./AuthSubmitButton";
 import SignupSuccess from "./SignupSuccess";
 import PasswordField from "./PasswordField";
+import OAuthButtons, { OAuthDivider } from "./OAuthButtons";
 import { authHint, authInput, authInputError, authLabel } from "./auth-fields";
 
 export default function SignupForm() {
@@ -25,9 +26,12 @@ export default function SignupForm() {
       <form action={formAction}>
         {state.error && <AuthAlert message={state.error} />}
 
+        <OAuthButtons />
+        <OAuthDivider />
+
         <div className="mb-3">
           <label htmlFor="email" className={authLabel}>
-            School email (.edu required)
+            Email
           </label>
           <input
             id="email"
@@ -39,7 +43,7 @@ export default function SignupForm() {
             aria-invalid={hasError}
             className={hasError ? authInputError : authInput}
           />
-          <p className={authHint}>Only used to verify you&apos;re a student.</p>
+          <p className={authHint}>Use your school (.edu) email and you&apos;re verified as a student instantly. Any email works.</p>
         </div>
 
         <div className="mb-3">

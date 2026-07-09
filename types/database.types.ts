@@ -1151,6 +1151,7 @@ export type Database = {
           author_is_founder: boolean
           author_is_pro: boolean
           author_username: string
+          author_verified_student: boolean
           content: string
           created_at: string
           id: string
@@ -1177,6 +1178,7 @@ export type Database = {
           major: string
           school: string
           username: string
+          verified_student: boolean
           year: string
         }[]
       }

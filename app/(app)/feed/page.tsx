@@ -154,7 +154,7 @@ async function FollowingTab({
   const [{ data: requests }, { data: myFollows }, { data: viewerProfile }, { data: blockedIds }] = await Promise.all([
     supabase
       .from("follows")
-      .select("follower_id, requester:profiles!follows_follower_id_fkey(username, display_name, avatar_url, is_pro, is_founder, is_campus_founder)")
+      .select("follower_id, requester:profiles!follows_follower_id_fkey(username, display_name, avatar_url, is_pro, is_founder, is_campus_founder, verified_student)")
       .eq("following_id", userId)
       .eq("status", "pending")
       .order("created_at", { ascending: false })
@@ -198,7 +198,7 @@ async function FollowingTab({
     }),
     supabase
       .from("profiles")
-      .select("id, username, display_name, avatar_url, created_at, year, major, skills, goals, bio, courses, is_pro, pro_until, is_founder, is_campus_founder, profile_school(school)")
+      .select("id, username, display_name, avatar_url, created_at, year, major, skills, goals, bio, courses, is_pro, pro_until, is_founder, is_campus_founder, verified_student, profile_school(school)")
       .not("id", "in", `(${excludeIds.join(",")})`)
       .order("created_at", { ascending: false })
       .limit(30),
