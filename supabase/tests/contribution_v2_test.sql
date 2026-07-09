@@ -82,7 +82,8 @@ select tests.post(tests.uid('alice'), repeat('zw', 100));
 select tests.check('01_volume_counts', tests.points(tests.uid('alice'), 'post'), 8);
 
 -- ---------- 2. a 700-char post -> 6, not 4 (effort scales) ----------
-select tests.post(tests.uid('bob'), repeat('qr', 350));
+create temporary table t_bob as
+  select tests.post(tests.uid('bob'), repeat('qr', 350)) as big_post;
 select tests.check('02_substantial_post', tests.points(tests.uid('bob'), 'post'), 6);
 
 -- ---------- 3 & 4. comment dedupe keys on the ROOT post ----------
@@ -105,14 +106,41 @@ insert into public.comments (post_id, user_id, content)
   select id, tests.uid('alice'), repeat('ij', 30) from t_posts where n = 1;
 select tests.check('05_own_post_comment_zero', tests.points(tests.uid('alice'), 'comment'), 0);
 
+-- ---------- 5b. comment upper tier (>=250 chars) -> 4 ----------
+insert into public.comments (post_id, user_id, content)
+  select big_post, tests.uid('alice'), repeat('kl', 130) from t_bob;
+select tests.check('05b_substantial_comment', tests.points(tests.uid('alice'), 'comment'), 4);
+
 -- ---------- 6. run-collapse defeats 'a' x 700 (bob's total is unchanged) ----------
 select tests.post(tests.uid('bob'), repeat('a', 700));
 select tests.check('06_run_collapse', tests.points(tests.uid('bob'), 'post'), 6);
 
+-- ---------- 6b/6c. 150-char boundary: 149 earns 0, 150 earns 4 ----------
+create temporary table t_edge as
+  select tests.post(tests.uid('bob'), repeat('xy', 74) || 'z') as under_id,
+         tests.post(tests.uid('bob'), repeat('xy', 75)) as at_id;
+select tests.check('06b_under_threshold_zero',
+  (select count(*)::int from public.contribution_log
+   where action_type = 'post' and source_id = (select under_id from t_edge)), 0);
+select tests.check('06c_at_threshold_awards_4',
+  (select points from public.contribution_log
+   where action_type = 'post' and source_id = (select at_id from t_edge)), 4);
+
 -- ---------- 7. media bonus (+1 on a qualifying post) ----------
-select tests.post(tests.uid('bob'), repeat('mn', 100),
-  jsonb_build_array(jsonb_build_object('path', tests.uid('bob')::text || '/y.webp', 'type', 'image')));
+create temporary table t_media as
+  select tests.post(tests.uid('bob'), repeat('mn', 100),
+    jsonb_build_array(jsonb_build_object('path', tests.uid('bob')::text || '/y.webp', 'type', 'image'))) as media_id;
 select tests.check('07_media_bonus', tests.points(tests.uid('bob'), 'post_media'), 1);
+
+-- ---------- 7b/7c. sub-150 post gates OUT media + weekly_prompt too ----------
+create temporary table t_short as
+  select tests.post(tests.uid('bob'), repeat('mn', 40),
+    jsonb_build_array(jsonb_build_object('path', tests.uid('bob')::text || '/z.webp', 'type', 'image')),
+    true) as short_id;
+select tests.check('07b_short_post_earns_nothing',
+  (select count(*)::int from public.contribution_log
+   where source_id = (select short_id from t_short)), 0);
+select tests.check('07c_short_post_no_weekly_prompt', tests.points(tests.uid('bob'), 'weekly_prompt'), 0);
 
 -- ---------- 8. weekly prompt pays once per week, not once per post ----------
 select tests.post(tests.uid('bob'), repeat('op', 100), '[]'::jsonb, true);
@@ -123,6 +151,12 @@ select tests.check('08_weekly_prompt_once', tests.points(tests.uid('bob'), 'week
 insert into public.reposts (user_id, post_id, quote_text)
   select tests.uid('bob'), id, repeat('kl', 30) from t_posts where n = 2;
 select tests.check('09_quote_repost', tests.points(tests.uid('bob'), 'quote'), 3);
+
+-- ---------- 09b. quote source_id is the QUOTED post, not the repost row ----------
+select tests.check('09b_quote_source_is_quoted_post',
+  (select count(*)::int from public.contribution_log
+   where action_type = 'quote' and user_id = tests.uid('bob')
+     and source_id = (select id from t_posts where n = 2)), 1);
 
 -- ---------- 10. mutual follow pays BOTH sides, 5 each ----------
 select tests.as_user(tests.uid('alice'));
@@ -149,11 +183,15 @@ update public.profiles set courses = array['TIP102', 'CS 101'] where id = tests.
 select tests.check('12_courses_once', tests.points(tests.uid('alice'), 'courses'), 1);
 
 -- ---------- 13. deleting today's post revokes only that post's rows ----------
-delete from public.posts where user_id = tests.uid('bob') and media <> '[]'::jsonb;
+delete from public.posts where id = (select media_id from t_media);
 select tests.check('13a_media_revoked', tests.points(tests.uid('bob'), 'post_media'), 0);
-select tests.check('13b_other_posts_survive',
+select tests.check('13b_deleted_post_row_revoked',
   (select count(*)::int from public.contribution_log
-   where user_id = tests.uid('bob') and action_type = 'post') > 0, true);
+   where action_type = 'post' and source_id = (select media_id from t_media)), 0);
+select tests.check('13c_other_post_rows_survive',
+  (select count(*)::int from public.contribution_log
+   where action_type = 'post' and user_id = tests.uid('bob')
+     and source_id = (select big_post from t_bob)), 1);
 
 -- ---------- 14. a 30-day-old award is never revoked ----------
 update public.contribution_log set date = (now() at time zone 'America/New_York')::date - 30
@@ -171,7 +209,9 @@ select tests.check('15_no_api_execute',
    where n.nspname = 'public'
      and p.proname in ('_log_contribution', 'qualifying_length', 'revoke_contribution_same_day',
                        'posts_award_contribution', 'comments_award_contribution',
-                       'reposts_award_contribution', 'profiles_award_contribution')),
+                       'reposts_award_contribution', 'profiles_award_contribution',
+                       'posts_revoke_contribution', 'comments_revoke_contribution',
+                       'reposts_revoke_contribution', 'follows_revoke_connection')),
   false);
 
 -- ---------- summary ----------
