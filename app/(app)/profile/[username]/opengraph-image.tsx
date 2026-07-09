@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 import { createClient } from "@supabase/supabase-js";
+import sharp from "sharp";
 
 // Dynamic per-profile OG card — the shareable, screenshot-worthy asset.
 //
@@ -11,28 +12,35 @@ import { createClient } from "@supabase/supabase-js";
 //   get_public_heatmap        — self-guards on heatmap_visibility + is_private
 // Private / heatmap-hidden profiles fall back to the identity card, leaking nothing.
 //
-// Satori (which renders ImageResponse) supports PNG and JPEG only. Avatars are
-// uploaded as WebP, which it draws as *nothing* — an empty ring. So the image is
-// type-checked before use and falls back to a monogram. Supabase's image
-// transform could serve a PNG, but it is a paid add-on.
-// ponytail: one HEAD per render; if this ever shows up in traces, cache the
-// content-type alongside avatar_url instead of probing.
+// Dark by default: an unfurl sits in Discord, Slack and Twitter, which are dark
+// for most people. A cream card in a dark feed reads as a blown-out rectangle.
+// Tokens below are lifted verbatim from the `.dark` block in app/globals.css —
+// Satori has no CSS variables, so they are duplicated here on purpose.
+//
+// sharp is a direct dependency for exactly one reason: Satori decodes PNG and
+// JPEG only, and avatars are uploaded as WebP, which it silently draws as
+// nothing (an empty ring). Supabase's image transform would serve a PNG but is
+// a paid add-on. We fetch, transcode, and inline as a data URI.
+// ponytail: one fetch + transcode per render. If it shows in traces, cache the
+// PNG next to avatar_url at upload time instead.
+
+export const runtime = "nodejs"; // sharp is not available on the edge runtime.
 
 export const alt = "samehere profile";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-// Light-theme tokens, lifted from app/globals.css. Satori has no CSS variables.
-const CANVAS = "#f7f4ed";
-const CARD = "#fcfbf8";
-const INK = "#1c1c1c";
-const INK_MUTED = "#5f5f5d";
-const INK_FAINT = "rgba(28, 28, 28, 0.45)";
-const BORDER = "rgba(28, 28, 28, 0.14)";
-const BLUE = "#0075de";
-const GOLD = "#a67c00";
-const GREEN = "#1f8a4d";
-const HM = ["rgba(28, 28, 28, 0.06)", "#bcd8f5", "#5fa0e8", "#0075de"];
+// --- .dark tokens, app/globals.css ---
+const CANVAS = "#141310";
+const CARD = "#1c1a16";
+const INK = "#f2efe6";
+const INK_MUTED = "#a8a49a";
+const INK_FAINT = "rgba(242, 239, 230, 0.40)";
+const BORDER = "rgba(247, 244, 237, 0.10)";
+const BLUE = "#4f9fe8";
+const GOLD = "#ecc94b"; // --founder
+const GREEN = "#5fce8f"; // --campus-founder (Social Butterfly)
+const HM = ["rgba(247, 244, 237, 0.07)", "#1e3a5f", "#2f6db0", "#4f9fe8"]; // --hm0..3
 
 const level = (points: number) => (points === 0 ? 0 : points <= 3 ? 1 : points <= 7 ? 2 : 3);
 
@@ -108,16 +116,53 @@ function currentStreak(rows: HeatmapRow[]): number {
   return streak;
 }
 
-// Satori draws WebP as nothing. Only hand it a type it can actually decode.
-async function usableAvatar(url: string | null): Promise<string | null> {
+// Satori decodes PNG/JPEG only. Transcode anything else (avatars are WebP) and
+// inline it, so the card shows the real face rather than an empty ring.
+async function avatarDataUri(url: string | null): Promise<string | null> {
   if (!url) return null;
   try {
-    const res = await fetch(url, { method: "HEAD" });
-    const type = res.headers.get("content-type") ?? "";
-    return /^image\/(png|jpeg|jpg)$/i.test(type) ? url : null;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const buf = Buffer.from(await res.arrayBuffer());
+    const png = await sharp(buf).resize(224, 224, { fit: "cover" }).png().toBuffer();
+    return `data:image/png;base64,${png.toString("base64")}`;
   } catch {
     return null;
   }
+}
+
+/** 45% alpha of a #rrggbb, for the butterfly's set-back wings. */
+const fade = (hex: string) => `${hex}73`;
+
+function IconCrown({ color }: { color: string }) {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24">
+      <path fill={color} d="M3 8l4.5 3.2L12 5l4.5 6.2L21 8l-1.6 10.4a1 1 0 0 1-1 .6H5.6a1 1 0 0 1-1-.6L3 8Z" />
+    </svg>
+  );
+}
+
+function IconBolt({ color }: { color: string }) {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24">
+      <path fill={color} d="M13 2 4.5 13.5H11L10 22l8.5-11.5H12L13 2Z" />
+    </svg>
+  );
+}
+
+/** Same drawing as components/icons.tsx — wings separate by tone, not by gaps. */
+function IconButterfly({ color }: { color: string }) {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24">
+      <path fill={fade(color)} d="M11 3.4C9 4.6 7.8 7 8.2 9.4c.4 2.3 2.1 3.8 4 4.1-.5-2.1-.5-5 .1-7.3.3-1.2-.3-2.3-1.3-2.8Z" />
+      <path fill={fade(color)} d="M13.5 14.6c-1.6-.8-4.5-1.2-6.5-.3-2.4 1-2.7 3.7-.5 4.6 2.3 1 5.3-.7 6.9-3 .2-.5.2-.9.1-1.3Z" />
+      <path fill={color} d="M14.6 2.6c2.6.6 4.8 3.4 5 6.8.2 3-1.2 5-3 5.9-1.4-1.1-3-3.3-3.6-5.7-.5-2.2.2-5.2 1.6-7Z" />
+      <path fill={color} d="M17 16.2c-1 1.2-3 2.8-5 3.8-1.4.7-2.6 1-3 .7-.1-.5 1-1.3 2.4-2.1 2-1.2 4-2.2 5-3Z" />
+      <circle cx="17.4" cy="15.2" r="1.15" fill={color} />
+      <path d="M18 14.4c1-1.2 2-2 2.7-2.3" stroke={color} strokeWidth="1" strokeLinecap="round" fill="none" />
+      <circle cx="21" cy="11.9" r="0.75" fill={color} />
+    </svg>
+  );
 }
 
 function Avatar({ src, letter }: { src: string | null; letter: string }) {
@@ -145,21 +190,24 @@ function Avatar({ src, letter }: { src: string | null; letter: string }) {
   );
 }
 
-function Badge({ label, color }: { label: string; color: string }) {
+function Badge({ label, color, icon }: { label: string; color: string; icon: React.ReactNode }) {
   return (
     <div
       style={{
         display: "flex",
+        alignItems: "center",
+        gap: 7,
         fontSize: 17,
         fontWeight: 600,
         color,
-        border: `1px solid ${color}33`,
-        background: `${color}14`,
+        border: `1px solid ${color}3a`,
+        background: `${color}1a`,
         borderRadius: 999,
-        padding: "6px 16px",
+        padding: "6px 15px 6px 12px",
       }}
     >
-      {label}
+      {icon}
+      <div style={{ display: "flex" }}>{label}</div>
     </div>
   );
 }
@@ -187,9 +235,11 @@ function Identity({ profile, avatar, counts }: { profile: Profile; avatar: strin
 
       {(profile.is_founder || profile.is_campus_founder || profile.is_pro) && (
         <div style={{ display: "flex", marginTop: 16, gap: 8 }}>
-          {profile.is_founder && <Badge label="Founder" color={GOLD} />}
-          {profile.is_campus_founder && <Badge label="Social Butterfly" color={GREEN} />}
-          {profile.is_pro && <Badge label="Pro" color={BLUE} />}
+          {profile.is_founder && <Badge label="Founder" color={GOLD} icon={<IconCrown color={GOLD} />} />}
+          {profile.is_campus_founder && (
+            <Badge label="Social Butterfly" color={GREEN} icon={<IconButterfly color={GREEN} />} />
+          )}
+          {profile.is_pro && <Badge label="Pro" color={BLUE} icon={<IconBolt color={BLUE} />} />}
         </div>
       )}
 
@@ -222,8 +272,8 @@ function Heatmap({ weeks, streak }: { weeks: number[][]; streak: number }) {
               fontSize: 17,
               fontWeight: 600,
               color: BLUE,
-              background: "rgba(0, 117, 222, 0.10)",
-              border: "1px solid rgba(0, 117, 222, 0.22)",
+              background: "rgba(79, 159, 232, 0.14)",
+              border: "1px solid rgba(79, 159, 232, 0.30)",
               borderRadius: 999,
               padding: "5px 14px",
             }}
@@ -294,7 +344,7 @@ export default async function OgImage({ params }: { params: Promise<{ username: 
   const { data: rows } = await supabase.rpc("get_public_profile", { p_username: username });
   const profile = (rows as Profile[] | null)?.[0] ?? null;
 
-  // No such user, or a name that isn't public: brand card, nothing personal.
+  // No such user: brand card, nothing personal.
   if (!profile) {
     return new ImageResponse(
       (
@@ -319,7 +369,7 @@ export default async function OgImage({ params }: { params: Promise<{ username: 
   }
 
   const [avatar, countsRes, heatRes] = await Promise.all([
-    usableAvatar(profile.avatar_url),
+    avatarDataUri(profile.avatar_url),
     supabase.rpc("get_public_profile_counts", { p_profile_id: profile.id }),
     profile.heatmap_visibility === "public" && !profile.is_private
       ? supabase.rpc("get_public_heatmap", { p_profile_id: profile.id })
