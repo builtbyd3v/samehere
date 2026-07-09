@@ -7,9 +7,10 @@
   --canvas: #f7f4ed;
   --surface: #f7f4ed;
   --surface-raised: #fcfbf8;
-  /* Posts: clean white on cream canvas (light). Cards: warm lift for identity/composer. */
-  --surface-post: #ffffff;
-  --surface-card: #f0ece4;
+  /* Posts, composer, profile + heatmap cards share the auth-form/landing card
+     surface. One card color across the product. */
+  --surface-post: #fcfbf8;
+  --surface-card: #fcfbf8;
   /* Opacity-based on charcoal — reads clearer on cream than #eceae4 alone */
   --border: rgba(28, 28, 28, 0.14);
   --border-strong: rgba(28, 28, 28, 0.32);
@@ -37,8 +38,8 @@
   --canvas: #141310;
   --surface: #1c1a16;
   --surface-raised: #232018;
-  --surface-post: #26231f;
-  --surface-card: #1c1a16;
+  --surface-post: #232018;
+  --surface-card: #232018;
   --border: rgba(247, 244, 237, 0.10);
   --border-strong: rgba(247, 244, 237, 0.28);
   --ink: #f2efe6;
@@ -65,8 +66,8 @@
     --canvas: #141310;
     --surface: #1c1a16;
     --surface-raised: #232018;
-    --surface-post: #26231f;
-    --surface-card: #1c1a16;
+    --surface-post: #232018;
+    --surface-card: #232018;
     --border: rgba(247, 244, 237, 0.10);
     --border-strong: rgba(247, 244, 237, 0.28);
     --ink: #f2efe6;
