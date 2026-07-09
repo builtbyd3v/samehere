@@ -11,8 +11,6 @@ import {
 import { IconSame } from "@/components/icons";
 import { HERO_PEERS, type HeroPeer } from "@/lib/landing/demo-data";
 
-const EASE = [0.16, 1, 0.3, 1] as const;
-
 // Shared card visual — reused by the desktop scatter and the mobile stack.
 function CardFace({ peer }: { peer: HeroPeer }) {
   return (
@@ -100,23 +98,26 @@ const MOBILE = [
 ] as const;
 
 function MobileStack() {
-  const reduce = useReducedMotion();
   return (
     <div className="pointer-events-auto relative mx-auto h-[360px] w-full lg:hidden">
       {MOBILE.map((m, i) => {
         const peer = HERO_PEERS.find((p) => p.username === m.u);
         if (!peer) return null;
         return (
-          <motion.div
+          <div
             key={m.u}
-            className="cluster-item absolute left-1/2 w-[240px] max-w-[86vw]"
-            style={{ top: m.top, zIndex: m.z, translate: "-50% 0", rotate: m.rot }}
-            initial={reduce ? false : { opacity: 0, y: 22 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55, delay: 0.15 + i * 0.1, ease: EASE }}
+            className="cluster-item fade-rise absolute left-1/2 w-[240px] max-w-[86vw]"
+            style={{
+              top: m.top,
+              zIndex: m.z,
+              translate: "-50% 0",
+              rotate: m.rot,
+              ["--y" as string]: "22px",
+              ["--delay" as string]: `${0.15 + i * 0.1}s`,
+            }}
           >
             <CardFace peer={peer} />
-          </motion.div>
+          </div>
         );
       })}
     </div>

@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import PostCard, { POST_SELECT, PAGE, type FeedPost } from "@/components/feed/PostCard";
+import FeedLoadMore from "@/components/feed/FeedLoadMore";
+import { loadMoreSaved } from "./actions";
 import { attachSignedMedia } from "@/lib/media";
 import EmptyState from "@/components/ui/EmptyState";
 
@@ -11,9 +13,6 @@ export default async function SavedPage() {
   } = await supabase.auth.getUser();
   const viewerId = user?.id ?? null;
 
-  // ponytail: first page only (PAGE=20); wire FeedLoadMore (needs its own
-  // bookmarks-cursor server action — feed's loadMorePosts queries `posts`
-  // directly, not bookmarks) when saved lists get long.
   const { data: rows } = await supabase
     .from("bookmarks")
     .select(`created_at, post:posts(${POST_SELECT})`)
@@ -21,9 +20,10 @@ export default async function SavedPage() {
     .limit(PAGE)
     .returns<{ created_at: string; post: FeedPost | null }[]>();
 
+  const rawRows = rows ?? [];
   // posts RLS re-checks visibility on the embed, so a post that became
   // invisible/deleted comes back null and is filtered out here.
-  const rawPosts = (rows ?? []).map((r) => r.post).filter((p): p is FeedPost => !!p);
+  const rawPosts = rawRows.map((r) => r.post).filter((p): p is FeedPost => !!p);
   const posts = await attachSignedMedia(supabase, rawPosts);
 
   return (
@@ -42,6 +42,12 @@ export default async function SavedPage() {
             {posts.map((post) => (
               <PostCard key={post.id} post={post} viewerId={viewerId} />
             ))}
+            <FeedLoadMore
+              cursor={rawRows[rawRows.length - 1].created_at}
+              hasMore={rawRows.length === PAGE}
+              viewerId={viewerId}
+              action={loadMoreSaved}
+            />
           </div>
         )}
       </section>

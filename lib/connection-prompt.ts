@@ -36,15 +36,20 @@ export async function connectionPrompt(
   viewerId: string,
   viewer: MatchSignal,
   candidate: { id: string; name: string } & MatchSignal,
-  viewerIsPro: boolean
+  viewerIsPro: boolean,
+  // Callers that already ran cachedConnectionPrompts() and got a miss for this
+  // candidate pass true, so we don't re-query a row we know isn't there.
+  knownCacheMiss = false
 ): Promise<string | null> {
-  const { data: cached } = await supabase
-    .from("ai_connection_prompts")
-    .select("prompt")
-    .eq("viewer_id", viewerId)
-    .eq("candidate_id", candidate.id)
-    .maybeSingle();
-  if (cached) return cached.prompt;
+  if (!knownCacheMiss) {
+    const { data: cached } = await supabase
+      .from("ai_connection_prompts")
+      .select("prompt")
+      .eq("viewer_id", viewerId)
+      .eq("candidate_id", candidate.id)
+      .maybeSingle();
+    if (cached) return cached.prompt;
+  }
 
   const school = norm(viewer.school) && norm(viewer.school) === norm(candidate.school) ? candidate.school : null;
   const major = norm(viewer.major) && norm(viewer.major) === norm(candidate.major) ? candidate.major : null;

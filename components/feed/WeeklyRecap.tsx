@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { easternDateParts } from "@/lib/weekly-prompt";
+import { easternDateParts } from "@/lib/eastern";
 
 // 7-day window keyed off the Eastern civil date (same day boundary as
 // contribution_log/streak/heatmap), so the recap matches the streak it summarizes.

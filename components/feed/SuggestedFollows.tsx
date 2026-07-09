@@ -2,6 +2,7 @@ import Link from "next/link";
 import AvatarImage from "@/components/ui/AvatarImage";
 import UserBadges from "@/components/profile/UserBadges";
 import FollowButton from "@/components/profile/FollowButton";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { createClient } from "@/lib/supabase/server";
 import { cachedConnectionPrompts, connectionPrompt } from "@/lib/connection-prompt";
 import type { MatchSignal } from "@/lib/match";
@@ -23,7 +24,15 @@ export type SuggestedProfile = {
   profile_school: { school: string | null } | null;
 };
 
-function SuggestedCard({ s, prompt }: { s: SuggestedProfile; prompt?: string | null }) {
+function SuggestedCard({
+  s,
+  prompt,
+  loading,
+}: {
+  s: SuggestedProfile;
+  prompt?: string | null;
+  loading?: boolean;
+}) {
   const name = s.display_name ?? s.username;
   return (
     <div className="flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3">
@@ -47,7 +56,11 @@ function SuggestedCard({ s, prompt }: { s: SuggestedProfile; prompt?: string | n
           <UserBadges isPro={s.is_pro} isFounder={s.is_founder} isCampusFounder={s.is_campus_founder} />
           <span className="text-[var(--ink-muted)]">@{s.username}</span>
         </div>
-        {prompt && <p className="mt-0.5 text-xs text-[var(--ink-muted)]">{prompt}</p>}
+        {loading ? (
+          <Skeleton className="mt-1 h-3 w-32" />
+        ) : (
+          prompt && <p className="mt-0.5 text-xs text-[var(--ink-muted)]">{prompt}</p>
+        )}
       </div>
       <FollowButton targetId={s.id} initial="none" />
     </div>
@@ -55,12 +68,13 @@ function SuggestedCard({ s, prompt }: { s: SuggestedProfile; prompt?: string | n
 }
 
 // Suspense fallback — same cards from the already-fetched (sync, non-AI)
-// suggested pool, just without the AI "why follow" line yet.
+// suggested pool, with a skeleton line reserving the AI "why follow" line's
+// height so the swap-in doesn't reflow the card.
 export function SuggestedFollowsFallback({ suggested }: { suggested: SuggestedProfile[] }) {
   return (
     <div className="flex flex-col gap-2">
       {suggested.map((s) => (
-        <SuggestedCard key={s.id} s={s} />
+        <SuggestedCard key={s.id} s={s} loading />
       ))}
     </div>
   );
@@ -100,7 +114,8 @@ export default async function SuggestedFollows({
               school: s.profile_school?.school ?? null,
               courses: s.courses,
             },
-            viewerPro
+            viewerPro,
+            true // promptCache.has() above already proved this is a miss
           )
     )
   );

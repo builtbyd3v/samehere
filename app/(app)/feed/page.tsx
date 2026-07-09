@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import PostComposer from "@/components/feed/PostComposer";
-import PostCard, { POST_SELECT, PAGE, type FeedPost } from "@/components/feed/PostCard";
+import { POST_SELECT, PAGE, type FeedPost } from "@/components/feed/PostCard";
 import FeedLoadMore from "@/components/feed/FeedLoadMore";
 import FollowRequests, { type FollowRequest } from "@/components/profile/FollowRequests";
 import { attachSignedMedia } from "@/lib/media";
@@ -17,8 +17,7 @@ import { mergeFeedTimeline } from "@/lib/feed-timeline";
 import { fetchQuotedReposts } from "@/lib/feed-quotes";
 import { FeedSearchForm, FeedSearchResults } from "@/components/feed/FeedSearch";
 import PeopleSearch from "@/components/feed/PeopleSearch";
-import { getWeeklyPrompt } from "@/lib/weekly-prompt";
-import WeeklyPromptCard from "@/components/feed/WeeklyPromptCard";
+import WeeklyPromptSection from "@/components/feed/WeeklyPromptSection";
 import WeeklyRecap from "@/components/feed/WeeklyRecap";
 
 // Twitter-style feed: Latest (global recency) and Following (followed users'
@@ -39,14 +38,15 @@ export default async function FeedPage({
   } = await supabase.auth.getUser();
   const viewerId = user?.id ?? null;
 
-  const onboardingProfile = user
-    ? await supabase.from("profiles").select("avatar_url, bio, is_pro").eq("id", user.id).single()
-    : { data: null };
+  // Independent queries (both keyed off user.id, neither reads the other's
+  // result) — fetched concurrently instead of two serial round trips.
+  const [onboardingProfile, onboardingCounts] = user
+    ? await Promise.all([
+        supabase.from("profiles").select("avatar_url, bio, is_pro").eq("id", user.id).single(),
+        supabase.rpc("get_profile_counts", { p_profile_id: user.id }),
+      ])
+    : [{ data: null }, { data: null }];
   const composerPro = isPro(onboardingProfile.data ?? { is_pro: false });
-  const onboardingCounts = user
-    ? await supabase.rpc("get_profile_counts", { p_profile_id: user.id })
-    : { data: null };
-  const weeklyPrompt = await getWeeklyPrompt();
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8">
@@ -81,7 +81,9 @@ export default async function FeedPage({
         />
       )}
 
-      <WeeklyPromptCard prompt={weeklyPrompt.prompt} weekKey={weeklyPrompt.weekKey} />
+      <Suspense fallback={null}>
+        <WeeklyPromptSection />
+      </Suspense>
 
       {user && <WeeklyRecap userId={user.id} />}
 

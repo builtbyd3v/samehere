@@ -1,11 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { motion, useReducedMotion } from "motion/react";
+import { useReducedMotion } from "motion/react";
 import HeroCluster from "./HeroCluster";
 import { ghostCta, signupCta } from "./cta";
 
-const EASE = [0.16, 1, 0.3, 1] as const;
 // "only" carries the highlight — Fraunces italic in the SameHere blue.
 const HEADLINE = [
   { w: "You're", accent: false },
@@ -24,15 +23,13 @@ export default function Hero() {
         <HeroCluster />
 
         <div className="relative z-10 mx-auto max-w-[46rem] text-center">
-          <motion.p
-            className="mb-5 inline-flex items-center gap-1.5 rounded-full border border-[var(--border-strong)] px-3 py-1 text-[13px] font-medium text-[var(--ink-muted)]"
-            initial={reduce ? false : { opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: EASE }}
+          <p
+            className="fade-rise mb-5 inline-flex items-center gap-1.5 rounded-full border border-[var(--border-strong)] px-3 py-1 text-[13px] font-medium text-[var(--ink-muted)]"
+            style={{ ["--y" as string]: "12px" }}
           >
             <span className="h-1.5 w-1.5 rounded-full bg-[var(--blue)]" />
             Verified students only · .edu required
-          </motion.p>
+          </p>
 
           <h1 className="text-balance text-[44px] font-semibold leading-[1.02] tracking-[-0.03em] sm:text-[56px] md:text-[68px] md:tracking-[-0.04em]">
             {HEADLINE.map((item, i) => (
@@ -48,20 +45,16 @@ export default function Hero() {
             ))}
           </h1>
 
-          <motion.p
-            className="mx-auto mt-6 max-w-[42ch] text-lg leading-[1.45] text-[var(--ink-muted)] md:text-xl"
-            initial={reduce ? false : { opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.5, ease: EASE }}
+          <p
+            className="fade-rise mx-auto mt-6 max-w-[42ch] text-lg leading-[1.45] text-[var(--ink-muted)] md:text-xl"
+            style={{ ["--y" as string]: "20px", ["--delay" as string]: "0.5s" }}
           >
-            Post what's real. Grow a heatmap. Let AI find your people.
-          </motion.p>
+            Post what&apos;s real. Grow a heatmap. Let AI find your people.
+          </p>
 
-          <motion.div
-            className="mt-9 flex flex-wrap items-center justify-center gap-3"
-            initial={reduce ? false : { opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.62, ease: EASE }}
+          <div
+            className="fade-rise mt-9 flex flex-wrap items-center justify-center gap-3"
+            style={{ ["--y" as string]: "20px", ["--delay" as string]: "0.62s" }}
           >
             <span className="relative">
               {/* blue glow bloom behind the primary CTA — SameHere signature as
@@ -84,7 +77,7 @@ export default function Hero() {
             <Link href="/login" className={ghostCta}>
               Log in
             </Link>
-          </motion.div>
+          </div>
         </div>
       </div>
     </section>

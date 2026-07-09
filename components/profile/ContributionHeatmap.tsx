@@ -7,6 +7,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
+import { easternCivilDate } from "@/lib/eastern";
 
 export type HeatmapDay = { day: string; points: number; breakdown: Record<string, number> };
 type Cell = { date: string; points: number; breakdown: Record<string, number>; future: boolean };
@@ -40,11 +41,16 @@ const LABEL = "text-[9px] sm:text-[11px] leading-none text-[var(--ink-faint)]";
 
 // Sun-aligned 53-column grid (52 weeks back + the current week), one row per
 // weekday. Days after today in the current week are `future` (rendered blank so
-// column alignment holds). UTC throughout.
-// ponytail: dates in UTC; day-boundary drift near local midnight not handled.
+// column alignment holds).
+// `today` is resolved to its Eastern civil date first (easternCivilDate), then
+// all grid arithmetic is plain UTC-midnight day math — this matches the
+// server's day boundary (get_heatmap keys `day` on the Eastern civil date,
+// see supabase/migrations/20260705130000_growth_wave_b_contribution.sql), so
+// cell.date strings line up with `data[].day` exactly, including the ~4-5h
+// evening window where UTC's calendar date has rolled over but Eastern hasn't.
 export function buildHeatmapGrid(data: HeatmapDay[], today: Date = new Date()): Cell[][] {
   const byDate = new Map(data.map((d) => [d.day, d]));
-  const end = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
+  const end = easternCivilDate(today);
   const firstSunday = new Date(end);
   firstSunday.setUTCDate(end.getUTCDate() - end.getUTCDay() - 52 * 7);
 

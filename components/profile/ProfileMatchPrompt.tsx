@@ -40,7 +40,8 @@ export default async function ProfileMatchPrompt({
       viewerId,
       viewerSignal,
       candidate,
-      isPro(viewerSignalData ?? { is_pro: false })
+      isPro(viewerSignalData ?? { is_pro: false }),
+      true // cache already checked above — skip the redundant re-read
     ));
 
   if (!matchPrompt) return null;

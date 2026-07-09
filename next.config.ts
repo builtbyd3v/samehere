@@ -31,8 +31,6 @@ const nextConfig: NextConfig = {
             },
           ]
         : []),
-      // Landing page demo images only.
-      { protocol: "https" as const, hostname: "picsum.photos" },
     ],
   },
   async rewrites() {

@@ -2,30 +2,12 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { generateText, aiEnabled } from "@/lib/ai";
 import { WEEKLY_PROMPT_SYSTEM } from "@/lib/ai-prompts";
-
-// Eastern (America/New_York) civil date parts for an instant — DST-aware, the
-// one tz constant this project uses for day-boundary logic (see
-// supabase/migrations/20260705130000_growth_wave_b_contribution.sql). Exported
-// so WeeklyRecap.tsx can key its window off the same day boundary.
-export function easternDateParts(d: Date): { year: number; month: number; day: number } {
-  // en-CA formats as YYYY-MM-DD, giving zero-padded parts to parse.
-  const [year, month, day] = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/New_York",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  })
-    .format(d)
-    .split("-")
-    .map(Number);
-  return { year, month, day };
-}
+import { easternDateParts, easternCivilDate } from "@/lib/eastern";
 
 // ISO-8601 week key, e.g. "2026-W28", keyed off the Eastern civil date so the
 // week rolls over at Eastern midnight — same boundary as streak/heatmap.
 export function weekKey(d: Date): string {
-  const { year, month, day } = easternDateParts(d);
-  const date = new Date(Date.UTC(year, month - 1, day));
+  const date = easternCivilDate(d);
   const dow = date.getUTCDay() || 7; // Mon=1..Sun=7
   date.setUTCDate(date.getUTCDate() + 4 - dow); // move to this week's Thursday
   const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
