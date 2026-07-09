@@ -14,24 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      weekly_prompts: {
-        Row: {
-          created_at: string
-          prompt: string
-          week_key: string
-        }
-        Insert: {
-          created_at?: string
-          prompt: string
-          week_key: string
-        }
-        Update: {
-          created_at?: string
-          prompt?: string
-          week_key?: string
-        }
-        Relationships: []
-      }
       ai_connection_prompts: {
         Row: {
           candidate_id: string
@@ -625,13 +607,14 @@ export type Database = {
       profiles: {
         Row: {
           accent_color: string | null
-          banner_url: string | null
           avatar_is_animated: boolean
           avatar_url: string | null
+          banner_url: string | null
           bio: string | null
           courses: string[] | null
           created_at: string | null
           display_name: string | null
+          email_domain: string | null
           goals: string | null
           heatmap_visibility: string
           hide_school: boolean
@@ -645,8 +628,8 @@ export type Database = {
           last_subscription_event_at: string | null
           leaderboard_opt_out: boolean
           major: string | null
-          pro_until: string | null
           pro_source: string | null
+          pro_until: string | null
           referral_code: string | null
           skills: string[] | null
           stripe_customer_id: string | null
@@ -656,13 +639,14 @@ export type Database = {
         }
         Insert: {
           accent_color?: string | null
-          banner_url?: string | null
           avatar_is_animated?: boolean
           avatar_url?: string | null
+          banner_url?: string | null
           bio?: string | null
           courses?: string[] | null
           created_at?: string | null
           display_name?: string | null
+          email_domain?: string | null
           goals?: string | null
           heatmap_visibility?: string
           hide_school?: boolean
@@ -676,8 +660,8 @@ export type Database = {
           last_subscription_event_at?: string | null
           leaderboard_opt_out?: boolean
           major?: string | null
-          pro_until?: string | null
           pro_source?: string | null
+          pro_until?: string | null
           referral_code?: string | null
           skills?: string[] | null
           stripe_customer_id?: string | null
@@ -687,13 +671,14 @@ export type Database = {
         }
         Update: {
           accent_color?: string | null
-          banner_url?: string | null
           avatar_is_animated?: boolean
           avatar_url?: string | null
+          banner_url?: string | null
           bio?: string | null
           courses?: string[] | null
           created_at?: string | null
           display_name?: string | null
+          email_domain?: string | null
           goals?: string | null
           heatmap_visibility?: string
           hide_school?: boolean
@@ -707,32 +692,14 @@ export type Database = {
           last_subscription_event_at?: string | null
           leaderboard_opt_out?: boolean
           major?: string | null
-          pro_until?: string | null
           pro_source?: string | null
+          pro_until?: string | null
           referral_code?: string | null
           skills?: string[] | null
           stripe_customer_id?: string | null
           username?: string
           wants_pro?: boolean
           year?: string | null
-        }
-        Relationships: []
-      }
-      stripe_events: {
-        Row: {
-          created_at: string
-          id: string
-          type: string
-        }
-        Insert: {
-          created_at?: string
-          id: string
-          type: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          type?: string
         }
         Relationships: []
       }
@@ -892,10 +859,24 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "reports_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "reports_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_reported_user_id_fkey"
+            columns: ["reported_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -946,11 +927,74 @@ export type Database = {
           },
         ]
       }
+      signup_allowlist: {
+        Row: {
+          created_at: string
+          email: string
+          note: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          note?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          note?: string | null
+        }
+        Relationships: []
+      }
+      stripe_events: {
+        Row: {
+          created_at: string
+          id: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          type?: string
+        }
+        Relationships: []
+      }
+      weekly_prompts: {
+        Row: {
+          created_at: string
+          prompt: string
+          week_key: string
+        }
+        Insert: {
+          created_at?: string
+          prompt: string
+          week_key: string
+        }
+        Update: {
+          created_at?: string
+          prompt?: string
+          week_key?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      _log_contribution: {
+        Args: {
+          p_action_type: string
+          p_metadata?: Json
+          p_points: number
+          p_user: string
+        }
+        Returns: undefined
+      }
       accept_follow: { Args: { p_follower: string }; Returns: undefined }
       admin_hide_post: { Args: { p_post_id: string }; Returns: undefined }
       admin_list_reports: {
@@ -983,6 +1027,7 @@ export type Database = {
       block_user: { Args: { target: string }; Returns: undefined }
       current_is_admin: { Args: never; Returns: boolean }
       current_is_suspended: { Args: never; Returns: boolean }
+      expire_lapsed_pro: { Args: never; Returns: number }
       get_blocked_ids: { Args: never; Returns: string[] }
       get_dm_peer: {
         Args: { p_conversation_id: string }
@@ -1024,15 +1069,14 @@ export type Database = {
         Args: never
         Returns: {
           is_pro: boolean
-          pro_until: string | null
-          pro_source: string | null
-          stripe_customer_id: string | null
+          pro_source: string
+          pro_until: string
+          stripe_customer_id: string
           wants_pro: boolean
         }[]
       }
       get_notification_unread_total: { Args: never; Returns: number }
       get_or_create_dm: { Args: { p_recipient: string }; Returns: string }
-      leave_conversation: { Args: { p_conversation_id: string }; Returns: undefined }
       get_profile_counts: {
         Args: { p_profile_id: string }
         Returns: {
@@ -1059,6 +1103,45 @@ export type Database = {
           points: number
         }[]
       }
+      get_public_post: {
+        Args: { p_id: string }
+        Returns: {
+          author_avatar_url: string
+          author_display_name: string
+          author_id: string
+          author_is_campus_founder: boolean
+          author_is_founder: boolean
+          author_is_pro: boolean
+          author_username: string
+          content: string
+          created_at: string
+          id: string
+          like_count: number
+          repost_count: number
+          samehere_count: number
+        }[]
+      }
+      get_public_profile: {
+        Args: { p_username: string }
+        Returns: {
+          accent_color: string
+          avatar_url: string
+          banner_url: string
+          bio: string
+          display_name: string
+          goals: string
+          heatmap_visibility: string
+          id: string
+          is_campus_founder: boolean
+          is_founder: boolean
+          is_private: boolean
+          is_pro: boolean
+          major: string
+          school: string
+          username: string
+          year: string
+        }[]
+      }
       get_public_profile_card: {
         Args: { p_username: string }
         Returns: {
@@ -1070,6 +1153,14 @@ export type Database = {
           is_pro: boolean
           school: string
           username: string
+        }[]
+      }
+      get_public_profile_counts: {
+        Args: { p_profile_id: string }
+        Returns: {
+          followers: number
+          following: number
+          posts: number
         }[]
       }
       get_referral_stats: {
@@ -1102,9 +1193,18 @@ export type Database = {
         }
         Returns: undefined
       }
+      is_allowed_signup_email: { Args: { p_email: string }; Returns: boolean }
       is_conversation_member: {
         Args: { p_conversation_id: string }
         Returns: boolean
+      }
+      is_pro_now: {
+        Args: { p_is_pro: boolean; p_pro_until: string }
+        Returns: boolean
+      }
+      leave_conversation: {
+        Args: { p_conversation_id: string }
+        Returns: undefined
       }
       list_dm_inbox: {
         Args: never
@@ -1137,12 +1237,12 @@ export type Database = {
           type: string
         }[]
       }
-      log_contribution: {
-        Args: { p_action_type: string; p_metadata?: Json }
-        Returns: undefined
-      }
       mark_all_notifications_read: { Args: never; Returns: undefined }
       mark_dm_read: { Args: { p_conversation_id: string }; Returns: undefined }
+      media_paths_owned: {
+        Args: { p_media: Json; p_user: string }
+        Returns: boolean
+      }
       record_profile_view: { Args: { p_viewed: string }; Returns: undefined }
       reject_follow: { Args: { p_follower: string }; Returns: undefined }
       request_follow: { Args: { p_target: string }; Returns: string }
@@ -1151,10 +1251,8 @@ export type Database = {
         Returns: undefined
       }
       set_referral_code: { Args: { p_code: string }; Returns: string }
-      use_ai_quota: {
-        Args: { p_kind: string }
-        Returns: boolean
-      }
+      sweep_unconfirmed_signups: { Args: never; Returns: number }
+      use_ai_quota: { Args: { p_kind: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
