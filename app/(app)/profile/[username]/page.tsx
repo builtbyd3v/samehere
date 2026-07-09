@@ -167,21 +167,30 @@ export default async function ProfilePage({
   const metaLine =
     metaParts.length <= 1 ? metaParts[0] ?? null : `${metaParts[0]} · ${metaParts.slice(1).join(", ")}`;
 
+  // Banner and accent colour are Pro perks. The DB keeps both columns when a
+  // subscription lapses (guard_profile_privileged only freezes them), so the
+  // gate has to live here — otherwise a lapsed subscriber keeps wearing them.
+  // Rendering off is_pro, not a nulled column, means resubscribing restores the
+  // banner instantly with nothing to re-upload.
+  const pro = isPro(profile);
+  const bannerUrl = pro ? profile.banner_url : null;
+  const accentColor = pro ? profile.accent_color : null;
+
   return (
     <main className="page-enter mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8">
       {/* Identity header — banner with the avatar overlapping its bottom edge */}
       <section className="card overflow-hidden">
-        {profile.banner_url ? (
+        {bannerUrl ? (
           <div className="relative aspect-[3/1] w-full">
             <Image
-              src={profile.banner_url}
+              src={bannerUrl}
               alt=""
               fill
               sizes="(min-width: 672px) 672px, 100vw"
               className="object-cover"
               // Animated banners must bypass the optimizer, which would flatten
               // them to a single re-encoded frame. Same rule as AvatarImage.
-              unoptimized={isAnimatedAvatarUrl(profile.banner_url)}
+              unoptimized={isAnimatedAvatarUrl(bannerUrl)}
             />
           </div>
         ) : (
@@ -199,12 +208,12 @@ export default async function ProfilePage({
               <AvatarImage
                 src={profile.avatar_url}
                 alt=""
-                style={profile.accent_color ? { borderColor: profile.accent_color } : undefined}
+                style={accentColor ? { borderColor: accentColor } : undefined}
                 className="-mt-12 h-24 w-24 shrink-0 rounded-full border-4 border-[var(--surface-card)] object-cover sm:-mt-14 sm:h-28 sm:w-28"
               />
             ) : (
               <div
-                style={profile.accent_color ? { borderColor: profile.accent_color } : undefined}
+                style={accentColor ? { borderColor: accentColor } : undefined}
                 className="-mt-12 grid h-24 w-24 shrink-0 place-items-center rounded-full border-4 border-[var(--surface-card)] bg-[var(--featured-surface)] text-3xl font-semibold text-[var(--ink-muted)] sm:-mt-14 sm:h-28 sm:w-28"
               >
                 {displayName.charAt(0).toUpperCase()}
