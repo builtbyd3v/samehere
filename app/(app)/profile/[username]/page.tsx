@@ -243,7 +243,13 @@ export async function generateMetadata({
   if (!profile) return { title: "Profile not found", robots };
 
   const name = profile.display_name ?? username;
-  const description = profile.bio?.slice(0, 160) ?? `${name} (@${username}) on samehere`;
+
+  // Deliberately NOT the bio. A bio is something a student wrote for other
+  // students; pushing it into every Discord, Slack and Twitter embed publishes
+  // it to anyone who sees the link — and it stays in their unfurl caches long
+  // after the account goes private. The card itself carries the identity; the
+  // description just says what the link is for.
+  const description = `Join @${username} on samehere — verified students only.`;
 
   // Deliberately NO `images` here. An explicit openGraph.images overrides the
   // file-based opengraph-image route, which is what renders the heatmap card —

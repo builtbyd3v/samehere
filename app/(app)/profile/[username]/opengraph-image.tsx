@@ -302,6 +302,16 @@ function Heatmap({ weeks, streak }: { weeks: number[][]; streak: number }) {
   );
 }
 
+/** The wordmark: `same` in ink, `here` in blue. Matches Navbar and LandingNav. */
+function Wordmark({ size: s }: { size: number }) {
+  return (
+    <div style={{ display: "flex", fontSize: s, fontWeight: 600, letterSpacing: "-0.02em" }}>
+      <div style={{ display: "flex", color: INK }}>same</div>
+      <div style={{ display: "flex", color: BLUE }}>here</div>
+    </div>
+  );
+}
+
 function Footer({ username }: { username: string }) {
   return (
     <div
@@ -315,7 +325,7 @@ function Footer({ username }: { username: string }) {
       }}
     >
       <div style={{ display: "flex", flexDirection: "column" }}>
-        <div style={{ fontSize: 24, fontWeight: 600, letterSpacing: "-0.02em", color: INK }}>samehere</div>
+        <Wordmark size={24} />
         <div style={{ marginTop: 3, fontSize: 17, color: INK_MUTED }}>Verified students only.</div>
       </div>
       <div style={{ fontSize: 17, color: INK_FAINT }}>{`samehere.dev/profile/${username}`}</div>
@@ -350,7 +360,7 @@ export default async function OgImage({ params }: { params: Promise<{ username: 
             color: INK,
           }}
         >
-          <div style={{ fontSize: 60, fontWeight: 600, letterSpacing: "-0.03em" }}>samehere</div>
+          <Wordmark size={60} />
           <div style={{ marginTop: 18, fontSize: 26, color: INK_MUTED }}>Verified students only.</div>
         </div>
       ),
