@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { aiEnabled, generateText, modelForTier } from "@/lib/ai";
-import { CONNECTION_SYSTEM } from "@/lib/ai-prompts";
+import { CONNECTION_SYSTEM, untrusted } from "@/lib/ai-prompts";
 import type { MatchSignal } from "@/lib/match";
 
 function norm(s: string | null): string {
@@ -85,7 +85,7 @@ export async function connectionPrompt(
         .join("; ");
       const text = await generateText(
         CONNECTION_SYSTEM,
-        `Person: ${candidate.name}. Shared facts: ${facts}.`,
+        `Person: ${untrusted(candidate.name)}. Shared facts: ${untrusted(facts)}.`,
         { model: modelForTier(viewerIsPro) }
       );
       if (text) {

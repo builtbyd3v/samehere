@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { POST_SELECT, PAGE, type FeedPost } from "@/components/feed/PostCard";
 import { attachSignedMedia } from "@/lib/media";
 import { aiEnabled, generateText, modelForTier, type AiResult } from "@/lib/ai";
-import { COMPOSER_SYSTEM, IMPROVE_SYSTEM, PEOPLE_SEARCH_SYSTEM } from "@/lib/ai-prompts";
+import { COMPOSER_SYSTEM, IMPROVE_SYSTEM, PEOPLE_SEARCH_SYSTEM, untrusted } from "@/lib/ai-prompts";
 import { getPostHogServerClient } from "@/lib/posthog-server";
 import { isPro } from "@/lib/pro";
 import { TEXT_LIMITS, textLimitError } from "@/lib/utils/validation";
@@ -241,9 +241,11 @@ function toResult(c: Candidate): PeopleSearchResult {
   };
 }
 
+// id stays outside the delimiter (uuid, not user-authored). Everything else
+// here is free text the candidate wrote — bundled into one untrusted block
+// so it can never be read as instructions (see lib/ai-prompts.ts).
 function compactCandidate(c: Candidate): string {
-  return [
-    `id=${c.id}`,
+  const data = [
     `@${c.username}${c.display_name ? ` (${c.display_name})` : ""}`,
     [c.year, c.major].filter(Boolean).join(" "),
     c.profile_school?.school ? `school: ${c.profile_school.school}` : "",
@@ -254,6 +256,7 @@ function compactCandidate(c: Candidate): string {
   ]
     .filter(Boolean)
     .join(" | ");
+  return `id=${c.id} ${untrusted(data)}`;
 }
 
 // Parse the model's JSON array defensively. Any deviation → empty (caller falls
@@ -354,7 +357,7 @@ export async function peopleSearch(query: string): Promise<PeopleSearchState> {
   const list = candidates.map(compactCandidate).join("\n");
   const raw = await generateText(
     PEOPLE_SEARCH_SYSTEM,
-    `Looking for: ${safe}\n\nCandidates:\n${list}`,
+    `Looking for: ${untrusted(safe)}\n\nCandidates:\n${list}`,
     { model: modelForTier(pro), maxTokens: 500 },
   );
 

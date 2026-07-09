@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { aiEnabled, generateText, modelForTier } from "@/lib/ai";
-import { ICEBREAKER_SYSTEM } from "@/lib/ai-prompts";
+import { ICEBREAKER_SYSTEM, untrusted } from "@/lib/ai-prompts";
 import { getPostHogServerClient } from "@/lib/posthog-server";
 import { isPro } from "@/lib/pro";
 import { TEXT_LIMITS, textLimitError } from "@/lib/utils/validation";
@@ -123,18 +123,22 @@ type FactSource = {
 
 // Compact fact list for the prompt. school comes from profile_school, whose own
 // RLS already honors hide_school, so a null school here means "not visible".
+// Bundled into one untrusted block — these are free-text fields the profile
+// owner wrote, never to be read as instructions (see lib/ai-prompts.ts).
 function facts(p: FactSource, school: string | null): string {
-  return [
-    school && `school: ${school}`,
-    p.year && `year: ${p.year}`,
-    p.major && `major: ${p.major}`,
-    p.skills?.length ? `skills: ${p.skills.join(", ")}` : null,
-    p.courses?.length ? `courses: ${p.courses.join(", ")}` : null,
-    p.bio && `bio: ${p.bio}`,
-    p.goals && `goals: ${p.goals}`,
-  ]
-    .filter(Boolean)
-    .join("; ");
+  return untrusted(
+    [
+      school && `school: ${school}`,
+      p.year && `year: ${p.year}`,
+      p.major && `major: ${p.major}`,
+      p.skills?.length ? `skills: ${p.skills.join(", ")}` : null,
+      p.courses?.length ? `courses: ${p.courses.join(", ")}` : null,
+      p.bio && `bio: ${p.bio}`,
+      p.goals && `goals: ${p.goals}`,
+    ]
+      .filter(Boolean)
+      .join("; ")
+  );
 }
 
 // Draft a first DM grounded in what the sender and recipient share. Every
@@ -181,7 +185,7 @@ export async function icebreaker(peerId: string): Promise<IcebreakerResult> {
   const peerName = peer.display_name ?? peer.username;
   const prompt =
     `Sender (you): ${facts(me, mySchool?.school ?? null)}. ` +
-    `Recipient (${peerName}): ${facts(peer, peerSchool?.school ?? null)}.`;
+    `Recipient (${untrusted(peerName)}): ${facts(peer, peerSchool?.school ?? null)}.`;
 
   const text = await generateText(ICEBREAKER_SYSTEM, prompt, { model: modelForTier(pro), maxTokens: 140 });
   return text ? { text } : { error: true };
