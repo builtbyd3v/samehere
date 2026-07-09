@@ -66,7 +66,8 @@ Each action type counts once per day. Daily square intensity reflects total poin
 ### AI features (Claude via the `openai` SDK)
 - Peer matching: suggested users ranked by profile-signal overlap (school, year, major, skills, goals, courses), recency fallback on thin data
 - Connection prompts: one AI sentence per suggested-follow card explaining the fit (cached)
-- Composer writing prompts + profile-completion nudges
+- Natural-language people search ("cs juniors at UF who know rust") — parsed server-side into structured filters
+- Composer writing prompts, weekly prompt + weekly recap, profile-completion nudges
 - "Improve my post" and DM icebreaker drafts (Pro)
 - Tiered models: free users get a fast model, Pro users get a stronger one; metered per user with a cap-hit upsell
 - All calls server-side; the provider/model is swappable by env with no code change; AI output is rendered as plain text only
@@ -77,11 +78,13 @@ Each action type counts once per day. Daily square intensity reflects total poin
 - **Admin moderation** (`/admin`, gated to admins): triage open reports, soft-hide posts, suspend/unsuspend users — all via `is_admin`-gated `SECURITY DEFINER` functions; privileged columns are frozen against self-grant
 
 ### Pro tier & billing
-- Live perks: Pro badge, accent color, who-viewed-you, animated avatar (server-gated), stronger + unlimited AI
-- Stripe billing: hosted Checkout, Customer Portal, and a signature-verified webhook that sets `is_pro` / `pro_until`
-- `NEXT_PUBLIC_BILLING_ENABLED` flips the `/pro` page between waitlist and live Checkout
-- Pricing: **$4.99/mo · $12.99/semester**. The mission (peer discovery / connecting) is never paywalled.
-- Referrals: each user gets a referral link/code, tracks progress to 100, and earns a Campus Founder badge
+- Live perks: Pro badge, accent color, profile banner, who-viewed-you, animated avatar, stronger + unlimited AI — every cosmetic is server-gated on the owner's `is_pro` and frozen against direct writes by a trigger
+- Stripe billing: hosted Checkout, Customer Portal, and one signature-verified webhook that sets `is_pro` / `pro_until`. Checkout identity is bound server-side (no payment links), and the Stripe customer id is unique per profile
+- Pricing: **$4.99/mo · $12.99/semester**. Monthly is a subscription; semester is a one-time charge for a 6-month term, expired by a `pg_cron` job with a grace day so a late renewal webhook can't revoke a paying subscriber
+- Promo codes are supported, including 100%-off checkouts that skip card entry and still grant Pro
+- `NEXT_PUBLIC_BILLING_ENABLED` flips the `/pro` page between waitlist and live Checkout; pricing also has its own `/pricing` page
+- The mission (peer discovery / connecting) is never paywalled
+- Referrals: each user gets a referral link/code, tracks progress to 100, and earns a Campus Founder badge. The first 100 signups platform-wide get the Founder badge (live "spots left" counter on the landing and signup pages)
 
 ### Onboarding & growth
 - Dismissable onboarding checklist (avatar, bio, first post, first follow)
@@ -92,12 +95,11 @@ Each action type counts once per day. Daily square intensity reflects total poin
 - Real Terms and Privacy pages
 
 ### Analytics
-- Vercel Analytics (traffic + Web Vitals) and PostHog (product funnels, error capture)
+- Vercel Analytics + Speed Insights (traffic, Web Vitals) and PostHog (product funnels, error capture)
 
 ## What's not built yet
 - Weekly "people to meet" email digest
-- PWA + web push
-- Natural-language people search
+- PWA + web push (DB scaffold only — `push_subscriptions` table exists; no manifest, service worker, or web-push dependency yet)
 - Job board
 
 ## Tech stack
@@ -120,9 +122,10 @@ samehere needs environment variables that are **never committed**. Copy `.env.ex
 - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase project (public by design; security rests on RLS, not secrecy)
 - `SUPABASE_SERVICE_ROLE_KEY` — server-only; used **only** by the Stripe webhook and the delete-account edge function, never in app or client code
 - `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `OPENAI_MODEL`, `OPENAI_MODEL_PRO` — AI provider (OpenAI-compatible endpoint)
-- `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and price/link config — billing
+- `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_MONTHLY`, `STRIPE_PRICE_SEMESTER` — billing
 - `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN`, `NEXT_PUBLIC_POSTHOG_HOST` — analytics
 - `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_BILLING_ENABLED` — app config
+- `SIGNUP_ALLOWLIST` — testing only; comma-separated emails exempt from the `.edu` gate. Leave empty in normal operation
 
 **Intentionally excluded from the repo:**
 - `.env*` (all secrets; only `.env.example` with blank names is committed)
