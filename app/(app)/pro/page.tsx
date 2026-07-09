@@ -74,12 +74,22 @@ export default async function ProPage({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("is_pro, wants_pro")
+    .select("is_pro, wants_pro, pro_until, stripe_customer_id")
     .eq("id", user.id)
     .single();
   if (!profile) redirect("/login");
 
   const pro = isPro(profile);
+  // Only monthly subscribers have a Stripe customer; a one-time semester buyer
+  // has no subscription to manage, so the portal would be an empty page.
+  const hasSubscription = Boolean(profile.stripe_customer_id);
+  const proUntil = profile.pro_until
+    ? new Date(profile.pro_until).toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+    : null;
 
   return (
     <main className="page-enter mx-auto max-w-2xl px-5 py-10">
@@ -109,7 +119,9 @@ export default async function ProPage({
           <p className="mt-2 text-[36px] font-semibold leading-none tracking-[-0.03em] text-[var(--ink)]">
             $12.99<span className="text-lg font-normal text-[var(--ink-muted)]">/semester</span>
           </p>
-          <p className="mt-1 text-sm text-[var(--ink-muted)]">One payment covers the whole term.</p>
+          <p className="mt-1 text-sm text-[var(--ink-muted)]">
+            One payment, 6 months of Pro. Does not auto-renew.
+          </p>
         </div>
       </div>
 
@@ -131,7 +143,7 @@ export default async function ProPage({
             </p>
           )}
           {pro ? (
-            BILLING_ENABLED ? (
+            BILLING_ENABLED && hasSubscription ? (
               <form action={openBillingPortal}>
                 <button type="submit" className="btn-primary w-full">
                   Manage billing
@@ -139,7 +151,7 @@ export default async function ProPage({
               </form>
             ) : (
               <p className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm font-medium text-[var(--ink)]">
-                You&apos;re on Pro.
+                {proUntil ? `You're on Pro through ${proUntil}.` : "You're on Pro."}
               </p>
             )
           ) : BILLING_ENABLED ? (

@@ -8,6 +8,10 @@ import { getPostHogServerClient } from "@/lib/posthog-server";
 // session), signature-verified below. proxy.ts allowlists this exact path.
 // service_role (admin client) is the only writer of is_pro/pro_until/stripe_customer_id.
 
+// Length of a "semester" of Pro granted by the one-time purchase. Must stay in
+// step with the copy on /pro and the semester price's term_months metadata.
+const SEMESTER_MONTHS = 6;
+
 function subscriptionPeriodEnd(subscription: Stripe.Subscription): string | null {
   const item = subscription.items.data[0];
   if (!item) return null;
@@ -58,7 +62,7 @@ export async function POST(req: Request) {
             ? session.subscription
             : session.subscription?.id;
 
-        if (!supabaseId || !customerId) break;
+        if (!supabaseId) break;
 
         // Only sessions created by `startCheckout` carry BOTH markers, set from
         // the server session. A hosted Payment Link can only ever set
@@ -69,13 +73,43 @@ export async function POST(req: Request) {
           return NextResponse.json({ error: "Unverified session subject" }, { status: 400 });
         }
 
+        // Ignore anything not actually paid (async payment methods settle later
+        // via checkout.session.async_payment_succeeded, which we don't accept).
+        if (session.payment_status !== "paid") break;
+
+        const admin = createAdminClient();
+
+        // One-time semester purchase: no subscription exists, so Stripe will
+        // never tell us it lapsed. Stamp a fixed term; expire_lapsed_pro()
+        // (nightly pg_cron) flips is_pro off once pro_until passes.
+        // stripe_customer_id is deliberately NOT written here — a one-time buyer
+        // has no subscription to manage, and that absence is what hides the
+        // billing-portal button on /pro.
+        if (session.mode === "payment") {
+          const proUntil = new Date();
+          proUntil.setMonth(proUntil.getMonth() + SEMESTER_MONTHS);
+          await admin
+            .from("profiles")
+            .update({ is_pro: true, pro_until: proUntil.toISOString() })
+            .eq("id", supabaseId);
+
+          const posthog = getPostHogServerClient();
+          posthog?.capture({
+            distinctId: supabaseId,
+            event: "stripe_checkout_completed",
+            properties: { billing_provider: "stripe", plan: "semester", has_subscription: false },
+          });
+          break;
+        }
+
+        if (!customerId) break;
+
         let proUntil: string | null = null;
         if (subscriptionId) {
           const subscription = await stripe.subscriptions.retrieve(subscriptionId);
           proUntil = subscriptionPeriodEnd(subscription);
         }
 
-        const admin = createAdminClient();
         await admin
           .from("profiles")
           .update({

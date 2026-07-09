@@ -10,10 +10,17 @@ import { SITE_URL } from "@/lib/site";
 
 // ponytail: live price ids inline, env override for test mode. Same call the
 // old hardcoded payment links made — price ids are not secrets.
+//
+// monthly is a recurring subscription: Stripe drives expiry via
+// customer.subscription.deleted. semester is a ONE-TIME charge, so no
+// subscription exists and nothing revokes Pro on its own — the webhook stamps
+// pro_until and a nightly pg_cron job flips is_pro off once it lapses.
 const PRICES = {
   monthly: process.env.STRIPE_PRICE_MONTHLY ?? "price_1Tq3OeIKoFZaqPVsqyJtUpFU",
-  semester: process.env.STRIPE_PRICE_SEMESTER ?? "price_1Tq3OqIKoFZaqPVsajVfUOvC",
+  semester: process.env.STRIPE_PRICE_SEMESTER ?? "price_1Tr8OTIKoFZaqPVsVIo2Z35s",
 } as const;
+
+const MODES = { monthly: "subscription", semester: "payment" } as const;
 
 type Plan = keyof typeof PRICES;
 
@@ -68,13 +75,16 @@ export async function startCheckout(formData: FormData) {
   if (isPro(profile)) redirect("/pro");
 
   const session = await stripe.checkout.sessions.create({
-    mode: "subscription",
+    mode: MODES[plan],
     line_items: [{ price: PRICES[plan], quantity: 1 }],
     client_reference_id: user.id,
-    metadata: { supabase_id: user.id },
-    // Mirrored onto the subscription so later subscription.* events can be
-    // attributed even before the checkout row lands.
-    subscription_data: { metadata: { supabase_id: user.id } },
+    metadata: { supabase_id: user.id, plan },
+    // Subscriptions only: mirrored onto the subscription so later subscription.*
+    // events can be attributed even before the checkout row lands. Stripe
+    // rejects subscription_data on a one-time payment session.
+    ...(plan === "monthly"
+      ? { subscription_data: { metadata: { supabase_id: user.id } } }
+      : {}),
     ...(profile.stripe_customer_id
       ? { customer: profile.stripe_customer_id }
       : { customer_email: user.email }),
