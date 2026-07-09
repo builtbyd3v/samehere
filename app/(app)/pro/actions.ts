@@ -22,6 +22,12 @@ const PRICES = {
 
 const MODES = { monthly: "subscription", semester: "payment" } as const;
 
+// L7: the /pro page hides the checkout/portal buttons when billing is off, but the
+// Server Actions are POST endpoints reachable without the page. Re-check the flag
+// here so a crafted POST can't spin up a real Stripe session while billing is
+// nominally disabled. Same env value both layers read; now the name is honest.
+const BILLING_ENABLED = process.env.NEXT_PUBLIC_BILLING_ENABLED === "true";
+
 type Plan = keyof typeof PRICES;
 
 const isPlan = (v: FormDataEntryValue | null): v is Plan =>
@@ -57,6 +63,8 @@ export async function joinProWaitlist() {
 // edit, so a checkout can only ever be attributed to the account that started it.
 // The webhook re-checks that both markers agree before granting Pro.
 export async function startCheckout(formData: FormData) {
+  if (!BILLING_ENABLED) redirect("/pro");
+
   const plan = formData.get("plan");
   if (!isPlan(plan)) redirect("/pro");
 
@@ -68,7 +76,7 @@ export async function startCheckout(formData: FormData) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("is_pro, stripe_customer_id")
+    .select("is_pro, pro_until, stripe_customer_id")
     .eq("id", user.id)
     .single();
   if (!profile) redirect("/login");
@@ -127,6 +135,8 @@ export async function startCheckout(formData: FormData) {
 
 // Opens the Stripe Customer Portal for the signed-in user's existing subscription.
 export async function openBillingPortal() {
+  if (!BILLING_ENABLED) redirect("/pro");
+
   const supabase = await createClient();
   const {
     data: { user },

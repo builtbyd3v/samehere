@@ -639,6 +639,7 @@ export type Database = {
           is_private: boolean
           is_pro: boolean
           is_suspended: boolean
+          last_subscription_event_at: string | null
           leaderboard_opt_out: boolean
           major: string | null
           pro_until: string | null
@@ -669,6 +670,7 @@ export type Database = {
           is_private?: boolean
           is_pro?: boolean
           is_suspended?: boolean
+          last_subscription_event_at?: string | null
           leaderboard_opt_out?: boolean
           major?: string | null
           pro_until?: string | null
@@ -699,6 +701,7 @@ export type Database = {
           is_private?: boolean
           is_pro?: boolean
           is_suspended?: boolean
+          last_subscription_event_at?: string | null
           leaderboard_opt_out?: boolean
           major?: string | null
           pro_until?: string | null
@@ -709,6 +712,24 @@ export type Database = {
           username?: string
           wants_pro?: boolean
           year?: string | null
+        }
+        Relationships: []
+      }
+      stripe_events: {
+        Row: {
+          created_at: string
+          id: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          type?: string
         }
         Relationships: []
       }

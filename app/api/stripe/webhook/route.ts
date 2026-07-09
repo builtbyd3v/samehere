@@ -18,11 +18,14 @@ function subscriptionPeriodEnd(subscription: Stripe.Subscription): string | null
   return new Date(item.current_period_end * 1000).toISOString();
 }
 
-async function setProByCustomerId(
+async function applySubscriptionState(
   customerId: string,
+  eventCreated: number,
+  winsTie: boolean,
   fields: { is_pro: boolean; pro_until: string | null }
 ) {
   const admin = createAdminClient();
+  const eventTs = new Date(eventCreated * 1000).toISOString();
   // `stripe_customer_id` is uniquely indexed, so this matches at most one row.
   // Zero rows is normal: subscription.* can arrive before checkout.session.completed
   // has stamped the customer id onto the profile.
@@ -30,11 +33,27 @@ async function setProByCustomerId(
   // pro_source guard: a user who cancelled a subscription and later bought the
   // one-time semester still carries that customer id. A late or replayed event
   // from the dead subscription would otherwise overwrite the term they paid for.
+  //
+  // Ordering guard (M1): stamp event.created as a high-water mark and apply only
+  // when this event is not older than the last one applied to the row. Stripe does
+  // not guarantee delivery order, so a stale updated(active) after a deleted must
+  // NOT re-grant Pro. Single atomic UPDATE — WHERE guard and stamp together, no race.
+  //
+  // ONE-SECOND-GRANULARITY TRAP: event.created is UNIX SECONDS. On a cancellation
+  // Stripe emits subscription.updated AND subscription.deleted in the SAME second,
+  // so their timestamps are identical and cannot self-order. Tie-break by semantics:
+  // at equal timestamp, DELETED (revoke) must beat UPDATED (grant). So deleted uses
+  // `lte` (applies at equal ts) and grants use `lt` (won't overwrite a same-second
+  // deleted). DO NOT unify these two operators — that drops the revocation, and a
+  // pro_source='subscription' row is deliberately skipped by expire_lapsed_pro, so
+  // dropped = Pro forever (this is exactly the H3 shape M1 exists to prevent).
+  const op = winsTie ? "lte" : "lt";
   await admin
     .from("profiles")
-    .update(fields)
+    .update({ ...fields, last_subscription_event_at: eventTs })
     .eq("stripe_customer_id", customerId)
-    .eq("pro_source", "subscription");
+    .eq("pro_source", "subscription")
+    .or(`last_subscription_event_at.is.null,last_subscription_event_at.${op}."${eventTs}"`);
 }
 
 export async function POST(req: Request) {
@@ -56,6 +75,27 @@ export async function POST(req: Request) {
   } catch (err) {
     const message = err instanceof Error ? err.message : "Invalid signature";
     return NextResponse.json({ error: message }, { status: 400 });
+  }
+
+  // Idempotency (M1): claim the event id before any state change. A conflict means
+  // this exact event was already processed — return 200 (NOT 4xx, or Stripe retries
+  // it forever). The insert commits in its own statement, so if a handler below
+  // THROWS after this point the retry will hit the dedupe row and no-op — the event
+  // is effectively dropped. That is acceptable: Stripe alerts on failed (non-2xx)
+  // deliveries and any event is replayable from the dashboard, the post-dedupe work
+  // is one or two DB writes, and the alternative (claim the id only after success)
+  // reopens the concurrent double-processing race this table exists to close.
+  const dedupe = createAdminClient();
+  const { error: dedupeErr } = await dedupe
+    .from("stripe_events")
+    .insert({ id: event.id, type: event.type });
+  if (dedupeErr) {
+    // 23505 = unique_violation = already processed. Anything else is a real DB
+    // failure and SHOULD 500 so Stripe retries.
+    if (dedupeErr.code === "23505") {
+      return NextResponse.json({ received: true, duplicate: true });
+    }
+    return NextResponse.json({ error: dedupeErr.message }, { status: 500 });
   }
 
   try {
@@ -128,6 +168,12 @@ export async function POST(req: Request) {
           proUntil = subscriptionPeriodEnd(subscription);
         }
 
+        // Stamp the subscription high-water mark too (see applySubscriptionState).
+        // A fresh checkout is the latest subscription state by definition, so a
+        // delayed deleted from a PRIOR subscription (older event.created) can't
+        // regress this re-subscribed row. Applied unconditionally by id — checkout
+        // is a paid grant that must always land; replay-safety comes from the
+        // stripe_events dedupe table above, not from this guard.
         await admin
           .from("profiles")
           .update({
@@ -135,6 +181,7 @@ export async function POST(req: Request) {
             is_pro: true,
             pro_until: proUntil,
             pro_source: "subscription",
+            last_subscription_event_at: new Date(event.created * 1000).toISOString(),
           })
           .eq("id", supabaseId);
 
@@ -158,7 +205,7 @@ export async function POST(req: Request) {
             : subscription.customer.id;
         const active =
           subscription.status === "active" || subscription.status === "trialing";
-        await setProByCustomerId(customerId, {
+        await applySubscriptionState(customerId, event.created, false, {
           is_pro: active,
           pro_until: subscriptionPeriodEnd(subscription),
         });
@@ -171,7 +218,7 @@ export async function POST(req: Request) {
           typeof subscription.customer === "string"
             ? subscription.customer
             : subscription.customer.id;
-        await setProByCustomerId(customerId, {
+        await applySubscriptionState(customerId, event.created, true, {
           is_pro: false,
           pro_until: subscriptionPeriodEnd(subscription),
         });

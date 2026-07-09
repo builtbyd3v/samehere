@@ -121,8 +121,8 @@ export async function composerNudge(): Promise<AiResult> {
   if (!user) return { text: randomFallback() };
 
   if (aiEnabled()) {
-    const { data: profile } = await supabase.from("profiles").select("is_pro").eq("id", user.id).single();
-    const pro = isPro(profile ?? { is_pro: false });
+    const { data: profile } = await supabase.from("profiles").select("is_pro, pro_until").eq("id", user.id).single();
+    const pro = isPro(profile ?? { is_pro: false, pro_until: null });
     const { data: allowed } = await supabase.rpc("use_ai_quota", {
       p_kind: "composer_nudge",
       p_cap: pro ? 9999 : 3,
@@ -155,8 +155,8 @@ export async function improvePost(draft: string): Promise<ImproveResult> {
   } = await supabase.auth.getUser();
   if (!user) return { error: true };
 
-  const { data: profile } = await supabase.from("profiles").select("is_pro").eq("id", user.id).single();
-  if (!isPro(profile ?? { is_pro: false })) return { locked: true };
+  const { data: profile } = await supabase.from("profiles").select("is_pro, pro_until").eq("id", user.id).single();
+  if (!isPro(profile ?? { is_pro: false, pro_until: null })) return { locked: true };
   if (!aiEnabled()) return { error: true };
 
   // Metered for telemetry; Pro's 9999 cap never blocks.
@@ -298,8 +298,8 @@ export async function peopleSearch(query: string): Promise<PeopleSearchState> {
   const safe = query.replace(/[,()*%\\]/g, "").trim().slice(0, TEXT_LIMITS.searchQuery);
   if (!safe) return { error: "Describe who you want to meet." };
 
-  const { data: viewer } = await supabase.from("profiles").select("is_pro").eq("id", user.id).single();
-  const pro = isPro(viewer ?? { is_pro: false });
+  const { data: viewer } = await supabase.from("profiles").select("is_pro, pro_until").eq("id", user.id).single();
+  const pro = isPro(viewer ?? { is_pro: false, pro_until: null });
 
   // Prefilter: token ilike over the same fields keyword search uses, plus goals/bio.
   // Tokens are allowlist-sanitized to [a-z0-9] so nothing can escape the PostgREST

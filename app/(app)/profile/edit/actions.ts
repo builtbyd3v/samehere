@@ -47,8 +47,8 @@ export async function updateProfile(_prev: EditState, formData: FormData): Promi
   // Trust boundary: never take the client's word for Pro status. Non-Pro
   // requests simply don't touch accent_color (a lapsed Pro keeps their color
   // until they next edit it).
-  const { data: proRow } = await supabase.from("profiles").select("is_pro").eq("id", user.id).single();
-  if (proRow?.is_pro) {
+  const { data: proRow } = await supabase.from("profiles").select("is_pro, pro_until").eq("id", user.id).single();
+  if (isPro(proRow ?? { is_pro: false, pro_until: null })) {
     const accentRaw = str("accent_color", 7);
     updates.accent_color = HEX_COLOR.test(accentRaw) ? accentRaw : null;
   }
@@ -90,7 +90,7 @@ export async function profileNudge(): Promise<AiResult> {
   const [{ data: profile }, { data: schoolRow }] = await Promise.all([
     supabase
       .from("profiles")
-      .select("display_name, avatar_url, year, major, bio, goals, skills, is_pro")
+      .select("display_name, avatar_url, year, major, bio, goals, skills, is_pro, pro_until")
       .eq("id", user.id)
       .single(),
     supabase.from("profile_school").select("school").eq("profile_id", user.id).maybeSingle(),
@@ -110,7 +110,7 @@ export async function profileNudge(): Promise<AiResult> {
   if (gaps.length === 0) return { text: fallbackProfileNudge([]) };
 
   if (aiEnabled()) {
-    const pro = isPro(profile ?? { is_pro: false });
+    const pro = isPro(profile ?? { is_pro: false, pro_until: null });
     const { data: allowed } = await supabase.rpc("use_ai_quota", {
       p_kind: "profile_nudge",
       p_cap: pro ? 9999 : 3,
@@ -142,10 +142,10 @@ export async function draftProfileText(): Promise<DraftState> {
   if (!aiEnabled()) return { error: "AI is unavailable right now." };
 
   const [{ data: p }, { data: schoolRow }] = await Promise.all([
-    supabase.from("profiles").select("display_name, year, major, skills, courses, is_pro").eq("id", user.id).single(),
+    supabase.from("profiles").select("display_name, year, major, skills, courses, is_pro, pro_until").eq("id", user.id).single(),
     supabase.from("profile_school").select("school").eq("profile_id", user.id).maybeSingle(),
   ]);
-  const pro = isPro(p ?? { is_pro: false });
+  const pro = isPro(p ?? { is_pro: false, pro_until: null });
   const { data: allowed } = await supabase.rpc("use_ai_quota", { p_kind: "profile_nudge", p_cap: pro ? 9999 : 3 });
   if (!allowed) return pro ? { error: "Try again." } : { overCap: true };
 
@@ -191,8 +191,8 @@ export async function uploadAvatar(_prev: AvatarState, formData: FormData): Prom
   const animated = isAnimated(bytes, file.type);
 
   if (animated) {
-    const { data: proRow } = await supabase.from("profiles").select("is_pro").eq("id", user.id).single();
-    if (!proRow?.is_pro) return { error: "Animated avatars are a Pro perk." };
+    const { data: proRow } = await supabase.from("profiles").select("is_pro, pro_until").eq("id", user.id).single();
+    if (!isPro(proRow ?? { is_pro: false, pro_until: null })) return { error: "Animated avatars are a Pro perk." };
   }
 
   const path = `${user.id}/avatar`;
@@ -223,8 +223,8 @@ export async function uploadBanner(_prev: AvatarState, formData: FormData): Prom
   } = await supabase.auth.getUser();
   if (!user) return { error: "You must be logged in." };
 
-  const { data: proRow } = await supabase.from("profiles").select("is_pro").eq("id", user.id).single();
-  if (!proRow?.is_pro) return { error: "Profile banners are a Pro perk." };
+  const { data: proRow } = await supabase.from("profiles").select("is_pro, pro_until").eq("id", user.id).single();
+  if (!isPro(proRow ?? { is_pro: false, pro_until: null })) return { error: "Profile banners are a Pro perk." };
 
   const file = formData.get("banner");
   if (!(file instanceof File) || file.size === 0) return { error: "Choose an image file." };

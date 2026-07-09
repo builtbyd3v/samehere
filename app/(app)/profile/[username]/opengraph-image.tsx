@@ -149,7 +149,7 @@ function FallbackCard({ username, profile, school }: { username: string; profile
       <div style={{ marginTop: 28, fontSize: 44, fontWeight: 600, letterSpacing: "-0.02em", color: INK }}>
         {name}
       </div>
-      <div style={{ marginTop: 6, fontSize: 22, color: INK_MUTED }}>@{username}</div>
+      <div style={{ marginTop: 6, fontSize: 22, color: INK_MUTED }}>{`@${username}`}</div>
       {metaParts.length > 0 && (
         <div style={{ marginTop: 6, fontSize: 18, color: INK_FAINT }}>{metaParts.join(" · ")}</div>
       )}
@@ -192,7 +192,7 @@ function HeatmapCard({
           <div style={{ marginTop: 24, fontSize: 38, fontWeight: 600, letterSpacing: "-0.02em", color: INK }}>
             {name}
           </div>
-          <div style={{ marginTop: 4, fontSize: 19, color: INK_MUTED }}>@{username}</div>
+          <div style={{ marginTop: 4, fontSize: 19, color: INK_MUTED }}>{`@${username}`}</div>
           {metaParts.length > 0 && (
             <div style={{ marginTop: 10, fontSize: 16, color: INK_FAINT }}>{metaParts.join(" · ")}</div>
           )}
@@ -251,7 +251,7 @@ function HeatmapCard({
 
           {streak > 0 && (
             <div style={{ marginTop: 16, fontSize: 17, fontWeight: 600, color: INK }}>
-              {streak} day streak
+              {`${streak} day streak`}
             </div>
           )}
         </div>

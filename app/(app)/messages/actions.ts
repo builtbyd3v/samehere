@@ -156,7 +156,7 @@ export async function icebreaker(peerId: string): Promise<IcebreakerResult> {
 
   const { data: me } = await supabase
     .from("profiles")
-    .select("is_pro, year, major, bio, goals, skills, courses")
+    .select("is_pro, pro_until, year, major, bio, goals, skills, courses")
     .eq("id", user.id)
     .single();
   if (!me) return { error: true };

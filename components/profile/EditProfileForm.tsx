@@ -25,6 +25,7 @@ export type EditInitial = {
   hide_school: boolean;
   heatmap_visibility: string;
   is_pro: boolean;
+  pro_until: string | null;
   accent_color: string | null;
 };
 

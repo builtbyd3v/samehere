@@ -16,7 +16,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   } = await supabase.auth.getUser();
 
   const { data: profile } = user
-    ? await supabase.from("profiles").select("username, avatar_url, is_pro, is_admin").eq("id", user.id).single()
+    ? await supabase.from("profiles").select("username, avatar_url, is_pro, pro_until, is_admin").eq("id", user.id).single()
     : { data: null };
 
   const navbarProps = {

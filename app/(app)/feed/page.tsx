@@ -42,11 +42,11 @@ export default async function FeedPage({
   // result) — fetched concurrently instead of two serial round trips.
   const [onboardingProfile, onboardingCounts] = user
     ? await Promise.all([
-        supabase.from("profiles").select("avatar_url, bio, is_pro").eq("id", user.id).single(),
+        supabase.from("profiles").select("avatar_url, bio, is_pro, pro_until").eq("id", user.id).single(),
         supabase.rpc("get_profile_counts", { p_profile_id: user.id }),
       ])
     : [{ data: null }, { data: null }];
-  const composerPro = isPro(onboardingProfile.data ?? { is_pro: false });
+  const composerPro = isPro(onboardingProfile.data ?? { is_pro: false, pro_until: null });
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8">
@@ -162,7 +162,7 @@ async function FollowingTab({
     supabase.from("follows").select("following_id, status").eq("follower_id", userId),
     supabase
       .from("profiles")
-      .select("year, major, skills, goals, bio, courses, is_pro, profile_school(school)")
+      .select("year, major, skills, goals, bio, courses, is_pro, pro_until, profile_school(school)")
       .eq("id", userId)
       .single(),
     // ponytail: app-side filter post-fetch, not RLS on posts.
@@ -198,7 +198,7 @@ async function FollowingTab({
     }),
     supabase
       .from("profiles")
-      .select("id, username, display_name, avatar_url, created_at, year, major, skills, goals, bio, courses, is_pro, is_founder, is_campus_founder, profile_school(school)")
+      .select("id, username, display_name, avatar_url, created_at, year, major, skills, goals, bio, courses, is_pro, pro_until, is_founder, is_campus_founder, profile_school(school)")
       .not("id", "in", `(${excludeIds.join(",")})`)
       .order("created_at", { ascending: false })
       .limit(30),
@@ -207,7 +207,7 @@ async function FollowingTab({
   const timeline = feedPosts || quotes.length ? mergeFeedTimeline(feedPosts ?? [], quotes).slice(0, PAGE) : [];
 
   // ponytail: rank a 30-row recency pool; widen only if suggestions feel stale.
-  const viewerPro = isPro(viewerProfile ?? { is_pro: false });
+  const viewerPro = isPro(viewerProfile ?? { is_pro: false, pro_until: null });
   const viewerSignal: MatchSignal = {
     year: viewerProfile?.year ?? null,
     major: viewerProfile?.major ?? null,

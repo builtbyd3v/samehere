@@ -43,13 +43,13 @@ export default async function MessageThreadPage({
       .order("created_at", { ascending: true })
       .limit(200)
       .returns<MessageRow[]>(),
-    supabase.from("profiles").select("is_pro").eq("id", user.id).single(),
+    supabase.from("profiles").select("is_pro, pro_until").eq("id", user.id).single(),
   ]);
 
   const peer = (peerRows as PeerRow[] | null)?.[0];
   if (!peer) notFound();
 
-  const viewerIsPro = isPro(viewer ?? { is_pro: false });
+  const viewerIsPro = isPro(viewer ?? { is_pro: false, pro_until: null });
 
   const displayName = peer.peer_display_name ?? peer.peer_username;
   const messages: DmMessage[] = (messageRows ?? []).map((m) => ({

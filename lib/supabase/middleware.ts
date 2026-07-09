@@ -31,6 +31,13 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const path = request.nextUrl.pathname
+  // Metadata image routes (opengraph-image, twitter-image, icon, apple-icon) must be
+  // anon-reachable so link previews render for logged-out crawlers (Twitter/LinkedIn/
+  // iMessage/Slack). They only read anon-safe SECURITY DEFINER RPCs, never session data.
+  // Next appends a deterministic hash suffix (e.g. `-5zn1l9`) when the file lives inside
+  // a route group like `(app)` (see next/dist/lib/metadata/get-metadata-route.js) — that
+  // suffixed path is the real URL Next puts in <head>, so match it too.
+  const isMetadataImage = /\/(?:opengraph-image|twitter-image|icon|apple-icon)(?:-[0-9a-z]{1,6})?$/.test(path)
   const isPublic =
     path === '/' ||
     path === '/pricing' ||
@@ -41,7 +48,8 @@ export async function updateSession(request: NextRequest) {
     path === '/terms' ||
     path === '/privacy' ||
     path.startsWith('/auth/') ||
-    path === '/api/stripe/webhook'
+    path === '/api/stripe/webhook' ||
+    isMetadataImage
 
   if (user && (path === '/' || path === '/login' || path === '/signup')) {
     const url = request.nextUrl.clone()

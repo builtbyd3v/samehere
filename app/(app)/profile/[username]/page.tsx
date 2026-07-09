@@ -22,7 +22,7 @@ import AvatarImage from "@/components/ui/AvatarImage";
 import { isPro } from "@/lib/pro";
 
 const PROFILE_SELECT =
-  "id, username, display_name, avatar_url, banner_url, year, major, bio, goals, skills, courses, is_private, heatmap_visibility, is_pro, is_founder, is_campus_founder, accent_color";
+  "id, username, display_name, avatar_url, banner_url, year, major, bio, goals, skills, courses, is_private, heatmap_visibility, is_pro, pro_until, is_founder, is_campus_founder, accent_color";
 
 // Shared by generateMetadata and the page component so they hit one query
 // instead of two — React's cache() dedupes by argument (username) within a
@@ -74,7 +74,7 @@ export async function generateMetadata({
       ...(profile.avatar_url ? { images: [{ url: profile.avatar_url, alt: name }] } : {}),
     },
     twitter: {
-      card: "summary",
+      card: "summary_large_image",
       title: `${name} on samehere`,
       description,
       ...(profile.avatar_url ? { images: [profile.avatar_url] } : {}),

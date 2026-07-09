@@ -14,7 +14,7 @@ export default async function EditProfilePage() {
     supabase
       .from("profiles")
       .select(
-        "username, display_name, avatar_url, banner_url, year, major, bio, goals, skills, courses, is_private, hide_school, heatmap_visibility, is_pro, accent_color"
+        "username, display_name, avatar_url, banner_url, year, major, bio, goals, skills, courses, is_private, hide_school, heatmap_visibility, is_pro, pro_until, accent_color"
       )
       .eq("id", user.id)
       .single(),

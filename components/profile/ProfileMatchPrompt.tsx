@@ -18,7 +18,7 @@ export default async function ProfileMatchPrompt({
   const supabase = await createClient();
   const { data: viewerSignalData } = await supabase
     .from("profiles")
-    .select("year, major, skills, goals, bio, courses, is_pro, profile_school(school)")
+    .select("year, major, skills, goals, bio, courses, is_pro, pro_until, profile_school(school)")
     .eq("id", viewerId)
     .maybeSingle();
 
@@ -40,7 +40,7 @@ export default async function ProfileMatchPrompt({
       viewerId,
       viewerSignal,
       candidate,
-      isPro(viewerSignalData ?? { is_pro: false }),
+      isPro(viewerSignalData ?? { is_pro: false, pro_until: null }),
       true // cache already checked above — skip the redundant re-read
     ));
 
