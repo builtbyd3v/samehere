@@ -26,7 +26,15 @@ async function setProByCustomerId(
   // `stripe_customer_id` is uniquely indexed, so this matches at most one row.
   // Zero rows is normal: subscription.* can arrive before checkout.session.completed
   // has stamped the customer id onto the profile.
-  await admin.from("profiles").update(fields).eq("stripe_customer_id", customerId);
+  //
+  // pro_source guard: a user who cancelled a subscription and later bought the
+  // one-time semester still carries that customer id. A late or replayed event
+  // from the dead subscription would otherwise overwrite the term they paid for.
+  await admin
+    .from("profiles")
+    .update(fields)
+    .eq("stripe_customer_id", customerId)
+    .eq("pro_source", "subscription");
 }
 
 export async function POST(req: Request) {
@@ -86,11 +94,11 @@ export async function POST(req: Request) {
         const admin = createAdminClient();
 
         // One-time semester purchase: no subscription exists, so Stripe will
-        // never tell us it lapsed. Stamp a fixed term; expire_lapsed_pro()
-        // (nightly pg_cron) flips is_pro off once pro_until passes.
-        // stripe_customer_id is deliberately NOT written here — a one-time buyer
-        // has no subscription to manage, and that absence is what hides the
-        // billing-portal button on /pro.
+        // never tell us it lapsed. Stamp a fixed term and record pro_source, which
+        // is what expire_lapsed_pro() (nightly pg_cron) sweeps on and what hides
+        // the billing-portal button. Do NOT infer either from stripe_customer_id:
+        // a user who once subscribed keeps that id forever, so a later one-time
+        // purchase would look like a subscription and never expire.
         if (session.mode === "payment") {
           // Anchor the term to the session's own creation time, not to now().
           // Stripe redelivers events on retry, and `new Date()` would push
@@ -100,7 +108,7 @@ export async function POST(req: Request) {
           proUntil.setMonth(proUntil.getMonth() + SEMESTER_MONTHS);
           await admin
             .from("profiles")
-            .update({ is_pro: true, pro_until: proUntil.toISOString() })
+            .update({ is_pro: true, pro_until: proUntil.toISOString(), pro_source: "one_time" })
             .eq("id", supabaseId);
 
           const posthog = getPostHogServerClient();
@@ -126,6 +134,7 @@ export async function POST(req: Request) {
             stripe_customer_id: customerId,
             is_pro: true,
             pro_until: proUntil,
+            pro_source: "subscription",
           })
           .eq("id", supabaseId);
 

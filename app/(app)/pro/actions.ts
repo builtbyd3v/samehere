@@ -135,11 +135,15 @@ export async function openBillingPortal() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("stripe_customer_id")
+    .select("stripe_customer_id, pro_source")
     .eq("id", user.id)
     .single();
 
-  if (!profile?.stripe_customer_id) redirect("/pro");
+  // A one-time semester buyer may still carry a customer id from an earlier
+  // subscription. The portal would open on past receipts with nothing to manage,
+  // so only an actual subscriber gets in — the page hides the button, this is the
+  // server-side half of the same rule.
+  if (!profile?.stripe_customer_id || profile.pro_source !== "subscription") redirect("/pro");
 
   const session = await stripe.billingPortal.sessions.create({
     customer: profile.stripe_customer_id,

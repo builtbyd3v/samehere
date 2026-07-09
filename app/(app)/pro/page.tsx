@@ -74,15 +74,16 @@ export default async function ProPage({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("is_pro, wants_pro, pro_until, stripe_customer_id")
+    .select("is_pro, wants_pro, pro_until, pro_source, stripe_customer_id")
     .eq("id", user.id)
     .single();
   if (!profile) redirect("/login");
 
   const pro = isPro(profile);
-  // Only monthly subscribers have a Stripe customer; a one-time semester buyer
-  // has no subscription to manage, so the portal would be an empty page.
-  const hasSubscription = Boolean(profile.stripe_customer_id);
+  // Gate on pro_source, NOT on stripe_customer_id: a user who once subscribed
+  // keeps that customer id forever, so a later one-time semester purchase would
+  // still show "Manage billing" and open a portal with no subscription in it.
+  const hasSubscription = profile.pro_source === "subscription" && Boolean(profile.stripe_customer_id);
   const proUntil = profile.pro_until
     ? new Date(profile.pro_until).toLocaleDateString("en-US", {
         month: "long",
@@ -165,7 +166,7 @@ export default async function ProPage({
               <form action={startCheckout} className="flex-1">
                 <input type="hidden" name="plan" value="semester" />
                 <button type="submit" className="btn-primary w-full">
-                  Subscribe for a semester
+                  Join for a semester
                 </button>
               </form>
             </div>

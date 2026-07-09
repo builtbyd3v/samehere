@@ -642,6 +642,7 @@ export type Database = {
           leaderboard_opt_out: boolean
           major: string | null
           pro_until: string | null
+          pro_source: string | null
           referral_code: string | null
           skills: string[] | null
           stripe_customer_id: string | null
@@ -671,6 +672,7 @@ export type Database = {
           leaderboard_opt_out?: boolean
           major?: string | null
           pro_until?: string | null
+          pro_source?: string | null
           referral_code?: string | null
           skills?: string[] | null
           stripe_customer_id?: string | null
@@ -700,6 +702,7 @@ export type Database = {
           leaderboard_opt_out?: boolean
           major?: string | null
           pro_until?: string | null
+          pro_source?: string | null
           referral_code?: string | null
           skills?: string[] | null
           stripe_customer_id?: string | null
