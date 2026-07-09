@@ -36,17 +36,15 @@ export default function Hero() {
 
           <h1 className="text-balance text-[44px] font-semibold leading-[1.02] tracking-[-0.03em] sm:text-[56px] md:text-[68px] md:tracking-[-0.04em]">
             {HEADLINE.map((item, i) => (
-              <motion.span
+              <span
                 key={i}
-                className={`mr-[0.22em] inline-block will-change-transform ${
+                className={`word-rise mr-[0.22em] inline-block will-change-transform ${
                   item.accent ? "font-display italic text-[var(--blue)]" : ""
                 }`}
-                initial={reduce ? false : { opacity: 0, y: 24 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.55, delay: 0.05 + i * 0.07, ease: EASE }}
+                style={{ ["--delay" as string]: `${0.05 + i * 0.07}s` }}
               >
                 {item.w}
-              </motion.span>
+              </span>
             ))}
           </h1>
 

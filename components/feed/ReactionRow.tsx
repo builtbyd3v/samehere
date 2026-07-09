@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { motion, useReducedMotion } from "motion/react";
 import { createClient } from "@/lib/supabase/client";
 import { IconHeart, IconSame, IconComment, IconRepost, IconBookmark } from "@/components/icons";
 import QuoteRepostModal from "./QuoteRepostModal";
@@ -55,19 +54,17 @@ function ActionButton({
   disabled?: boolean;
   title?: string;
 } & React.AriaAttributes) {
-  const reduce = useReducedMotion();
   return (
-    <motion.button
+    <button
       type="button"
       onClick={onClick}
       disabled={disabled}
       title={title}
-      whileTap={!disabled && !reduce ? { scale: 0.9 } : undefined}
-      className={className}
+      className={`btn-tap ${className}`}
       {...a11y}
     >
       {children}
-    </motion.button>
+    </button>
   );
 }
 

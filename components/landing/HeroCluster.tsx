@@ -57,18 +57,22 @@ function ScatterCard({
   const py = useTransform(my, (v) => v * 20 * depth);
 
   return (
-    <motion.div
-      className="cluster-item absolute w-[200px]"
+    // Base opacity/scale sit in inline style, not in the keyframe's `from` —
+    // so the steady-state look is correct even with no animation running
+    // (reduced motion, or CSS/JS unavailable). `cluster-enter` only layers a
+    // translateY slide-in via `transform` on top.
+    <div
+      className="cluster-item cluster-enter absolute w-[200px]"
       style={{
         left: `${pos.x}%`,
         top: `${pos.y}%`,
         zIndex: "var(--z)" as unknown as number,
-        ["--z" as string]: pos.z,
+        opacity: pos.op,
+        scale: String(pos.scale),
         translate: "-50% -50%",
+        ["--z" as string]: pos.z,
+        ["--i" as string]: i,
       }}
-      initial={{ opacity: 0, y: 26, scale: pos.scale * 0.9 }}
-      animate={{ opacity: pos.op, y: 0, scale: pos.scale }}
-      transition={{ duration: 0.6, delay: 0.15 + i * 0.06, ease: EASE }}
     >
       <motion.div style={{ x: px, y: py }}>
         <div
@@ -84,7 +88,7 @@ function ScatterCard({
           <CardFace peer={peer} />
         </div>
       </motion.div>
-    </motion.div>
+    </div>
   );
 }
 

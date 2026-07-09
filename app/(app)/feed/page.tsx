@@ -1,18 +1,15 @@
-import Link from "next/link";
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import PostComposer from "@/components/feed/PostComposer";
 import PostCard, { POST_SELECT, PAGE, type FeedPost } from "@/components/feed/PostCard";
 import FeedLoadMore from "@/components/feed/FeedLoadMore";
 import FollowRequests, { type FollowRequest } from "@/components/profile/FollowRequests";
-import FollowButton from "@/components/profile/FollowButton";
-import UserBadges from "@/components/profile/UserBadges";
 import { attachSignedMedia } from "@/lib/media";
 import { scoreOverlap, type MatchSignal } from "@/lib/match";
 import { isPro } from "@/lib/pro";
-import { cachedConnectionPrompts, connectionPrompt } from "@/lib/connection-prompt";
+import SuggestedFollows, { SuggestedFollowsFallback } from "@/components/feed/SuggestedFollows";
 import FeedToolbar from "@/components/feed/FeedToolbar";
 import FeedTabs from "@/components/feed/FeedTabs";
-import AvatarImage from "@/components/ui/AvatarImage";
 import EmptyState from "@/components/ui/EmptyState";
 import OnboardingChecklist from "@/components/feed/OnboardingChecklist";
 import FeedTimeline from "@/components/feed/FeedTimeline";
@@ -234,69 +231,19 @@ async function FollowingTab({
     .sort((a, b) => b._score - a._score || ((a.created_at ?? "") < (b.created_at ?? "") ? 1 : -1))
     .slice(0, 5);
 
-  const promptCache = await cachedConnectionPrompts(supabase, userId, suggested.map((s) => s.id));
-  const prompts = await Promise.all(
-    suggested.map((s) =>
-      promptCache.has(s.id)
-        ? Promise.resolve(promptCache.get(s.id)!)
-        : connectionPrompt(supabase, userId, viewerSignal, {
-            id: s.id,
-            name: s.display_name ?? s.username,
-            year: s.year,
-            major: s.major,
-            skills: s.skills,
-            goals: s.goals,
-            bio: s.bio,
-            school: s.profile_school?.school ?? null,
-            courses: s.courses,
-          }, viewerPro)
-    )
-  );
-  const suggestedWithPrompt = suggested.map((s, i) => ({ ...s, _prompt: prompts[i] }));
-
-  // Reused as-is in the "People to follow" block (timeline non-empty) and inside
-  // the composed empty state (timeline empty) — same cards, same follow affordance.
-  function suggestedCard(s: (typeof suggestedWithPrompt)[number]) {
-    const name = s.display_name ?? s.username;
-    return (
-      <div
-        key={s.id}
-        className="flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3"
-      >
-        {s.avatar_url ? (
-          <AvatarImage
-            src={s.avatar_url}
-            alt=""
-            className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover"
-          />
-        ) : (
-          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-sm font-semibold text-[var(--ink-muted)]">
-            {name.charAt(0).toUpperCase()}
-          </div>
-        )}
-        <div className="min-w-0 flex-1 text-sm">
-          <div className="flex flex-wrap items-center gap-x-1.5">
-            <Link href={`/profile/${s.username}`} className="font-medium hover:underline">
-              {name}
-            </Link>
-            <UserBadges isPro={s.is_pro} isFounder={s.is_founder} isCampusFounder={s.is_campus_founder} />
-            <span className="text-[var(--ink-muted)]">@{s.username}</span>
-          </div>
-          {s._prompt && <p className="mt-0.5 text-xs text-[var(--ink-muted)]">{s._prompt}</p>}
-        </div>
-        <FollowButton targetId={s.id} initial="none" />
-      </div>
-    );
-  }
-
   return (
     <section className="flex flex-col gap-3">
       {visibleRequests.length > 0 && <FollowRequests requests={visibleRequests} />}
 
-      {timeline.length > 0 && suggestedWithPrompt.length > 0 && (
+      {/* Suggested-users card is AI-generated (up to 5 connectionPrompt calls) —
+          wrapped in its own Suspense so it never blocks the timeline below from
+          streaming. Fallback reuses the already-fetched (non-AI) suggested pool. */}
+      {timeline.length > 0 && suggested.length > 0 && (
         <section className="card mb-3 p-4 sm:p-5">
           <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">People to follow</h2>
-          <div className="flex flex-col gap-2">{suggestedWithPrompt.map(suggestedCard)}</div>
+          <Suspense fallback={<SuggestedFollowsFallback suggested={suggested} />}>
+            <SuggestedFollows userId={userId} viewerSignal={viewerSignal} viewerPro={viewerPro} suggested={suggested} />
+          </Suspense>
         </section>
       )}
 
@@ -304,13 +251,17 @@ async function FollowingTab({
         <div className="flex flex-col gap-3">
           <FeedTimeline items={timeline} viewerId={viewerId} />
         </div>
-      ) : suggestedWithPrompt.length > 0 ? (
+      ) : suggested.length > 0 ? (
         <section className="card px-4 py-8 text-center sm:px-6">
           <p className="font-medium text-[var(--ink)]">Your feed is empty</p>
           <p className="mx-auto mt-1.5 max-w-sm text-sm text-[var(--ink-muted)]">
             Follow a few students below to start seeing their posts here.
           </p>
-          <div className="mt-5 flex flex-col gap-2 text-left">{suggestedWithPrompt.map(suggestedCard)}</div>
+          <div className="mt-5 text-left">
+            <Suspense fallback={<SuggestedFollowsFallback suggested={suggested} />}>
+              <SuggestedFollows userId={userId} viewerSignal={viewerSignal} viewerPro={viewerPro} suggested={suggested} />
+            </Suspense>
+          </div>
         </section>
       ) : (
         <EmptyState

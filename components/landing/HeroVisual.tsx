@@ -1,27 +1,37 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import LandingPostCard from "./LandingPostCard";
 import { DEMO_POSTS } from "@/lib/landing/demo-data";
 
+function subscribeTabVisible(cb: () => void) {
+  document.addEventListener("visibilitychange", cb);
+  return () => document.removeEventListener("visibilitychange", cb);
+}
+
+function getTabVisible() {
+  return !document.hidden;
+}
+
 export default function HeroVisual() {
   const reduce = useReducedMotion();
+  const tabVisible = useSyncExternalStore(subscribeTabVisible, getTabVisible, () => true);
   const [index, setIndex] = useState(0);
   const [direction, setDirection] = useState(1);
   const [paused, setPaused] = useState(false);
   const post = DEMO_POSTS[index];
 
-  // Auto-advance so the card isn't dead until touched. Pauses on hover; off for
-  // reduced-motion.
+  // Auto-advance so the card isn't dead until touched. Pauses on hover, for
+  // reduced-motion, and while the tab is hidden.
   useEffect(() => {
-    if (reduce || paused) return;
+    if (reduce || paused || !tabVisible) return;
     const id = setInterval(() => {
       setDirection(1);
       setIndex((i) => (i + 1) % DEMO_POSTS.length);
     }, 4500);
     return () => clearInterval(id);
-  }, [reduce, paused]);
+  }, [reduce, paused, tabVisible]);
 
   function go(dir: -1 | 1) {
     setDirection(dir);

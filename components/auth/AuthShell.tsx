@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { motion, useReducedMotion } from "motion/react";
 import CanvasGradient from "@/components/landing/CanvasGradient";
 
 // Hero-style highlight — Fraunces italic in the SameHere blue, carried over from
@@ -54,7 +53,6 @@ type Props = {
 };
 
 export default function AuthShell({ variant, children, footer, aside, asideExtra }: Props) {
-  const reduce = useReducedMotion();
   const { headline, sub } = COPY[variant];
 
   return (
@@ -82,17 +80,12 @@ export default function AuthShell({ variant, children, footer, aside, asideExtra
             {asideExtra && <div className="mt-6 hidden md:block">{asideExtra}</div>}
           </div>
 
-          <motion.div
-            className="flex flex-col items-start md:items-center md:justify-center"
-            initial={reduce ? false : { opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-          >
+          <div className="page-enter flex flex-col items-start md:items-center md:justify-center">
             {children}
             <div className="mt-4 w-full max-w-md text-sm text-[var(--ink-muted)]">{footer}</div>
             {/* bullets: below the form on mobile so the form fits one screen */}
             {asideExtra && <div className="mt-6 w-full max-w-md md:hidden">{asideExtra}</div>}
-          </motion.div>
+          </div>
         </div>
       </div>
     </main>

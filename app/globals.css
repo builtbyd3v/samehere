@@ -113,6 +113,20 @@ summary {
   }
 }
 
+/* Hero H1 per-word stagger — stays at opacity:1 the whole time (no invisible
+ * state to depend on JS/CSS loading); only position offsets in via
+ * `transform`. animation-delay set per word via --delay. */
+@keyframes word-rise {
+  from { transform: translateY(24px); }
+  to   { transform: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .word-rise {
+    animation: word-rise 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: var(--delay, 0s);
+  }
+}
+
 /* Ambient breathing wash — two radial blobs drift on opposite phases. The
  * container masks to transparent at its base so the whole wash melts into the
  * canvas with no falloff seam. Radials ramp through a midpoint for a soft edge. */
@@ -219,6 +233,21 @@ summary {
 .cluster-item:hover { --z: 60; }
 @media (prefers-reduced-motion: reduce) {
   .cluster-float { animation: none; }
+}
+
+/* Hero scatter-card entrance — base opacity/scale live in inline style, not
+ * the keyframe's `from`, so the steady-state look is correct even with no
+ * animation running (reduced motion, or CSS/JS unavailable). Only a
+ * translateY slide-in layers on top via `transform`. */
+@keyframes cluster-enter {
+  from { transform: translateY(26px) scale(0.9); }
+  to   { transform: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cluster-enter {
+    animation: cluster-enter 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: calc(0.15s + var(--i, 0) * 0.06s);
+  }
 }
 
 /* Heatmap fill wave — cells cascade in on a top-left→bottom-right diagonal.
@@ -379,6 +408,15 @@ summary {
   cursor: not-allowed;
 }
 
+/* Tap feedback for icon/reaction buttons — CSS :active replaces a JS
+   whileTap scale; the existing scoped transition (above) animates it, and
+   this stays out of the DOM entirely under reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .btn-tap:active:not(:disabled) {
+    transform: scale(0.9);
+  }
+}
+
 /* Inputs -------------------------------------------------------------- */
 
 .input-base {
@@ -464,3 +502,4 @@ summary {
 }
 
 } /* @layer components */
+

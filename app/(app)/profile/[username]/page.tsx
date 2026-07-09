@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
+import { Suspense, cache } from "react";
 import { notFound } from "next/navigation";
 import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
@@ -8,8 +10,10 @@ import ProfileActions from "@/components/profile/ProfileActions";
 import BlockButton from "@/components/profile/BlockButton";
 import PostCard, { POST_SELECT, type FeedPost } from "@/components/feed/PostCard";
 import FeedTimeline from "@/components/feed/FeedTimeline";
-import ContributionHeatmap, { type HeatmapDay } from "@/components/profile/ContributionHeatmap";
-import ProfileViewers, { type ProfileViewer } from "@/components/profile/ProfileViewers";
+import ProfileMatchPrompt from "@/components/profile/ProfileMatchPrompt";
+import ProfileActivitySection from "@/components/profile/ProfileActivitySection";
+import ProfileViewersSection from "@/components/profile/ProfileViewersSection";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { attachSignedMedia } from "@/lib/media";
 import { fetchQuotedReposts } from "@/lib/feed-quotes";
 import { fetchPlainReposts } from "@/lib/feed-reposts";
@@ -17,8 +21,19 @@ import { mergeFeedTimeline } from "@/lib/feed-timeline";
 import UserBadges from "@/components/profile/UserBadges";
 import AvatarImage from "@/components/ui/AvatarImage";
 import { isPro } from "@/lib/pro";
-import type { MatchSignal } from "@/lib/match";
-import { cachedConnectionPrompts, connectionPrompt } from "@/lib/connection-prompt";
+
+const PROFILE_SELECT =
+  "id, username, display_name, avatar_url, banner_url, year, major, bio, goals, skills, courses, is_private, heatmap_visibility, is_pro, is_founder, is_campus_founder, accent_color";
+
+// Shared by generateMetadata and the page component so they hit one query
+// instead of two — React's cache() dedupes by argument (username) within a
+// single render pass. Takes only the primitive username (not a supabase
+// client instance) so both call sites land on the same cache entry.
+const getProfileByUsername = cache(async (username: string) => {
+  const supabase = await createClient();
+  const { data } = await supabase.from("profiles").select(PROFILE_SELECT).eq("username", username).maybeSingle();
+  return data;
+});
 
 const YEAR_LABEL: Record<string, string> = {
   freshman: "Freshman",
@@ -43,12 +58,7 @@ export async function generateMetadata({
   params: Promise<{ username: string }>;
 }): Promise<Metadata> {
   const { username } = await params;
-  const supabase = await createClient();
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("display_name, bio, avatar_url")
-    .eq("username", username)
-    .maybeSingle();
+  const profile = await getProfileByUsername(username);
 
   if (!profile) return { title: "Profile not found" };
 
@@ -81,15 +91,9 @@ export default async function ProfilePage({
   const { username } = await params;
   const supabase = await createClient();
 
-  const [{ data: { user } }, { data: profile }] = await Promise.all([
+  const [{ data: { user } }, profile] = await Promise.all([
     supabase.auth.getUser(),
-    supabase
-      .from("profiles")
-      .select(
-        "id, username, display_name, avatar_url, banner_url, year, major, bio, goals, skills, courses, is_private, heatmap_visibility, is_pro, is_founder, is_campus_founder, accent_color"
-      )
-      .eq("username", username)
-      .maybeSingle(),
+    getProfileByUsername(username),
   ]);
 
   if (!profile) notFound();
@@ -106,7 +110,7 @@ export default async function ProfilePage({
     });
   }
 
-  const [schoolRes, countRes, relRes, postsRes, quotesRes, repostsRes, heatRes, streakRes, blockedIdsRes, myBlockRes, viewsRes, viewerSignalRes] = await Promise.all([
+  const [schoolRes, countRes, relRes, postsRes, quotesRes, repostsRes, blockedIdsRes, myBlockRes] = await Promise.all([
     supabase.from("profile_school").select("school").eq("profile_id", profile.id).maybeSingle(),
     supabase.rpc("get_profile_counts", { p_profile_id: profile.id }),
     user && !isOwner
@@ -126,24 +130,10 @@ export default async function ProfilePage({
       .returns<FeedPost[]>(),
     fetchQuotedReposts(supabase, { userIds: [profile.id], limit: 20 }),
     fetchPlainReposts(supabase, { userIds: [profile.id], limit: 20 }),
-    supabase.rpc("get_heatmap", { p_profile_id: profile.id }),
-    // get_heatmap-style call — enforces heatmap_visibility server-side itself;
-    // an error here (hidden case) just means no streak is rendered.
-    supabase.rpc("get_streak", { p_profile_id: profile.id }),
     user && !isOwner ? supabase.rpc("get_blocked_ids") : Promise.resolve({ data: [] as string[] }),
     user && !isOwner
       ? supabase.from("blocks").select("id").eq("blocker_id", user.id).eq("blocked_id", profile.id).maybeSingle()
       : Promise.resolve({ data: null as { id: string } | null }),
-    // Owner-only RPC — returns empty for everyone else, so only bother calling it for the owner.
-    isOwner ? supabase.rpc("get_profile_views", { p_profile: profile.id }) : Promise.resolve({ data: [] as ProfileViewer[] }),
-    // Viewer's own match signal — only needed to build the "why you two match" line below.
-    user && !isOwner
-      ? supabase
-          .from("profiles")
-          .select("year, major, skills, goals, bio, courses, is_pro, profile_school(school)")
-          .eq("id", user.id)
-          .maybeSingle()
-      : Promise.resolve({ data: null as { year: string | null; major: string | null; skills: string[] | null; goals: string | null; bio: string | null; courses: string[] | null; is_pro: boolean; profile_school: { school: string | null } | null } | null }),
   ]);
 
   const viewerId = user?.id ?? null;
@@ -151,12 +141,9 @@ export default async function ProfilePage({
   const counts = countRes.data?.[0] ?? { posts: 0, followers: 0, following: 0 };
   const isAcceptedFollower = relRes.data?.status === "accepted";
   const posts = await attachSignedMedia(supabase, postsRes.data ?? []);
-  const heatmap = (heatRes.data ?? []) as HeatmapDay[];
-  const streak = streakRes.error ? null : (streakRes.data?.[0] ?? null);
   const isBlocked = !!(blockedIdsRes.data ?? []).includes(profile.id);
   const amIBlocking = !!myBlockRes.data;
   const profileIsPro = isPro(profile);
-  const profileViews = (viewsRes.data ?? []) as ProfileViewer[];
 
   const followState: FollowState =
     relRes.data?.status === "accepted" ? "following" : relRes.data?.status === "pending" ? "pending" : "none";
@@ -164,42 +151,10 @@ export default async function ProfilePage({
   const contentHidden = (profile.is_private && !isOwner && !isAcceptedFollower) || isBlocked;
   const timeline = contentHidden ? [] : mergeFeedTimeline(posts, quotesRes, repostsRes).slice(0, 20);
   const canSeeHeatmap = isOwner || isAcceptedFollower || profile.heatmap_visibility === "public";
-
-  // "Why you two match" — only where post content would be visible to this viewer
-  // (mirrors contentHidden: excludes private-non-follower and blocked). Reuses the
-  // same connection-prompt infra as the feed's suggested-follow cards.
-  let matchPrompt: string | null = null;
-  if (user && !isOwner && !contentHidden) {
-    const viewerSignal: MatchSignal = {
-      year: viewerSignalRes.data?.year ?? null,
-      major: viewerSignalRes.data?.major ?? null,
-      skills: viewerSignalRes.data?.skills ?? null,
-      goals: viewerSignalRes.data?.goals ?? null,
-      bio: viewerSignalRes.data?.bio ?? null,
-      school: viewerSignalRes.data?.profile_school?.school ?? null,
-      courses: viewerSignalRes.data?.courses ?? null,
-    };
-    const cache = await cachedConnectionPrompts(supabase, user.id, [profile.id]);
-    matchPrompt =
-      cache.get(profile.id) ??
-      (await connectionPrompt(
-        supabase,
-        user.id,
-        viewerSignal,
-        {
-          id: profile.id,
-          name: displayName,
-          year: profile.year,
-          major: profile.major,
-          skills: profile.skills,
-          goals: profile.goals,
-          bio: profile.bio,
-          school,
-          courses: profile.courses,
-        },
-        isPro(viewerSignalRes.data ?? { is_pro: false })
-      ));
-  }
+  // "Why you two match" renders only where post content would be visible to
+  // this viewer (mirrors contentHidden: excludes private-non-follower and
+  // blocked) — see the ProfileMatchPrompt Suspense boundary below.
+  const showMatchPrompt = !isOwner && !contentHidden;
 
   const metaParts = [
     school,
@@ -216,8 +171,15 @@ export default async function ProfilePage({
       {/* Identity header — banner with the avatar overlapping its bottom edge */}
       <section className="card overflow-hidden">
         {profile.banner_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={profile.banner_url} alt="" className="aspect-[3/1] w-full object-cover" />
+          <div className="relative aspect-[3/1] w-full">
+            <Image
+              src={profile.banner_url}
+              alt=""
+              fill
+              sizes="(min-width: 672px) 672px, 100vw"
+              className="object-cover"
+            />
+          </div>
         ) : (
           <div
             aria-hidden
@@ -270,10 +232,23 @@ export default async function ProfilePage({
             <p className="mt-0.5 text-[15px] text-[var(--ink-muted)]">@{profile.username}</p>
 
             {metaLine && <p className="mt-2 text-sm text-[var(--ink-muted)]">{metaLine}</p>}
-            {matchPrompt && (
-              <p className="mt-2 text-sm text-[var(--ink-muted)]">
-                <span aria-hidden="true">✦</span> {matchPrompt}
-              </p>
+            {user && showMatchPrompt && (
+              <Suspense fallback={<Skeleton className="mt-2 h-4 w-56" />}>
+                <ProfileMatchPrompt
+                  viewerId={user.id}
+                  candidate={{
+                    id: profile.id,
+                    name: displayName,
+                    year: profile.year,
+                    major: profile.major,
+                    skills: profile.skills,
+                    goals: profile.goals,
+                    bio: profile.bio,
+                    school,
+                    courses: profile.courses,
+                  }}
+                />
+              </Suspense>
             )}
 
             <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1">
@@ -295,23 +270,16 @@ export default async function ProfilePage({
       {(canSeeHeatmap || profile.goals || (profile.skills?.length ?? 0) > 0 || (profile.courses?.length ?? 0) > 0) && (
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
           {canSeeHeatmap && (
-            <section className="card card-hover p-5 shadow-paper sm:col-span-2 sm:p-6">
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                <h2 className="text-sm font-semibold text-[var(--ink)]">Activity</h2>
-                {streak && (streak.current_streak > 0 || streak.longest_streak > 0) && (
-                  <p className="text-sm text-[var(--ink-muted)]">
-                    <b className="font-semibold text-[var(--blue)]">{streak.current_streak}-day streak</b>
-                    {streak.longest_streak > streak.current_streak ? ` · best ${streak.longest_streak}` : ""}
-                  </p>
-                )}
-              </div>
-              <ContributionHeatmap data={heatmap} />
-              {isOwner && streak && streak.current_streak > 0 && !streak.today_earned && (
-                <p className="mt-4 rounded-lg border border-[var(--border)] bg-[var(--canvas)] px-3 py-2 text-sm text-[var(--ink-muted)]">
-                  Post today to keep your {streak.current_streak}-day streak.
-                </p>
-              )}
-            </section>
+            <Suspense
+              fallback={
+                <section className="card p-5 shadow-paper sm:col-span-2 sm:p-6">
+                  <Skeleton className="mb-4 h-4 w-24" />
+                  <Skeleton className="h-28 w-full" />
+                </section>
+              }
+            >
+              <ProfileActivitySection profileId={profile.id} isOwner={isOwner} />
+            </Suspense>
           )}
 
           {profile.goals && (
@@ -358,11 +326,16 @@ export default async function ProfilePage({
       )}
 
       {isOwner && (
-        <ProfileViewers
-          isPro={profileIsPro}
-          count={profileViews.length}
-          recent={profileIsPro ? profileViews.slice(0, 30) : []}
-        />
+        <Suspense
+          fallback={
+            <section className="card mt-3 p-5 sm:p-6">
+              <Skeleton className="mb-3 h-4 w-40" />
+              <Skeleton className="h-9 w-full" />
+            </section>
+          }
+        >
+          <ProfileViewersSection profileId={profile.id} profileIsPro={profileIsPro} />
+        </Suspense>
       )}
 
       <section className="mt-6">

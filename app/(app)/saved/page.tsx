@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import PostCard, { POST_SELECT, type FeedPost } from "@/components/feed/PostCard";
+import PostCard, { POST_SELECT, PAGE, type FeedPost } from "@/components/feed/PostCard";
 import { attachSignedMedia } from "@/lib/media";
 import EmptyState from "@/components/ui/EmptyState";
 
@@ -11,10 +11,14 @@ export default async function SavedPage() {
   } = await supabase.auth.getUser();
   const viewerId = user?.id ?? null;
 
+  // ponytail: first page only (PAGE=20); wire FeedLoadMore (needs its own
+  // bookmarks-cursor server action — feed's loadMorePosts queries `posts`
+  // directly, not bookmarks) when saved lists get long.
   const { data: rows } = await supabase
     .from("bookmarks")
     .select(`created_at, post:posts(${POST_SELECT})`)
     .order("created_at", { ascending: false })
+    .limit(PAGE)
     .returns<{ created_at: string; post: FeedPost | null }[]>();
 
   // posts RLS re-checks visibility on the embed, so a post that became

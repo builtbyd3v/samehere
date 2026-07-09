@@ -1,5 +1,7 @@
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import Navbar from "@/components/layout/Navbar";
+import NavbarUnread from "@/components/layout/NavbarUnread";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import PostHogUserIdentification from "@/components/providers/PostHogUserIdentification";
 import { isPro } from "@/lib/pro";
@@ -13,13 +15,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [{ data: profile }, { data: dmUnread }, { data: notificationUnread }] = user
-    ? await Promise.all([
-        supabase.from("profiles").select("username, avatar_url, is_pro, is_admin").eq("id", user.id).single(),
-        supabase.rpc("get_dm_unread_total"),
-        supabase.rpc("get_notification_unread_total"),
-      ])
-    : [{ data: null }, { data: 0 }, { data: 0 }];
+  const { data: profile } = user
+    ? await supabase.from("profiles").select("username, avatar_url, is_pro, is_admin").eq("id", user.id).single()
+    : { data: null };
+
+  const navbarProps = {
+    username: profile?.username ?? null,
+    avatarUrl: profile?.avatar_url ?? null,
+    isPro: profile ? isPro(profile) : false,
+    isAdmin: profile?.is_admin ?? false,
+  };
 
   return (
     <ThemeProvider>
@@ -30,14 +35,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           username={profile?.username ?? null}
         />
       )}
-      <Navbar
-        username={profile?.username ?? null}
-        avatarUrl={profile?.avatar_url ?? null}
-        isPro={profile ? isPro(profile) : false}
-        isAdmin={profile?.is_admin ?? false}
-        dmUnread={Number(dmUnread ?? 0)}
-        notificationUnread={Number(notificationUnread ?? 0)}
-      />
+      {/* Unread DM/notification counts are decoration, not part of the auth
+          gate — fetch them in their own Suspense boundary so a slow RPC never
+          blocks the rest of the app shell. Fallback is the same Navbar with
+          0 counts, which renders the bell/inbox icons with no badge. */}
+      <Suspense fallback={<Navbar {...navbarProps} dmUnread={0} notificationUnread={0} />}>
+        <NavbarUnread {...navbarProps} />
+      </Suspense>
       {children}
     </ThemeProvider>
   );
