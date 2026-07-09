@@ -134,9 +134,11 @@ async function avatarDataUri(url: string | null): Promise<string | null> {
 /** 45% alpha of a #rrggbb, for the butterfly's set-back wings. */
 const fade = (hex: string) => `${hex}73`;
 
+const ICON = 28;
+
 function IconCrown({ color }: { color: string }) {
   return (
-    <svg width="17" height="17" viewBox="0 0 24 24">
+    <svg width={ICON} height={ICON} viewBox="0 0 24 24">
       <path fill={color} d="M3 8l4.5 3.2L12 5l4.5 6.2L21 8l-1.6 10.4a1 1 0 0 1-1 .6H5.6a1 1 0 0 1-1-.6L3 8Z" />
     </svg>
   );
@@ -144,7 +146,7 @@ function IconCrown({ color }: { color: string }) {
 
 function IconBolt({ color }: { color: string }) {
   return (
-    <svg width="17" height="17" viewBox="0 0 24 24">
+    <svg width={ICON} height={ICON} viewBox="0 0 24 24">
       <path fill={color} d="M13 2 4.5 13.5H11L10 22l8.5-11.5H12L13 2Z" />
     </svg>
   );
@@ -153,7 +155,7 @@ function IconBolt({ color }: { color: string }) {
 /** Same drawing as components/icons.tsx — wings separate by tone, not by gaps. */
 function IconButterfly({ color }: { color: string }) {
   return (
-    <svg width="17" height="17" viewBox="0 0 24 24">
+    <svg width={ICON} height={ICON} viewBox="0 0 24 24">
       <path fill={fade(color)} d="M11 3.4C9 4.6 7.8 7 8.2 9.4c.4 2.3 2.1 3.8 4 4.1-.5-2.1-.5-5 .1-7.3.3-1.2-.3-2.3-1.3-2.8Z" />
       <path fill={fade(color)} d="M13.5 14.6c-1.6-.8-4.5-1.2-6.5-.3-2.4 1-2.7 3.7-.5 4.6 2.3 1 5.3-.7 6.9-3 .2-.5.2-.9.1-1.3Z" />
       <path fill={color} d="M14.6 2.6c2.6.6 4.8 3.4 5 6.8.2 3-1.2 5-3 5.9-1.4-1.1-3-3.3-3.6-5.7-.5-2.2.2-5.2 1.6-7Z" />
@@ -190,24 +192,20 @@ function Avatar({ src, letter }: { src: string | null; letter: string }) {
   );
 }
 
-function Badge({ label, color, icon }: { label: string; color: string; icon: React.ReactNode }) {
+/**
+ * Badges sit beside the display name as bare icons, exactly as UserBadges
+ * renders them in the app. Pills on their own row read as a different product,
+ * and they cost ~50px of height the card doesn't have.
+ */
+function NameRow({ name, profile }: { name: string; profile: Profile }) {
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 7,
-        fontSize: 17,
-        fontWeight: 600,
-        color,
-        border: `1px solid ${color}3a`,
-        background: `${color}1a`,
-        borderRadius: 999,
-        padding: "6px 15px 6px 12px",
-      }}
-    >
-      {icon}
-      <div style={{ display: "flex" }}>{label}</div>
+    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ display: "flex", fontSize: 48, fontWeight: 600, letterSpacing: "-0.03em", color: INK }}>
+        {name}
+      </div>
+      {profile.is_founder && <IconCrown color={GOLD} />}
+      {profile.is_campus_founder && <IconButterfly color={GREEN} />}
+      {profile.is_pro && <IconBolt color={BLUE} />}
     </div>
   );
 }
@@ -230,20 +228,12 @@ function Identity({ profile, avatar, counts }: { profile: Profile; avatar: strin
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
       <Avatar src={avatar} letter={name.charAt(0).toUpperCase()} />
-      <div style={{ marginTop: 22, fontSize: 48, fontWeight: 600, letterSpacing: "-0.03em", color: INK }}>{name}</div>
+      <div style={{ display: "flex", marginTop: 22 }}>
+        <NameRow name={name} profile={profile} />
+      </div>
       <div style={{ marginTop: 2, fontSize: 24, color: INK_MUTED }}>{`@${profile.username}`}</div>
 
-      {(profile.is_founder || profile.is_campus_founder || profile.is_pro) && (
-        <div style={{ display: "flex", marginTop: 16, gap: 8 }}>
-          {profile.is_founder && <Badge label="Founder" color={GOLD} icon={<IconCrown color={GOLD} />} />}
-          {profile.is_campus_founder && (
-            <Badge label="Social Butterfly" color={GREEN} icon={<IconButterfly color={GREEN} />} />
-          )}
-          {profile.is_pro && <Badge label="Pro" color={BLUE} icon={<IconBolt color={BLUE} />} />}
-        </div>
-      )}
-
-      {meta.length > 0 && <div style={{ marginTop: 18, fontSize: 20, color: INK_FAINT }}>{meta}</div>}
+      {meta.length > 0 && <div style={{ marginTop: 16, fontSize: 20, color: INK_FAINT }}>{meta}</div>}
 
       {counts && (
         <div style={{ display: "flex", marginTop: 20, gap: 28 }}>
@@ -254,7 +244,7 @@ function Identity({ profile, avatar, counts }: { profile: Profile; avatar: strin
       )}
 
       {profile.is_private && (
-        <div style={{ marginTop: 20, fontSize: 20, color: INK_FAINT }}>This account is private.</div>
+        <div style={{ marginTop: 18, fontSize: 20, color: INK_FAINT }}>This account is private.</div>
       )}
     </div>
   );
@@ -319,8 +309,8 @@ function Footer({ username }: { username: string }) {
         display: "flex",
         alignItems: "flex-end",
         justifyContent: "space-between",
-        marginTop: 28,
-        paddingTop: 24,
+        marginTop: 24,
+        paddingTop: 22,
         borderTop: `1px solid ${BORDER}`,
       }}
     >
@@ -400,7 +390,10 @@ export default async function OgImage({ params }: { params: Promise<{ username: 
             background: CARD,
             border: `1px solid ${BORDER}`,
             borderRadius: 28,
-            padding: 48,
+            // 630 - (44 outer * 2) = 542 inner card height. Content (identity +
+            // footer) must fit inside 542 - (44 * 2) = 454, or the card grows and
+            // eats the bottom outer padding while the top keeps its 44px.
+            padding: 44,
             justifyContent: "space-between",
           }}
         >
