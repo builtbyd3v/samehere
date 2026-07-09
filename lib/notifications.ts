@@ -8,6 +8,7 @@ export type NotificationRow = {
   actor_username: string;
   actor_display_name: string | null;
   actor_avatar_url: string | null;
+  actor_is_pro: boolean;
   reaction_type: "like" | "samehere" | null;
 };
 

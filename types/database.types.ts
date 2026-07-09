@@ -947,6 +947,7 @@ export type Database = {
           peer_avatar_url: string
           peer_display_name: string
           peer_id: string
+          peer_is_pro: boolean
           peer_username: string
         }[]
       }
@@ -992,6 +993,7 @@ export type Database = {
           created_at: string
           display_name: string
           id: string
+          is_pro: boolean
           username: string
         }[]
       }
@@ -1059,6 +1061,7 @@ export type Database = {
           peer_avatar_url: string
           peer_display_name: string
           peer_id: string
+          peer_is_pro: boolean
           peer_username: string
           unread_count: number
         }[]
@@ -1069,6 +1072,7 @@ export type Database = {
           actor_avatar_url: string
           actor_display_name: string
           actor_id: string
+          actor_is_pro: boolean
           actor_username: string
           created_at: string
           id: string

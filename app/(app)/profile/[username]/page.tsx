@@ -202,6 +202,7 @@ export default async function ProfilePage({
               <AvatarImage
                 src={profile.avatar_url}
                 alt=""
+                pro={pro}
                 style={accentColor ? { borderColor: accentColor } : undefined}
                 className="-mt-12 h-24 w-24 shrink-0 rounded-full border-4 border-[var(--surface-card)] object-cover sm:-mt-14 sm:h-28 sm:w-28"
               />

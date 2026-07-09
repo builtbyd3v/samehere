@@ -48,7 +48,7 @@ function Avatar({
 }) {
   const dim = size === "lg" ? "h-11 w-11" : size === "sm" ? "h-8 w-8" : "h-10 w-10";
   const inner = author.avatar_url ? (
-    <AvatarImage src={author.avatar_url} alt="" className={`${dim} rounded-full border border-[var(--border)] object-cover`} />
+    <AvatarImage src={author.avatar_url} alt="" className={`${dim} rounded-full border border-[var(--border)] object-cover`} pro={author.is_pro} />
   ) : (
     <div
       className={`grid ${dim} place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-sm font-semibold text-[var(--ink-muted)]`}

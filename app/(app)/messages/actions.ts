@@ -40,6 +40,7 @@ export type MessageUserResult = {
   username: string;
   display_name: string | null;
   avatar_url: string | null;
+  is_pro: boolean;
 };
 
 export async function searchUsersForMessage(query: string): Promise<MessageUserResult[]> {
@@ -59,7 +60,7 @@ export async function searchUsersForMessage(query: string): Promise<MessageUserR
     supabase.rpc("get_blocked_ids"),
     supabase
       .from("profiles")
-      .select("id, username, display_name, avatar_url")
+      .select("id, username, display_name, avatar_url, is_pro")
       .or(`username.ilike.${sanitized}%,display_name.ilike.%${sanitized}%`)
       .neq("id", user.id)
       .limit(8),

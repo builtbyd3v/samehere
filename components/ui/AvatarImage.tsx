@@ -27,21 +27,31 @@ function getTabVisible() {
  * element leaves the viewport. Static JPG/PNG render as a plain img (no observers).
  * Pausing works by swapping src to a 1x1 placeholder — browsers only decode
  * animation while the real URL is loaded.
+ *
+ * Animation is a Pro perk, so it requires `pro` — the AVATAR OWNER's is_pro, not
+ * the viewer's. Defaults to false: a caller that can't prove the owner is Pro
+ * gets a still frame. The upload is server-gated too, but a user who animated
+ * their avatar while subscribed keeps the file after cancelling, so the render
+ * has to re-check. Fail closed — a missed prop shows a still, never a leak.
  */
 export default function AvatarImage({
   src,
   alt = "",
   className,
   style,
+  pro = false,
 }: {
   src: string;
   alt?: string;
   className?: string;
   style?: CSSProperties;
+  pro?: boolean;
 }) {
-  const animated = isAnimatedAvatarUrl(src);
+  const animated = pro && isAnimatedAvatarUrl(src);
 
   if (!animated) {
+    // An animated file rendered through the optimizer collapses to its first
+    // frame — exactly the still we want for a non-Pro owner.
     return <Image src={src} alt={alt} width={SIZE} height={SIZE} className={className} style={style} />;
   }
 

@@ -75,10 +75,12 @@ export default function NavMenu({
   username,
   avatarUrl,
   isAdmin,
+  isPro,
 }: {
   username: string;
   avatarUrl: string | null;
   isAdmin: boolean;
+  isPro: boolean;
 }) {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
 
@@ -89,7 +91,7 @@ export default function NavMenu({
         variant="avatar"
         trigger={
           avatarUrl ? (
-            <AvatarImage src={avatarUrl} alt="" className="h-full w-full object-cover" />
+            <AvatarImage src={avatarUrl} alt="" className="h-full w-full object-cover" pro={isPro} />
           ) : (
             <span className="grid h-full w-full place-items-center bg-[var(--featured-surface)] text-xs font-semibold text-[var(--ink-muted)]">
               {username.charAt(0).toUpperCase()}

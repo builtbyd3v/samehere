@@ -57,7 +57,7 @@ export default function QuotedRepostCard({
       <div className="flex gap-3">
         <ProfileHoverLink href={`/profile/${r.username}`} username={r.username} className="shrink-0">
           {r.avatar_url ? (
-            <AvatarImage src={r.avatar_url} alt="" className="h-10 w-10 rounded-full border border-[var(--border)] object-cover" />
+            <AvatarImage src={r.avatar_url} alt="" className="h-10 w-10 rounded-full border border-[var(--border)] object-cover" pro={r.is_pro} />
           ) : (
             <div className="grid h-10 w-10 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-sm font-semibold text-[var(--ink-muted)]">
               {name.charAt(0).toUpperCase()}

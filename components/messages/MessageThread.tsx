@@ -48,10 +48,13 @@ export function MessageThreadHeader({
   username,
   displayName,
   avatarUrl,
+  isPro = false,
 }: {
   username: string;
   displayName: string;
   avatarUrl: string | null;
+  /** The PEER's is_pro — gates their animated avatar, not the viewer's. */
+  isPro?: boolean;
 }) {
   return (
     <header className="flex shrink-0 items-center gap-2 border-b border-[var(--border)] bg-[var(--surface-card)] px-3 py-2.5 sm:px-4">
@@ -67,7 +70,7 @@ export function MessageThreadHeader({
         className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg px-1 py-1 transition hover:bg-[var(--featured-surface)]"
       >
         {avatarUrl ? (
-          <AvatarImage src={avatarUrl} alt="" className="h-9 w-9 rounded-full border border-[var(--border)] object-cover" />
+          <AvatarImage src={avatarUrl} alt="" pro={isPro} className="h-9 w-9 rounded-full border border-[var(--border)] object-cover" />
         ) : (
           <div className="grid h-9 w-9 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-sm font-semibold text-[var(--ink-muted)]">
             {displayName.charAt(0).toUpperCase()}

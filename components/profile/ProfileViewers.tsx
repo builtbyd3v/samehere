@@ -12,6 +12,7 @@ export type ProfileViewer = {
   username: string;
   display_name: string | null;
   avatar_url: string | null;
+  is_pro: boolean;
   created_at: string;
 };
 
@@ -25,9 +26,9 @@ function IconLock() {
   );
 }
 
-function ViewerAvatar({ url, name, ring = false }: { url: string | null; name: string; ring?: boolean }) {
+function ViewerAvatar({ url, name, ring = false, isPro = false }: { url: string | null; name: string; ring?: boolean; isPro?: boolean }) {
   const cls = `h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover${ring ? " ring-2 ring-[var(--surface-card)]" : ""}`;
-  if (url) return <AvatarImage src={url} alt="" className={cls} />;
+  if (url) return <AvatarImage src={url} alt="" className={cls} pro={isPro} />;
   return (
     <div className={`grid place-items-center bg-[var(--featured-surface)] text-xs font-semibold text-[var(--ink-muted)] ${cls}`}>
       {name.charAt(0).toUpperCase()}
@@ -42,7 +43,7 @@ function ViewerRow({ v }: { v: ProfileViewer }) {
       href={`/profile/${v.username}`}
       className="-mx-2 flex items-center gap-3 rounded-lg px-2 py-2 transition hover:bg-[var(--featured-surface)]"
     >
-      <ViewerAvatar url={v.avatar_url} name={name} />
+      <ViewerAvatar url={v.avatar_url} name={name} isPro={v.is_pro} />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-[var(--ink)]">{name}</p>
         <p className="truncate text-xs text-[var(--ink-muted)]">@{v.username}</p>
@@ -162,7 +163,7 @@ export default function ProfileViewers({
         {preview.length > 0 && (
           <div className="flex shrink-0 -space-x-2.5">
             {preview.map((v) => (
-              <ViewerAvatar key={v.id} url={v.avatar_url} name={v.display_name ?? v.username} ring />
+              <ViewerAvatar key={v.id} url={v.avatar_url} name={v.display_name ?? v.username} ring isPro={v.is_pro} />
             ))}
           </div>
         )}

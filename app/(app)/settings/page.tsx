@@ -11,7 +11,7 @@ import { unblockUser } from "./actions";
 
 type BlockedRow = {
   blocked_id: string;
-  blocked: { username: string; display_name: string | null; avatar_url: string | null } | null;
+  blocked: { username: string; display_name: string | null; avatar_url: string | null; is_pro: boolean } | null;
 };
 
 export default async function SettingsPage() {
@@ -29,7 +29,7 @@ export default async function SettingsPage() {
       .single(),
     supabase
       .from("blocks")
-      .select("blocked_id, blocked:profiles!blocks_blocked_id_fkey(username, display_name, avatar_url)")
+      .select("blocked_id, blocked:profiles!blocks_blocked_id_fkey(username, display_name, avatar_url, is_pro)")
       .eq("blocker_id", user.id)
       .returns<BlockedRow[]>(),
   ]);
@@ -69,7 +69,7 @@ export default async function SettingsPage() {
                 return (
                   <li key={b.blocked_id} className="flex items-center gap-3 rounded-lg border border-[var(--border)] p-3 transition hover:border-[var(--border-strong)]">
                     {b.blocked?.avatar_url ? (
-                      <AvatarImage src={b.blocked.avatar_url} alt="" className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover" />
+                      <AvatarImage src={b.blocked.avatar_url} alt="" className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover" pro={b.blocked.is_pro ?? false} />
                     ) : (
                       <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--canvas)] text-sm font-semibold text-[var(--ink-muted)]">
                         {name.charAt(0).toUpperCase()}

@@ -37,6 +37,7 @@ export default function ProfilePreviewCard({
             src={profile.avatar_url}
             alt=""
             className="h-12 w-12 shrink-0 rounded-full border border-[var(--border)] object-cover"
+            pro={profile.is_pro}
           />
         ) : (
           <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-sm font-semibold text-[var(--ink-muted)]">

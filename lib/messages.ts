@@ -4,6 +4,7 @@ export type DmInboxRow = {
   peer_username: string;
   peer_display_name: string | null;
   peer_avatar_url: string | null;
+  peer_is_pro: boolean;
   last_message: string;
   last_message_at: string;
   last_sender_id: string | null;

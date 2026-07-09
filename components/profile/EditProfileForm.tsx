@@ -164,6 +164,7 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
               src={avatarUrl}
               alt=""
               className="h-16 w-16 shrink-0 rounded-full border border-[var(--border)] object-cover"
+              pro={pro}
             />
           ) : (
             <div className="grid h-16 w-16 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--canvas)] text-xl font-semibold text-[var(--ink-muted)]">

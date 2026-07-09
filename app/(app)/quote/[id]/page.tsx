@@ -71,7 +71,7 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
                     className="shrink-0"
                   >
                     {c.author.avatar_url ? (
-                      <AvatarImage src={c.author.avatar_url} alt="" className="h-8 w-8 rounded-full border border-[var(--border)] object-cover" />
+                      <AvatarImage src={c.author.avatar_url} alt="" className="h-8 w-8 rounded-full border border-[var(--border)] object-cover" pro={c.author.is_pro ?? false} />
                     ) : (
                       <div className="grid h-8 w-8 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-xs font-semibold text-[var(--ink-muted)]">
                         {cname.charAt(0).toUpperCase()}

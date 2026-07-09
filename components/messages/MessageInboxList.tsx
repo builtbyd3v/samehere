@@ -3,13 +3,14 @@ import AvatarImage from "@/components/ui/AvatarImage";
 import MessageTime from "@/components/messages/MessageTime";
 import type { DmInboxRow } from "@/lib/messages";
 
-function Avatar({ url, name }: { url: string | null; name: string }) {
+function Avatar({ url, name, isPro }: { url: string | null; name: string; isPro: boolean }) {
   if (url) {
     return (
       <AvatarImage
         src={url}
         alt=""
         className="h-10 w-10 shrink-0 rounded-full border border-[var(--border)] object-cover"
+        pro={isPro}
       />
     );
   }
@@ -52,7 +53,7 @@ export default function MessageInboxList({
               href={`/messages/${t.conversation_id}`}
               className="flex items-center gap-3 px-4 py-3.5 transition hover:bg-[var(--featured-surface)]"
             >
-              <Avatar url={t.peer_avatar_url} name={name} />
+              <Avatar url={t.peer_avatar_url} name={name} isPro={t.peer_is_pro} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline justify-between gap-3">
                   <p className={`truncate text-[15px] ${unread ? "font-semibold text-[var(--ink)]" : "font-medium text-[var(--ink)]"}`}>

@@ -58,7 +58,7 @@ export default function Navbar({
               Join Pro
             </Link>
           )}
-          {username && <NavMenu username={username} avatarUrl={avatarUrl} isAdmin={isAdmin} />}
+          {username && <NavMenu username={username} avatarUrl={avatarUrl} isAdmin={isAdmin} isPro={isPro} />}
         </div>
       </nav>
     </header>

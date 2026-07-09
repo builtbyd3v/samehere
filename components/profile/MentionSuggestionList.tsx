@@ -37,6 +37,7 @@ export default function MentionSuggestionList({
                   src={s.avatar_url}
                   alt=""
                   className="h-8 w-8 shrink-0 rounded-full border border-[var(--border)] object-cover"
+                  pro={s.is_pro}
                 />
               ) : (
                 <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-xs font-semibold text-[var(--ink-muted)]">

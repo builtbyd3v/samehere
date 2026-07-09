@@ -19,6 +19,7 @@ type PeerRow = {
   peer_username: string;
   peer_display_name: string | null;
   peer_avatar_url: string | null;
+  peer_is_pro: boolean;
 };
 
 export default async function MessageThreadPage({
@@ -65,6 +66,7 @@ export default async function MessageThreadPage({
       <section className="card flex min-h-0 flex-1 flex-col overflow-hidden">
         <MessageThreadHeader
           username={peer.peer_username}
+          isPro={peer.peer_is_pro ?? false}
           displayName={displayName}
           avatarUrl={peer.peer_avatar_url}
         />

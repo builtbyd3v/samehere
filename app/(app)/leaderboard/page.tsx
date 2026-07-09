@@ -104,6 +104,7 @@ export default async function LeaderboardPage({
                         src={row.avatar_url}
                         alt=""
                         className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover"
+                        pro={row.is_pro ?? false}
                       />
                     ) : (
                       <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-sm font-semibold text-[var(--ink-muted)]">
