@@ -5,6 +5,7 @@ import { Suspense, cache } from "react";
 import { notFound } from "next/navigation";
 import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { isAnimatedAvatarUrl } from "@/lib/avatar";
 import type { FollowState } from "@/components/profile/FollowButton";
 import ProfileActions from "@/components/profile/ProfileActions";
 import BlockButton from "@/components/profile/BlockButton";
@@ -178,6 +179,9 @@ export default async function ProfilePage({
               fill
               sizes="(min-width: 672px) 672px, 100vw"
               className="object-cover"
+              // Animated banners must bypass the optimizer, which would flatten
+              // them to a single re-encoded frame. Same rule as AvatarImage.
+              unoptimized={isAnimatedAvatarUrl(profile.banner_url)}
             />
           </div>
         ) : (
