@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   motion,
   useMotionValue,
@@ -11,6 +12,44 @@ import {
 import { IconSame } from "@/components/icons";
 import { HERO_PEERS, type HeroPeer } from "@/lib/landing/demo-data";
 import DemoAvatar from "./DemoAvatar";
+
+// Live SameHere — the landing's signature interaction. Local state only;
+// nothing is persisted, it's a demo of the product's core verb.
+function SameHereLive({ initial }: { initial: number }) {
+  const [on, setOn] = useState(false);
+  const [burst, setBurst] = useState(0);
+  const count = initial + (on ? 1 : 0);
+
+  return (
+    <button
+      type="button"
+      aria-pressed={on}
+      aria-label={on ? "Remove your same here" : "Say same here"}
+      onClick={() => {
+        if (!on) setBurst((b) => b + 1);
+        setOn((v) => !v);
+      }}
+      className={`relative mt-2.5 flex items-center gap-1.5 text-[12px] font-medium transition-colors ${
+        on ? "text-[var(--blue)]" : "text-[var(--ink-muted)] hover:text-[var(--blue)]"
+      }`}
+    >
+      <span className={burst > 0 && on ? "same-pop inline-flex" : "inline-flex"} key={`i-${burst}-${on}`}>
+        <IconSame on={on} />
+      </span>
+      <span className="same-tick inline-block tabular-nums" key={count}>
+        {count}
+      </span>
+      <span>same here</span>
+      {burst > 0 && (
+        <span key={burst} aria-hidden className="same-burst pointer-events-none absolute left-1 top-1/2">
+          <span />
+          <span />
+          <span />
+        </span>
+      )}
+    </button>
+  );
+}
 
 // Shared card visual — reused by the desktop scatter and the mobile stack.
 function CardFace({ peer }: { peer: HeroPeer }) {
@@ -24,10 +63,7 @@ function CardFace({ peer }: { peer: HeroPeer }) {
         </div>
       </div>
       <p className="mt-2.5 line-clamp-3 text-[13px] leading-[1.4] text-[var(--ink)]">{peer.line}</p>
-      <div className="mt-2.5 flex items-center gap-1.5 text-[12px] font-medium text-[var(--blue)]">
-        <IconSame on />
-        <span>{peer.same} same here</span>
-      </div>
+      <SameHereLive initial={peer.same} />
     </div>
   );
 }
