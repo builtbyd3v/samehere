@@ -24,7 +24,7 @@ import ContributionHeatmap, { type HeatmapDay } from "@/components/profile/Contr
 import { isPro } from "@/lib/pro";
 
 const PROFILE_SELECT =
-  "id, username, display_name, avatar_url, banner_url, year, major, bio, goals, skills, courses, is_private, heatmap_visibility, is_pro, pro_until, is_founder, is_campus_founder, accent_color, verified_student";
+  "id, username, display_name, avatar_url, banner_url, year, major, bio, goals, is_private, heatmap_visibility, is_pro, pro_until, is_founder, is_campus_founder, accent_color, verified_student";
 
 // Shared by generateMetadata and the page component so they hit one query
 // instead of two — React's cache() dedupes by argument (username) within a
@@ -435,11 +435,9 @@ export default async function ProfilePage({
                     name: displayName,
                     year: profile.year,
                     major: profile.major,
-                    skills: profile.skills,
                     goals: profile.goals,
                     bio: profile.bio,
                     school,
-                    courses: profile.courses,
                   }}
                 />
               </Suspense>
@@ -460,8 +458,8 @@ export default async function ProfilePage({
         </div>
       </section>
 
-      {/* Identity canvas — activity, goals, skills, courses as tactile tiles */}
-      {(canSeeHeatmap || profile.goals || (profile.skills?.length ?? 0) > 0 || (profile.courses?.length ?? 0) > 0) && (
+      {/* Identity canvas — activity, goals as tactile tiles */}
+      {(canSeeHeatmap || profile.goals) && (
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
           {canSeeHeatmap && (
             <Suspense
@@ -482,32 +480,6 @@ export default async function ProfilePage({
               <p className="mt-1.5 whitespace-pre-line break-words text-[15px] leading-[1.55] text-[var(--ink-muted)]">
                 {profile.goals}
               </p>
-            </section>
-          )}
-
-          {profile.skills && profile.skills.length > 0 && (
-            <section className={`card card-hover p-5 shadow-paper sm:p-6 ${profile.courses && profile.courses.length > 0 ? "" : "sm:col-span-2"}`}>
-              <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">Skills</h2>
-              <div className="flex flex-wrap gap-2">
-                {profile.skills.map((s) => (
-                  <span key={s} className="rounded-full border border-[var(--border)] bg-[var(--canvas)] px-3 py-1 text-sm text-[var(--ink-muted)]">
-                    {s}
-                  </span>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {profile.courses && profile.courses.length > 0 && (
-            <section className={`card card-hover p-5 shadow-paper sm:p-6 ${profile.skills && profile.skills.length > 0 ? "" : "sm:col-span-2"}`}>
-              <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">Courses</h2>
-              <div className="flex flex-wrap gap-2">
-                {profile.courses.map((c) => (
-                  <span key={c} className="rounded-full border border-[var(--border)] bg-[var(--canvas)] px-3 py-1 text-sm text-[var(--ink-muted)]">
-                    {c}
-                  </span>
-                ))}
-              </div>
             </section>
           )}
         </div>

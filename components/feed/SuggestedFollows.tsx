@@ -14,10 +14,8 @@ export type SuggestedProfile = {
   avatar_url: string | null;
   year: string | null;
   major: string | null;
-  skills: string[] | null;
   goals: string | null;
   bio: string | null;
-  courses: string[] | null;
   is_pro: boolean;
   is_founder: boolean;
   is_campus_founder: boolean;
@@ -109,11 +107,9 @@ export default async function SuggestedFollows({
               name: s.display_name ?? s.username,
               year: s.year,
               major: s.major,
-              skills: s.skills,
               goals: s.goals,
               bio: s.bio,
               school: s.profile_school?.school ?? null,
-              courses: s.courses,
             },
             viewerPro,
             true // promptCache.has() above already proved this is a miss

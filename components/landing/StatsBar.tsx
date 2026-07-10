@@ -6,7 +6,7 @@ import { Stagger, RevealItem } from "./Reveal";
 const VALUES = [
   { title: "Built for students", body: "Free to join. Verify a .edu email for the student badge." },
   { title: "Effort made visible", body: "A year of real activity on your contribution heatmap." },
-  { title: "AI finds your people", body: "Matched on school, major, skills, and goals." },
+  { title: "AI finds your people", body: "Matched on school, major, and goals." },
 ] as const;
 
 export default function StatsBar() {

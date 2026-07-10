@@ -1,5 +1,7 @@
 import PostCard, { type FeedPost } from "@/components/feed/PostCard";
 import QuotedRepostCard, { type QuotedRepost } from "@/components/feed/QuotedRepostCard";
+import ProfileHoverLink from "@/components/profile/ProfileHoverLink";
+import { IconRepost } from "@/components/icons";
 import type { PlainRepost } from "@/lib/feed-reposts";
 import type { FeedTimelineItem } from "@/lib/feed-timeline";
 
@@ -19,10 +21,21 @@ export default function FeedTimeline({
         if (item.kind === "quote") {
           return <QuotedRepostCard key={`quote-${item.quote.id}`} item={item.quote} viewerId={viewerId} />;
         }
-        const name = item.repost.reposter.display_name ?? item.repost.reposter.username;
+        const reposter = item.repost.reposter;
+        const name = reposter.display_name ?? reposter.username;
         return (
-          <div key={`repost-${item.repost.id}`}>
-            <p className="mb-1.5 pl-1 text-xs font-medium text-[var(--ink-faint)]">{name} reposted</p>
+          <div
+            key={`repost-${item.repost.id}`}
+            className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-2"
+          >
+            <ProfileHoverLink
+              href={`/profile/${reposter.username}`}
+              username={reposter.username}
+              className="flex items-center gap-1.5 px-2 py-1.5 text-[13px] font-medium text-[var(--ink-muted)] transition-colors hover:text-[var(--ink)]"
+            >
+              <IconRepost />
+              <span>{name} reposted</span>
+            </ProfileHoverLink>
             <PostCard post={item.repost.original} viewerId={viewerId} />
           </div>
         );

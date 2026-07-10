@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isPro } from "@/lib/pro";
 import { IconBolt } from "@/components/icons";
-import { joinProWaitlist, openBillingPortal, startCheckout } from "./actions";
+import { openBillingPortal, startCheckout } from "./actions";
 
 const BILLING_ENABLED = process.env.NEXT_PUBLIC_BILLING_ENABLED === "true";
 
@@ -72,7 +72,7 @@ export default async function ProPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // wants_pro / pro_source / stripe_customer_id are privileged columns (revoked
+  // pro_source / stripe_customer_id are privileged columns (revoked
   // from the authenticated role); read own billing state through the definer.
   const { data: profile } = await supabase.rpc("get_my_billing").maybeSingle();
   if (!profile) redirect("/login");
@@ -124,7 +124,7 @@ export default async function ProPage({
         </div>
       </div>
 
-      {/* Status / waitlist */}
+      {/* Status */}
       <div className="mt-4 card p-6">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-medium text-[var(--ink)]">samehere Pro</span>
@@ -168,16 +168,10 @@ export default async function ProPage({
                 </button>
               </form>
             </div>
-          ) : profile.wants_pro ? (
-            <p className="text-sm text-[var(--ink-muted)]">
-              You&apos;re on the list. We&apos;ll email you when Pro opens.
-            </p>
           ) : (
-            <form action={joinProWaitlist}>
-              <button type="submit" className="btn-primary w-full">
-                Join waitlist
-              </button>
-            </form>
+            <p className="text-sm text-[var(--ink-muted)]">
+              Pro checkout is temporarily unavailable.
+            </p>
           )}
         </div>
       </div>

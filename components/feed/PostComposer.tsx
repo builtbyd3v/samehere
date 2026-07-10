@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { createPost, composerNudge, improvePost, type ComposerState } from "@/app/(app)/feed/actions";
 import { createClient } from "@/lib/supabase/client";
@@ -70,8 +69,6 @@ export default function PostComposer({ isPro = false }: { isPro?: boolean }) {
   const [improving, startImprove] = useTransition();
   const [preImprove, setPreImprove] = useState<string | null>(null);
   const [, startSubmit] = useTransition();
-  const [answeringPrompt, setAnsweringPrompt] = useState(false);
-  const searchParams = useSearchParams();
 
   // Latest files for the unmount-only revoke below (avoids a [files]-dep effect
   // that would revoke still-shown previews on every add).
@@ -86,16 +83,9 @@ export default function PostComposer({ isPro = false }: { isPro?: boolean }) {
       setLen(0);
       files.forEach((f) => URL.revokeObjectURL(f.url));
       setFiles([]);
-      setAnsweringPrompt(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.ok]);
-
-  // A soft nav to ?prompt=1 (the weekly prompt's "Post about this") flips this
-  // on without remounting the composer, same pattern as FeedToolbar's ?compose=1.
-  useEffect(() => {
-    if (searchParams.get("prompt") === "1") setAnsweringPrompt(true);
-  }, [searchParams]);
 
   // Revoke object URLs on unmount only.
   useEffect(() => () => filesRef.current.forEach((f) => URL.revokeObjectURL(f.url)), []);
@@ -218,8 +208,6 @@ export default function PostComposer({ isPro = false }: { isPro?: boolean }) {
       formData.set("media", JSON.stringify(media));
     }
 
-    if (answeringPrompt) formData.set("answersPrompt", "1");
-
     startSubmit(() => {
       formAction(formData);
     });
@@ -249,19 +237,6 @@ export default function PostComposer({ isPro = false }: { isPro?: boolean }) {
             Upgrade for a smarter model
           </Link>
           .
-        </p>
-      )}
-      {answeringPrompt && (
-        <p className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-[var(--surface)] px-2.5 py-1 text-xs text-[var(--ink-muted)]">
-          Answering this week&rsquo;s prompt
-          <button
-            type="button"
-            onClick={() => setAnsweringPrompt(false)}
-            aria-label="Not answering this week's prompt"
-            className="text-[var(--ink-faint)] hover:text-[var(--ink)]"
-          >
-            ×
-          </button>
         </p>
       )}
       <MentionTextarea

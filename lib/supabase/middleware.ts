@@ -42,6 +42,7 @@ export async function updateSession(request: NextRequest) {
   // reserved username) and `/post/x/anything` never match.
   const isPublicProfile = path !== '/profile/edit' && /^\/profile\/[^/]+$/.test(path)
   const isPublicPost = /^\/post\/[^/]+$/.test(path)
+  const isPublicQuote = /^\/quote\/[^/]+$/.test(path)
   // "May an ANONYMOUS visitor reach this?" — the public surface + the two
   // opened read routes (shared profile/post links preview + land for logged-out
   // crawlers and visitors).
@@ -59,7 +60,8 @@ export async function updateSession(request: NextRequest) {
     path === '/api/stripe/webhook' ||
     isMetadataImage ||
     isPublicProfile ||
-    isPublicPost
+    isPublicPost ||
+    isPublicQuote
   // "May a SUSPENDED (logged-in) user reach this?" — a much smaller set.
   // Profiles/posts are deliberately NOT here: suspension is a READ gate, and
   // those pages render the full authenticated view to a logged-in caller

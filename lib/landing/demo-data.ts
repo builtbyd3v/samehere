@@ -23,7 +23,6 @@ export type DemoProfile = {
   major: string;
   bio: string;
   goals?: string;
-  skills: string[];
   posts: number;
   followers: number;
   following: number;
@@ -141,7 +140,6 @@ export const DEMO_VIEWER_PROFILE: DemoProfile = {
   major: "Computer Science",
   bio: "Trying to balance internships, side projects, and actually sleeping sometimes.",
   goals: "Find students building real things outside class and swap what we're learning.",
-  skills: ["TypeScript", "React", "Python", "systems"],
   posts: 42,
   followers: 186,
   following: 94,
@@ -156,7 +154,6 @@ export const DEMO_PROFILE: DemoProfile = {
   major: "Biology",
   bio: "Pre-med, mostly stressed, occasionally normal. Posting the small wins so future me remembers they happened.",
   goals: "Find other people grinding through orgo who don't have it all figured out either.",
-  skills: ["Python", "research", "public speaking", "time management"],
   posts: 9,
   followers: 47,
   following: 63,

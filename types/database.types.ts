@@ -466,6 +466,7 @@ export type Database = {
           post_id: string | null
           reaction_type: string | null
           read: boolean
+          repost_id: string | null
           type: string
           user_id: string
         }
@@ -796,16 +797,19 @@ export type Database = {
       referrals: {
         Row: {
           created_at: string
+          qualified_at: string | null
           referred_id: string
           referrer_id: string
         }
         Insert: {
           created_at?: string
+          qualified_at?: string | null
           referred_id: string
           referrer_id: string
         }
         Update: {
           created_at?: string
+          qualified_at?: string | null
           referred_id?: string
           referrer_id?: string
         }
@@ -1209,7 +1213,38 @@ export type Database = {
         Returns: {
           code: string
           is_campus_founder: boolean
+          pending_count: number
           referral_count: number
+        }[]
+      }
+      get_public_quote: {
+        Args: { p_id: string }
+        Returns: {
+          author_avatar_url: string
+          author_display_name: string
+          author_id: string
+          author_is_campus_founder: boolean
+          author_is_founder: boolean
+          author_is_pro: boolean
+          author_username: string
+          author_verified_student: boolean
+          created_at: string
+          id: string
+          like_count: number
+          post_content: string
+          post_created_at: string
+          post_id: string
+          quote_text: string
+          repost_count: number
+          reposter_avatar_url: string
+          reposter_display_name: string
+          reposter_id: string
+          reposter_is_campus_founder: boolean
+          reposter_is_founder: boolean
+          reposter_is_pro: boolean
+          reposter_username: string
+          reposter_verified_student: boolean
+          samehere_count: number
         }[]
       }
       get_streak: {
@@ -1270,6 +1305,7 @@ export type Database = {
           post_id: string
           reaction_type: string
           read: boolean
+          repost_id: string
           type: string
         }[]
       }

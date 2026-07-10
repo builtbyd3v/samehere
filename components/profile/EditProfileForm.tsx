@@ -19,8 +19,6 @@ export type EditInitial = {
   major: string | null;
   bio: string | null;
   goals: string | null;
-  skills: string[] | null;
-  courses: string[] | null;
   is_private: boolean;
   hide_school: boolean;
   heatmap_visibility: string;
@@ -114,7 +112,6 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
           major: initial.major,
           bio: initial.bio,
           goals: initial.goals,
-          skills: initial.skills,
         }}
       />
 
@@ -188,13 +185,6 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
 
         <div className="flex flex-col gap-4">
           <div>
-            <label htmlFor="username" className={label}>Username</label>
-            <input id="username" name="username" type="text" autoComplete="username" required maxLength={20}
-              defaultValue={initial.username} placeholder="yourname" className={field} />
-            <p className={hint}>3-20 characters: lowercase letters, numbers, or underscores.</p>
-          </div>
-
-          <div>
             <label htmlFor="display_name" className={label}>Display name</label>
             <input id="display_name" name="display_name" type="text" maxLength={50}
               defaultValue={initial.display_name ?? ""} placeholder="Your name" className={field} />
@@ -241,21 +231,6 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
             <label htmlFor="goals" className={label}>Goals</label>
             <textarea ref={goalsRef} id="goals" name="goals" rows={2} maxLength={500}
               defaultValue={initial.goals ?? ""} placeholder="What are you working toward?" className={field} />
-          </div>
-
-          <div>
-            <label htmlFor="skills" className={label}>Skills</label>
-            <input id="skills" name="skills" type="text"
-              defaultValue={(initial.skills ?? []).join(", ")} placeholder="react, python, design" className={field} />
-            <p className={hint}>Comma-separated. Up to 20.</p>
-          </div>
-
-          {/* ponytail: mirrors the skills field exactly, same tag-input pattern */}
-          <div>
-            <label htmlFor="courses" className={label}>Courses</label>
-            <input id="courses" name="courses" type="text"
-              defaultValue={(initial.courses ?? []).join(", ")} placeholder="CS 61A, MATH 54" className={field} />
-            <p className={hint}>Add courses you're taking. Comma-separated. Up to 20.</p>
           </div>
 
           <div className="border-t border-[var(--border)] pt-4">

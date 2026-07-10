@@ -29,8 +29,6 @@ async function searchProfiles(q: string): Promise<SearchResult[]> {
       `username.ilike.%${t}%`,
       `display_name.ilike.%${t}%`,
       `major.ilike.%${t}%`,
-      `skills.cs.{${t}}`,
-      `courses.cs.{${t}}`,
     ])
     .join(",");
 
@@ -54,7 +52,7 @@ export function FeedSearchForm({ q, tab }: { q: string; tab: string }) {
         name="q"
         defaultValue={q}
         maxLength={TEXT_LIMITS.searchQuery}
-        placeholder="Search students by name, username, major, or skill"
+        placeholder="Search students by name, username, or major"
         className={input}
       />
       <button type="submit" className="btn-primary shrink-0">
@@ -74,7 +72,7 @@ export async function FeedSearchResults({ q }: { q: string }) {
       <div className="card mt-4 px-6 py-10 text-center">
         <p className="font-medium text-[var(--ink)]">No students found</p>
         <p className="mt-1.5 text-sm text-[var(--ink-muted)]">
-          Nothing matched &ldquo;{q}&rdquo;. Try a different name, username, major, or skill.
+          Nothing matched &ldquo;{q}&rdquo;. Try a different name, username, or major.
         </p>
       </div>
     );

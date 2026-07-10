@@ -117,8 +117,6 @@ type FactSource = {
   major: string | null;
   bio: string | null;
   goals: string | null;
-  skills: string[] | null;
-  courses: string[] | null;
 };
 
 // Compact fact list for the prompt. school comes from profile_school, whose own
@@ -131,8 +129,6 @@ function facts(p: FactSource, school: string | null): string {
       school && `school: ${school}`,
       p.year && `year: ${p.year}`,
       p.major && `major: ${p.major}`,
-      p.skills?.length ? `skills: ${p.skills.join(", ")}` : null,
-      p.courses?.length ? `courses: ${p.courses.join(", ")}` : null,
       p.bio && `bio: ${p.bio}`,
       p.goals && `goals: ${p.goals}`,
     ]
@@ -160,7 +156,7 @@ export async function icebreaker(peerId: string): Promise<IcebreakerResult> {
 
   const { data: me } = await supabase
     .from("profiles")
-    .select("is_pro, pro_until, year, major, bio, goals, skills, courses")
+    .select("is_pro, pro_until, year, major, bio, goals")
     .eq("id", user.id)
     .single();
   if (!me) return { error: true };
@@ -176,7 +172,7 @@ export async function icebreaker(peerId: string): Promise<IcebreakerResult> {
   if (((blocked ?? []) as string[]).includes(peerId)) return { error: true };
 
   const [{ data: peer }, { data: mySchool }, { data: peerSchool }] = await Promise.all([
-    supabase.from("profiles").select("display_name, username, year, major, bio, goals, skills, courses").eq("id", peerId).maybeSingle(),
+    supabase.from("profiles").select("display_name, username, year, major, bio, goals").eq("id", peerId).maybeSingle(),
     supabase.from("profile_school").select("school").eq("profile_id", user.id).maybeSingle(),
     supabase.from("profile_school").select("school").eq("profile_id", peerId).maybeSingle(),
   ]);

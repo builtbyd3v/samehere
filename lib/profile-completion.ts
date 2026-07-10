@@ -6,7 +6,6 @@ export type ProfileForCompletion = {
   major: string | null;
   bio: string | null;
   goals: string | null;
-  skills: string[] | null;
 };
 
 export type ProfileGap =
@@ -16,8 +15,7 @@ export type ProfileGap =
   | "year"
   | "major"
   | "bio"
-  | "goals"
-  | "skills";
+  | "goals";
 
 const GAP_ORDER: ProfileGap[] = [
   "avatar",
@@ -27,7 +25,6 @@ const GAP_ORDER: ProfileGap[] = [
   "major",
   "bio",
   "goals",
-  "skills",
 ];
 
 export function getProfileGaps(profile: ProfileForCompletion): ProfileGap[] {
@@ -39,7 +36,6 @@ export function getProfileGaps(profile: ProfileForCompletion): ProfileGap[] {
   if (!profile.major?.trim()) gaps.push("major");
   if (!profile.bio?.trim() || profile.bio.trim().length < 20) gaps.push("bio");
   if (!profile.goals?.trim() || profile.goals.trim().length < 10) gaps.push("goals");
-  if (!profile.skills?.length) gaps.push("skills");
   return GAP_ORDER.filter((g) => gaps.includes(g));
 }
 
@@ -52,7 +48,6 @@ export function gapLabel(gap: ProfileGap): string {
     major: "Major",
     bio: "Bio (20+ characters)",
     goals: "Goals",
-    skills: "Skills",
   };
   return labels[gap];
 }
@@ -71,7 +66,6 @@ const FALLBACK_BY_GAP: Record<ProfileGap, string> = {
   major: "Add your major so others in your program can discover you.",
   bio: "Write a short bio about what you're building or learning. It's the first thing people read.",
   goals: "Share what you're working toward this semester so others know how to connect.",
-  skills: "List a few skills. Overlap drives better follow suggestions.",
 };
 
 export function fallbackProfileNudge(gaps: ProfileGap[]): string {

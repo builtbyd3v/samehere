@@ -31,18 +31,21 @@ type RepostRow = {
 
 export async function fetchPlainReposts(
   supabase: SupabaseClient<Database>,
-  opts: { userIds: string[]; limit?: number },
+  opts: { userIds?: string[]; limit?: number; cursor?: string; blockedIds?: Set<string> },
 ): Promise<PlainRepost[]> {
-  if (!opts.userIds.length) return [];
+  // userIds omitted = global (e.g. Latest tab); an explicit empty array means
+  // "no one to fetch for" (mirrors the old required-array behavior).
+  if (opts.userIds && opts.userIds.length === 0) return [];
 
   let query = supabase
     .from("reposts")
     .select(PLAIN_REPOST_SELECT)
     .is("quote_text", null)
-    .in("user_id", opts.userIds)
     .order("created_at", { ascending: false });
 
+  if (opts.userIds?.length) query = query.in("user_id", opts.userIds);
   if (opts.limit) query = query.limit(opts.limit);
+  if (opts.cursor) query = query.lt("created_at", opts.cursor);
 
   const { data, error } = await query;
   if (error) {
@@ -51,8 +54,12 @@ export async function fetchPlainReposts(
   }
 
   // post RLS returns null for the embedded post when the original is no
-  // longer readable (deleted, or author went private) — skip those.
-  const rows = ((data ?? []) as unknown as RepostRow[]).filter((r) => r.post && r.reposter);
+  // longer readable (deleted, or author went private) — skip those. reposts
+  // RLS already mirrors block state (20260711110000), so blockedIds here is
+  // belt-and-suspenders app-side filtering, matching fetchQuotedReposts.
+  const rows = ((data ?? []) as unknown as RepostRow[]).filter(
+    (r) => r.post && r.reposter && !(opts.blockedIds?.has(r.user_id) ?? false),
+  );
 
   const originals = rows.map((r) => r.post!);
   const withMedia = originals.length ? await attachSignedMedia(supabase, originals) : [];

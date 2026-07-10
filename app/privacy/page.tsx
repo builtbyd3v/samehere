@@ -25,9 +25,9 @@ export default function PrivacyPage() {
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li>
               <strong className="text-[var(--ink)]">Account &amp; profile:</strong> your email address,
-              username, display name, and any profile details you add (school, major, year, bio, skills,
-              goals, courses, avatar). If you verify a <code>.edu</code> email for the verified student badge,
-              we store that too.
+              username, display name, and any profile details you add (school, major, year, bio, goals,
+              avatar). If you verify a <code>.edu</code> email for the verified student badge, we store that
+              too.
             </li>
             <li>
               <strong className="text-[var(--ink)]">Content:</strong> posts, comments, reactions, reposts,

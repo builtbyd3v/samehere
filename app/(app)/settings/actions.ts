@@ -4,8 +4,38 @@ import { randomInt, createHash } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { sendEmail } from "@/lib/email";
+import { usernameError } from "@/lib/utils/validation";
 
 export type PrivacyState = { error?: string; success?: boolean };
+
+export type UsernameState = { error?: string; success?: boolean };
+
+// Changing a username changes the profile's public link, so this lives in its
+// own action with its own error surface (moved from profile/edit — OAuth
+// signups get an auto-generated handle and need this easy to find). The DB
+// unique constraint + reserved-word CHECK is the real guard; usernameError
+// just gives a fast, specific form error.
+export async function updateUsername(_prev: UsernameState, formData: FormData): Promise<UsernameState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be logged in." };
+
+  const username = String(formData.get("username") ?? "").trim().slice(0, 20).toLowerCase();
+  const uErr = usernameError(username);
+  if (uErr) return { error: uErr };
+
+  const { error } = await supabase.from("profiles").update({ username }).eq("id", user.id);
+  if (error) {
+    if (error.code === "23505") return { error: "That username is taken." };
+    return { error: "Could not save your username. Try again." };
+  }
+
+  revalidatePath("/settings");
+  revalidatePath(`/profile/${username}`);
+  return { success: true };
+}
 
 // Updates ONLY the three privacy prefs, moved here from profile/edit. Same
 // owner-write RLS as the rest of profiles — no service_role.

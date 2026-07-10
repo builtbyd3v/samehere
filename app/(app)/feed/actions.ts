@@ -4,6 +4,9 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { POST_SELECT, PAGE, type FeedPost } from "@/components/feed/PostCard";
 import { attachSignedMedia, verifyMediaLimits } from "@/lib/media";
+import { fetchQuotedReposts } from "@/lib/feed-quotes";
+import { fetchPlainReposts } from "@/lib/feed-reposts";
+import { mergeFeedTimeline, type FeedTimelineItem } from "@/lib/feed-timeline";
 import { aiEnabled, generateText, modelForTier, type AiResult } from "@/lib/ai";
 import { COMPOSER_SYSTEM, IMPROVE_SYSTEM, PEOPLE_SEARCH_SYSTEM, untrusted } from "@/lib/ai-prompts";
 import { getPostHogServerClient } from "@/lib/posthog-server";
@@ -12,10 +15,15 @@ import { TEXT_LIMITS, textLimitError } from "@/lib/utils/validation";
 
 export type ComposerState = { error?: string; ok?: boolean };
 
-// Next page for "Load more": posts strictly older than the cursor (created_at
-// of the last row shown). Keyset pagination — no OFFSET drift as new posts
-// arrive. RLS still restricts to visible posts.
-export async function loadMorePosts(cursor: string): Promise<FeedPost[]> {
+// Next page for "Load more": posts (+ quote-reposts + plain reposts) strictly
+// older than the cursor (created_at of the last row shown). Keyset pagination
+// — no OFFSET drift as new posts arrive. RLS still restricts to visible rows.
+// Merges all three sources the same way the first page does (feed/page.tsx's
+// LatestTab) so page 2+ doesn't silently drop quotes/reposts, then slices to
+// PAGE and derives nextCursor from that slice.
+export async function loadMorePosts(
+  cursor: string,
+): Promise<{ items: FeedTimelineItem[]; nextCursor: string | null }> {
   const supabase = await createClient();
   // ponytail: app-side filter post-fetch, not RLS on posts — mirrors the first page in feed/page.tsx.
   const query = supabase
@@ -31,7 +39,14 @@ export async function loadMorePosts(cursor: string): Promise<FeedPost[]> {
   ]);
   const blocked = new Set(blockedIds ?? []);
   const filtered = data?.filter((p) => !blocked.has(p.user_id)) ?? [];
-  return await attachSignedMedia(supabase, filtered);
+  const [posts, quotes, reposts] = await Promise.all([
+    attachSignedMedia(supabase, filtered),
+    fetchQuotedReposts(supabase, { limit: PAGE, cursor, blockedIds: blocked }),
+    fetchPlainReposts(supabase, { limit: PAGE, cursor, blockedIds: blocked }),
+  ]);
+  const items = mergeFeedTimeline(posts, quotes, reposts).slice(0, PAGE);
+  const nextCursor = items.length ? items[items.length - 1].created_at : null;
+  return { items, nextCursor };
 }
 
 const MAX = TEXT_LIMITS.post;
@@ -84,15 +99,9 @@ export async function createPost(_prev: ComposerState, formData: FormData): Prom
     if (mediaErr) return { error: mediaErr };
   }
 
-  // Client-declared intent only ("I'm answering this week's prompt") — the
-  // posts_award_contribution trigger derives the ISO week itself from the
-  // server clock, so this boolean can't be used to backdate points to a past
-  // week; it only decides whether this row is eligible for THIS week's bonus.
-  const answersPrompt = formData.get("answersPrompt") === "1";
-
   const { error } = await supabase
     .from("posts")
-    .insert({ user_id: user.id, content, media, answers_prompt: answersPrompt });
+    .insert({ user_id: user.id, content, media });
   if (error) return { error: "Could not publish your post. Try again." };
 
   const posthog = getPostHogServerClient();
@@ -232,8 +241,6 @@ type Candidate = {
   verified_student: boolean;
   year: string | null;
   major: string | null;
-  skills: string[] | null;
-  courses: string[] | null;
   goals: string | null;
   bio: string | null;
   profile_school: { school: string | null } | null;
@@ -241,7 +248,7 @@ type Candidate = {
 
 const AI_SEARCH_POOL = 40;
 const CAND_SELECT =
-  "id, username, display_name, avatar_url, is_pro, is_founder, is_campus_founder, verified_student, year, major, skills, courses, goals, bio, profile_school(school)";
+  "id, username, display_name, avatar_url, is_pro, is_founder, is_campus_founder, verified_student, year, major, goals, bio, profile_school(school)";
 
 function toResult(c: Candidate): PeopleSearchResult {
   return {
@@ -265,8 +272,6 @@ function compactCandidate(c: Candidate): string {
     `@${c.username}${c.display_name ? ` (${c.display_name})` : ""}`,
     [c.year, c.major].filter(Boolean).join(" "),
     c.profile_school?.school ? `school: ${c.profile_school.school}` : "",
-    c.skills?.length ? `skills: ${c.skills.slice(0, 8).join(", ")}` : "",
-    c.courses?.length ? `courses: ${c.courses.slice(0, 8).join(", ")}` : "",
     c.goals ? `goals: ${c.goals.slice(0, 120)}` : "",
     c.bio ? `bio: ${c.bio.slice(0, 120)}` : "",
   ]
@@ -331,8 +336,6 @@ export async function peopleSearch(query: string): Promise<PeopleSearchState> {
       `username.ilike.%${t}%`,
       `display_name.ilike.%${t}%`,
       `major.ilike.%${t}%`,
-      `skills.cs.{${t}}`,
-      `courses.cs.{${t}}`,
       `goals.ilike.%${t}%`,
       `bio.ilike.%${t}%`,
     ])

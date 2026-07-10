@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import PrivacyForm from "@/components/settings/PrivacyForm";
 import ChangePasswordForm from "@/components/settings/ChangePasswordForm";
+import UsernameForm from "@/components/settings/UsernameForm";
 import DeleteAccountSection from "@/components/settings/DeleteAccountSection";
 import AvatarImage from "@/components/ui/AvatarImage";
 import ThemeToggle from "@/components/ui/ThemeToggle";
@@ -43,9 +44,11 @@ export default async function SettingsPage() {
         <section className="card p-6">
           <h2 className="mb-4 text-lg font-semibold text-[var(--ink)]">Account</h2>
           <p className="mb-4 text-sm text-[var(--ink-muted)]">
-            Username and profile details live in{" "}
+            Other profile details live in{" "}
             <Link href="/profile/edit" className="underline hover:text-[var(--ink)]">Edit profile</Link>.
           </p>
+          <UsernameForm username={profile.username} />
+          <div className="my-6 border-t border-[var(--border)]" />
           <ChangePasswordForm />
         </section>
 

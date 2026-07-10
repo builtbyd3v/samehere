@@ -143,6 +143,14 @@ export const IconSend = () => (
   </svg>
 );
 
+/** Mention notification badge — @-sign. */
+export const IconAt = ({ className = "h-2.5 w-2.5" }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <circle cx="12" cy="12" r="4" />
+    <path d="M16 12v1.5a2.5 2.5 0 0 0 5 0V12a9 9 0 1 0-4.2 7.6" />
+  </svg>
+);
+
 export const IconChevronLeft = () => (
   <svg className="h-4 w-4" {...s}>
     <path d="m15 6-6 6 6 6" />

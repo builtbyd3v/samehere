@@ -1,7 +1,7 @@
 ﻿import Link from "next/link";
 import AvatarImage from "@/components/ui/AvatarImage";
 import LocalTime from "@/components/ui/LocalTime";
-import { IconComment, IconHeart, IconSame } from "@/components/icons";
+import { IconAt, IconComment, IconHeart, IconSame } from "@/components/icons";
 import {
   notificationHref,
   notificationLabel,
@@ -32,6 +32,13 @@ function TypeBadge({ type, reactionType }: { type: NotificationRow["type"]; reac
     return (
       <span className="grid h-[18px] w-[18px] place-items-center rounded-full border border-[var(--surface-card)] bg-[var(--ink)] text-[var(--canvas)] [&_svg]:h-2.5 [&_svg]:w-2.5">
         <IconComment />
+      </span>
+    );
+  }
+  if (type === "mention") {
+    return (
+      <span className="grid h-[18px] w-[18px] place-items-center rounded-full border border-[var(--surface-card)] bg-[var(--ink)] text-[var(--canvas)] [&_svg]:h-2.5 [&_svg]:w-2.5">
+        <IconAt />
       </span>
     );
   }

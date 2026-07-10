@@ -14,7 +14,7 @@ const STEPS = [
   },
   {
     title: "Get AI-matched and DM your people",
-    body: "We read the overlap in school, major, skills, and goals, tell you exactly why someone's worth following, then you message them directly. No cold outreach into the void.",
+    body: "We read the overlap in school, major, and goals, tell you exactly why someone's worth following, then you message them directly. No cold outreach into the void.",
   },
 ] as const;
 

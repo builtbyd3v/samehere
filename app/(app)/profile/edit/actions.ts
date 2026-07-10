@@ -6,7 +6,6 @@ import { aiEnabled, generateText, modelForTier, type AiResult } from "@/lib/ai";
 import { PROFILE_DRAFT_SYSTEM, PROFILE_NUDGE_SYSTEM } from "@/lib/ai-prompts";
 import { isPro } from "@/lib/pro";
 import { fallbackProfileNudge, getProfileGaps } from "@/lib/profile-completion";
-import { usernameError } from "@/lib/utils/validation";
 import type { TablesUpdate } from "@/types/database.types";
 
 const YEARS = ["freshman", "sophomore", "junior", "senior", "grad"];
@@ -33,24 +32,14 @@ export async function updateProfile(_prev: EditState, formData: FormData): Promi
   // Trim + cap every free-text field at the trust boundary.
   const str = (k: string, max: number) => String(formData.get(k) ?? "").trim().slice(0, max);
 
-  // OAuth signups get an auto-generated handle; this lets them (and everyone
-  // else) fix it. The DB unique constraint + reserved-word CHECK is the real
-  // guard — usernameError just gives a fast, specific form error.
-  const username = str("username", 20).toLowerCase();
-  const uErr = usernameError(username);
-  if (uErr) return { error: uErr };
-
   const yearRaw = str("year", 20);
 
   const updates: TablesUpdate<"profiles"> = {
-    username,
     display_name: str("display_name", 50) || null,
     major: str("major", 100) || null,
     bio: str("bio", 500) || null,
     goals: str("goals", 500) || null,
     year: YEARS.includes(yearRaw) ? yearRaw : null,
-    skills: parseTags(String(formData.get("skills") ?? "")),
-    courses: parseTags(String(formData.get("courses") ?? "")),
   };
 
   // Trust boundary: never take the client's word for Pro status. Non-Pro
@@ -66,10 +55,7 @@ export async function updateProfile(_prev: EditState, formData: FormData): Promi
     .from("profiles")
     .update(updates)
     .eq("id", user.id);
-  if (pErr) {
-    if (pErr.code === "23505") return { error: "That username is taken." };
-    return { error: "Could not save your profile. Try again." };
-  }
+  if (pErr) return { error: "Could not save your profile. Try again." };
 
   const school = str("school", 100) || null;
   const { error: sErr } = await supabase
@@ -102,7 +88,7 @@ export async function profileNudge(): Promise<AiResult> {
   const [{ data: profile }, { data: schoolRow }] = await Promise.all([
     supabase
       .from("profiles")
-      .select("display_name, avatar_url, year, major, bio, goals, skills, is_pro, pro_until")
+      .select("display_name, avatar_url, year, major, bio, goals, is_pro, pro_until")
       .eq("id", user.id)
       .single(),
     supabase.from("profile_school").select("school").eq("profile_id", user.id).maybeSingle(),
@@ -116,7 +102,6 @@ export async function profileNudge(): Promise<AiResult> {
     major: profile?.major ?? null,
     bio: profile?.bio ?? null,
     goals: profile?.goals ?? null,
-    skills: profile?.skills ?? null,
   });
 
   if (gaps.length === 0) return { text: fallbackProfileNudge([]) };
@@ -151,7 +136,7 @@ export async function draftProfileText(): Promise<DraftState> {
   if (!aiEnabled()) return { error: "AI is unavailable right now." };
 
   const [{ data: p }, { data: schoolRow }] = await Promise.all([
-    supabase.from("profiles").select("display_name, year, major, skills, courses, is_pro, pro_until").eq("id", user.id).single(),
+    supabase.from("profiles").select("display_name, year, major, is_pro, pro_until").eq("id", user.id).single(),
     supabase.from("profile_school").select("school").eq("profile_id", user.id).maybeSingle(),
   ]);
   const pro = isPro(p ?? { is_pro: false, pro_until: null });
@@ -163,8 +148,6 @@ export async function draftProfileText(): Promise<DraftState> {
     p?.year ? `year: ${p.year}` : "",
     p?.major ? `major: ${p.major}` : "",
     schoolRow?.school ? `school: ${schoolRow.school}` : "",
-    p?.skills?.length ? `skills: ${p.skills.join(", ")}` : "",
-    p?.courses?.length ? `courses: ${p.courses.join(", ")}` : "",
   ].filter(Boolean).join("\n");
 
   const raw = await generateText(PROFILE_DRAFT_SYSTEM, `Facts:\n${facts || "(no facts yet)"}`, { model: modelForTier(pro), maxTokens: 220 });
@@ -289,18 +272,4 @@ function containsAscii(bytes: Uint8Array, needle: string): boolean {
     return true;
   }
   return false;
-}
-
-// "a, b, a , ,c" -> ["a","b","c"], trimmed, de-duped, capped. Shared by
-// skills + courses (courses is the same shape: freeform text[] tags).
-function parseTags(raw: string): string[] | null {
-  const tags = Array.from(
-    new Set(
-      raw
-        .split(",")
-        .map((s) => s.trim().slice(0, 30))
-        .filter(Boolean)
-    )
-  ).slice(0, 20);
-  return tags.length ? tags : null;
 }

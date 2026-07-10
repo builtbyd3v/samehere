@@ -11,7 +11,12 @@ export default async function ReferralsPage() {
   if (!user) redirect("/login");
 
   const { data } = await supabase.rpc("get_referral_stats");
-  const stats = data?.[0] ?? { code: user.id.slice(0, 8), referral_count: 0, is_campus_founder: false };
+  const stats = data?.[0] ?? {
+    code: user.id.slice(0, 8),
+    referral_count: 0,
+    pending_count: 0,
+    is_campus_founder: false,
+  };
 
   const origin = SITE_URL;
 
@@ -25,6 +30,7 @@ export default async function ReferralsPage() {
         initialCode={stats.code}
         origin={origin}
         referralCount={stats.referral_count}
+        pendingCount={stats.pending_count}
         isCampusFounder={stats.is_campus_founder}
       />
     </main>

@@ -1,7 +1,6 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getPostHogServerClient } from "@/lib/posthog-server";
 import { isPro } from "@/lib/pro";
@@ -32,29 +31,6 @@ type Plan = keyof typeof PRICES;
 
 const isPlan = (v: FormDataEntryValue | null): v is Plan =>
   v === "monthly" || v === "semester";
-
-// Sets the signed-in user's wants_pro flag. Session client under RLS — no
-// service_role, no billing (v1.1 wires Stripe on top of this flag).
-export async function joinProWaitlist() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return;
-
-  await supabase.from("profiles").update({ wants_pro: true }).eq("id", user.id);
-
-  const posthog = getPostHogServerClient();
-  posthog?.capture({
-    distinctId: user.id,
-    event: "pro_waitlist_joined",
-    properties: {
-      source: "pro_page",
-    },
-  });
-
-  revalidatePath("/pro");
-}
 
 // Creates a Stripe Checkout Session for the signed-in user.
 //

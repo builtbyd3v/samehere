@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import posthog from "posthog-js";
 import { updateReferralCode, type ReferralCodeState } from "@/app/(app)/referrals/actions";
-import { IconButterfly } from "@/components/icons";
+import { IconBolt, IconButterfly } from "@/components/icons";
 
 const GOAL = 100;
 const BUTTERFLY_MILESTONE = 50;
@@ -12,11 +12,13 @@ export default function ReferralShareCard({
   initialCode,
   origin,
   referralCount,
+  pendingCount,
   isCampusFounder,
 }: {
   initialCode: string;
   origin: string;
   referralCount: number;
+  pendingCount: number;
   isCampusFounder: boolean;
 }) {
   const [state, formAction, pending] = useActionState<ReferralCodeState, FormData>(updateReferralCode, {});
@@ -118,6 +120,11 @@ export default function ReferralShareCard({
               ? `${Math.max(0, GOAL - referralCount)} more to a free semester of Pro`
               : `${Math.max(0, BUTTERFLY_MILESTONE - referralCount)} more to the Social Butterfly badge`}
           </p>
+          {pendingCount > 0 && (
+            <p className="mt-1 text-xs text-[var(--ink-muted)]">
+              {pendingCount} pending. A referral counts once that person is active on samehere.
+            </p>
+          )}
         </div>
 
         {/* Milestone 1: Social Butterfly */}
@@ -137,8 +144,8 @@ export default function ReferralShareCard({
 
         {/* Milestone 2: Free semester of Pro */}
         <div className="flex items-start gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-4">
-          <div className="h-9 w-9 shrink-0 rounded-lg bg-[var(--featured-surface)] flex items-center justify-center text-sm font-bold text-[var(--ink)]">
-            P
+          <div className="h-9 w-9 shrink-0 rounded-lg bg-[var(--featured-surface)] flex items-center justify-center">
+            <IconBolt className="h-5 w-5 text-[var(--blue)]" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-[var(--ink)]">Free semester of Pro</p>

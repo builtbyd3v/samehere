@@ -15,9 +15,9 @@ import OnboardingChecklist from "@/components/feed/OnboardingChecklist";
 import FeedTimeline from "@/components/feed/FeedTimeline";
 import { mergeFeedTimeline } from "@/lib/feed-timeline";
 import { fetchQuotedReposts } from "@/lib/feed-quotes";
+import { fetchPlainReposts } from "@/lib/feed-reposts";
 import { FeedSearchForm, FeedSearchResults } from "@/components/feed/FeedSearch";
 import PeopleSearch from "@/components/feed/PeopleSearch";
-import WeeklyPromptSection from "@/components/feed/WeeklyPromptSection";
 import WeeklyRecap from "@/components/feed/WeeklyRecap";
 
 // Twitter-style feed: Latest (global recency) and Following (followed users'
@@ -81,10 +81,6 @@ export default async function FeedPage({
         />
       )}
 
-      <Suspense fallback={null}>
-        <WeeklyPromptSection />
-      </Suspense>
-
       {user && <WeeklyRecap userId={user.id} />}
 
       {tab === "latest" ? (
@@ -111,11 +107,12 @@ async function LatestTab({ viewerId }: { viewerId: string | null }) {
   ]);
   const blocked = new Set(blockedIds ?? []);
   const filtered = data?.filter((p) => !blocked.has(p.user_id));
-  const [posts, quotes] = await Promise.all([
+  const [posts, quotes, reposts] = await Promise.all([
     filtered ? attachSignedMedia(supabase, filtered) : Promise.resolve(null),
     fetchQuotedReposts(supabase, { limit: PAGE, blockedIds: blocked }),
+    fetchPlainReposts(supabase, { limit: PAGE, blockedIds: blocked }),
   ]);
-  const timeline = posts ? mergeFeedTimeline(posts, quotes).slice(0, PAGE) : [];
+  const timeline = posts ? mergeFeedTimeline(posts, quotes, reposts).slice(0, PAGE) : [];
 
   return (
     <section className="flex flex-col gap-3">
@@ -162,7 +159,7 @@ async function FollowingTab({
     supabase.from("follows").select("following_id, status").eq("follower_id", userId),
     supabase
       .from("profiles")
-      .select("year, major, skills, goals, bio, courses, is_pro, pro_until, profile_school(school)")
+      .select("year, major, goals, bio, is_pro, pro_until, profile_school(school)")
       .eq("id", userId)
       .single(),
     // ponytail: app-side filter post-fetch, not RLS on posts.
@@ -175,7 +172,6 @@ async function FollowingTab({
   const excludeIds = [userId, ...blocked, ...(myFollows ?? []).map((f) => f.following_id)]; // never empty (has me)
 
   // ponytail: Following feed is first-page only; add cursor load-more if it grows.
-  // ponytail: followed users' own posts only; reposts-in-feed deferred.
   const quoteAuthorIds = [userId, ...acceptedIds].filter((id): id is string => !!id);
 
   const followPostsPromise = (async () => {
@@ -189,33 +185,39 @@ async function FollowingTab({
     return q.returns<FeedPost[]>();
   })();
 
-  const [{ data: followFeed }, quotes, { data: suggestedPool }] = await Promise.all([
+  const [{ data: followFeed }, quotes, reposts, { data: suggestedPool }] = await Promise.all([
     followPostsPromise,
     fetchQuotedReposts(supabase, {
       userIds: quoteAuthorIds,
       limit: PAGE,
       blockedIds: blocked,
     }),
+    fetchPlainReposts(supabase, {
+      userIds: quoteAuthorIds,
+      limit: PAGE,
+      blockedIds: blocked,
+    }),
     supabase
       .from("profiles")
-      .select("id, username, display_name, avatar_url, created_at, year, major, skills, goals, bio, courses, is_pro, pro_until, is_founder, is_campus_founder, verified_student, profile_school(school)")
+      .select("id, username, display_name, avatar_url, created_at, year, major, goals, bio, is_pro, pro_until, is_founder, is_campus_founder, verified_student, profile_school(school)")
       .not("id", "in", `(${excludeIds.join(",")})`)
       .order("created_at", { ascending: false })
       .limit(30),
   ]);
   const feedPosts = followFeed ? await attachSignedMedia(supabase, followFeed) : null;
-  const timeline = feedPosts || quotes.length ? mergeFeedTimeline(feedPosts ?? [], quotes).slice(0, PAGE) : [];
+  const timeline =
+    feedPosts || quotes.length || reposts.length
+      ? mergeFeedTimeline(feedPosts ?? [], quotes, reposts).slice(0, PAGE)
+      : [];
 
   // ponytail: rank a 30-row recency pool; widen only if suggestions feel stale.
   const viewerPro = isPro(viewerProfile ?? { is_pro: false, pro_until: null });
   const viewerSignal: MatchSignal = {
     year: viewerProfile?.year ?? null,
     major: viewerProfile?.major ?? null,
-    skills: viewerProfile?.skills ?? null,
     goals: viewerProfile?.goals ?? null,
     bio: viewerProfile?.bio ?? null,
     school: viewerProfile?.profile_school?.school ?? null,
-    courses: viewerProfile?.courses ?? null,
   };
   const suggested = (suggestedPool ?? [])
     .map((s) => ({
@@ -223,11 +225,9 @@ async function FollowingTab({
       _score: scoreOverlap(viewerSignal, {
         year: s.year,
         major: s.major,
-        skills: s.skills,
         goals: s.goals,
         bio: s.bio,
         school: s.profile_school?.school ?? null,
-        courses: s.courses,
       }),
     }))
     .sort((a, b) => b._score - a._score || ((a.created_at ?? "") < (b.created_at ?? "") ? 1 : -1))
