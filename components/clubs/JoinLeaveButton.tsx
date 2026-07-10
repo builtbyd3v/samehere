@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
-import { joinClub, leaveClub, updateClub, renameClub, deleteClub, type ClubUpdate } from "@/app/(app)/community/clubs/actions";
+import { joinClub, leaveClub, updateClub, deleteClub, type ClubUpdate } from "@/app/(app)/community/clubs/actions";
 
 type Status = "accepted" | "pending" | null;
 
@@ -98,29 +98,18 @@ export function ClubOwnerActions({
 
   function save() {
     setError(null);
+    // Name is just another field in the patch now -- the slug/route is fixed
+    // at creation and never changes on rename.
     const patch: ClubUpdate = {
+      name: name.trim(),
       purpose,
       tags: tags.split(",").map((t) => t.trim()).filter(Boolean).slice(0, 5),
       is_open: isOpen,
     };
-    const nameChanged = name.trim() !== club.name;
     startTransition(async () => {
-      // Name changes go through renameClub -- it regenerates the slug so the
-      // route follows the name, then we redirect to the new slug. Cosmetic
-      // fields go through updateClub (slug is frozen for those).
       const res = await updateClub(club.id, patch);
       if (res.error) {
         setError(res.error);
-        return;
-      }
-      if (nameChanged) {
-        const r = await renameClub(club.id, name.trim());
-        if (r.error) {
-          setError(r.error);
-          return;
-        }
-        setEditing(false);
-        if (r.slug) router.push(`/community/clubs/${r.slug}`);
         return;
       }
       setEditing(false);

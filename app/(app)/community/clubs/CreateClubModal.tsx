@@ -7,6 +7,18 @@ import { createClub, type ClubActionState } from "@/app/(app)/community/clubs/ac
 
 const PURPOSE_MAX = 280; // ponytail: hardcoded cap, no separate TEXT_LIMITS entry for clubs yet
 const MAX_TAGS = 5;
+const CODE_RE = /^[a-z0-9-]{3,40}$/;
+
+// Mirrors actions.ts's server-side slugify -- lowercase, spaces to hyphens,
+// strip anything else, cap at 40 -- so the code field can never contain a
+// character the DB CHECK would reject.
+function slugifyInput(v: string): string {
+  return v
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "")
+    .slice(0, 40);
+}
 
 // Self-contained trigger + modal: renders the "Create a club" button itself so
 // ClubsTab (a server component) doesn't need its own client state just to open
@@ -16,6 +28,8 @@ export default function CreateClubModal() {
   const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState<ClubActionState, FormData>(createClub, {});
   const [purposeLen, setPurposeLen] = useState(0);
+  const [code, setCode] = useState("");
+  const [codeEdited, setCodeEdited] = useState(false);
 
   useEffect(() => {
     if (state.ok && state.slug) {
@@ -42,7 +56,39 @@ export default function CreateClubModal() {
               maxLength={80}
               className="input-base"
               placeholder="e.g. CS Study Group"
+              onChange={(e) => {
+                if (!codeEdited) setCode(slugifyInput(e.target.value));
+              }}
             />
+          </div>
+          <div>
+            <label htmlFor="club-code" className="mb-1 block text-xs font-medium text-[var(--ink-muted)]">
+              Club code
+            </label>
+            <input
+              id="club-code"
+              name="slug"
+              required
+              minLength={3}
+              maxLength={40}
+              pattern="[a-z0-9-]{3,40}"
+              value={code}
+              onChange={(e) => {
+                setCodeEdited(true);
+                setCode(slugifyInput(e.target.value));
+              }}
+              className="input-base font-mono"
+              placeholder="cs-study-group"
+            />
+            <p className="mt-1 text-xs text-[var(--ink-muted)]">
+              This is your club&apos;s link: /community/clubs/{code || "your-code"} — lowercase letters, numbers,
+              hyphens. Can&apos;t be changed later.
+            </p>
+            {code.length > 0 && !CODE_RE.test(code) && (
+              <p role="alert" className="mt-1 text-xs text-[var(--danger)]">
+                Code must be 3-40 characters: lowercase letters, numbers, or hyphens.
+              </p>
+            )}
           </div>
           <div>
             <label

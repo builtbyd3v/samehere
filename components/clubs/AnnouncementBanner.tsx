@@ -1,32 +1,80 @@
+import Link from "next/link";
+import AvatarImage from "@/components/ui/AvatarImage";
+import UserBadges from "@/components/profile/UserBadges";
 import LocalTime from "@/components/ui/LocalTime";
 import { IconPin } from "@/components/icons";
+import type { ClubMemberProfile } from "./MemberRow";
 
 type BannerAnnouncement = {
   body: string;
   created_at: string;
-  author: { username: string; display_name: string | null } | null;
+  author: ClubMemberProfile | null;
+  authorRole: string | null;
 };
+
+// Only owner/officer are meaningful roles to call out; plain members render
+// no pill (mirrors the "render nothing for Member" spec).
+function RolePill({ role }: { role: string | null }) {
+  if (role !== "owner" && role !== "officer") return null;
+  return (
+    <span className="shrink-0 rounded-full border border-[var(--border)] px-2 py-0.5 text-[11px] capitalize text-[var(--ink-muted)]">
+      {role}
+    </span>
+  );
+}
 
 // Always-visible pinned strip (below the club header, above the tabs) so an
 // accepted member never misses the latest announcement no matter which tab
 // they're on. Full history + composer live in the Announcements tab; this is
-// deliberately a summary, not a duplicate of that list.
+// deliberately a summary, not a duplicate of that list. Depth comes from a
+// hairline border on a tinted surface -- no colored side-stripe.
 export default function AnnouncementBanner({ announcement }: { announcement: BannerAnnouncement | null }) {
   if (!announcement) return null;
-  const name = announcement.author?.display_name ?? announcement.author?.username ?? "Unknown";
+  const { author, authorRole } = announcement;
+  const name = author?.display_name ?? author?.username ?? "Unknown";
 
   return (
-    <div className="card mt-4 flex gap-3 border-l-2 border-l-[var(--blue)] bg-[var(--featured-surface)] p-3.5 sm:p-4">
-      <IconPin className="mt-0.5 h-4 w-4 shrink-0 text-[var(--blue)]" />
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-1.5 text-xs text-[var(--ink-muted)]">
-          <span className="font-semibold uppercase tracking-wide text-[var(--blue)]">Pinned</span>
-          <span>·</span>
-          <span className="font-medium text-[var(--ink)]">{name}</span>
-          <span>·</span>
-          <LocalTime iso={announcement.created_at} variant="ago" />
+    <div className="card mt-4 flex flex-col gap-2.5 border border-[var(--border)] bg-[var(--featured-surface)] p-3.5 sm:p-4">
+      <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+        <IconPin className="h-3.5 w-3.5 shrink-0 text-[var(--blue)]" />
+        Pinned
+      </div>
+      <div className="flex items-start gap-3">
+        {author?.avatar_url ? (
+          <AvatarImage
+            src={author.avatar_url}
+            alt=""
+            className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover"
+            pro={author.is_pro}
+          />
+        ) : (
+          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-sm font-semibold text-[var(--ink-muted)]">
+            {name.charAt(0).toUpperCase()}
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm">
+            {author ? (
+              <Link href={`/profile/${author.username}`} className="font-medium text-[var(--ink)] hover:underline">
+                {name}
+              </Link>
+            ) : (
+              <span className="font-medium text-[var(--ink)]">{name}</span>
+            )}
+            {author && (
+              <UserBadges
+                isPro={author.is_pro}
+                isFounder={author.is_founder}
+                isCampusFounder={author.is_campus_founder}
+                isVerifiedStudent={author.verified_student}
+              />
+            )}
+            <RolePill role={authorRole} />
+            <span className="text-[var(--ink-muted)]">·</span>
+            <LocalTime iso={announcement.created_at} variant="ago" className="text-xs text-[var(--ink-muted)]" />
+          </div>
+          <p className="mt-1 line-clamp-2 whitespace-pre-wrap text-sm text-[var(--ink)]">{announcement.body}</p>
         </div>
-        <p className="mt-1 line-clamp-2 whitespace-pre-wrap text-sm text-[var(--ink)]">{announcement.body}</p>
       </div>
     </div>
   );

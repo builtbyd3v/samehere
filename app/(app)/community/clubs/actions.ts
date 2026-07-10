@@ -11,14 +11,6 @@ export type ClubActionState = { error?: string; ok?: boolean; slug?: string };
 const SLUG_RE = /^[a-z0-9-]{3,40}$/;
 const RESERVED_SLUGS = new Set(["new", "create", "edit", "api"]);
 
-function slugify(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/\s+/g, "-")
-    .replace(/[^a-z0-9-]/g, "")
-    .slice(0, 40);
-}
-
 function slugError(slug: string): string | null {
   if (!SLUG_RE.test(slug)) {
     return "URL must be 3-40 characters: lowercase letters, numbers, or hyphens.";
@@ -117,17 +109,22 @@ export async function createClub(_prev: ClubActionState, formData: FormData): Pr
   if (purpose.length < 10 || purpose.length > 280) return { error: "Purpose must be 10-280 characters." };
   if (tags.length > 5) return { error: "Up to 5 tags." };
 
-  const slug = String(formData.get("slug") ?? "").trim().toLowerCase() || slugify(name);
-  const slugErr = slugError(slug);
-  if (slugErr) return { error: slugErr };
+  // The club code is the route (/community/clubs/{code}), chosen explicitly by
+  // the caller and frozen at creation -- no more auto-slugify from name.
+  const code = String(formData.get("slug") ?? "").trim().toLowerCase();
+  const codeErr = slugError(code);
+  if (codeErr) return { error: codeErr };
 
   const { error } = await supabase
     .from("clubs")
-    .insert({ slug, name, purpose, tags, is_open: isOpen, created_by: user.id });
-  if (error) return { error: friendlyDbError(error) };
+    .insert({ slug: code, name, purpose, tags, is_open: isOpen, created_by: user.id });
+  if (error) {
+    if (error.code === "23505") return { error: "That club code is taken." };
+    return { error: friendlyDbError(error) };
+  }
 
   revalidatePath("/community");
-  return { ok: true, slug };
+  return { ok: true, slug: code };
 }
 
 export async function joinClub(clubId: string): Promise<ClubActionState & { status?: string }> {
@@ -271,9 +268,10 @@ export async function deleteClub(clubId: string): Promise<ClubActionState> {
   return { ok: true };
 }
 
-// name is NOT settable here -- slug is frozen against plain updates, so a
-// name change must go through renameClub instead (it regenerates the slug).
-export type ClubUpdate = { purpose?: string; tags?: string[]; is_open?: boolean };
+// name is now editable here -- renaming no longer regenerates the slug (the
+// slug is the fixed club code chosen at creation). slug/is_verified stay
+// frozen by the DB guard, so they can never leak through even if passed.
+export type ClubUpdate = { name?: string; purpose?: string; tags?: string[]; is_open?: boolean };
 
 export async function updateClub(clubId: string, patch: ClubUpdate): Promise<ClubActionState> {
   const supabase = await createClient();
@@ -282,6 +280,9 @@ export async function updateClub(clubId: string, patch: ClubUpdate): Promise<Clu
   } = await supabase.auth.getUser();
   if (!user) return { error: "You must be logged in." };
 
+  if (patch.name !== undefined && (patch.name.length < 2 || patch.name.length > 60)) {
+    return { error: "Name must be 2-60 characters." };
+  }
   if (patch.purpose !== undefined && (patch.purpose.length < 10 || patch.purpose.length > 280)) {
     return { error: "Purpose must be 10-280 characters." };
   }
@@ -290,45 +291,13 @@ export async function updateClub(clubId: string, patch: ClubUpdate): Promise<Clu
   }
 
   // Explicit allow-list: never spread caller-supplied keys into the update.
-  // name/slug/is_verified are frozen by the DB guard, but name isn't (rename
-  // owns it), so an extra `name` key here could drift name from slug.
-  const safe = { purpose: patch.purpose, tags: patch.tags, is_open: patch.is_open };
+  const safe = { name: patch.name, purpose: patch.purpose, tags: patch.tags, is_open: patch.is_open };
   const { error } = await supabase.from("clubs").update(safe).eq("id", clubId);
   if (error) return { error: friendlyDbError(error) };
 
   const path = await clubDetailPath(supabase, clubId);
   if (path) revalidatePath(path);
   return { ok: true };
-}
-
-// A name change regenerates the slug (slug is frozen against updateClub), so
-// the caller must redirect to the returned slug after this succeeds.
-export async function renameClub(clubId: string, newName: string): Promise<ClubActionState> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "You must be logged in." };
-
-  const trimmed = newName.trim();
-  if (trimmed.length < 2 || trimmed.length > 60) {
-    return { error: "Name must be 2-60 characters." };
-  }
-
-  const { data, error } = await supabase.rpc("club_rename", { p_club: clubId, p_name: trimmed });
-  if (error) {
-    return {
-      error: mapRpcError(
-        error,
-        ["not authorized", "name must be 2-60 characters", "no such club", "not authenticated", "account suspended"],
-        "That name is taken.",
-      ),
-    };
-  }
-
-  const newSlug = data ?? undefined;
-  if (newSlug) revalidatePath(`/community/clubs/${newSlug}`);
-  return { ok: true, slug: newSlug };
 }
 
 export type ClubChannelActionState = ClubActionState & { channelId?: string };
@@ -421,6 +390,77 @@ export async function updateClubAvatar(clubId: string, avatarUrl: string): Promi
 
   const { error } = await supabase.from("clubs").update({ avatar_url: avatarUrl }).eq("id", clubId);
   if (error) return { error: friendlyDbError(error) };
+
+  const path = await clubDetailPath(supabase, clubId);
+  if (path) revalidatePath(path);
+  return { ok: true };
+}
+
+export async function kickMember(clubId: string, userId: string): Promise<ClubActionState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be logged in." };
+
+  const { error } = await supabase.rpc("club_kick", { p_club: clubId, p_user: userId });
+  if (error) {
+    return {
+      error: mapRpcError(
+        error,
+        [
+          "not authorized",
+          "cannot remove an owner",
+          "officers can only remove members",
+          "not a member",
+          "use leave, not remove, on yourself",
+        ],
+        "Something went wrong.",
+      ),
+    };
+  }
+
+  const path = await clubDetailPath(supabase, clubId);
+  if (path) revalidatePath(path);
+  return { ok: true };
+}
+
+export async function banMember(clubId: string, userId: string): Promise<ClubActionState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be logged in." };
+
+  const { error } = await supabase.rpc("club_ban", { p_club: clubId, p_user: userId });
+  if (error) {
+    return {
+      error: mapRpcError(
+        error,
+        ["not authorized", "cannot ban an owner", "officers can only ban members", "cannot ban yourself"],
+        "Something went wrong.",
+      ),
+    };
+  }
+
+  const path = await clubDetailPath(supabase, clubId);
+  if (path) revalidatePath(path);
+  return { ok: true };
+}
+
+export async function unbanMember(clubId: string, userId: string): Promise<ClubActionState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be logged in." };
+
+  const { error } = await supabase.rpc("club_unban", { p_club: clubId, p_user: userId });
+  if (error) {
+    return {
+      error: mapRpcError(error, ["not authorized"], "Something went wrong."),
+    };
+  }
 
   const path = await clubDetailPath(supabase, clubId);
   if (path) revalidatePath(path);

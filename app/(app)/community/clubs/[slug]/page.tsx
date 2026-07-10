@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import EmptyState from "@/components/ui/EmptyState";
 import MemberRow, { type ClubMemberProfile } from "@/components/clubs/MemberRow";
@@ -9,6 +10,10 @@ import ClubVerifiedBadge from "@/components/clubs/ClubVerifiedBadge";
 import ClubHeaderEditor from "./ClubHeaderEditor";
 import ClubTabs from "./ClubTabs";
 import AnnouncementBanner from "@/components/clubs/AnnouncementBanner";
+import BannedMembers from "@/components/clubs/BannedMembers";
+import UserBadges from "@/components/profile/UserBadges";
+import AvatarImage from "@/components/ui/AvatarImage";
+import LocalTime from "@/components/ui/LocalTime";
 import { postAnnouncement, deleteAnnouncement } from "../actions";
 
 type ClubMemberRow = {
@@ -68,6 +73,10 @@ export default async function ClubPage({ params }: { params: Promise<{ slug: str
       .returns<ClubMemberRow[]>(),
   ]);
   const accepted = acceptedRaw ?? [];
+  // Author role for the identity row on announcements -- derived from the
+  // roster already fetched above, not a new query. A poster who has since
+  // left the club has no entry, so their announcements show no role pill.
+  const roleByUserId = new Map(accepted.map((m) => [m.user_id, m.role]));
 
   const isAcceptedMember = membership?.status === "accepted";
   const viewerRole = isAcceptedMember ? membership.role : null;
@@ -137,6 +146,7 @@ export default async function ClubPage({ params }: { params: Promise<{ slug: str
                 pending
                 canManage={canManage}
                 isOwnerViewer={isOwner}
+                viewerId={user.id}
               />
             ))}
           </div>
@@ -159,11 +169,14 @@ export default async function ClubPage({ params }: { params: Promise<{ slug: str
                 profile={m.profile}
                 canManage={canManage}
                 isOwnerViewer={isOwner}
+                viewerId={user.id}
               />
             ))}
           </div>
         )}
       </section>
+
+      {canManage && <BannedMembers clubId={club.id} />}
     </div>
   );
 
@@ -197,27 +210,62 @@ export default async function ClubPage({ params }: { params: Promise<{ slug: str
           {announcements.map((a) => {
             const name = a.author?.display_name ?? a.author?.username ?? "Unknown";
             const canDelete = isOwner || a.author_id === user.id;
+            const role = roleByUserId.get(a.author_id) ?? null;
             return (
-              <div key={a.id} className="rounded-lg border border-[var(--border)] p-3">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 text-xs text-[var(--ink-muted)]">
-                    <span className="font-medium text-[var(--ink)]">{name}</span>
-                    <span>· {new Date(a.created_at).toLocaleDateString()}</span>
+              <div key={a.id} className="flex items-start gap-3 rounded-lg border border-[var(--border)] p-3">
+                {a.author?.avatar_url ? (
+                  <AvatarImage
+                    src={a.author.avatar_url}
+                    alt=""
+                    className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover"
+                    pro={a.author.is_pro}
+                  />
+                ) : (
+                  <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-sm font-semibold text-[var(--ink-muted)]">
+                    {name.charAt(0).toUpperCase()}
                   </div>
-                  {canDelete && (
-                    <form
-                      action={async () => {
-                        "use server";
-                        await deleteAnnouncement(a.id, clubId);
-                      }}
-                    >
-                      <button type="submit" className="text-xs text-[var(--danger)] hover:underline">
-                        Delete
-                      </button>
-                    </form>
-                  )}
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm">
+                      {a.author ? (
+                        <Link href={`/profile/${a.author.username}`} className="font-medium text-[var(--ink)] hover:underline">
+                          {name}
+                        </Link>
+                      ) : (
+                        <span className="font-medium text-[var(--ink)]">{name}</span>
+                      )}
+                      {a.author && (
+                        <UserBadges
+                          isPro={a.author.is_pro}
+                          isFounder={a.author.is_founder}
+                          isCampusFounder={a.author.is_campus_founder}
+                          isVerifiedStudent={a.author.verified_student}
+                        />
+                      )}
+                      {(role === "owner" || role === "officer") && (
+                        <span className="shrink-0 rounded-full border border-[var(--border)] px-2 py-0.5 text-[11px] capitalize text-[var(--ink-muted)]">
+                          {role}
+                        </span>
+                      )}
+                      <span className="text-[var(--ink-muted)]">·</span>
+                      <LocalTime iso={a.created_at} variant="ago" className="text-xs text-[var(--ink-muted)]" />
+                    </div>
+                    {canDelete && (
+                      <form
+                        action={async () => {
+                          "use server";
+                          await deleteAnnouncement(a.id, clubId);
+                        }}
+                      >
+                        <button type="submit" className="shrink-0 text-xs text-[var(--danger)] hover:underline">
+                          Delete
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                  <p className="mt-1.5 whitespace-pre-wrap text-sm text-[var(--ink)]">{a.body}</p>
                 </div>
-                <p className="mt-1.5 whitespace-pre-wrap text-sm text-[var(--ink)]">{a.body}</p>
               </div>
             );
           })}
@@ -287,6 +335,7 @@ export default async function ClubPage({ params }: { params: Promise<{ slug: str
             body: announcements[0].body,
             created_at: announcements[0].created_at,
             author: announcements[0].author,
+            authorRole: roleByUserId.get(announcements[0].author_id) ?? null,
           }}
         />
       )}

@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import AvatarImage from "@/components/ui/AvatarImage";
 import UserBadges from "@/components/profile/UserBadges";
 import RoleControls from "./RoleControls";
-import { approveMember, rejectMember } from "@/app/(app)/community/clubs/actions";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { approveMember, rejectMember, kickMember, banMember } from "@/app/(app)/community/clubs/actions";
 
 export type ClubMemberProfile = {
   username: string;
@@ -31,6 +32,7 @@ export default function MemberRow({
   pending,
   canManage,
   isOwnerViewer,
+  viewerId,
 }: {
   clubId: string;
   userId: string;
@@ -40,11 +42,20 @@ export default function MemberRow({
   pending?: boolean;
   canManage: boolean;
   isOwnerViewer: boolean;
+  viewerId: string;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [banOpen, setBanOpen] = useState(false);
+  const [modPending, startModTransition] = useTransition();
   const name = profile?.display_name ?? profile?.username ?? "Unknown";
+
+  // Owner can kick/ban members and officers; officer can only kick/ban
+  // members. Nobody can act on an owner, or on themselves. club_kick/
+  // club_ban (RLS) are the real gate -- this only decides what renders.
+  const canModerate =
+    canManage && !pending && role !== "owner" && userId !== viewerId && (role !== "officer" || isOwnerViewer);
 
   async function act(approve: boolean) {
     setBusy(true);
@@ -53,6 +64,24 @@ export default function MemberRow({
     setBusy(false);
     if (res.error) setError(res.error);
     else router.refresh();
+  }
+
+  function kick() {
+    setError(null);
+    startModTransition(async () => {
+      const res = await kickMember(clubId, userId);
+      if (res.error) setError(res.error);
+      else router.refresh();
+    });
+  }
+
+  function ban() {
+    setError(null);
+    startModTransition(async () => {
+      const res = await banMember(clubId, userId);
+      if (res.error) setError(res.error);
+      else router.refresh();
+    });
   }
 
   return (
@@ -119,6 +148,37 @@ export default function MemberRow({
       {!pending && isOwnerViewer && (
         <RoleControls clubId={clubId} userId={userId} role={role} title={title} />
       )}
+
+      {canModerate && (
+        <div className="flex shrink-0 items-center gap-3 text-xs font-medium">
+          <button
+            type="button"
+            onClick={kick}
+            disabled={modPending}
+            className="text-[var(--ink-muted)] transition hover:text-[var(--ink)] hover:underline disabled:opacity-50"
+          >
+            Remove
+          </button>
+          <button
+            type="button"
+            onClick={() => setBanOpen(true)}
+            disabled={modPending}
+            className="text-[var(--danger)] transition hover:underline disabled:opacity-50"
+          >
+            Ban
+          </button>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={banOpen}
+        onClose={() => setBanOpen(false)}
+        onConfirm={ban}
+        title="Ban member?"
+        message={`${name} will be removed and won't be able to rejoin this club.`}
+        confirmLabel="Ban"
+        destructive
+      />
     </div>
   );
 }
