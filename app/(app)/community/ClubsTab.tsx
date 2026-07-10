@@ -43,7 +43,7 @@ export default async function ClubsTab() {
 
   const { data: verifiedData } = await supabase
     .from("clubs")
-    .select("*")
+    .select("id, slug, name, purpose, avatar_url, is_verified")
     .eq("is_verified", true)
     .order("created_at", { ascending: false })
     .limit(10)
@@ -52,7 +52,7 @@ export default async function ClubsTab() {
 
   const { data: memberRows } = await supabase
     .from("club_members")
-    .select("club_id, clubs(*)")
+    .select("club_id, clubs(id, slug, name, purpose, avatar_url, is_verified)")
     .eq("user_id", user.id)
     .eq("status", "accepted")
     .order("joined_at", { ascending: false })
@@ -71,7 +71,7 @@ export default async function ClubsTab() {
   const excludeIds = [...verifiedIds, ...yourClubIds];
   let discoverQuery = supabase
     .from("clubs")
-    .select("*")
+    .select("id, slug, name, purpose, avatar_url, is_verified")
     .order("created_at", { ascending: false })
     .limit(20);
   if (excludeIds.length > 0) {

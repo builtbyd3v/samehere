@@ -289,7 +289,11 @@ export async function updateClub(clubId: string, patch: ClubUpdate): Promise<Clu
     return { error: "Up to 5 tags." };
   }
 
-  const { error } = await supabase.from("clubs").update(patch).eq("id", clubId);
+  // Explicit allow-list: never spread caller-supplied keys into the update.
+  // name/slug/is_verified are frozen by the DB guard, but name isn't (rename
+  // owns it), so an extra `name` key here could drift name from slug.
+  const safe = { purpose: patch.purpose, tags: patch.tags, is_open: patch.is_open };
+  const { error } = await supabase.from("clubs").update(safe).eq("id", clubId);
   if (error) return { error: friendlyDbError(error) };
 
   const path = await clubDetailPath(supabase, clubId);
@@ -355,10 +359,13 @@ export async function createChannel(
   });
   if (error) {
     return {
+      // Generic on 23505: a name-collision message would confirm the existence
+      // of an owner-only channel that can_read_channel otherwise hides from an
+      // officer creating channels.
       error: mapRpcError(
         error,
         ["not authorized", "invalid channel role", "no such club", "not authenticated", "account suspended"],
-        "A channel with that name already exists.",
+        "Could not create channel. Try a different name.",
       ),
     };
   }
