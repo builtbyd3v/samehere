@@ -41,7 +41,7 @@ const ANNOUNCEMENT_SELECT =
 // real gate everywhere -- the role checks below only decide what renders,
 // mirroring how FollowRequests/PostMenu treat their own definer-fn-backed
 // actions. The membership/accepted fetch and the conditional pending/
-// announcements fetch are each parallelized (mirrors ThreadsTab.tsx).
+// announcements fetch are each parallelized.
 export default async function ClubPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const supabase = await createClient();

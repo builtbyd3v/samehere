@@ -909,8 +909,7 @@ exception when others then
 end $$;
 reset role;
 
--- ============ clubs + threads (20260714130000_threads.sql / 20260714140000_clubs.sql
--- / 20260714150000_clubs_threads_revoke_anon.sql) ============
+-- ============ clubs (20260714140000_clubs.sql / 20260714150000_clubs_threads_revoke_anon.sql) ============
 -- Four fresh users, isolated from the A/B/C block-state above (A currently has
 -- B blocked, per H5_reverse's closing comment) so nothing here accidentally
 -- inherits that block's effect on posts/messages visibility.
@@ -1866,135 +1865,6 @@ exception when others then
 end $$;
 reset role;
 
--- ============ threads fixtures ============
--- week_start is UNIQUE and live prod may already hold real (Monday-dated)
--- thread rows. Pinning the open fixture to a SUNDAY does NOT make it
--- collision-proof on its own: current_thread_id() ranks all summary-is-null
--- rows by week_start desc, and the deployed weekly-thread scheduler inserts
--- a real Monday-dated open thread for the current week -- that row's
--- week_start outranks this Sunday fixture on every day, so
--- current_thread_id() would keep returning the REAL thread and THREADS_9's
--- "should be accepted" insert would fail: a false-positive CI failure on
--- unrelated production data, not a regression. Neutralize any real open
--- thread before inserting the fixture so the fixture is unambiguously the
--- only summary-is-null row. Safe: this whole file runs in one transaction
--- rolled back at the end (see file header), so mutating real rows here is
--- restored on rollback.
-do $$
-declare
-  v_today date := (now() at time zone 'America/New_York')::date;
-  v_sunday date := v_today - extract(dow from v_today)::int; -- dow: Sun=0..Sat=6
-  v_open_id uuid;
-  v_closed_id uuid;
-begin
-  update public.threads
-     set summary = coalesce(summary, 'rls_test: neutralized so THREADS_9 fixture is unambiguous')
-   where summary is null;
-
-  insert into public.threads (prompt, week_start, summary)
-  values ('RLS test fixture: open thread', v_sunday, null)
-  returning id into v_open_id;
-
-  insert into public.threads (prompt, week_start, summary)
-  values ('RLS test fixture: closed thread', v_sunday - 7, 'already summarized, closed')
-  returning id into v_closed_id;
-
-  insert into tests_fixture (key, id) values ('thread_open', v_open_id), ('thread_closed', v_closed_id);
-end $$;
-
--- ============ THREADS_9 — a post may only target the CURRENT open thread ============
-select tests.as_user(id) from tests_fixture where key = 'c';
-do $$
-declare
-  v_open uuid := (select id from tests_fixture where key = 'thread_open');
-  v_closed uuid := (select id from tests_fixture where key = 'thread_closed');
-  v_ok_id uuid;
-  v_cnt int;
-  v_committed boolean := false;
-  v_state text;
-  v_current uuid;
-begin
-  -- Setup guard, not a regression assertion: confirm the neutralization above
-  -- actually worked before trusting current_thread_id() to agree with v_open.
-  -- If some other real thread still outranks the fixture, fail loudly here
-  -- with a setup-error message instead of the misleading "with_check
-  -- regressed" exception a few lines down.
-  v_current := public.current_thread_id();
-  if v_current is distinct from v_open then
-    raise exception 'THREADS_9 SETUP FAILURE: current_thread_id() returned % but the fixture open thread is % -- a real open thread is outranking the Sunday-dated fixture; the neutralization update in the threads-fixtures block did not take effect', v_current, v_open;
-  end if;
-
-  insert into public.posts (user_id, content, thread_id)
-  values ((select auth.uid()), 'answering the open thread fixture prompt', v_open)
-  returning id into v_ok_id;
-
-  select count(*) into v_cnt from public.posts where id = v_ok_id and thread_id = v_open;
-  if v_cnt <> 1 then
-    raise exception 'THREADS_9 REGRESSION: a post targeting the current open thread was not accepted (% row(s))', v_cnt;
-  end if;
-
-  begin
-    insert into public.posts (user_id, content, thread_id)
-    values ((select auth.uid()), 'trying to necro-post into a closed thread', v_closed);
-    v_committed := true;
-  exception when others then
-    v_committed := false;
-    v_state := sqlstate;
-  end;
-  if v_committed then
-    raise exception 'THREADS_9 REGRESSION: a post targeting a non-current (closed) thread was accepted -- the posts INSERT with_check''s thread_id conjunct regressed';
-  end if;
-  if v_state <> '42501' then
-    raise exception 'THREADS_9 WRONG REASON: the closed-thread post raised SQLSTATE % -- expected 42501 (RLS with_check on "authed users create posts")', v_state;
-  end if;
-
-  insert into tests_results values ('THREADS_9', true, 'ok');
-exception when others then
-  insert into tests_results values ('THREADS_9', false, sqlerrm);
-end $$;
-reset role;
-
--- ============ THREADS_10 — every authed user can read threads; anon cannot ============
-select tests.as_user(id) from tests_fixture where key = 'c';
-do $$
-declare v_cnt int;
-begin
-  select count(*) into v_cnt from public.threads
-   where id in ((select id from tests_fixture where key = 'thread_open'),
-                (select id from tests_fixture where key = 'thread_closed'));
-  if v_cnt <> 2 then
-    raise exception 'THREADS_10 REGRESSION: an authenticated user read % of the 2 thread fixture row(s), expected 2', v_cnt;
-  end if;
-  insert into tests_results values ('THREADS_10_authed', true, 'ok');
-exception when others then
-  insert into tests_results values ('THREADS_10_authed', false, sqlerrm);
-end $$;
-reset role;
-
-select tests.as_anon();
-do $$
-declare
-  v_raised boolean := false;
-  v_state text;
-begin
-  begin
-    perform 1 from public.threads limit 1;
-  exception when others then
-    v_raised := true;
-    v_state := sqlstate;
-  end;
-  if not v_raised then
-    raise exception 'THREADS_10 REGRESSION: anon selected from public.threads without error -- threads was never granted SELECT to anon';
-  end if;
-  if v_state <> '42501' then
-    raise exception 'THREADS_10 WRONG REASON: anon threads select raised SQLSTATE % -- expected 42501 (permission denied for table threads)', v_state;
-  end if;
-  insert into tests_results values ('THREADS_10_anon', true, 'ok');
-exception when others then
-  insert into tests_results values ('THREADS_10_anon', false, sqlerrm);
-end $$;
-reset role;
-
 -- ============ report ============
 -- Print the PASS/FAIL table FIRST so the operator sees exactly which assertions
 -- failed, then raise so psql exits non-zero and the harness actually gates.
@@ -2012,7 +1882,7 @@ declare v_failed int;
 begin
   select count(*) into v_failed from tests_results where not passed;
   if v_failed > 0 then
-    raise exception '% assertion(s) failed — see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, CLUBS_V2_1, CLUBS_V2_2, CLUBS_V2_3, CLUBS_V2_7a, CLUBS_V2_4, CLUBS_V2_7b, CLUBS_V2_5_officer_denied, CLUBS_V2_5_owner_allowed, CLUBS_V2_6_outsider, CLUBS_V2_6_pending, CLUBS_V2_8, CLUBS_V2_9, CLUBS_V2_10, CLUBS_V2_11a, CLUBS_V2_11b, CLUBS_V2_11b_unchanged, CLUBS_V2_11c, THREADS_9, THREADS_10_authed, THREADS_10_anon.', v_failed;
+    raise exception '% assertion(s) failed — see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, CLUBS_V2_1, CLUBS_V2_2, CLUBS_V2_3, CLUBS_V2_7a, CLUBS_V2_4, CLUBS_V2_7b, CLUBS_V2_5_officer_denied, CLUBS_V2_5_owner_allowed, CLUBS_V2_6_outsider, CLUBS_V2_6_pending, CLUBS_V2_8, CLUBS_V2_9, CLUBS_V2_10, CLUBS_V2_11a, CLUBS_V2_11b, CLUBS_V2_11b_unchanged, CLUBS_V2_11c.', v_failed;
   end if;
 end $$;
 

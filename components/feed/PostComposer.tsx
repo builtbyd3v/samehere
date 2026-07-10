@@ -54,12 +54,8 @@ async function downscaleImage(file: File): Promise<File> {
 
 export default function PostComposer({
   isPro = false,
-  threadId,
-  hideAi = false,
 }: {
   isPro?: boolean;
-  threadId?: string;
-  hideAi?: boolean;
 }) {
   const [state, formAction, pending] = useActionState<ComposerState, FormData>(createPost, {});
   const ref = useRef<HTMLFormElement>(null);
@@ -247,7 +243,6 @@ export default function PostComposer({
           .
         </p>
       )}
-      {threadId && <input type="hidden" name="thread_id" value={threadId} />}
       <MentionTextarea
         textareaRef={textareaRef}
         name="content"
@@ -260,11 +255,9 @@ export default function PostComposer({
           setLen(v.trim().length);
         }}
         placeholder={
-          threadId
-            ? "Answer this week's prompt…"
-            : shortcutLabel
-              ? `Share what you're building… Type @ to mention (${shortcutLabel} to post)`
-              : "Share what you're building… Type @ to mention"
+          shortcutLabel
+            ? `Share what you're building… Type @ to mention (${shortcutLabel} to post)`
+            : "Share what you're building… Type @ to mention"
         }
         className="w-full resize-y bg-transparent text-[16px] leading-[1.55] text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
       />
@@ -323,45 +316,41 @@ export default function PostComposer({
             />
             Add media
           </label>
-          {!hideAi && (
-            <>
+          <button
+            type="button"
+            onClick={onNudge}
+            disabled={nudging}
+            className="text-xs text-[var(--ink-muted)] underline disabled:opacity-50"
+          >
+            {nudging ? "Thinking…" : "Need an idea?"}
+          </button>
+          {isPro ? (
+            preImprove !== null ? (
               <button
                 type="button"
-                onClick={onNudge}
-                disabled={nudging}
-                className="text-xs text-[var(--ink-muted)] underline disabled:opacity-50"
+                onClick={undoImprove}
+                className="text-xs text-[var(--ink-muted)] underline"
               >
-                {nudging ? "Thinking…" : "Need an idea?"}
+                Undo improve
               </button>
-              {isPro ? (
-                preImprove !== null ? (
-                  <button
-                    type="button"
-                    onClick={undoImprove}
-                    className="text-xs text-[var(--ink-muted)] underline"
-                  >
-                    Undo improve
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={onImprove}
-                    disabled={improving || len === 0}
-                    className="text-xs font-medium text-[var(--blue)] underline disabled:opacity-50"
-                  >
-                    {improving ? "Improving…" : "✦ Improve"}
-                  </button>
-                )
-              ) : (
-                <Link
-                  href="/pro"
-                  title="Improve is a Pro feature. Upgrade to rewrite your drafts."
-                  className="text-xs font-medium text-[var(--ink-muted)] underline"
-                >
-                  ✦ Improve <span className="text-[var(--ink-faint)]">(Pro)</span>
-                </Link>
-              )}
-            </>
+            ) : (
+              <button
+                type="button"
+                onClick={onImprove}
+                disabled={improving || len === 0}
+                className="text-xs font-medium text-[var(--blue)] underline disabled:opacity-50"
+              >
+                {improving ? "Improving…" : "✦ Improve"}
+              </button>
+            )
+          ) : (
+            <Link
+              href="/pro"
+              title="Improve is a Pro feature. Upgrade to rewrite your drafts."
+              className="text-xs font-medium text-[var(--ink-muted)] underline"
+            >
+              ✦ Improve <span className="text-[var(--ink-faint)]">(Pro)</span>
+            </Link>
           )}
         </div>
         <button

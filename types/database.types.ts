@@ -795,7 +795,6 @@ export type Database = {
           id: string
           media: Json
           post_type: string | null
-          thread_id: string | null
           user_id: string | null
         }
         Insert: {
@@ -805,7 +804,6 @@ export type Database = {
           id?: string
           media?: Json
           post_type?: string | null
-          thread_id?: string | null
           user_id?: string | null
         }
         Update: {
@@ -815,17 +813,9 @@ export type Database = {
           id?: string
           media?: Json
           post_type?: string | null
-          thread_id?: string | null
           user_id?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "posts_thread_id_fkey"
-            columns: ["thread_id"]
-            isOneToOne: false
-            referencedRelation: "threads"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "posts_user_id_fkey"
             columns: ["user_id"]
@@ -1238,30 +1228,6 @@ export type Database = {
         }
         Relationships: []
       }
-      threads: {
-        Row: {
-          created_at: string
-          id: string
-          prompt: string
-          summary: string | null
-          week_start: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          prompt: string
-          summary?: string | null
-          week_start: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          prompt?: string
-          summary?: string | null
-          week_start?: string
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
@@ -1348,7 +1314,6 @@ export type Database = {
       }
       current_is_admin: { Args: never; Returns: boolean }
       current_is_suspended: { Args: never; Returns: boolean }
-      current_thread_id: { Args: never; Returns: string }
       expire_lapsed_pro: { Args: never; Returns: number }
       get_blocked_ids: { Args: never; Returns: string[] }
       get_dm_peer: {
