@@ -89,6 +89,10 @@ export default function CreateClubModal() {
               Open <span className="text-[var(--ink-muted)]">, anyone can join without approval</span>
             </span>
           </label>
+          {/* ponytail: no club id exists until after creation, so the avatar
+              picker lives on the club page's own "change photo" affordance
+              instead of here -- avoids a two-step upload dance in this modal. */}
+          <p className="text-xs text-[var(--ink-muted)]">You can add a club photo after creating it.</p>
           {state.error && (
             <p role="alert" className="text-sm text-[var(--danger)]">
               {state.error}

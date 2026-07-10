@@ -5,11 +5,16 @@ import { createClient } from "@/lib/supabase/client";
 import AvatarImage from "@/components/ui/AvatarImage";
 import UserBadges from "@/components/profile/UserBadges";
 import MessageTime from "@/components/messages/MessageTime";
+import EmptyState from "@/components/ui/EmptyState";
+import ChannelBar, { type ClubChannel } from "@/components/clubs/ChannelBar";
 import { IconSend } from "@/components/icons";
 import { useSubmitShortcut } from "@/lib/useSubmitShortcut";
 import { TEXT_LIMITS, textLimitError } from "@/lib/utils/validation";
 
 const MAX = TEXT_LIMITS.message;
+// Consecutive messages from the same sender within this window render as one
+// visual block (avatar + name shown once) instead of repeating per bubble.
+const GROUP_WINDOW_MS = 5 * 60 * 1000;
 
 type Sender = {
   username: string;
@@ -32,43 +37,116 @@ function resizeTextarea(el: HTMLTextAreaElement | null) {
   el.style.height = `${Math.min(el.scrollHeight, 128)}px`;
 }
 
-// Merge a "real" row (id assigned by the DB) into state, regardless of
-// whether it arrived via the insert's REST response or the Realtime
-// postgres_changes broadcast — those two paths race with no ordering
-// guarantee, so both funnel through here to keep exactly one row per message:
-//  - if the real id is already present, the other path won the race — just
-//    drop the now-redundant optimistic placeholder.
-//  - else if a still-pending optimistic row for this sender exists, replace
-//    it in place (preserves list position + its cached sender).
-//  - else append (a message from someone else, or ours with no pending row).
-function mergeRealMessage(
-  prev: ClubMessage[],
-  real: { id: string; sender_id: string; content: string; created_at: string },
-  fallbackSender: Sender | null,
-): ClubMessage[] {
-  if (prev.some((x) => x.id === real.id)) {
-    return prev.filter((x) => !(x.id.startsWith("optimistic-") && x.sender_id === real.sender_id));
-  }
-  const optimisticIdx = prev.findIndex((x) => x.id.startsWith("optimistic-") && x.sender_id === real.sender_id);
-  if (optimisticIdx !== -1) {
-    return prev.map((x, i) => (i === optimisticIdx ? { ...real, sender: x.sender } : x));
-  }
-  return [...prev, { ...real, sender: fallbackSender }];
+function sameGroup(prev: ClubMessage, cur: ClubMessage): boolean {
+  if (prev.sender_id !== cur.sender_id) return false;
+  return Math.abs(new Date(cur.created_at).getTime() - new Date(prev.created_at).getTime()) < GROUP_WINDOW_MS;
 }
 
-// Club group chat. Reuses the DM `messages` table + Realtime publication
-// (see components/messages/MessageThreadLive.tsx) but, unlike a 2-party DM,
-// a club has N members so every message needs its own sender identity
-// (avatar + name + Pro badge) rather than relying on a peer header.
-// RLS ('club member reads/sends message') is the real gate; the parent only
-// renders this for accepted members, so no membership check here.
+// Append a message by its real DB id, ignoring anything already present, then
+// keep the list in timestamp order. This is the whole dedupe strategy -- see
+// the module doc comment below for why no optimistic/tempId bookkeeping is
+// needed.
+function upsertMessage(prev: ClubMessage[], row: ClubMessage): ClubMessage[] {
+  if (prev.some((x) => x.id === row.id)) return prev;
+  return [...prev, row].sort((a, b) => a.created_at.localeCompare(b.created_at));
+}
+
+// Club group chat, now multi-channel (v2): a club has N channels, each its
+// own `messages` conversation, role-gated by RLS (can_read_channel). This
+// component owns the channel list + selection; ChannelBar is presentational
+// (+ its own create/delete RPC calls); ChannelMessages below owns one
+// channel's message pane and is remounted (via `key`) whenever the selected
+// channel changes -- that remount is the resubscribe: React's cleanup tears
+// down the old postgres_changes subscription before the new one mounts, so
+// there's no manual "switch channel" wiring to get wrong.
 export default function ClubChat({
   clubId,
-  conversationId,
   viewerId,
+  viewerRole,
 }: {
   clubId: string;
+  viewerId: string;
+  viewerRole: string;
+}) {
+  const [supabase] = useState(createClient);
+  const [channels, setChannels] = useState<ClubChannel[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("club_channels")
+        .select("id, name, min_role, conversation_id, is_general")
+        .eq("club_id", clubId)
+        .order("created_at", { ascending: true })
+        .returns<ClubChannel[]>();
+      if (cancelled) return;
+      const list = data ?? [];
+      setChannels(list);
+      setSelectedId((list.find((c) => c.is_general) ?? list[0])?.id ?? null);
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [supabase, clubId]);
+
+  function handleCreated(channel: ClubChannel) {
+    setChannels((prev) => [...prev, channel]);
+    setSelectedId(channel.id);
+  }
+
+  function handleDeleted(channelId: string) {
+    setChannels((prev) => {
+      const next = prev.filter((c) => c.id !== channelId);
+      setSelectedId((cur) => (cur === channelId ? (next.find((c) => c.is_general) ?? next[0])?.id ?? null : cur));
+      return next;
+    });
+  }
+
+  const selected = channels.find((c) => c.id === selectedId) ?? null;
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[var(--border)]">
+      {!loading && channels.length > 0 && (
+        <ChannelBar
+          clubId={clubId}
+          viewerRole={viewerRole}
+          channels={channels}
+          selectedId={selectedId}
+          onSelect={setSelectedId}
+          onCreated={handleCreated}
+          onDeleted={handleDeleted}
+        />
+      )}
+      {loading ? (
+        <p className="px-5 py-16 text-center text-sm text-[var(--ink-muted)]">Loading channels…</p>
+      ) : selected ? (
+        <ChannelMessages
+          key={selected.id}
+          conversationId={selected.conversation_id}
+          channelName={selected.name}
+          viewerId={viewerId}
+        />
+      ) : (
+        <EmptyState title="No channels yet" description="You don't have access to any channel in this club." />
+      )}
+    </div>
+  );
+}
+
+// One channel's message pane: load, realtime-subscribe, send. Scoped to a
+// single conversation_id -- switching channels remounts this component
+// entirely (see the `key` in the parent), so every hook below starts clean.
+function ChannelMessages({
+  conversationId,
+  channelName,
+  viewerId,
+}: {
   conversationId: string;
+  channelName: string;
   viewerId: string;
 }) {
   const [supabase] = useState(createClient);
@@ -119,7 +197,7 @@ export default function ClubChat({
 
   useEffect(() => {
     const channel = supabase
-      .channel(`club:${clubId}:${conversationId}`)
+      .channel(`club-channel:${conversationId}`)
       .on(
         "postgres_changes",
         {
@@ -136,7 +214,7 @@ export default function ClubChat({
             created_at: string;
           };
           const cached = senderCache.current.get(m.sender_id) ?? null;
-          setMessages((prev) => mergeRealMessage(prev, m, cached));
+          setMessages((prev) => upsertMessage(prev, { ...m, sender: cached }));
           // First message from a member we haven't seen yet — fetch their
           // profile once and backfill it onto the row.
           if (!cached) {
@@ -158,7 +236,7 @@ export default function ClubChat({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [supabase, clubId, conversationId]);
+  }, [supabase, conversationId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "instant" });
@@ -166,6 +244,27 @@ export default function ClubChat({
 
   useSubmitShortcut(textareaRef, () => formRef.current?.requestSubmit(), !pending && !loading);
 
+  // Dedupe strategy: NO optimistic placeholder rows. A send only ever adds a
+  // message once it has a real DB id -- either from this insert's own REST
+  // response, or from the Realtime echo, whichever arrives first; `upsertMessage`
+  // (by id) makes the second arrival a no-op. That sidesteps the old bug
+  // entirely: there is nothing to mis-correlate because there are no temp ids.
+  //
+  // Race 1 -- REST resolves first (the common case): `.insert().select().single()`
+  // returns the row, upsertMessage appends it (sorted into place). The Realtime
+  // broadcast for the same insert arrives moments later; upsertMessage sees the
+  // id already present and returns `prev` unchanged. One row, correct position.
+  //
+  // Race 2 -- Realtime resolves first (slow network on our own REST call):
+  // the postgres_changes payload arrives before our insert's response does;
+  // upsertMessage appends it (fetching/backfilling the sender profile if new).
+  // When our REST response then resolves, upsertMessage again sees the id
+  // already present and no-ops. Same one row.
+  //
+  // Because matching is keyed on the DB-assigned id (never on sender_id or
+  // array position), firing off several sends back-to-back can't cross-wire
+  // two messages the way sender-id-only matching could -- each message's own
+  // id is the only thing that ever identifies it.
   async function handleSend(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const el = textareaRef.current;
@@ -179,12 +278,6 @@ export default function ClubChat({
 
     setError(null);
     setPending(true);
-
-    const tempId = `optimistic-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    setMessages((prev) => [
-      ...prev,
-      { id: tempId, sender_id: viewerId, content: text, created_at: new Date().toISOString(), sender: viewerSender },
-    ]);
     if (el) {
       el.value = "";
       resizeTextarea(el);
@@ -197,7 +290,6 @@ export default function ClubChat({
       .single();
 
     if (insertError || !data) {
-      setMessages((prev) => prev.filter((m) => m.id !== tempId));
       setError("Could not send message. Try again.");
       if (el) {
         el.value = text;
@@ -205,30 +297,34 @@ export default function ClubChat({
         el.focus();
       }
     } else {
-      // If Realtime already delivered this row (raced ahead of this REST
-      // response), mergeRealMessage drops the tempId placeholder instead of
-      // converting it into a second row with the same real id.
-      setMessages((prev) => mergeRealMessage(prev, data, viewerSender));
+      setMessages((prev) => upsertMessage(prev, { ...data, sender: viewerSender }));
     }
     setPending(false);
   }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="min-h-0 flex-1 overflow-y-auto bg-[var(--canvas)]">
+      <div className="min-h-0 flex-1 overflow-y-auto rounded-b-2xl bg-[var(--canvas)]">
         {loading ? (
           <p className="px-5 py-16 text-center text-sm text-[var(--ink-muted)]">Loading messages…</p>
         ) : messages.length === 0 ? (
           <p className="px-5 py-16 text-center text-sm text-[var(--ink-muted)]">No messages yet. Say hello.</p>
         ) : (
-          <div className="flex flex-col gap-4 px-4 py-5 sm:px-5">
-            {messages.map((m) => {
+          <div className="flex flex-col px-4 py-5 sm:px-5">
+            {messages.map((m, i) => {
               const mine = m.sender_id === viewerId;
+              const prev = messages[i - 1];
+              const grouped = !!prev && sameGroup(prev, m);
               const name = m.sender?.display_name ?? m.sender?.username ?? "Member";
               return (
-                <div key={m.id} className={`flex items-end gap-2 ${mine ? "flex-row-reverse" : "justify-start"}`}>
+                <div
+                  key={m.id}
+                  className={`flex items-end gap-2 ${mine ? "flex-row-reverse" : "justify-start"} ${grouped ? "mt-0.5" : "mt-3"}`}
+                >
                   {!mine &&
-                    (m.sender?.avatar_url ? (
+                    (grouped ? (
+                      <div className="w-7 shrink-0" />
+                    ) : m.sender?.avatar_url ? (
                       <AvatarImage
                         src={m.sender.avatar_url}
                         alt=""
@@ -241,7 +337,7 @@ export default function ClubChat({
                       </div>
                     ))}
                   <div className={`flex max-w-[min(82%,24rem)] flex-col ${mine ? "items-end" : "items-start"}`}>
-                    {!mine && (
+                    {!mine && !grouped && (
                       <div className="mb-0.5 flex items-center gap-1 px-1 text-xs font-medium text-[var(--ink-muted)]">
                         <span>{name}</span>
                         {m.sender && <UserBadges isPro={m.sender.is_pro} className="h-3 w-3" />}
@@ -277,7 +373,7 @@ export default function ClubChat({
             required
             maxLength={MAX}
             disabled={loading}
-            placeholder="Message the club"
+            placeholder={`Message #${channelName}`}
             onInput={(e) => resizeTextarea(e.currentTarget)}
             className="max-h-32 min-h-[24px] flex-1 resize-none bg-transparent py-1 text-[15px] leading-relaxed text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)] disabled:opacity-50"
           />

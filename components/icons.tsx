@@ -168,3 +168,38 @@ export const IconPin = ({ className = cls }: { className?: string }) => (
     <circle cx="12" cy="10" r="2.3" />
   </svg>
 );
+
+/**
+ * Verified club badge — check-badge glyph. Stroke-only (no fill+cutout) so it
+ * doesn't assume a background color to contrast against.
+ */
+export const IconVerified = ({ className = "h-4 w-4" }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+    <path d="M8 3h8l5 5v8l-5 5H8l-5-5V8Z" />
+    <path d="M8.5 12.3l2.3 2.3 4.5-5" />
+  </svg>
+);
+
+/** Channel name marker — hash prefix (club channel names). */
+export const IconHash = ({ className = "h-4 w-4" }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+    <path d="M9 4 7 20M17 4l-2 16M4 9h16M3 15h16" />
+  </svg>
+);
+
+/** Generic add action — e.g. create channel. */
+export const IconPlus = ({ className = "h-4 w-4" }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+    <path d="M12 5v14M5 12h14" />
+  </svg>
+);
+
+/** Generic delete action — e.g. delete channel. */
+export const IconTrash = ({ className = "h-4 w-4" }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+    <path d="M4 7h16" />
+    <path d="M10 11v6M14 11v6" />
+    <path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13" />
+    <path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3" />
+  </svg>
+);

@@ -39,6 +39,32 @@ async function clubDetailPath(
   return data ? `/community/clubs/${data.slug}` : null;
 }
 
+// deleteChannel is only handed a channelId -- look up its club before the
+// delete RPC runs (the row, and the join to it, is gone after) so we can
+// still revalidate the right club page.
+async function clubIdForChannel(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  channelId: string,
+): Promise<string | null> {
+  const { data } = await supabase.from("club_channels").select("club_id").eq("id", channelId).maybeSingle();
+  return data?.club_id ?? null;
+}
+
+// Same shape as friendlyDbError above, but for the channel/rename RPCs whose
+// RAISE messages and unique_violation meaning are different from the
+// club-level ones (a duplicate channel name isn't a taken URL).
+function mapRpcError(
+  error: { code?: string; message?: string } | null,
+  known: string[],
+  duplicateMessage: string,
+): string {
+  if (!error) return "Something went wrong.";
+  if (error.code === "23505") return duplicateMessage;
+  const message = error.message ?? "";
+  const hit = known.find((k) => message.includes(k));
+  return hit ? hit.charAt(0).toUpperCase() + hit.slice(1) : "Something went wrong.";
+}
+
 // Maps a raised Postgres exception to a friendly, user-safe message. RAISE
 // messages in this codebase's definer functions are short and already
 // user-safe (e.g. 'already a member') -- pass those through as-is; only
@@ -245,7 +271,9 @@ export async function deleteClub(clubId: string): Promise<ClubActionState> {
   return { ok: true };
 }
 
-export type ClubUpdate = { name?: string; purpose?: string; tags?: string[]; is_open?: boolean };
+// name is NOT settable here -- slug is frozen against plain updates, so a
+// name change must go through renameClub instead (it regenerates the slug).
+export type ClubUpdate = { purpose?: string; tags?: string[]; is_open?: boolean };
 
 export async function updateClub(clubId: string, patch: ClubUpdate): Promise<ClubActionState> {
   const supabase = await createClient();
@@ -254,9 +282,6 @@ export async function updateClub(clubId: string, patch: ClubUpdate): Promise<Clu
   } = await supabase.auth.getUser();
   if (!user) return { error: "You must be logged in." };
 
-  if (patch.name !== undefined && (patch.name.length < 2 || patch.name.length > 60)) {
-    return { error: "Name must be 2-60 characters." };
-  }
   if (patch.purpose !== undefined && (patch.purpose.length < 10 || patch.purpose.length > 280)) {
     return { error: "Purpose must be 10-280 characters." };
   }
@@ -265,6 +290,129 @@ export async function updateClub(clubId: string, patch: ClubUpdate): Promise<Clu
   }
 
   const { error } = await supabase.from("clubs").update(patch).eq("id", clubId);
+  if (error) return { error: friendlyDbError(error) };
+
+  const path = await clubDetailPath(supabase, clubId);
+  if (path) revalidatePath(path);
+  return { ok: true };
+}
+
+// A name change regenerates the slug (slug is frozen against updateClub), so
+// the caller must redirect to the returned slug after this succeeds.
+export async function renameClub(clubId: string, newName: string): Promise<ClubActionState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be logged in." };
+
+  const trimmed = newName.trim();
+  if (trimmed.length < 2 || trimmed.length > 60) {
+    return { error: "Name must be 2-60 characters." };
+  }
+
+  const { data, error } = await supabase.rpc("club_rename", { p_club: clubId, p_name: trimmed });
+  if (error) {
+    return {
+      error: mapRpcError(
+        error,
+        ["not authorized", "name must be 2-60 characters", "no such club", "not authenticated", "account suspended"],
+        "That name is taken.",
+      ),
+    };
+  }
+
+  const newSlug = data ?? undefined;
+  if (newSlug) revalidatePath(`/community/clubs/${newSlug}`);
+  return { ok: true, slug: newSlug };
+}
+
+export type ClubChannelActionState = ClubActionState & { channelId?: string };
+
+export async function createChannel(
+  clubId: string,
+  name: string,
+  minRole: string,
+): Promise<ClubChannelActionState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be logged in." };
+
+  const trimmed = name.trim();
+  if (trimmed.length < 1 || trimmed.length > 40) {
+    return { error: "Channel name must be 1-40 characters." };
+  }
+  if (!["everyone", "officers", "owner"].includes(minRole)) {
+    return { error: "Invalid channel role." };
+  }
+
+  const { data, error } = await supabase.rpc("club_create_channel", {
+    p_club: clubId,
+    p_name: trimmed,
+    p_min_role: minRole,
+  });
+  if (error) {
+    return {
+      error: mapRpcError(
+        error,
+        ["not authorized", "invalid channel role", "no such club", "not authenticated", "account suspended"],
+        "A channel with that name already exists.",
+      ),
+    };
+  }
+
+  const path = await clubDetailPath(supabase, clubId);
+  if (path) revalidatePath(path);
+  return { ok: true, channelId: data ?? undefined };
+}
+
+export async function deleteChannel(channelId: string): Promise<ClubActionState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be logged in." };
+
+  // Looked up before the delete RPC runs -- the row (and this join) is gone
+  // once it succeeds.
+  const clubId = await clubIdForChannel(supabase, channelId);
+
+  const { error } = await supabase.rpc("club_delete_channel", { p_channel: channelId });
+  if (error) {
+    return {
+      error: mapRpcError(
+        error,
+        [
+          "the general channel cannot be deleted",
+          "not authorized",
+          "no such channel",
+          "not authenticated",
+          "account suspended",
+        ],
+        "A channel with that name already exists.",
+      ),
+    };
+  }
+
+  if (clubId) {
+    const path = await clubDetailPath(supabase, clubId);
+    if (path) revalidatePath(path);
+  }
+  return { ok: true };
+}
+
+// The bucket upload happens client-side (keyed by '<clubId>/...', mirroring
+// profile/edit's avatar upload) -- this only persists the resulting URL.
+export async function updateClubAvatar(clubId: string, avatarUrl: string): Promise<ClubActionState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be logged in." };
+
+  const { error } = await supabase.from("clubs").update({ avatar_url: avatarUrl }).eq("id", clubId);
   if (error) return { error: friendlyDbError(error) };
 
   const path = await clubDetailPath(supabase, clubId);

@@ -4,6 +4,9 @@ import EmptyState from "@/components/ui/EmptyState";
 import MemberRow, { type ClubMemberProfile } from "@/components/clubs/MemberRow";
 import JoinLeaveButton, { ClubOwnerActions } from "@/components/clubs/JoinLeaveButton";
 import ClubChat from "@/components/clubs/ClubChat";
+import ClubAvatar from "@/components/clubs/ClubAvatar";
+import ClubVerifiedBadge from "@/components/clubs/ClubVerifiedBadge";
+import ClubHeaderEditor from "./ClubHeaderEditor";
 import { postAnnouncement, deleteAnnouncement } from "../actions";
 
 type ClubMemberRow = {
@@ -42,7 +45,7 @@ export default async function ClubPage({ params }: { params: Promise<{ slug: str
 
   const { data: club } = await supabase
     .from("clubs")
-    .select("id, slug, name, purpose, tags, is_open, created_by, conversation_id")
+    .select("id, slug, name, purpose, tags, is_open, created_by, avatar_url, is_verified")
     .eq("slug", slug)
     .maybeSingle();
   if (!club) notFound();
@@ -106,24 +109,31 @@ export default async function ClubPage({ params }: { params: Promise<{ slug: str
     <main className="page-enter mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8">
       <div className="card p-4 sm:p-5">
         <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <h1 className="text-xl font-semibold tracking-[-0.02em] sm:text-2xl">{club.name}</h1>
-            <p className="mt-1 text-sm text-[var(--ink-muted)]">{club.purpose}</p>
-            {club.tags.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {club.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded-full border border-[var(--border)] px-2.5 py-0.5 text-xs text-[var(--ink-muted)]"
-                  >
-                    {tag}
-                  </span>
-                ))}
+          <div className="flex min-w-0 gap-3">
+            <ClubAvatar url={club.avatar_url} name={club.name} className="h-14 w-14 shrink-0" />
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <h1 className="text-xl font-semibold tracking-[-0.02em] sm:text-2xl">{club.name}</h1>
+                {club.is_verified && <ClubVerifiedBadge />}
               </div>
-            )}
-            <p className="mt-2 text-sm text-[var(--ink-muted)]">
-              {accepted.length} {accepted.length === 1 ? "member" : "members"}
-            </p>
+              <p className="mt-1 text-sm text-[var(--ink-muted)]">{club.purpose}</p>
+              {club.tags.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {club.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-full border border-[var(--border)] px-2.5 py-0.5 text-xs text-[var(--ink-muted)]"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+              <p className="mt-2 text-sm text-[var(--ink-muted)]">
+                {accepted.length} {accepted.length === 1 ? "member" : "members"}
+              </p>
+              {isOwner && <ClubHeaderEditor clubId={club.id} name={club.name} />}
+            </div>
           </div>
           <JoinLeaveButton clubId={club.id} isOpen={club.is_open} initialStatus={initialStatus} />
         </div>
@@ -243,8 +253,8 @@ export default async function ClubPage({ params }: { params: Promise<{ slug: str
 
       <section className="card mt-5 p-4 sm:p-5">
         <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">Chat</h2>
-        {isAcceptedMember && club.conversation_id ? (
-          <ClubChat clubId={club.id} conversationId={club.conversation_id} viewerId={user.id} />
+        {isAcceptedMember && membership ? (
+          <ClubChat clubId={club.id} viewerId={user.id} viewerRole={membership.role} />
         ) : (
           <EmptyState title="Join to see the chat" description="Club chat is for members only." />
         )}

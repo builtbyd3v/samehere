@@ -2,6 +2,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import EmptyState from "@/components/ui/EmptyState";
 import CreateClubModal from "@/app/(app)/community/clubs/CreateClubModal";
+import ClubAvatar from "@/components/clubs/ClubAvatar";
+import ClubVerifiedBadge from "@/components/clubs/ClubVerifiedBadge";
 import type { Database } from "@/types/database.types";
 
 type ClubRow = Database["public"]["Tables"]["clubs"]["Row"];
@@ -13,12 +15,11 @@ function ClubRowItem({ club, count }: { club: ClubRow; count: number }) {
       href={`/community/clubs/${club.slug}`}
       className="flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3 transition hover:bg-[var(--featured-surface)]"
     >
-      <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-sm font-semibold text-[var(--ink-muted)]">
-        {club.name.charAt(0).toUpperCase()}
-      </div>
+      <ClubAvatar url={club.avatar_url} name={club.name} className="h-9 w-9 shrink-0" />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-1.5">
           <span className="truncate font-medium text-[var(--ink)]">{club.name}</span>
+          {club.is_verified && <ClubVerifiedBadge />}
           <span className="shrink-0 text-xs text-[var(--ink-muted)]">
             {count} {count === 1 ? "member" : "members"}
           </span>
@@ -40,6 +41,15 @@ export default async function ClubsTab() {
   } = await supabase.auth.getUser();
   if (!user) return null; // proxy already gates this route
 
+  const { data: verifiedData } = await supabase
+    .from("clubs")
+    .select("*")
+    .eq("is_verified", true)
+    .order("created_at", { ascending: false })
+    .limit(10)
+    .returns<ClubRow[]>();
+  const verifiedClubs = verifiedData ?? [];
+
   const { data: memberRows } = await supabase
     .from("club_members")
     .select("club_id, clubs(*)")
@@ -48,23 +58,33 @@ export default async function ClubsTab() {
     .order("joined_at", { ascending: false })
     .returns<MemberClubRow[]>();
 
+  // Each club renders in exactly one section: Verified wins, then Your clubs,
+  // then Discover. Dedupe the lower sections against the higher ones.
+  const verifiedIds = new Set(verifiedClubs.map((c) => c.id));
+
   const yourClubs = (memberRows ?? [])
     .map((r) => r.clubs)
-    .filter((c): c is ClubRow => c !== null);
+    .filter((c): c is ClubRow => c !== null)
+    .filter((c) => !verifiedIds.has(c.id));
   const yourClubIds = yourClubs.map((c) => c.id);
 
+  const excludeIds = [...verifiedIds, ...yourClubIds];
   let discoverQuery = supabase
     .from("clubs")
     .select("*")
     .order("created_at", { ascending: false })
     .limit(20);
-  if (yourClubIds.length > 0) {
-    discoverQuery = discoverQuery.not("id", "in", `(${yourClubIds.join(",")})`);
+  if (excludeIds.length > 0) {
+    discoverQuery = discoverQuery.not("id", "in", `(${excludeIds.join(",")})`);
   }
   const { data: discoverData } = await discoverQuery.returns<ClubRow[]>();
   const discoverClubs = discoverData ?? [];
 
-  const allIds = [...yourClubIds, ...discoverClubs.map((c) => c.id)];
+  const allIds = [
+    ...verifiedClubs.map((c) => c.id),
+    ...yourClubIds,
+    ...discoverClubs.map((c) => c.id),
+  ];
   const counts = new Map<string, number>();
   if (allIds.length > 0) {
     const { data: countRows } = await supabase
@@ -79,6 +99,17 @@ export default async function ClubsTab() {
 
   return (
     <div className="mt-5 flex flex-col gap-6">
+      {verifiedClubs.length > 0 && (
+        <section>
+          <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">Verified</h2>
+          <div className="flex flex-col gap-2">
+            {verifiedClubs.map((club) => (
+              <ClubRowItem key={club.id} club={club} count={counts.get(club.id) ?? 0} />
+            ))}
+          </div>
+        </section>
+      )}
+
       {yourClubs.length > 0 && (
         <section>
           <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">Your clubs</h2>

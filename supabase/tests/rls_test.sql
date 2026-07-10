@@ -991,8 +991,11 @@ end $$;
 reset role;
 
 -- club_owner posts one announcement in club_open + one message in EACH club's
--- group chat (owner is an accepted conversation_member of both, via
--- clubs_after_insert).
+-- general channel. NOTE: clubs.conversation_id was dropped by
+-- 20260714160000_clubs_v2_channels_verified_avatar.sql -- every club's default
+-- chat is now its 'general' club_channels row's own conversation, and access
+-- is role-gated via can_read_channel(), not a conversation_members sync, so
+-- the owner posting here needs no membership bookkeeping at all.
 select tests.as_user(id) from tests_fixture where key = 'club_owner';
 do $$
 declare
@@ -1004,8 +1007,10 @@ begin
   insert into public.club_announcements (club_id, author_id, body)
   values (v_open_id, (select auth.uid()), 'welcome to the open club');
 
-  select conversation_id into v_open_conv from public.clubs where id = v_open_id;
-  select conversation_id into v_gated_conv from public.clubs where id = v_gated_id;
+  select conversation_id into v_open_conv from public.club_channels
+   where club_id = v_open_id and is_general;
+  select conversation_id into v_gated_conv from public.club_channels
+   where club_id = v_gated_id and is_general;
 
   insert into public.messages (conversation_id, sender_id, content)
   values (v_open_conv, (select auth.uid()), 'hello open club');
@@ -1295,6 +1300,572 @@ exception when others then
 end $$;
 reset role;
 
+-- ============ clubs v2: channels + role-gating + verified + rename
+-- (20260714160000_clubs_v2_channels_verified_avatar.sql,
+--  20260714170000_clubs_v2_revoke_anon.sql,
+--  20260714180000_backfill_club_channels.sql,
+--  20260714190000_club_rename.sql) ============
+-- One new fixture user: club_pending2, a genuine PENDING (never accepted)
+-- member of club_gated -- club_pending (from the CLUBS_1..8 block above) was
+-- already approved by CLUBS_7b, so no pending-status user survives to this
+-- point in the file's timeline without a fresh one. club_outsider (never
+-- joined anything, never created a club) and club_pending2 (0 clubs created)
+-- are reused below as club-creators for the is_verified/unique-name proofs,
+-- so no other new users are needed.
+do $$
+declare
+  v_pending2 uuid := gen_random_uuid();
+begin
+  insert into auth.users (
+    instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+    raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+    confirmation_token, recovery_token, email_change_token_new, email_change
+  ) values
+    ('00000000-0000-0000-0000-000000000000', v_pending2, 'authenticated', 'authenticated',
+     'rls-test-club-pending2@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_test_club_pending2'), now(), now(), '', '', '', '');
+
+  insert into tests_fixture (key, id) values ('club_pending2', v_pending2);
+end $$;
+
+select tests.as_user(id) from tests_fixture where key = 'club_pending2';
+do $$
+declare v_status text;
+begin
+  v_status := public.club_join((select id from tests_fixture where key = 'club_gated'));
+  if v_status <> 'pending' then
+    raise exception 'fixture setup: club_join (club_pending2, gated) returned %, expected pending', v_status;
+  end if;
+end $$;
+reset role;
+
+-- ============ CLUBS_V2_1 — a club auto-gets a 'general' channel on creation ============
+set local role postgres;
+do $$
+declare
+  v_is_general boolean;
+  v_min_role text;
+  v_conv_kind text;
+begin
+  select ch.is_general, ch.min_role, c.kind
+    into v_is_general, v_min_role, v_conv_kind
+  from public.club_channels ch
+  join public.conversations c on c.id = ch.conversation_id
+  where ch.club_id = (select id from tests_fixture where key = 'club_open') and ch.name = 'general';
+  if not found then
+    raise exception 'CLUBS_V2_1 REGRESSION: club_open has no "general" club_channels row -- clubs_after_insert should create one on every club creation';
+  end if;
+  if v_is_general is distinct from true or v_min_role <> 'everyone' or v_conv_kind <> 'club' then
+    raise exception 'CLUBS_V2_1 REGRESSION: general channel has is_general=%, min_role=%, conversation.kind=% -- expected true/everyone/club', v_is_general, v_min_role, v_conv_kind;
+  end if;
+  insert into tests_results values ('CLUBS_V2_1', true, 'ok');
+exception when others then
+  insert into tests_results values ('CLUBS_V2_1', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ setup: club_owner opens an 'officers' channel + an 'owner'
+-- channel in club_gated, seeding one message in each ============
+select tests.as_user(id) from tests_fixture where key = 'club_owner';
+do $$
+declare
+  v_gated uuid := (select id from tests_fixture where key = 'club_gated');
+  v_officers_ch uuid;
+  v_owner_ch uuid;
+  v_officers_conv uuid;
+  v_owner_conv uuid;
+begin
+  v_officers_ch := public.club_create_channel(v_gated, 'officers-lounge', 'officers');
+  v_owner_ch := public.club_create_channel(v_gated, 'owners-only', 'owner');
+
+  select conversation_id into v_officers_conv from public.club_channels where id = v_officers_ch;
+  select conversation_id into v_owner_conv from public.club_channels where id = v_owner_ch;
+
+  insert into public.messages (conversation_id, sender_id, content)
+  values (v_officers_conv, (select auth.uid()), 'officers only chatter');
+  insert into public.messages (conversation_id, sender_id, content)
+  values (v_owner_conv, (select auth.uid()), 'owner only chatter');
+
+  insert into tests_fixture (key, id) values
+    ('ch_officers', v_officers_ch), ('ch_owner', v_owner_ch),
+    ('ch_officers_conv', v_officers_conv), ('ch_owner_conv', v_owner_conv);
+end $$;
+reset role;
+
+-- ============ CLUBS_V2_2 — an accepted plain member CAN read + send in the general channel ============
+-- club_pending is an accepted 'member'-role row in club_gated (CLUBS_7b
+-- approved it above), still plain member at this point in the file (promoted
+-- to officer only further down, for CLUBS_V2_4).
+select tests.as_user(id) from tests_fixture where key = 'club_pending';
+do $$
+declare
+  v_gated_conv uuid := (select id from tests_fixture where key = 'club_gated_conv');
+  v_cnt int;
+  v_can boolean;
+begin
+  v_can := public.can_read_channel(v_gated_conv);
+  if not v_can then
+    raise exception 'CLUBS_V2_2 REGRESSION: can_read_channel() returned false for an accepted plain member against their own club''s general (everyone) channel';
+  end if;
+
+  select count(*) into v_cnt from public.club_channels where conversation_id = v_gated_conv;
+  if v_cnt <> 1 then
+    raise exception 'CLUBS_V2_2 REGRESSION: an accepted plain member could not select the general channel row of their own club (% row(s))', v_cnt;
+  end if;
+
+  select count(*) into v_cnt from public.messages where conversation_id = v_gated_conv;
+  if v_cnt < 1 then
+    raise exception 'CLUBS_V2_2 REGRESSION: an accepted plain member could not read the seeded message in the general channel of their own club';
+  end if;
+
+  insert into public.messages (conversation_id, sender_id, content)
+  values (v_gated_conv, (select auth.uid()), 'plain member says hi in general');
+
+  insert into tests_results values ('CLUBS_V2_2', true, 'ok');
+exception when others then
+  insert into tests_results values ('CLUBS_V2_2', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ CLUBS_V2_3 — a plain member CANNOT read/select/send in an 'officers' channel ============
+select tests.as_user(id) from tests_fixture where key = 'club_pending';
+do $$
+declare
+  v_officers_conv uuid := (select id from tests_fixture where key = 'ch_officers_conv');
+  v_cnt int;
+  v_can boolean;
+  v_committed boolean := false;
+  v_state text;
+begin
+  v_can := public.can_read_channel(v_officers_conv);
+  if v_can then
+    raise exception 'CLUBS_V2_3 REGRESSION: can_read_channel() returned true for a plain member against an officers-only channel';
+  end if;
+
+  select count(*) into v_cnt from public.club_channels where conversation_id = v_officers_conv;
+  if v_cnt <> 0 then
+    raise exception 'CLUBS_V2_3 REGRESSION: a plain member selected % officers-channel row(s) via "club channels read"', v_cnt;
+  end if;
+
+  select count(*) into v_cnt from public.messages where conversation_id = v_officers_conv;
+  if v_cnt <> 0 then
+    raise exception 'CLUBS_V2_3 REGRESSION: a plain member read % message(s) from the officers channel', v_cnt;
+  end if;
+
+  begin
+    insert into public.messages (conversation_id, sender_id, content)
+    values (v_officers_conv, (select auth.uid()), 'plain member trying to sneak into officers chat');
+    v_committed := true;
+  exception when others then
+    v_committed := false;
+    v_state := sqlstate;
+  end;
+  if v_committed then
+    raise exception 'CLUBS_V2_3 REGRESSION: a plain member inserted a message into the officers-only channel';
+  end if;
+  if v_state <> '42501' then
+    raise exception 'CLUBS_V2_3 WRONG REASON: officers-channel insert raised SQLSTATE % -- expected 42501 (RLS with_check on "club channel sends message")', v_state;
+  end if;
+
+  insert into tests_results values ('CLUBS_V2_3', true, 'ok');
+exception when others then
+  insert into tests_results values ('CLUBS_V2_3', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ CLUBS_V2_7a — club_create_channel by a plain member raises 'not authorized' ============
+-- Done here, before club_pending is promoted below, while it is still a
+-- plain ('member'-role) row.
+select tests.as_user(id) from tests_fixture where key = 'club_pending';
+do $$
+declare
+  v_raised boolean := false;
+begin
+  begin
+    perform public.club_create_channel(
+      (select id from tests_fixture where key = 'club_gated'), 'members-channel', 'everyone'
+    );
+  exception when others then
+    v_raised := true;
+    if sqlerrm <> 'not authorized' then
+      raise exception 'CLUBS_V2_7a WRONG REASON: club_create_channel raised %, expected the plain ''not authorized'' guard', sqlerrm;
+    end if;
+  end;
+  if not v_raised then
+    raise exception 'CLUBS_V2_7a REGRESSION: an accepted plain member called club_create_channel() and it did not raise';
+  end if;
+  insert into tests_results values ('CLUBS_V2_7a', true, 'ok');
+exception when others then
+  insert into tests_results values ('CLUBS_V2_7a', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ setup: club_owner promotes club_pending to officer ============
+select tests.as_user(id) from tests_fixture where key = 'club_owner';
+do $$
+begin
+  perform public.club_set_role(
+    (select id from tests_fixture where key = 'club_gated'),
+    (select id from tests_fixture where key = 'club_pending'),
+    'officer', null
+  );
+end $$;
+reset role;
+
+-- ============ CLUBS_V2_4 — after promotion, the SAME member instantly reads + sends
+-- in the officers channel, with no club_members row insert/delete (only its
+-- existing row's `role` column changed by club_set_role above) ============
+select tests.as_user(id) from tests_fixture where key = 'club_pending';
+do $$
+declare
+  v_officers_conv uuid := (select id from tests_fixture where key = 'ch_officers_conv');
+  v_cnt int;
+  v_can boolean;
+begin
+  v_can := public.can_read_channel(v_officers_conv);
+  if not v_can then
+    raise exception 'CLUBS_V2_4 REGRESSION: can_read_channel() still false for the same user immediately after being promoted to officer';
+  end if;
+
+  select count(*) into v_cnt from public.club_channels where conversation_id = v_officers_conv;
+  if v_cnt <> 1 then
+    raise exception 'CLUBS_V2_4 REGRESSION: the newly-promoted officer could not select the officers channel row (% row(s))', v_cnt;
+  end if;
+
+  select count(*) into v_cnt from public.messages where conversation_id = v_officers_conv;
+  if v_cnt < 1 then
+    raise exception 'CLUBS_V2_4 REGRESSION: the newly-promoted officer could not read the seeded officers-channel message';
+  end if;
+
+  insert into public.messages (conversation_id, sender_id, content)
+  values (v_officers_conv, (select auth.uid()), 'now an officer, saying hi');
+
+  insert into tests_results values ('CLUBS_V2_4', true, 'ok');
+exception when others then
+  insert into tests_results values ('CLUBS_V2_4', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ CLUBS_V2_7b — club_create_channel by an officer succeeds ============
+-- (owner already succeeded implicitly in the officers/owner-channel setup
+-- above -- that fixture block has no exception handler, so it could not have
+-- gotten this far had the owner's calls failed.)
+select tests.as_user(id) from tests_fixture where key = 'club_pending';
+do $$
+declare
+  v_channel uuid;
+  v_cnt int;
+begin
+  v_channel := public.club_create_channel(
+    (select id from tests_fixture where key = 'club_gated'), 'officer-made-channel', 'everyone'
+  );
+  select count(*) into v_cnt from public.club_channels where id = v_channel;
+  if v_cnt <> 1 then
+    raise exception 'CLUBS_V2_7b REGRESSION: club_create_channel() by an officer did not produce a selectable channel row';
+  end if;
+  insert into tests_results values ('CLUBS_V2_7b', true, 'ok');
+exception when others then
+  insert into tests_results values ('CLUBS_V2_7b', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ CLUBS_V2_5 — an 'owner' channel: officer denied, owner allowed ============
+select tests.as_user(id) from tests_fixture where key = 'club_pending';
+do $$
+declare
+  v_owner_conv uuid := (select id from tests_fixture where key = 'ch_owner_conv');
+  v_cnt int;
+  v_can boolean;
+begin
+  v_can := public.can_read_channel(v_owner_conv);
+  if v_can then
+    raise exception 'CLUBS_V2_5 REGRESSION: can_read_channel() returned true for an officer against an owner-only channel';
+  end if;
+
+  select count(*) into v_cnt from public.club_channels where conversation_id = v_owner_conv;
+  if v_cnt <> 0 then
+    raise exception 'CLUBS_V2_5 REGRESSION: an officer selected % owner-channel row(s)', v_cnt;
+  end if;
+
+  select count(*) into v_cnt from public.messages where conversation_id = v_owner_conv;
+  if v_cnt <> 0 then
+    raise exception 'CLUBS_V2_5 REGRESSION: an officer read % message(s) from the owner-only channel', v_cnt;
+  end if;
+
+  insert into tests_results values ('CLUBS_V2_5_officer_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('CLUBS_V2_5_officer_denied', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'club_owner';
+do $$
+declare
+  v_owner_conv uuid := (select id from tests_fixture where key = 'ch_owner_conv');
+  v_cnt int;
+begin
+  select count(*) into v_cnt from public.club_channels where conversation_id = v_owner_conv;
+  if v_cnt <> 1 then
+    raise exception 'CLUBS_V2_5 REGRESSION: the club owner could not select their own owner-only channel row (% row(s))', v_cnt;
+  end if;
+
+  select count(*) into v_cnt from public.messages where conversation_id = v_owner_conv;
+  if v_cnt < 1 then
+    raise exception 'CLUBS_V2_5 REGRESSION: the club owner could not read the seeded owner-channel message';
+  end if;
+
+  insert into tests_results values ('CLUBS_V2_5_owner_allowed', true, 'ok');
+exception when others then
+  insert into tests_results values ('CLUBS_V2_5_owner_allowed', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ CLUBS_V2_6 — a non-member and a pending member read NO channel/message ============
+select tests.as_user(id) from tests_fixture where key = 'club_outsider';
+do $$
+declare
+  v_general_conv uuid := (select id from tests_fixture where key = 'club_gated_conv');
+  v_officers_conv uuid := (select id from tests_fixture where key = 'ch_officers_conv');
+  v_cnt int;
+begin
+  select count(*) into v_cnt from public.club_channels
+   where conversation_id in (v_general_conv, v_officers_conv);
+  if v_cnt <> 0 then
+    raise exception 'CLUBS_V2_6 REGRESSION: a non-member of club_gated selected % channel row(s) (general/officers)', v_cnt;
+  end if;
+
+  select count(*) into v_cnt from public.messages
+   where conversation_id in (v_general_conv, v_officers_conv);
+  if v_cnt <> 0 then
+    raise exception 'CLUBS_V2_6 REGRESSION: a non-member of club_gated read % message(s) across its channels', v_cnt;
+  end if;
+
+  insert into tests_results values ('CLUBS_V2_6_outsider', true, 'ok');
+exception when others then
+  insert into tests_results values ('CLUBS_V2_6_outsider', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'club_pending2';
+do $$
+declare
+  v_general_conv uuid := (select id from tests_fixture where key = 'club_gated_conv');
+  v_officers_conv uuid := (select id from tests_fixture where key = 'ch_officers_conv');
+  v_cnt int;
+  v_is_member boolean;
+begin
+  v_is_member := public.is_club_member((select id from tests_fixture where key = 'club_gated'));
+  if v_is_member then
+    raise exception 'CLUBS_V2_6 REGRESSION: is_club_member() returned true for club_pending2, whose club_members row is still pending';
+  end if;
+
+  select count(*) into v_cnt from public.club_channels
+   where conversation_id in (v_general_conv, v_officers_conv);
+  if v_cnt <> 0 then
+    raise exception 'CLUBS_V2_6 REGRESSION: a pending (not-yet-accepted) member selected % channel row(s) of the club they applied to', v_cnt;
+  end if;
+
+  select count(*) into v_cnt from public.messages
+   where conversation_id in (v_general_conv, v_officers_conv);
+  if v_cnt <> 0 then
+    raise exception 'CLUBS_V2_6 REGRESSION: a pending member read % message(s) from channels of the club they applied to', v_cnt;
+  end if;
+
+  insert into tests_results values ('CLUBS_V2_6_pending', true, 'ok');
+exception when others then
+  insert into tests_results values ('CLUBS_V2_6_pending', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ CLUBS_V2_8 — club_delete_channel on the general channel raises ============
+select tests.as_user(id) from tests_fixture where key = 'club_owner';
+do $$
+declare
+  v_general_channel uuid;
+  v_raised boolean := false;
+begin
+  select id into v_general_channel from public.club_channels
+   where club_id = (select id from tests_fixture where key = 'club_gated') and is_general;
+
+  begin
+    perform public.club_delete_channel(v_general_channel);
+  exception when others then
+    v_raised := true;
+    if sqlerrm <> 'the general channel cannot be deleted' then
+      raise exception 'CLUBS_V2_8 WRONG REASON: club_delete_channel(general) raised %, expected ''the general channel cannot be deleted''', sqlerrm;
+    end if;
+  end;
+  if not v_raised then
+    raise exception 'CLUBS_V2_8 REGRESSION: the club owner deleted the general channel -- club_delete_channel() no longer protects it';
+  end if;
+
+  insert into tests_results values ('CLUBS_V2_8', true, 'ok');
+exception when others then
+  insert into tests_results values ('CLUBS_V2_8', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ CLUBS_V2_9 — a club owner cannot set is_verified=true, at INSERT or UPDATE ============
+-- Reuses club_outsider as the creator: it has created 0 clubs so far (0/2 of
+-- rl_check_clubs' 24h cap), and its unrelated non-membership in club_open /
+-- club_gated has no bearing on its own ownership of the club it creates here.
+select tests.as_user(id) from tests_fixture where key = 'club_outsider';
+do $$
+declare
+  v_id uuid;
+  v_verified boolean;
+begin
+  insert into public.clubs (slug, name, purpose, is_open, created_by, is_verified)
+  values ('rls-test-verify-club', 'RLS Test Verify Club',
+          'fixture club for the is_verified freeze proof', true, (select auth.uid()), true)
+  returning id, is_verified into v_id, v_verified;
+
+  if v_verified then
+    raise exception 'CLUBS_V2_9 REGRESSION: inserting a club as authenticated with is_verified=true landed with is_verified=true -- guard_clubs_privileged''s INSERT branch does not force it false';
+  end if;
+
+  update public.clubs set is_verified = true where id = v_id;
+  select is_verified into v_verified from public.clubs where id = v_id;
+  if v_verified then
+    raise exception 'CLUBS_V2_9 REGRESSION: updating is_verified=true as the club''s own owner succeeded -- guard_clubs_privileged''s UPDATE branch does not freeze it';
+  end if;
+
+  insert into tests_results values ('CLUBS_V2_9', true, 'ok');
+exception when others then
+  insert into tests_results values ('CLUBS_V2_9', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ CLUBS_V2_10 — clubs cannot share a name case-insensitively ============
+-- Reuses club_pending2 as the creator: 0 clubs created so far, well under the
+-- 24h/2 cap even after the two attempts below (the second never commits).
+select tests.as_user(id) from tests_fixture where key = 'club_pending2';
+do $$
+declare
+  v_id uuid;
+  v_committed boolean := false;
+  v_state text;
+begin
+  insert into public.clubs (slug, name, purpose, is_open, created_by)
+  values ('rls-test-robotics-a', 'Robotics',
+          'fixture club for the case-insensitive unique-name proof', true, (select auth.uid()))
+  returning id into v_id;
+
+  begin
+    insert into public.clubs (slug, name, purpose, is_open, created_by)
+    values ('rls-test-robotics-b', 'robotics',
+            'a second club colliding on name, different case', true, (select auth.uid()));
+    v_committed := true;
+  exception when others then
+    v_committed := false;
+    v_state := sqlstate;
+  end;
+
+  if v_committed then
+    raise exception 'CLUBS_V2_10 REGRESSION: two clubs named ''Robotics'' and ''robotics'' both inserted -- clubs_name_lower_unique_idx is not enforced';
+  end if;
+  if v_state <> '23505' then
+    raise exception 'CLUBS_V2_10 WRONG REASON: the colliding-name insert raised SQLSTATE % -- expected 23505 (unique_violation on lower(name))', v_state;
+  end if;
+
+  insert into tests_results values ('CLUBS_V2_10', true, 'ok');
+exception when others then
+  insert into tests_results values ('CLUBS_V2_10', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ CLUBS_V2_11 — club_rename: owner OK, non-owner denied, direct slug UPDATE still frozen ============
+select tests.as_user(id) from tests_fixture where key = 'club_owner';
+do $$
+declare
+  v_returned_slug text;
+  v_name text;
+  v_slug text;
+begin
+  v_returned_slug := public.club_rename(
+    (select id from tests_fixture where key = 'club_open'), 'RLS Renamed Club Two'
+  );
+  if v_returned_slug <> 'rls-renamed-club-two' then
+    raise exception 'CLUBS_V2_11a REGRESSION: club_rename returned slug %, expected rls-renamed-club-two', v_returned_slug;
+  end if;
+
+  select name, slug into v_name, v_slug from public.clubs
+   where id = (select id from tests_fixture where key = 'club_open');
+  if v_name <> 'RLS Renamed Club Two' or v_slug <> 'rls-renamed-club-two' then
+    raise exception 'CLUBS_V2_11a REGRESSION: clubs row reads name=%, slug=% after club_rename, expected ''RLS Renamed Club Two'' / rls-renamed-club-two', v_name, v_slug;
+  end if;
+
+  insert into tests_results values ('CLUBS_V2_11a', true, 'ok');
+exception when others then
+  insert into tests_results values ('CLUBS_V2_11a', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'club_outsider';
+do $$
+declare
+  v_raised boolean := false;
+begin
+  begin
+    perform public.club_rename(
+      (select id from tests_fixture where key = 'club_open'), 'Hijacked Name'
+    );
+  exception when others then
+    v_raised := true;
+    if sqlerrm <> 'not authorized' then
+      raise exception 'CLUBS_V2_11b WRONG REASON: club_rename raised %, expected the plain ''not authorized'' guard', sqlerrm;
+    end if;
+  end;
+  if not v_raised then
+    raise exception 'CLUBS_V2_11b REGRESSION: a non-owner (club_outsider, no role at all in club_open) called club_rename() and it did not raise';
+  end if;
+  insert into tests_results values ('CLUBS_V2_11b', true, 'ok');
+exception when others then
+  insert into tests_results values ('CLUBS_V2_11b', false, sqlerrm);
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare
+  v_name text;
+  v_slug text;
+begin
+  select name, slug into v_name, v_slug from public.clubs
+   where id = (select id from tests_fixture where key = 'club_open');
+  if v_name <> 'RLS Renamed Club Two' or v_slug <> 'rls-renamed-club-two' then
+    raise exception 'CLUBS_V2_11b REGRESSION: clubs row reads name=%, slug=% after a rejected non-owner club_rename() call -- expected unchanged (RLS Renamed Club Two / rls-renamed-club-two)', v_name, v_slug;
+  end if;
+  insert into tests_results values ('CLUBS_V2_11b_unchanged', true, 'ok');
+exception when others then
+  insert into tests_results values ('CLUBS_V2_11b_unchanged', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'club_owner';
+do $$
+begin
+  update public.clubs set slug = 'direct-update-hack'
+   where id = (select id from tests_fixture where key = 'club_open');
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare
+  v_slug text;
+begin
+  select slug into v_slug from public.clubs
+   where id = (select id from tests_fixture where key = 'club_open');
+  if v_slug <> 'rls-renamed-club-two' then
+    raise exception 'CLUBS_V2_11c REGRESSION: a direct owner UPDATE of clubs.slug changed it to %, expected it frozen at rls-renamed-club-two -- guard_clubs_privileged''s UPDATE branch regressed', v_slug;
+  end if;
+  insert into tests_results values ('CLUBS_V2_11c', true, 'ok');
+exception when others then
+  insert into tests_results values ('CLUBS_V2_11c', false, sqlerrm);
+end $$;
+reset role;
+
 -- ============ threads fixtures ============
 -- week_start is UNIQUE and live prod may already hold real (Monday-dated)
 -- thread rows. Pinning the open fixture to a SUNDAY does NOT make it
@@ -1441,7 +2012,7 @@ declare v_failed int;
 begin
   select count(*) into v_failed from tests_results where not passed;
   if v_failed > 0 then
-    raise exception '% assertion(s) failed — see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, THREADS_9, THREADS_10_authed, THREADS_10_anon.', v_failed;
+    raise exception '% assertion(s) failed — see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, CLUBS_V2_1, CLUBS_V2_2, CLUBS_V2_3, CLUBS_V2_7a, CLUBS_V2_4, CLUBS_V2_7b, CLUBS_V2_5_officer_denied, CLUBS_V2_5_owner_allowed, CLUBS_V2_6_outsider, CLUBS_V2_6_pending, CLUBS_V2_8, CLUBS_V2_9, CLUBS_V2_10, CLUBS_V2_11a, CLUBS_V2_11b, CLUBS_V2_11b_unchanged, CLUBS_V2_11c, THREADS_9, THREADS_10_authed, THREADS_10_anon.', v_failed;
   end if;
 end $$;
 
