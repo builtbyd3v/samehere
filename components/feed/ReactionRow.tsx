@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { IconHeart, IconSame, IconComment, IconRepost, IconBookmark } from "@/components/icons";
+import { IconSame, IconComment, IconRepost, IconBookmark } from "@/components/icons";
 import QuoteRepostModal from "./QuoteRepostModal";
 import type { FeedPost } from "./PostCard";
 
@@ -13,11 +13,9 @@ type Props = {
   post?: FeedPost;
   viewerId: string | null;
   authorPrivate: boolean;
-  like: number;
   samehere: number;
   repost: number;
   commentCount: number;
-  mineLike: boolean;
   mineSamehere: boolean;
   mineRepost: boolean;
   mineBookmark: boolean;
@@ -30,8 +28,6 @@ export const action =
 
 const inactive = "text-[var(--ink-muted)] hover:bg-[var(--featured-surface)] hover:text-[var(--ink)]";
 
-export const likeColor = (on: boolean) =>
-  on ? "bg-[var(--featured-surface)] text-[#f4245e]" : inactive;
 export const sameColor = (on: boolean) =>
   on ? "bg-[var(--featured-surface)] text-[var(--blue)]" : inactive;
 export const repostColor = (on: boolean) =>
@@ -77,24 +73,18 @@ export default function ReactionRow(props: Props) {
   const [quoteOpen, setQuoteOpen] = useState(false);
   const [repostMenu, setRepostMenu] = useState(false);
   const [s, setS] = useState({
-    like: props.like,
     samehere: props.samehere,
     repost: props.repost,
-    mineLike: props.mineLike,
     mineSamehere: props.mineSamehere,
     mineRepost: props.mineRepost,
     mineBookmark: props.mineBookmark,
   });
 
-  async function toggleReaction(type: "like" | "samehere") {
+  async function toggleReaction(type: "samehere") {
     if (!viewerId) return;
-    const mine = type === "like" ? s.mineLike : s.mineSamehere;
+    const mine = s.mineSamehere;
     const d = mine ? -1 : 1;
-    setS((p) =>
-      type === "like"
-        ? { ...p, mineLike: !mine, like: p.like + d }
-        : { ...p, mineSamehere: !mine, samehere: p.samehere + d },
-    );
+    setS((p) => ({ ...p, mineSamehere: !mine, samehere: p.samehere + d }));
     const { error } = mine
       ? await supabase.from("reactions").delete().eq(targetCol, targetId).eq("user_id", viewerId).eq("type", type)
       : await supabase.from("reactions").insert(
@@ -102,12 +92,7 @@ export default function ReactionRow(props: Props) {
             ? { repost_id: quoteId, user_id: viewerId, type }
             : { post_id: postId, user_id: viewerId, type },
         );
-    if (error)
-      setS((p) =>
-        type === "like"
-          ? { ...p, mineLike: mine, like: p.like - d }
-          : { ...p, mineSamehere: mine, samehere: p.samehere - d },
-      );
+    if (error) setS((p) => ({ ...p, mineSamehere: mine, samehere: p.samehere - d }));
   }
 
   async function toggleRepost() {
@@ -139,17 +124,6 @@ export default function ReactionRow(props: Props) {
   return (
     <>
       <div className={`${compact ? "mt-3" : "mt-4"} flex flex-wrap items-center gap-0.5 border-t border-[var(--border)] pt-3`}>
-        <ActionButton
-          onClick={() => toggleReaction("like")}
-          disabled={!viewerId}
-          aria-pressed={s.mineLike}
-          aria-label={s.mineLike ? "Liked" : "Like"}
-          className={`${action} ${likeColor(s.mineLike)}`}
-        >
-          <IconHeart on={s.mineLike} />
-          {s.like > 0 && <span>{s.like}</span>}
-        </ActionButton>
-
         <ActionButton
           onClick={() => toggleReaction("samehere")}
           disabled={!viewerId}

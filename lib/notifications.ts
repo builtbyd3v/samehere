@@ -12,7 +12,7 @@ export type NotificationRow = {
   actor_display_name: string | null;
   actor_avatar_url: string | null;
   actor_is_pro: boolean;
-  reaction_type: "like" | "samehere" | null;
+  reaction_type: "samehere" | null;
 };
 
 export function formatNotificationTime(iso: string): string {
@@ -45,7 +45,6 @@ export function notificationLabel(
     case "comment":
       return `${actorName} commented on your post`;
     case "reaction":
-      if (reactionType === "like") return `${actorName} liked your post`;
       if (reactionType === "samehere") return `${actorName} said SameHere on your post`;
       return `${actorName} reacted to your post`;
     case "mention":

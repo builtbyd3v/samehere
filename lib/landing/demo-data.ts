@@ -8,7 +8,6 @@ export type DemoPost = {
   avatarSeed: string;
   minutesAgo: number;
   content: string;
-  likes: number;
   samehere: number;
   comments: number;
   reposts: number;
@@ -49,7 +48,6 @@ export const DEMO_POSTS: DemoPost[] = [
     avatarSeed: "priya-samehere",
     minutesAgo: 240,
     content: "Anyone else feel behind in CS even when your grades say you're fine? Just me?",
-    likes: 6,
     samehere: 31,
     comments: 14,
     reposts: 2,
@@ -62,7 +60,6 @@ export const DEMO_POSTS: DemoPost[] = [
     avatarSeed: "marcus-samehere",
     minutesAgo: 120,
     content: "Third all-nighter this week. Why does everyone else look like they have it together?",
-    likes: 11,
     samehere: 47,
     comments: 22,
     reposts: 0,
@@ -75,7 +72,6 @@ export const DEMO_POSTS: DemoPost[] = [
     avatarSeed: "jordan-samehere",
     minutesAgo: 1440,
     content: "Shipped my first side project at 2am. No portfolio piece, just something I wanted to exist.",
-    likes: 9,
     samehere: 18,
     comments: 5,
     reposts: 3,

@@ -94,7 +94,7 @@ begin
   returning id into v_post_public;
 
   insert into public.comments (post_id, user_id, content) values (v_post_public, v_a, 'comment by A on C''s post');
-  insert into public.reactions (post_id, user_id, type) values (v_post_public, v_a, 'like');
+  insert into public.reactions (post_id, user_id, type) values (v_post_public, v_a, 'samehere');
 
   -- H5 fixture: B's own public post + a repost of C's public post, so a
   -- block's effect on BOTH surfaces can be asserted.

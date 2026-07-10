@@ -116,11 +116,9 @@ export default function QuotedRepostCard({
             post={original}
             viewerId={viewerId}
             authorPrivate={authorPrivate}
-            like={reactions.filter((x) => x.type === "like").length}
             samehere={reactions.filter((x) => x.type === "samehere").length}
             repost={original.reposts?.length ?? 0}
             commentCount={item.comments?.[0]?.count ?? 0}
-            mineLike={!!viewerId && reactions.some((x) => x.type === "like" && x.user_id === viewerId)}
             mineSamehere={!!viewerId && reactions.some((x) => x.type === "samehere" && x.user_id === viewerId)}
             mineRepost={!!viewerId && (original.reposts ?? []).some((x) => x.user_id === viewerId)}
             mineBookmark={!!viewerId && (item.bookmarks ?? []).some((x) => x.user_id === viewerId)}

@@ -5,12 +5,6 @@ const s = { fill: "none", stroke: "currentColor", strokeWidth: 1.9, strokeLineca
 const cls = "h-5 w-5";
 const fillIf = (on?: boolean) => (on ? "currentColor" : "none");
 
-export const IconHeart = ({ on }: { on?: boolean }) => (
-  <svg className={cls} {...s} fill={fillIf(on)}>
-    <path d="M19 14c1.49-1.46 3-3.2 3-5.5A4.5 4.5 0 0 0 12 5.5 4.5 4.5 0 0 0 2 8.5c0 2.3 1.5 4.04 3 5.5l7 7Z" />
-  </svg>
-);
-
 export const IconSame = ({ on, className = cls }: { on?: boolean; className?: string }) => (
   <svg className={className} {...s} fill={fillIf(on)}>
     <circle cx="9" cy="8" r="3.6" />

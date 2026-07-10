@@ -11,7 +11,7 @@ import AvatarImage from "@/components/ui/AvatarImage";
 import MentionText from "@/components/ui/MentionText";
 import ProfileHoverLink from "@/components/profile/ProfileHoverLink";
 import LocalTime from "@/components/ui/LocalTime";
-import { IconChevronLeft, IconHeart, IconSame, IconRepost } from "@/components/icons";
+import { IconChevronLeft, IconSame, IconRepost } from "@/components/icons";
 import { attachSignedMedia } from "@/lib/media";
 
 type Comment = {
@@ -97,7 +97,6 @@ type PublicPost = {
   author_is_founder: boolean;
   author_is_campus_founder: boolean;
   author_verified_student: boolean;
-  like_count: number;
   samehere_count: number;
   repost_count: number;
 };
@@ -161,9 +160,6 @@ async function PublicPostView({ id }: { id: string }) {
 
         {/* Read-only counts — anon can't react. No buttons, no handlers. */}
         <div className="mt-4 flex items-center gap-4 border-t border-[var(--border)] pt-3 text-[13px] text-[var(--ink-muted)]">
-          <span className="inline-flex items-center gap-1.5">
-            <IconHeart /> {post.like_count}
-          </span>
           <span className="inline-flex items-center gap-1.5">
             <IconSame /> {post.samehere_count}
           </span>

@@ -9,8 +9,8 @@ import { BLUE, BORDER, CANVAS, CARD, FEATURED, INK, INK_FAINT, INK_MUTED, POST }
 // contribution heatmap under the heading "Activity", which is true on a profile
 // card and a lie here — it was nobody's year of work.
 //
-// Like is deliberately absent. It is being retired; SameHere becomes the native
-// reaction, so the card should not advertise a button that is going away.
+// Like is deliberately absent. It has been retired; SameHere is now the native
+// reaction, so the card should not advertise a button that no longer exists.
 //
 // Dark by default: an unfurl lives in Discord, Slack and Twitter, which are dark
 // for most people, and a cream card in a dark feed reads as a blown-out

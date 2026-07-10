@@ -1,7 +1,7 @@
 ﻿import Link from "next/link";
 import AvatarImage from "@/components/ui/AvatarImage";
 import LocalTime from "@/components/ui/LocalTime";
-import { IconAt, IconComment, IconHeart, IconSame } from "@/components/icons";
+import { IconAt, IconComment, IconSame } from "@/components/icons";
 import {
   notificationHref,
   notificationLabel,
@@ -20,7 +20,7 @@ function IconUserPlus() {
   );
 }
 
-function TypeBadge({ type, reactionType }: { type: NotificationRow["type"]; reactionType: NotificationRow["reaction_type"] }) {
+function TypeBadge({ type }: { type: NotificationRow["type"] }) {
   if (type === "follow" || type === "follow_request") {
     return (
       <span className="grid h-[18px] w-[18px] place-items-center rounded-full border border-[var(--surface-card)] bg-[var(--ink)] text-[var(--canvas)]">
@@ -44,12 +44,12 @@ function TypeBadge({ type, reactionType }: { type: NotificationRow["type"]; reac
   }
   return (
     <span className="grid h-[18px] w-[18px] place-items-center rounded-full border border-[var(--surface-card)] bg-[var(--ink)] text-[var(--canvas)] [&_svg]:h-2.5 [&_svg]:w-2.5">
-      {reactionType === "samehere" ? <IconSame /> : <IconHeart on />}
+      <IconSame />
     </span>
   );
 }
 
-function Avatar({ url, name, type, reactionType, isPro }: { url: string | null; name: string; type: NotificationRow["type"]; reactionType: NotificationRow["reaction_type"]; isPro: boolean }) {
+function Avatar({ url, name, type, isPro }: { url: string | null; name: string; type: NotificationRow["type"]; isPro: boolean }) {
   return (
     <div className="relative shrink-0">
       {url ? (
@@ -65,7 +65,7 @@ function Avatar({ url, name, type, reactionType, isPro }: { url: string | null; 
         </div>
       )}
       <span className="absolute -bottom-0.5 -right-0.5">
-        <TypeBadge type={type} reactionType={reactionType} />
+        <TypeBadge type={type} />
       </span>
     </div>
   );
@@ -102,7 +102,7 @@ export default function NotificationList({ items }: { items: NotificationRow[] }
                 !n.read ? "bg-[var(--featured-surface)]/60" : ""
               }`}
             >
-              <Avatar url={n.actor_avatar_url} name={actorName} type={n.type} reactionType={n.reaction_type} isPro={n.actor_is_pro} />
+              <Avatar url={n.actor_avatar_url} name={actorName} type={n.type} isPro={n.actor_is_pro} />
               <div className="min-w-0 flex-1">
                 <p className={`text-[15px] leading-snug text-[var(--ink)] ${!n.read ? "font-medium" : ""}`}>
                   {notificationLabel(n.type, actorName, n.reaction_type)}

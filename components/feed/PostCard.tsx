@@ -166,11 +166,9 @@ export default function PostCard({
           post={post}
           viewerId={viewerId}
           authorPrivate={!!a?.is_private}
-          like={r.filter((x) => x.type === "like").length}
           samehere={r.filter((x) => x.type === "samehere").length}
           repost={post.reposts?.length ?? 0}
           commentCount={post.comments?.[0]?.count ?? 0}
-          mineLike={!!viewerId && r.some((x) => x.type === "like" && x.user_id === viewerId)}
           mineSamehere={!!viewerId && r.some((x) => x.type === "samehere" && x.user_id === viewerId)}
           mineRepost={!!viewerId && (post.reposts ?? []).some((x) => x.user_id === viewerId)}
           mineBookmark={(post.bookmarks ?? []).length > 0}

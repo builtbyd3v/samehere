@@ -2,10 +2,9 @@
 
 import { useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { IconHeart, IconSame, IconComment, IconRepost, IconBookmark } from "@/components/icons";
+import { IconSame, IconComment, IconRepost, IconBookmark } from "@/components/icons";
 import {
   action,
-  likeColor,
   sameColor,
   repostColor,
   bookmarkColor,
@@ -23,8 +22,6 @@ export default function LandingPostCard({ post, interactive = false, highlightSa
   const reduce = useReducedMotion();
   const [samehereOn, setSamehereOn] = useState(highlightSamehere);
   const [samehereCount, setSamehereCount] = useState(post.samehere);
-  const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(post.likes);
   const [reposted, setReposted] = useState(false);
   const [repostCount, setRepostCount] = useState(post.reposts);
   const [bookmarked, setBookmarked] = useState(false);
@@ -36,13 +33,6 @@ export default function LandingPostCard({ post, interactive = false, highlightSa
     const next = !samehereOn;
     setSamehereOn(next);
     setSamehereCount((n) => n + (next ? 1 : -1));
-  }
-
-  function toggleLike() {
-    if (!interactive) return;
-    const next = !liked;
-    setLiked(next);
-    setLikeCount((n) => n + (next ? 1 : -1));
   }
 
   function toggleRepost() {
@@ -88,18 +78,6 @@ export default function LandingPostCard({ post, interactive = false, highlightSa
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-0.5 border-t border-[var(--border)] pt-3">
-        <motion.button
-          type="button"
-          onClick={toggleLike}
-          disabled={!interactive}
-          {...tap}
-          aria-pressed={liked}
-          className={`${action} ${likeColor(liked)} ${interactive ? "cursor-pointer" : "cursor-default"}`}
-        >
-          <IconHeart on={liked} />
-          {likeCount > 0 && <span>{likeCount}</span>}
-        </motion.button>
-
         <motion.button
           type="button"
           onClick={toggleSamehere}

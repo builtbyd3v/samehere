@@ -129,9 +129,7 @@ export default function ReferralShareCard({
 
         {/* Milestone 1: Social Butterfly */}
         <div className="flex items-start gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-4">
-          <IconButterfly
-            className={`h-9 w-9 shrink-0 ${butterflyEarned ? "text-[var(--campus-founder)]" : "text-[var(--ink-muted)]"}`}
-          />
+          <IconButterfly className="h-9 w-9 shrink-0 text-[var(--campus-founder)]" />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-[var(--ink)]">Social Butterfly badge</p>
             {butterflyEarned ? (
@@ -144,9 +142,7 @@ export default function ReferralShareCard({
 
         {/* Milestone 2: Free semester of Pro */}
         <div className="flex items-start gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-4">
-          <IconBolt
-            className={`h-9 w-9 shrink-0 ${proEarned ? "text-[var(--blue)]" : "text-[var(--ink-muted)]"}`}
-          />
+          <IconBolt className="h-9 w-9 shrink-0 text-[var(--blue)]" />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-[var(--ink)]">Free semester of Pro</p>
             {proEarned ? (
