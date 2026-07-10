@@ -152,13 +152,17 @@ export const IconChevronLeft = () => (
 );
 
 /** Community nav — group of people (clubs + threads). */
-// Community: a pennant flag ("club / team"). Deliberately a single simple
-// outline like its navbar siblings (mail, bell), and not a people silhouette
-// -- it must read distinct from IconSame (the SameHere reaction).
+// Community: a group of three people (a front figure flanked by two behind).
+// Same figure language as IconSame (the SameHere reaction) but THREE, so it
+// reads as a group/community and stays distinct from the two-person reaction.
 export const IconCommunity = ({ className = cls }: { className?: string }) => (
   <svg className={className} {...s}>
-    <path d="M6.5 21V3.6" />
-    <path d="M6.5 4.4 16.8 7.2 6.5 10Z" />
+    <circle cx="12" cy="9" r="3.1" />
+    <path d="M6.2 19.5v-.6a5.8 5.8 0 0 1 11.6 0v.6" />
+    <circle cx="5" cy="8.6" r="2.3" />
+    <path d="M1.6 17.8a4.2 4.2 0 0 1 3.3-3" />
+    <circle cx="19" cy="8.6" r="2.3" />
+    <path d="M22.4 17.8a4.2 4.2 0 0 0-3.3-3" />
   </svg>
 );
 
