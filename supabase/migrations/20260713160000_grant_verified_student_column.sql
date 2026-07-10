@@ -1,0 +1,16 @@
+-- HOTFIX: profiles.verified_student was unreadable by client roles.
+--
+-- profiles SELECT is COLUMN-granted (20260711150000 revoked the blanket grant
+-- and granted 23 safe columns individually; 20260711150200 mirrored them to
+-- anon). 20260713100000 added verified_student but granted nothing, so every
+-- session-client select that included the new column raised 42501 "permission
+-- denied for table profiles" — which nulled out the feed, search, profile
+-- pages, settings, and previews for logged-in users. The definer RPCs
+-- (get_leaderboard, get_public_profile, get_public_profile_card) bypass column
+-- ACLs, which is why the logged-out surfaces kept working and masked this.
+--
+-- Rule for future columns on profiles: a new column is invisible to clients
+-- until granted here. If it is safe for any logged-in viewer (like the other
+-- badge flags), grant it to BOTH roles; anon needs it for policy subqueries
+-- and the shared select lists even though RLS gives anon zero rows.
+grant select (verified_student) on public.profiles to authenticated, anon;

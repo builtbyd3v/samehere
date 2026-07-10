@@ -73,6 +73,16 @@ export async function updateSession(request: NextRequest) {
     path.startsWith('/auth/') ||
     isMetadataImage
 
+  // OAuth recovery: if Supabase ever redirects to the Site URL root instead of
+  // /auth/callback (redirectTo origin missing from the dashboard allowlist —
+  // e.g. www vs apex mismatch), the code lands on `/` unused and sign-in
+  // silently dies. Forward it to the real callback so the exchange still runs.
+  if (path === '/' && request.nextUrl.searchParams.has('code')) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/auth/callback'
+    return NextResponse.redirect(url)
+  }
+
   if (user && (path === '/' || path === '/login' || path === '/signup')) {
     const url = request.nextUrl.clone()
     url.pathname = '/feed'

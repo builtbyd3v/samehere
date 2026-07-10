@@ -220,6 +220,40 @@ exception when others then
 end $$;
 reset role;
 
+-- ============ profiles_column_grants — no silently-unreadable columns ============
+-- profiles SELECT is COLUMN-granted (20260711150000/150200): a new column is
+-- invisible to client roles until granted, and because the app's select lists
+-- name columns explicitly, one missing grant 42501s EVERY query that touches
+-- the table (broke the whole logged-in app when verified_student landed
+-- ungranted — see 20260713160000). Assert: every profiles column is SELECT-
+-- granted to BOTH anon and authenticated, except the deliberately withheld
+-- privileged seven. A new privileged column must be added to the list below;
+-- a new public column must be granted in its migration.
+do $$
+declare
+  v_withheld text[] := array['is_admin','is_suspended','stripe_customer_id','pro_source',
+                             'last_subscription_event_at','wants_pro','email_domain'];
+  v_missing text;
+begin
+  select string_agg(c.column_name || ':' || r.role, ', ') into v_missing
+  from information_schema.columns c
+  cross join (values ('anon'), ('authenticated')) as r(role)
+  where c.table_schema = 'public' and c.table_name = 'profiles'
+    and c.column_name <> all (v_withheld)
+    and not exists (
+      select 1 from information_schema.column_privileges p
+      where p.table_schema = 'public' and p.table_name = 'profiles'
+        and p.column_name = c.column_name and p.grantee = r.role
+        and p.privilege_type = 'SELECT'
+    );
+  if v_missing is not null then
+    raise exception 'profiles_column_grants REGRESSION: ungranted non-privileged column(s): % — every client select naming them 42501s', v_missing;
+  end if;
+  insert into tests_results values ('profiles_column_grants', true, 'ok');
+exception when others then
+  insert into tests_results values ('profiles_column_grants', false, sqlerrm);
+end $$;
+
 -- ============ H1 — contribution points cannot be minted by a direct RPC call ============
 -- log_contribution(text,jsonb) was DROPPED by 20260711110100_contribution_from_rows.sql.
 -- Points are now a byproduct of AFTER INSERT/UPDATE triggers reading the real
