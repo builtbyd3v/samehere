@@ -516,7 +516,6 @@ export type Database = {
       }
       posts: {
         Row: {
-          answers_prompt: boolean
           content: string
           created_at: string | null
           hidden: boolean
@@ -526,7 +525,6 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
-          answers_prompt?: boolean
           content: string
           created_at?: string | null
           hidden?: boolean
@@ -536,7 +534,6 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
-          answers_prompt?: boolean
           content?: string
           created_at?: string | null
           hidden?: boolean
@@ -618,7 +615,6 @@ export type Database = {
           avatar_url: string | null
           banner_url: string | null
           bio: string | null
-          courses: string[] | null
           created_at: string | null
           display_name: string | null
           email_domain: string | null
@@ -638,11 +634,9 @@ export type Database = {
           pro_source: string | null
           pro_until: string | null
           referral_code: string | null
-          skills: string[] | null
           stripe_customer_id: string | null
           username: string
           verified_student: boolean
-          wants_pro: boolean
           year: string | null
         }
         Insert: {
@@ -651,7 +645,6 @@ export type Database = {
           avatar_url?: string | null
           banner_url?: string | null
           bio?: string | null
-          courses?: string[] | null
           created_at?: string | null
           display_name?: string | null
           email_domain?: string | null
@@ -671,11 +664,9 @@ export type Database = {
           pro_source?: string | null
           pro_until?: string | null
           referral_code?: string | null
-          skills?: string[] | null
           stripe_customer_id?: string | null
           username: string
           verified_student?: boolean
-          wants_pro?: boolean
           year?: string | null
         }
         Update: {
@@ -684,7 +675,6 @@ export type Database = {
           avatar_url?: string | null
           banner_url?: string | null
           bio?: string | null
-          courses?: string[] | null
           created_at?: string | null
           display_name?: string | null
           email_domain?: string | null
@@ -704,11 +694,9 @@ export type Database = {
           pro_source?: string | null
           pro_until?: string | null
           referral_code?: string | null
-          skills?: string[] | null
           stripe_customer_id?: string | null
           username?: string
           verified_student?: boolean
-          wants_pro?: boolean
           year?: string | null
         }
         Relationships: []
@@ -999,24 +987,6 @@ export type Database = {
         }
         Relationships: []
       }
-      weekly_prompts: {
-        Row: {
-          created_at: string
-          prompt: string
-          week_key: string
-        }
-        Insert: {
-          created_at?: string
-          prompt: string
-          week_key: string
-        }
-        Update: {
-          created_at?: string
-          prompt?: string
-          week_key?: string
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
@@ -1114,7 +1084,6 @@ export type Database = {
           pro_source: string
           pro_until: string
           stripe_customer_id: string
-          wants_pro: boolean
         }[]
       }
       get_notification_unread_total: { Args: never; Returns: number }

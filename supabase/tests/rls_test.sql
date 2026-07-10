@@ -231,8 +231,9 @@ reset role;
 -- a new public column must be granted in its migration.
 do $$
 declare
+  -- wants_pro dropped with the Pro waitlist (20260713181000).
   v_withheld text[] := array['is_admin','is_suspended','stripe_customer_id','pro_source',
-                             'last_subscription_event_at','wants_pro','email_domain'];
+                             'last_subscription_event_at','email_domain'];
   v_missing text;
 begin
   select string_agg(c.column_name || ':' || r.role, ', ') into v_missing
