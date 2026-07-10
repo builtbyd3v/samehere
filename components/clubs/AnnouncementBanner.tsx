@@ -2,7 +2,6 @@ import Link from "next/link";
 import AvatarImage from "@/components/ui/AvatarImage";
 import UserBadges from "@/components/profile/UserBadges";
 import LocalTime from "@/components/ui/LocalTime";
-import { IconPin } from "@/components/icons";
 import type { ClubMemberProfile } from "./MemberRow";
 
 type BannerAnnouncement = {
@@ -25,20 +24,17 @@ function RolePill({ role }: { role: string | null }) {
 
 // Always-visible pinned strip (below the club header, above the tabs) so an
 // accepted member never misses the latest announcement no matter which tab
-// they're on. Full history + composer live in the Announcements tab; this is
-// deliberately a summary, not a duplicate of that list. Depth comes from a
-// hairline border on a tinted surface -- no colored side-stripe.
+// they're on. Same .card surface + calm voice as every other card in the app
+// (cf. WeeklyRecap) -- no tinted/featured surface, no colored icon, no
+// uppercase tracked label. The pin is a quiet ink-muted marker.
 export default function AnnouncementBanner({ announcement }: { announcement: BannerAnnouncement | null }) {
   if (!announcement) return null;
   const { author, authorRole } = announcement;
   const name = author?.display_name ?? author?.username ?? "Unknown";
 
   return (
-    <div className="card mt-4 flex flex-col gap-2.5 border border-[var(--border)] bg-[var(--featured-surface)] p-3.5 sm:p-4">
-      <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
-        <IconPin className="h-3.5 w-3.5 shrink-0 text-[var(--blue)]" />
-        Pinned
-      </div>
+    <div className="card mt-4 p-4">
+      <p className="mb-2.5 text-xs font-medium text-[var(--ink-muted)]">Pinned announcement</p>
       <div className="flex items-start gap-3">
         {author?.avatar_url ? (
           <AvatarImage
