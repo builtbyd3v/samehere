@@ -150,3 +150,21 @@ export const IconChevronLeft = () => (
     <path d="m15 6-6 6 6 6" />
   </svg>
 );
+
+/** Community nav — group of people (clubs + threads). */
+export const IconUsers = ({ className = cls }: { className?: string }) => (
+  <svg className={className} {...s}>
+    <circle cx="9" cy="8" r="3" />
+    <path d="M3.5 20v-1a5.5 5.5 0 0 1 11 0v1" />
+    <path d="M16.5 8.5a2.5 2.5 0 1 0-1.6-4.4" />
+    <path d="M15 13.2c2.5.4 4.2 1.8 4.2 3.8v1" />
+  </svg>
+);
+
+/** Pinned item marker. */
+export const IconPin = ({ className = cls }: { className?: string }) => (
+  <svg className={className} {...s}>
+    <path d="M12 21s7-6.5 7-11a7 7 0 1 0-14 0c0 4.5 7 11 7 11Z" />
+    <circle cx="12" cy="10" r="2.3" />
+  </svg>
+);
