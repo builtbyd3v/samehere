@@ -200,6 +200,51 @@ export type Database = {
           },
         ]
       }
+      club_channels: {
+        Row: {
+          club_id: string
+          conversation_id: string
+          created_at: string
+          id: string
+          is_general: boolean
+          min_role: string
+          name: string
+        }
+        Insert: {
+          club_id: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          is_general?: boolean
+          min_role?: string
+          name: string
+        }
+        Update: {
+          club_id?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          is_general?: boolean
+          min_role?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_channels_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_channels_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: true
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       club_members: {
         Row: {
           club_id: string
@@ -289,46 +334,42 @@ export type Database = {
       }
       clubs: {
         Row: {
-          conversation_id: string | null
+          avatar_url: string | null
           created_at: string
           created_by: string
           id: string
           is_open: boolean
+          is_verified: boolean
           name: string
           purpose: string
           slug: string
           tags: string[]
         }
         Insert: {
-          conversation_id?: string | null
+          avatar_url?: string | null
           created_at?: string
           created_by: string
           id?: string
           is_open?: boolean
+          is_verified?: boolean
           name: string
           purpose: string
           slug: string
           tags?: string[]
         }
         Update: {
-          conversation_id?: string | null
+          avatar_url?: string | null
           created_at?: string
           created_by?: string
           id?: string
           is_open?: boolean
+          is_verified?: boolean
           name?: string
           purpose?: string
           slug?: string
           tags?: string[]
         }
         Relationships: [
-          {
-            foreignKeyName: "clubs_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: true
-            referencedRelation: "conversations"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "clubs_created_by_fkey"
             columns: ["created_by"]
@@ -1255,10 +1296,16 @@ export type Database = {
       admin_unhide_post: { Args: { p_post_id: string }; Returns: undefined }
       admin_unsuspend_user: { Args: { p_user: string }; Returns: undefined }
       block_user: { Args: { target: string }; Returns: undefined }
+      can_read_channel: { Args: { p_conversation: string }; Returns: boolean }
       club_approve: {
         Args: { p_club: string; p_user: string }
         Returns: undefined
       }
+      club_create_channel: {
+        Args: { p_club: string; p_min_role: string; p_name: string }
+        Returns: string
+      }
+      club_delete_channel: { Args: { p_channel: string }; Returns: undefined }
       club_join: { Args: { p_club: string }; Returns: string }
       club_leave: { Args: { p_club: string }; Returns: undefined }
       club_reject: {
