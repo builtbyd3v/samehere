@@ -142,6 +142,22 @@ summary {
   }
 }
 
+/* Scroll-driven reveal for below-fold sections (Reveal/RevealItem only — hero
+ * keeps the on-load fade-rise). Progressive: @supports-gated, so Firefox/Safari
+ * fall through to the on-load animation and no-JS still renders visible.
+ * animation-delay is meaningless on a view() timeline — zero it; stagger comes
+ * from each item's own position entering the viewport. */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .reveal-view {
+      animation: fade-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 5% entry 40%;
+      animation-delay: 0s;
+    }
+  }
+}
+
 /* Ambient breathing wash — two radial blobs drift on opposite phases. The
  * container masks to transparent at its base so the whole wash melts into the
  * canvas with no falloff seam. Radials ramp through a midpoint for a soft edge. */

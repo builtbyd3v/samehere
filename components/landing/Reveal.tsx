@@ -10,15 +10,13 @@ type Props = {
 // used motion's `whileInView`, which paints `opacity:0` into the SSR HTML and
 // only clears it on hydration.
 //
-// ponytail: this trades scroll-triggered reveal for an on-load one — `whileInView`
-// cannot exist without JS. Sections below the fold have finished animating by the
-// time you scroll to them. Restore scroll-triggering only with a pattern that
-// keeps the no-JS resting state visible (e.g. `animation-timeline: view()` behind
-// an @supports, static everywhere else).
+// ponytail: scroll-trigger ceiling closed via `.reveal-view` (animation-timeline:
+// view(), behind @supports) — below-fold sections now animate on scroll-in.
+// Non-supporting browsers fall back to the on-load fade-rise.
 export default function Reveal({ children, className, delay = 0 }: Props) {
   return (
     <div
-      className={`fade-rise ${className ?? ""}`}
+      className={`fade-rise reveal-view ${className ?? ""}`}
       style={{ "--delay": `${delay}s`, "--y": "28px" } as React.CSSProperties}
     >
       {children}
@@ -42,7 +40,7 @@ export function RevealItem({
 }: Omit<Props, "delay"> & { index?: number; step?: number }) {
   return (
     <div
-      className={`fade-rise ${className ?? ""}`}
+      className={`fade-rise reveal-view ${className ?? ""}`}
       style={{ "--delay": `${index * step}s`, "--y": "20px" } as React.CSSProperties}
     >
       {children}
