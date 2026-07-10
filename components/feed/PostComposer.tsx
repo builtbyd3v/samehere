@@ -52,7 +52,15 @@ async function downscaleImage(file: File): Promise<File> {
   return new File([blob], file.name.replace(/\.\w+$/, "") + ".webp", { type: "image/webp" });
 }
 
-export default function PostComposer({ isPro = false, threadId }: { isPro?: boolean; threadId?: string }) {
+export default function PostComposer({
+  isPro = false,
+  threadId,
+  hideAi = false,
+}: {
+  isPro?: boolean;
+  threadId?: string;
+  hideAi?: boolean;
+}) {
   const [state, formAction, pending] = useActionState<ComposerState, FormData>(createPost, {});
   const ref = useRef<HTMLFormElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -315,41 +323,45 @@ export default function PostComposer({ isPro = false, threadId }: { isPro?: bool
             />
             Add media
           </label>
-          <button
-            type="button"
-            onClick={onNudge}
-            disabled={nudging}
-            className="text-xs text-[var(--ink-muted)] underline disabled:opacity-50"
-          >
-            {nudging ? "Thinking…" : "Need an idea?"}
-          </button>
-          {isPro ? (
-            preImprove !== null ? (
+          {!hideAi && (
+            <>
               <button
                 type="button"
-                onClick={undoImprove}
-                className="text-xs text-[var(--ink-muted)] underline"
+                onClick={onNudge}
+                disabled={nudging}
+                className="text-xs text-[var(--ink-muted)] underline disabled:opacity-50"
               >
-                Undo improve
+                {nudging ? "Thinking…" : "Need an idea?"}
               </button>
-            ) : (
-              <button
-                type="button"
-                onClick={onImprove}
-                disabled={improving || len === 0}
-                className="text-xs font-medium text-[var(--blue)] underline disabled:opacity-50"
-              >
-                {improving ? "Improving…" : "✦ Improve"}
-              </button>
-            )
-          ) : (
-            <Link
-              href="/pro"
-              title="Improve is a Pro feature. Upgrade to rewrite your drafts."
-              className="text-xs font-medium text-[var(--ink-muted)] underline"
-            >
-              ✦ Improve <span className="text-[var(--ink-faint)]">(Pro)</span>
-            </Link>
+              {isPro ? (
+                preImprove !== null ? (
+                  <button
+                    type="button"
+                    onClick={undoImprove}
+                    className="text-xs text-[var(--ink-muted)] underline"
+                  >
+                    Undo improve
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={onImprove}
+                    disabled={improving || len === 0}
+                    className="text-xs font-medium text-[var(--blue)] underline disabled:opacity-50"
+                  >
+                    {improving ? "Improving…" : "✦ Improve"}
+                  </button>
+                )
+              ) : (
+                <Link
+                  href="/pro"
+                  title="Improve is a Pro feature. Upgrade to rewrite your drafts."
+                  className="text-xs font-medium text-[var(--ink-muted)] underline"
+                >
+                  ✦ Improve <span className="text-[var(--ink-faint)]">(Pro)</span>
+                </Link>
+              )}
+            </>
           )}
         </div>
         <button

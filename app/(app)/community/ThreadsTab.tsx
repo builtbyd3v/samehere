@@ -8,6 +8,10 @@ import { attachSignedMedia } from "@/lib/media";
 // posts INSERT RLS policy checks against, so "the open thread" here always
 // matches what a post is actually allowed to answer (America/New_York
 // boundary lives in that one SQL fn, not duplicated here).
+//
+// No AI on this surface -- the composer runs with hideAi so answering the
+// weekly prompt is the user's own thinking, and the composer disappears once
+// they've answered (one answer per prompt).
 export default async function ThreadsTab() {
   const supabase = await createClient();
   const {
@@ -28,8 +32,9 @@ export default async function ThreadsTab() {
 
   let openThread: { id: string; prompt: string } | null = null;
   let responses: FeedPost[] = [];
+  let hasAnswered = false;
   if (openId) {
-    const [{ data: thread }, { data: posts }, { data: blockedIds }] = await Promise.all([
+    const [{ data: thread }, { data: posts }, { data: blockedIds }, { data: mine }] = await Promise.all([
       supabase.from("threads").select("id, prompt").eq("id", openId).maybeSingle(),
       supabase
         .from("posts")
@@ -39,8 +44,12 @@ export default async function ThreadsTab() {
         .limit(PAGE)
         .returns<FeedPost[]>(),
       viewerId ? supabase.rpc("get_blocked_ids") : Promise.resolve({ data: [] as string[] }),
+      viewerId
+        ? supabase.from("posts").select("id").eq("thread_id", openId).eq("user_id", viewerId).limit(1).maybeSingle()
+        : Promise.resolve({ data: null }),
     ]);
     openThread = thread ?? null;
+    hasAnswered = !!mine;
     const blocked = new Set(blockedIds ?? []);
     const filtered = (posts ?? []).filter((p) => !blocked.has(p.user_id));
     responses = await attachSignedMedia(supabase, filtered);
@@ -51,17 +60,25 @@ export default async function ThreadsTab() {
   }
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="mt-5 flex flex-col gap-4">
       {openThread && (
-        <section className="flex flex-col gap-3">
-          <h2 className="text-lg font-semibold tracking-[-0.01em] text-[var(--ink)]">{openThread.prompt}</h2>
-          <PostComposer threadId={openThread.id} />
+        <>
+          <h2 className="text-xl font-semibold leading-snug tracking-[-0.01em] text-[var(--ink)]">
+            {openThread.prompt}
+          </h2>
+
+          {viewerId && !hasAnswered && <PostComposer threadId={openThread.id} hideAi />}
+
           {responses.length === 0 ? (
             <EmptyState title="No answers yet" description="Be the first to respond." />
           ) : (
-            responses.map((post) => <PostCard key={post.id} post={post} viewerId={viewerId} />)
+            <div className="flex flex-col gap-3">
+              {responses.map((post) => (
+                <PostCard key={post.id} post={post} viewerId={viewerId} />
+              ))}
+            </div>
           )}
-        </section>
+        </>
       )}
 
       {recap && (

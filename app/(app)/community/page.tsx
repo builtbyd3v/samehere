@@ -22,13 +22,7 @@ export default async function CommunityPage({
 
       <CommunityTabs tab={tab} />
 
-      {tab === "clubs" ? (
-        <ClubsTab />
-      ) : (
-        <div className="card mt-5">
-          <ThreadsTab />
-        </div>
-      )}
+      {tab === "clubs" ? <ClubsTab /> : <ThreadsTab />}
     </main>
   );
 }
