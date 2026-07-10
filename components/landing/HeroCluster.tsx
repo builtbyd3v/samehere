@@ -10,17 +10,14 @@ import {
 } from "motion/react";
 import { IconSame } from "@/components/icons";
 import { HERO_PEERS, type HeroPeer } from "@/lib/landing/demo-data";
+import DemoAvatar from "./DemoAvatar";
 
 // Shared card visual — reused by the desktop scatter and the mobile stack.
 function CardFace({ peer }: { peer: HeroPeer }) {
   return (
     <div className="cluster-card rounded-2xl border border-[var(--border-strong)] bg-[var(--surface-raised)] p-3.5 shadow-paper">
       <div className="flex items-center gap-2.5">
-        <img
-          src={`https://picsum.photos/seed/${peer.avatarSeed}/64/64`}
-          alt=""
-          className="h-8 w-8 shrink-0 rounded-full border border-[var(--border)] object-cover"
-        />
+        <DemoAvatar seed={peer.avatarSeed} name={peer.name} />
         <div className="min-w-0">
           <p className="truncate text-[13px] font-semibold leading-tight text-[var(--ink)]">{peer.name}</p>
           <p className="truncate text-[11px] leading-tight text-[var(--ink-muted)]">{peer.school}</p>
