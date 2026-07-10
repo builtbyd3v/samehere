@@ -318,15 +318,18 @@ summary {
 }
 
 /* Heatmap fill wave — cells cascade in on a top-left→bottom-right diagonal.
- * Opt-in via the `hm-run` ancestor (set by ContributionHeatmap animate mode). */
+ * Opt-in via the `hm-run` ancestor (set by ContributionHeatmap animate mode) —
+ * landing-only, no real profile passes `animate`. Paced deliberately slow: the
+ * per-diagonal-step delay is what the eye reads as the wave, so it dominates the
+ * total sweep (~1.8s) — fast enough not to drag, slow enough not to be missed. */
 @keyframes cell-in {
   from { opacity: 0; transform: scale(0.4); }
   to   { opacity: 1; transform: none; }
 }
 @media (prefers-reduced-motion: no-preference) {
   .hm-run .hm-cell {
-    animation: cell-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
-    animation-delay: calc(var(--i, 0) * 10ms);
+    animation: cell-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: calc(var(--i, 0) * 22ms);
   }
 }
 
