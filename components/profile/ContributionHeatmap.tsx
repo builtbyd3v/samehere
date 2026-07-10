@@ -90,6 +90,11 @@ export default function ContributionHeatmap({
   const total = data.reduce((sum, d) => sum + d.points, 0);
   const [hovered, setHovered] = useState<{ cell: Cell; x: number; y: number } | null>(null);
   const [run, setRun] = useState(false);
+  // `armed` pre-hides the cells (via `hm-anim`) once JS is alive, BEFORE the
+  // fill wave runs. Without it, cells paint fully visible until `hm-run` lands,
+  // then snap to empty and fill — a flash. Set on mount (below the fold), so the
+  // hide itself is never seen; only the cascade on scroll-in is.
+  const [armed, setArmed] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
@@ -102,6 +107,7 @@ export default function ContributionHeatmap({
   // animate mode: fire the fill wave once the grid scrolls into view.
   useEffect(() => {
     if (!animate) return;
+    setArmed(true);
     const el = gridRef.current;
     if (!el) return;
     const io = new IntersectionObserver(
@@ -160,7 +166,10 @@ export default function ContributionHeatmap({
                 })}
               </div>
 
-              <div ref={gridRef} className={`mt-1 flex ${GAP} ${animate && run ? "hm-run" : ""}`}>
+              <div
+                ref={gridRef}
+                className={`mt-1 flex ${GAP} ${animate && armed ? "hm-anim" : ""} ${animate && run ? "hm-run" : ""}`}
+              >
                 {cols.map((col, i) => (
                   <div key={i} className={`flex w-2.5 shrink-0 flex-col ${GAP} sm:w-3.5`}>
                     {col.map((cell, row) =>
