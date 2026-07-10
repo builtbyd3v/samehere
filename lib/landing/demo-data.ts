@@ -1,18 +1,5 @@
 import type { HeatmapDay } from "@/components/profile/ContributionHeatmap";
 
-export type DemoPost = {
-  id: string;
-  name: string;
-  username: string;
-  school: string | null;
-  avatarSeed: string;
-  minutesAgo: number;
-  content: string;
-  samehere: number;
-  comments: number;
-  reposts: number;
-};
-
 export type DemoProfile = {
   name: string;
   username: string;
@@ -31,52 +18,6 @@ export type DemoProfile = {
   showCampusFounderBadge?: boolean;
   showProBadge?: boolean;
 };
-
-export type DemoSuggestion = {
-  name: string;
-  username: string;
-  avatarSeed: string;
-  prompt: string;
-};
-
-export const DEMO_POSTS: DemoPost[] = [
-  {
-    id: "demo-1",
-    name: "Priya Raman",
-    username: "priyar",
-    school: "UT Austin",
-    avatarSeed: "priya-samehere",
-    minutesAgo: 240,
-    content: "Anyone else feel behind in CS even when your grades say you're fine? Just me?",
-    samehere: 31,
-    comments: 14,
-    reposts: 2,
-  },
-  {
-    id: "demo-2",
-    name: "Marcus Webb",
-    username: "mwebb",
-    school: "Georgia Tech",
-    avatarSeed: "marcus-samehere",
-    minutesAgo: 120,
-    content: "Third all-nighter this week. Why does everyone else look like they have it together?",
-    samehere: 47,
-    comments: 22,
-    reposts: 0,
-  },
-  {
-    id: "demo-3",
-    name: "Jordan Kim",
-    username: "jkim",
-    school: "UCLA",
-    avatarSeed: "jordan-samehere",
-    minutesAgo: 1440,
-    content: "Shipped my first side project at 2am. No portfolio piece, just something I wanted to exist.",
-    samehere: 18,
-    comments: 5,
-    reposts: 3,
-  },
-];
 
 /** Lightweight peers for the hero cluster — real-feeling, vulnerable, and
  *  aimed squarely at the target segments (commuter / online / transfer /
@@ -127,20 +68,6 @@ export const HERO_PEERS: HeroPeer[] = [
     pos: { x: 78, y: 78, scale: 0.9, op: 0.86, z: 24 }, float: { fx: "-8px", fy: "-11px", fr: "1.2deg", dur: 10, delay: 1.2 }, mobile: true },
 ];
 
-export const DEMO_VIEWER_PROFILE: DemoProfile = {
-  name: "Alex Chen",
-  username: "alexc",
-  avatarSeed: "alex-samehere",
-  school: "UT Austin",
-  year: "Junior",
-  major: "Computer Science",
-  bio: "Trying to balance internships, side projects, and actually sleeping sometimes.",
-  goals: "Find students building real things outside class and swap what we're learning.",
-  posts: 42,
-  followers: 186,
-  following: 94,
-};
-
 export const DEMO_PROFILE: DemoProfile = {
   name: "Maya Ortiz",
   username: "mortiz",
@@ -154,27 +81,6 @@ export const DEMO_PROFILE: DemoProfile = {
   followers: 47,
   following: 63,
 };
-
-export const DEMO_SUGGESTIONS: DemoSuggestion[] = [
-  {
-    name: "Priya Raman",
-    username: "priyar",
-    avatarSeed: "priya-samehere",
-    prompt: "You're both CS juniors at UT Austin. Priya posts about imposter syndrome while applying to internships.",
-  },
-  {
-    name: "Jordan Kim",
-    username: "jkim",
-    avatarSeed: "jordan-samehere",
-    prompt: "You share React and side-project goals. Jordan shipped a late-night build you might relate to.",
-  },
-];
-
-export const DEMO_COMPOSER_NUDGES = [
-  "What's one thing you're learning right now that isn't going on your résumé?",
-  "Anyone on your campus dealing with the same midterm crunch? Say what week you're in.",
-  "Share a small win from this week: finished an assignment, fixed a bug, made a friend in class.",
-];
 
 function hash(seed: string, i: number): number {
   const n = Math.abs(Math.sin(i * 12.9898 + seed.length * 4.1414) * 43758.5453) % 1;
@@ -216,13 +122,4 @@ export function buildDemoHeatmap(seed: string, today = new Date()): HeatmapDay[]
   }
 
   return days;
-}
-
-export function formatTimeAgo(minutesAgo: number): string {
-  if (minutesAgo < 60) return `${minutesAgo}m`;
-  const h = Math.floor(minutesAgo / 60);
-  if (h < 24) return `${h}h`;
-  const d = Math.floor(h / 24);
-  if (d < 7) return `${d}d`;
-  return `${d}d`;
 }
