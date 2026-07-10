@@ -161,6 +161,183 @@ export type Database = {
           },
         ]
       }
+      club_announcements: {
+        Row: {
+          author_id: string
+          body: string
+          club_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          club_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          club_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_announcements_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_announcements_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      club_members: {
+        Row: {
+          club_id: string
+          joined_at: string
+          role: string
+          status: string
+          title: string | null
+          user_id: string
+        }
+        Insert: {
+          club_id: string
+          joined_at?: string
+          role?: string
+          status?: string
+          title?: string | null
+          user_id: string
+        }
+        Update: {
+          club_id?: string
+          joined_at?: string
+          role?: string
+          status?: string
+          title?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_members_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      club_role_history: {
+        Row: {
+          club_id: string
+          ended_at: string | null
+          id: string
+          role: string
+          started_at: string
+          title: string | null
+          user_id: string
+        }
+        Insert: {
+          club_id: string
+          ended_at?: string | null
+          id?: string
+          role: string
+          started_at?: string
+          title?: string | null
+          user_id: string
+        }
+        Update: {
+          club_id?: string
+          ended_at?: string | null
+          id?: string
+          role?: string
+          started_at?: string
+          title?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_role_history_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_role_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clubs: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          created_by: string
+          id: string
+          is_open: boolean
+          name: string
+          purpose: string
+          slug: string
+          tags: string[]
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          is_open?: boolean
+          name: string
+          purpose: string
+          slug: string
+          tags?: string[]
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_open?: boolean
+          name?: string
+          purpose?: string
+          slug?: string
+          tags?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clubs_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: true
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clubs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comments: {
         Row: {
           content: string
@@ -294,16 +471,19 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          kind: string
           updated_at: string
         }
         Insert: {
           created_at?: string
           id?: string
+          kind?: string
           updated_at?: string
         }
         Update: {
           created_at?: string
           id?: string
+          kind?: string
           updated_at?: string
         }
         Relationships: []
@@ -477,6 +657,7 @@ export type Database = {
           post_id?: string | null
           reaction_type?: string | null
           read?: boolean
+          repost_id?: string | null
           type: string
           user_id: string
         }
@@ -487,6 +668,7 @@ export type Database = {
           post_id?: string | null
           reaction_type?: string | null
           read?: boolean
+          repost_id?: string | null
           type?: string
           user_id?: string
         }
@@ -506,6 +688,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "notifications_repost_id_fkey"
+            columns: ["repost_id"]
+            isOneToOne: false
+            referencedRelation: "reposts"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "notifications_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -522,6 +711,7 @@ export type Database = {
           id: string
           media: Json
           post_type: string | null
+          thread_id: string | null
           user_id: string | null
         }
         Insert: {
@@ -531,6 +721,7 @@ export type Database = {
           id?: string
           media?: Json
           post_type?: string | null
+          thread_id?: string | null
           user_id?: string | null
         }
         Update: {
@@ -540,9 +731,17 @@ export type Database = {
           id?: string
           media?: Json
           post_type?: string | null
+          thread_id?: string | null
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "posts_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "threads"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "posts_user_id_fkey"
             columns: ["user_id"]
@@ -987,6 +1186,30 @@ export type Database = {
         }
         Relationships: []
       }
+      threads: {
+        Row: {
+          created_at: string
+          id: string
+          prompt: string
+          summary: string | null
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          prompt: string
+          summary?: string | null
+          week_start: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          prompt?: string
+          summary?: string | null
+          week_start?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -1032,12 +1255,33 @@ export type Database = {
       admin_unhide_post: { Args: { p_post_id: string }; Returns: undefined }
       admin_unsuspend_user: { Args: { p_user: string }; Returns: undefined }
       block_user: { Args: { target: string }; Returns: undefined }
+      club_approve: {
+        Args: { p_club: string; p_user: string }
+        Returns: undefined
+      }
+      club_join: { Args: { p_club: string }; Returns: string }
+      club_leave: { Args: { p_club: string }; Returns: undefined }
+      club_reject: {
+        Args: { p_club: string; p_user: string }
+        Returns: undefined
+      }
+      club_role: { Args: { p_club: string }; Returns: string }
+      club_set_role: {
+        Args: {
+          p_club: string
+          p_role: string
+          p_title: string
+          p_user: string
+        }
+        Returns: undefined
+      }
       confirm_school_verification: {
         Args: { p_code: string }
         Returns: boolean
       }
       current_is_admin: { Args: never; Returns: boolean }
       current_is_suspended: { Args: never; Returns: boolean }
+      current_thread_id: { Args: never; Returns: string }
       expire_lapsed_pro: { Args: never; Returns: number }
       get_blocked_ids: { Args: never; Returns: string[] }
       get_dm_peer: {
@@ -1176,15 +1420,6 @@ export type Database = {
           posts: number
         }[]
       }
-      get_referral_stats: {
-        Args: never
-        Returns: {
-          code: string
-          is_campus_founder: boolean
-          pending_count: number
-          referral_count: number
-        }[]
-      }
       get_public_quote: {
         Args: { p_id: string }
         Returns: {
@@ -1214,6 +1449,15 @@ export type Database = {
           samehere_count: number
         }[]
       }
+      get_referral_stats: {
+        Args: never
+        Returns: {
+          code: string
+          is_campus_founder: boolean
+          pending_count: number
+          referral_count: number
+        }[]
+      }
       get_streak: {
         Args: { p_profile_id: string }
         Returns: {
@@ -1227,11 +1471,13 @@ export type Database = {
           p_actor_id: string
           p_post_id?: string
           p_reaction_type?: string
+          p_repost_id?: string
           p_type: string
           p_user_id: string
         }
         Returns: undefined
       }
+      is_club_member: { Args: { p_club: string }; Returns: boolean }
       is_conversation_member: {
         Args: { p_conversation_id: string }
         Returns: boolean
