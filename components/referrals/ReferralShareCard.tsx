@@ -144,9 +144,9 @@ export default function ReferralShareCard({
 
         {/* Milestone 2: Free semester of Pro */}
         <div className="flex items-start gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-4">
-          <div className="h-9 w-9 shrink-0 rounded-lg bg-[var(--featured-surface)] flex items-center justify-center">
-            <IconBolt className="h-5 w-5 text-[var(--blue)]" />
-          </div>
+          <IconBolt
+            className={`h-9 w-9 shrink-0 ${proEarned ? "text-[var(--blue)]" : "text-[var(--ink-muted)]"}`}
+          />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-[var(--ink)]">Free semester of Pro</p>
             {proEarned ? (
