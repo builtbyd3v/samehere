@@ -1,7 +1,7 @@
 import Link from "next/link";
 import NavMenu from "./NavMenu";
 import NavIconBadge from "./NavIconBadge";
-import { IconBell, IconBolt, IconMail, IconUsers } from "@/components/icons";
+import { IconBell, IconBolt, IconMail, IconCommunity } from "@/components/icons";
 import { getNotificationUnreadCount } from "@/app/(app)/notifications/actions";
 import { signupCtaSm, ghostCtaSm } from "@/components/landing/cta";
 
@@ -40,7 +40,7 @@ export default function Navbar({
         {username ? (
           <div className="flex items-center gap-1 text-sm sm:gap-1.5">
             <NavIconBadge href="/community" title="Community" count={0}>
-              <IconUsers className="h-5 w-5" />
+              <IconCommunity className="h-5 w-5" />
             </NavIconBadge>
             <NavIconBadge href="/messages" title="Messages" count={dmUnread}>
               <IconMail />

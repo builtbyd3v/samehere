@@ -152,12 +152,17 @@ export const IconChevronLeft = () => (
 );
 
 /** Community nav — group of people (clubs + threads). */
-export const IconUsers = ({ className = cls }: { className?: string }) => (
+// Community: a three-node connection graph ("peers connecting"). Deliberately
+// NOT a people silhouette -- it must read distinct from IconSame (the SameHere
+// reaction), which is a two-people glyph.
+export const IconCommunity = ({ className = cls }: { className?: string }) => (
   <svg className={className} {...s}>
-    <circle cx="9" cy="8" r="3" />
-    <path d="M3.5 20v-1a5.5 5.5 0 0 1 11 0v1" />
-    <path d="M16.5 8.5a2.5 2.5 0 1 0-1.6-4.4" />
-    <path d="M15 13.2c2.5.4 4.2 1.8 4.2 3.8v1" />
+    <path d="M10.9 7 6.1 15.9" />
+    <path d="M13.1 7 17.9 15.9" />
+    <path d="M7.4 18h9.2" />
+    <circle cx="12" cy="5" r="2.4" />
+    <circle cx="5" cy="18" r="2.4" />
+    <circle cx="19" cy="18" r="2.4" />
   </svg>
 );
 
