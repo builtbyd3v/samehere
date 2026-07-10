@@ -909,6 +909,521 @@ exception when others then
 end $$;
 reset role;
 
+-- ============ clubs + threads (20260714130000_threads.sql / 20260714140000_clubs.sql
+-- / 20260714150000_clubs_threads_revoke_anon.sql) ============
+-- Four fresh users, isolated from the A/B/C block-state above (A currently has
+-- B blocked, per H5_reverse's closing comment) so nothing here accidentally
+-- inherits that block's effect on posts/messages visibility.
+do $$
+declare
+  v_owner uuid := gen_random_uuid();
+  v_member uuid := gen_random_uuid();
+  v_pending uuid := gen_random_uuid();
+  v_outsider uuid := gen_random_uuid();
+begin
+  insert into auth.users (
+    instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+    raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+    confirmation_token, recovery_token, email_change_token_new, email_change
+  ) values
+    ('00000000-0000-0000-0000-000000000000', v_owner, 'authenticated', 'authenticated',
+     'rls-test-club-owner@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_test_club_owner'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_member, 'authenticated', 'authenticated',
+     'rls-test-club-member@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_test_club_member'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_pending, 'authenticated', 'authenticated',
+     'rls-test-club-pending@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_test_club_pending'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_outsider, 'authenticated', 'authenticated',
+     'rls-test-club-outsider@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_test_club_outsider'), now(), now(), '', '', '', '');
+
+  insert into tests_fixture (key, id) values
+    ('club_owner', v_owner), ('club_member', v_member),
+    ('club_pending', v_pending), ('club_outsider', v_outsider);
+end $$;
+
+-- club_open (is_open) + club_gated (not is_open), both created by club_owner.
+-- rl_check_clubs allows 2/24h per creator, so exactly these 2 never trips it.
+select tests.as_user(id) from tests_fixture where key = 'club_owner';
+do $$
+declare
+  v_open_id uuid;
+  v_gated_id uuid;
+begin
+  insert into public.clubs (slug, name, purpose, is_open, created_by)
+  values ('rls-test-open-club', 'RLS Test Open Club',
+          'fixture club for the RLS proof, open join', true, (select auth.uid()))
+  returning id into v_open_id;
+
+  insert into public.clubs (slug, name, purpose, is_open, created_by)
+  values ('rls-test-gated-club', 'RLS Test Gated Club',
+          'fixture club for the RLS proof, gated join', false, (select auth.uid()))
+  returning id into v_gated_id;
+
+  insert into tests_fixture (key, id) values ('club_open', v_open_id), ('club_gated', v_gated_id);
+end $$;
+reset role;
+
+-- club_member joins the OPEN club -> auto-accepted (club_join's is_open branch).
+select tests.as_user(id) from tests_fixture where key = 'club_member';
+do $$
+declare v_status text;
+begin
+  v_status := public.club_join((select id from tests_fixture where key = 'club_open'));
+  if v_status <> 'accepted' then
+    raise exception 'fixture setup: club_join on an open club returned %, expected accepted', v_status;
+  end if;
+end $$;
+reset role;
+
+-- club_pending joins the GATED club -> stays pending (not added to the chat).
+select tests.as_user(id) from tests_fixture where key = 'club_pending';
+do $$
+declare v_status text;
+begin
+  v_status := public.club_join((select id from tests_fixture where key = 'club_gated'));
+  if v_status <> 'pending' then
+    raise exception 'fixture setup: club_join on a gated club returned %, expected pending', v_status;
+  end if;
+end $$;
+reset role;
+
+-- club_owner posts one announcement in club_open + one message in EACH club's
+-- group chat (owner is an accepted conversation_member of both, via
+-- clubs_after_insert).
+select tests.as_user(id) from tests_fixture where key = 'club_owner';
+do $$
+declare
+  v_open_id uuid := (select id from tests_fixture where key = 'club_open');
+  v_gated_id uuid := (select id from tests_fixture where key = 'club_gated');
+  v_open_conv uuid;
+  v_gated_conv uuid;
+begin
+  insert into public.club_announcements (club_id, author_id, body)
+  values (v_open_id, (select auth.uid()), 'welcome to the open club');
+
+  select conversation_id into v_open_conv from public.clubs where id = v_open_id;
+  select conversation_id into v_gated_conv from public.clubs where id = v_gated_id;
+
+  insert into public.messages (conversation_id, sender_id, content)
+  values (v_open_conv, (select auth.uid()), 'hello open club');
+  insert into public.messages (conversation_id, sender_id, content)
+  values (v_gated_conv, (select auth.uid()), 'hello gated club');
+
+  insert into tests_fixture (key, id) values
+    ('club_open_conv', v_open_conv), ('club_gated_conv', v_gated_conv);
+end $$;
+reset role;
+
+-- ============ CLUBS_1 — a non-member cannot read a club's announcements ============
+select tests.as_user(id) from tests_fixture where key = 'club_outsider';
+do $$
+declare v_cnt int;
+begin
+  select count(*) into v_cnt from public.club_announcements
+   where club_id = (select id from tests_fixture where key = 'club_open');
+  if v_cnt <> 0 then
+    raise exception 'CLUBS_1 REGRESSION: a non-member read % announcement(s) of a club they never joined -- "club announcements read" (is_club_member) is not enforced', v_cnt;
+  end if;
+  insert into tests_results values ('CLUBS_1', true, 'ok');
+exception when others then
+  insert into tests_results values ('CLUBS_1', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ CLUBS_2 — non-member cannot read club messages; accepted member CAN ============
+select tests.as_user(id) from tests_fixture where key = 'club_outsider';
+do $$
+declare v_cnt int;
+begin
+  select count(*) into v_cnt from public.messages
+   where conversation_id = (select id from tests_fixture where key = 'club_open_conv');
+  if v_cnt <> 0 then
+    raise exception 'CLUBS_2 REGRESSION: a non-member of the club read % message(s) from its group chat', v_cnt;
+  end if;
+  insert into tests_results values ('CLUBS_2_non_member', true, 'ok');
+exception when others then
+  insert into tests_results values ('CLUBS_2_non_member', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'club_member';
+do $$
+declare v_cnt int;
+begin
+  select count(*) into v_cnt from public.messages
+   where conversation_id = (select id from tests_fixture where key = 'club_open_conv');
+  if v_cnt <> 1 then
+    raise exception 'CLUBS_2 REGRESSION: an accepted member of the club read % message(s) from its own group chat, expected 1', v_cnt;
+  end if;
+  insert into tests_results values ('CLUBS_2_member', true, 'ok');
+exception when others then
+  insert into tests_results values ('CLUBS_2_member', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ CLUBS_3 — a pending member is not treated as accepted ============
+select tests.as_user(id) from tests_fixture where key = 'club_pending';
+do $$
+declare
+  v_gated uuid := (select id from tests_fixture where key = 'club_gated');
+  v_is_member boolean;
+  v_cnt int;
+begin
+  v_is_member := public.is_club_member(v_gated);
+  if v_is_member then
+    raise exception 'CLUBS_3 REGRESSION: is_club_member() returned true for a pending (not accepted) club_members row';
+  end if;
+
+  select count(*) into v_cnt from public.messages
+   where conversation_id = (select id from tests_fixture where key = 'club_gated_conv');
+  if v_cnt <> 0 then
+    raise exception 'CLUBS_3 REGRESSION: a pending member read % message(s) from a club chat they have not been accepted into', v_cnt;
+  end if;
+  insert into tests_results values ('CLUBS_3', true, 'ok');
+exception when others then
+  insert into tests_results values ('CLUBS_3', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ CLUBS_4 — a non-owner/officer cannot approve a pending member ============
+select tests.as_user(id) from tests_fixture where key = 'club_outsider';
+do $$
+declare
+  v_raised boolean := false;
+begin
+  begin
+    perform public.club_approve(
+      (select id from tests_fixture where key = 'club_gated'),
+      (select id from tests_fixture where key = 'club_pending')
+    );
+  exception when others then
+    v_raised := true;
+  end;
+  if not v_raised then
+    raise exception 'CLUBS_4 REGRESSION: a user with no role in the club (not owner/officer) called club_approve() and it did not raise';
+  end if;
+  insert into tests_results values ('CLUBS_4', true, 'ok');
+exception when others then
+  insert into tests_results values ('CLUBS_4', false, sqlerrm);
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare v_status text;
+begin
+  select status into v_status from public.club_members
+   where club_id = (select id from tests_fixture where key = 'club_gated')
+     and user_id = (select id from tests_fixture where key = 'club_pending');
+  if v_status <> 'pending' then
+    raise exception 'CLUBS_4 REGRESSION: the target row''s status is % after an unauthorized club_approve() attempt -- it must stay pending', v_status;
+  end if;
+  insert into tests_results values ('CLUBS_4_unchanged', true, 'ok');
+exception when others then
+  insert into tests_results values ('CLUBS_4_unchanged', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ CLUBS_5 — a non-owner cannot set_role ============
+select tests.as_user(id) from tests_fixture where key = 'club_member';
+do $$
+declare v_raised boolean := false;
+begin
+  begin
+    perform public.club_set_role(
+      (select id from tests_fixture where key = 'club_open'),
+      (select id from tests_fixture where key = 'club_owner'),
+      'officer', null
+    );
+  exception when others then
+    v_raised := true;
+    if sqlerrm <> 'not authorized' then
+      raise exception 'CLUBS_5 WRONG REASON: club_set_role raised %, expected the plain ''not authorized'' guard', sqlerrm;
+    end if;
+  end;
+  if not v_raised then
+    raise exception 'CLUBS_5 REGRESSION: an accepted non-owner member called club_set_role() and it did not raise';
+  end if;
+  insert into tests_results values ('CLUBS_5', true, 'ok');
+exception when others then
+  insert into tests_results values ('CLUBS_5', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ CLUBS_6 — the clubs guard trigger freezes slug/created_by ============
+select tests.as_user(id) from tests_fixture where key = 'club_owner';
+do $$
+begin
+  update public.clubs set slug = 'hacked-slug-attempt'
+   where id = (select id from tests_fixture where key = 'club_open');
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare v_slug text;
+begin
+  select slug into v_slug from public.clubs
+   where id = (select id from tests_fixture where key = 'club_open');
+  if v_slug <> 'rls-test-open-club' then
+    raise exception 'CLUBS_6 REGRESSION: the owner''s UPDATE changed clubs.slug to % -- guard_clubs_privileged did not freeze it', v_slug;
+  end if;
+  insert into tests_results values ('CLUBS_6', true, 'ok');
+exception when others then
+  insert into tests_results values ('CLUBS_6', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ CLUBS_7a — leaving a club closes its open club_role_history row ============
+select tests.as_user(id) from tests_fixture where key = 'club_member';
+do $$
+begin
+  perform public.club_leave((select id from tests_fixture where key = 'club_open'));
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare v_ended timestamptz;
+begin
+  select ended_at into v_ended from public.club_role_history
+   where club_id = (select id from tests_fixture where key = 'club_open')
+     and user_id = (select id from tests_fixture where key = 'club_member')
+   order by started_at desc limit 1;
+  if v_ended is null then
+    raise exception 'CLUBS_7a REGRESSION: club_leave() did not set ended_at on the member''s open club_role_history row';
+  end if;
+  insert into tests_results values ('CLUBS_7a', true, 'ok');
+exception when others then
+  insert into tests_results values ('CLUBS_7a', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ CLUBS_7b — approval into a GATED (is_open=false) club gets a history row ============
+-- Regression guard: club_approve's pending->accepted transition is an UPDATE
+-- of `status` only, not an INSERT and not of role/title -- it needs its own
+-- branch in club_members_track_role_history (guarded by
+-- old.status='pending'), separate from the ordinary INSERT branch that open
+-- clubs hit via club_join.
+select tests.as_user(id) from tests_fixture where key = 'club_owner';
+do $$
+begin
+  perform public.club_approve(
+    (select id from tests_fixture where key = 'club_gated'),
+    (select id from tests_fixture where key = 'club_pending')
+  );
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare v_cnt int;
+begin
+  select count(*) into v_cnt from public.club_role_history
+   where club_id = (select id from tests_fixture where key = 'club_gated')
+     and user_id = (select id from tests_fixture where key = 'club_pending')
+     and role = 'member';
+  if v_cnt <> 1 then
+    raise exception 'CLUBS_7b REGRESSION: approving a pending member of a gated club produced % club_role_history row(s), expected exactly 1', v_cnt;
+  end if;
+  insert into tests_results values ('CLUBS_7b', true, 'ok');
+exception when others then
+  insert into tests_results values ('CLUBS_7b', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ CLUBS_8 — anon cannot call the club RPCs or select clubs ============
+select tests.as_anon();
+do $$
+declare
+  v_open uuid := (select id from tests_fixture where key = 'club_open');
+  v_state text;
+  v_raised boolean;
+begin
+  -- clubs' table grant was revoked from anon entirely (not just RLS-filtered),
+  -- so this must fail at the privilege layer, not just return zero rows.
+  begin
+    perform 1 from public.clubs limit 1;
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state <> '42501' then
+    raise exception 'CLUBS_8 REGRESSION: anon selecting public.clubs did not fail with 42501 (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+
+  begin
+    perform public.is_club_member(v_open);
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state <> '42501' then
+    raise exception 'CLUBS_8 REGRESSION: anon calling is_club_member() did not fail with 42501 (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+
+  begin
+    perform public.club_role(v_open);
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state <> '42501' then
+    raise exception 'CLUBS_8 REGRESSION: anon calling club_role() did not fail with 42501 (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+
+  begin
+    perform public.club_join(v_open);
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state <> '42501' then
+    raise exception 'CLUBS_8 REGRESSION: anon calling club_join() did not fail with 42501 (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+
+  insert into tests_results values ('CLUBS_8', true, 'ok');
+exception when others then
+  insert into tests_results values ('CLUBS_8', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ threads fixtures ============
+-- week_start is UNIQUE and live prod may already hold real (Monday-dated)
+-- thread rows. Pinning the open fixture to a SUNDAY does NOT make it
+-- collision-proof on its own: current_thread_id() ranks all summary-is-null
+-- rows by week_start desc, and the deployed weekly-thread scheduler inserts
+-- a real Monday-dated open thread for the current week -- that row's
+-- week_start outranks this Sunday fixture on every day, so
+-- current_thread_id() would keep returning the REAL thread and THREADS_9's
+-- "should be accepted" insert would fail: a false-positive CI failure on
+-- unrelated production data, not a regression. Neutralize any real open
+-- thread before inserting the fixture so the fixture is unambiguously the
+-- only summary-is-null row. Safe: this whole file runs in one transaction
+-- rolled back at the end (see file header), so mutating real rows here is
+-- restored on rollback.
+do $$
+declare
+  v_today date := (now() at time zone 'America/New_York')::date;
+  v_sunday date := v_today - extract(dow from v_today)::int; -- dow: Sun=0..Sat=6
+  v_open_id uuid;
+  v_closed_id uuid;
+begin
+  update public.threads
+     set summary = coalesce(summary, 'rls_test: neutralized so THREADS_9 fixture is unambiguous')
+   where summary is null;
+
+  insert into public.threads (prompt, week_start, summary)
+  values ('RLS test fixture: open thread', v_sunday, null)
+  returning id into v_open_id;
+
+  insert into public.threads (prompt, week_start, summary)
+  values ('RLS test fixture: closed thread', v_sunday - 7, 'already summarized, closed')
+  returning id into v_closed_id;
+
+  insert into tests_fixture (key, id) values ('thread_open', v_open_id), ('thread_closed', v_closed_id);
+end $$;
+
+-- ============ THREADS_9 — a post may only target the CURRENT open thread ============
+select tests.as_user(id) from tests_fixture where key = 'c';
+do $$
+declare
+  v_open uuid := (select id from tests_fixture where key = 'thread_open');
+  v_closed uuid := (select id from tests_fixture where key = 'thread_closed');
+  v_ok_id uuid;
+  v_cnt int;
+  v_committed boolean := false;
+  v_state text;
+  v_current uuid;
+begin
+  -- Setup guard, not a regression assertion: confirm the neutralization above
+  -- actually worked before trusting current_thread_id() to agree with v_open.
+  -- If some other real thread still outranks the fixture, fail loudly here
+  -- with a setup-error message instead of the misleading "with_check
+  -- regressed" exception a few lines down.
+  v_current := public.current_thread_id();
+  if v_current is distinct from v_open then
+    raise exception 'THREADS_9 SETUP FAILURE: current_thread_id() returned % but the fixture open thread is % -- a real open thread is outranking the Sunday-dated fixture; the neutralization update in the threads-fixtures block did not take effect', v_current, v_open;
+  end if;
+
+  insert into public.posts (user_id, content, thread_id)
+  values ((select auth.uid()), 'answering the open thread fixture prompt', v_open)
+  returning id into v_ok_id;
+
+  select count(*) into v_cnt from public.posts where id = v_ok_id and thread_id = v_open;
+  if v_cnt <> 1 then
+    raise exception 'THREADS_9 REGRESSION: a post targeting the current open thread was not accepted (% row(s))', v_cnt;
+  end if;
+
+  begin
+    insert into public.posts (user_id, content, thread_id)
+    values ((select auth.uid()), 'trying to necro-post into a closed thread', v_closed);
+    v_committed := true;
+  exception when others then
+    v_committed := false;
+    v_state := sqlstate;
+  end;
+  if v_committed then
+    raise exception 'THREADS_9 REGRESSION: a post targeting a non-current (closed) thread was accepted -- the posts INSERT with_check''s thread_id conjunct regressed';
+  end if;
+  if v_state <> '42501' then
+    raise exception 'THREADS_9 WRONG REASON: the closed-thread post raised SQLSTATE % -- expected 42501 (RLS with_check on "authed users create posts")', v_state;
+  end if;
+
+  insert into tests_results values ('THREADS_9', true, 'ok');
+exception when others then
+  insert into tests_results values ('THREADS_9', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ THREADS_10 — every authed user can read threads; anon cannot ============
+select tests.as_user(id) from tests_fixture where key = 'c';
+do $$
+declare v_cnt int;
+begin
+  select count(*) into v_cnt from public.threads
+   where id in ((select id from tests_fixture where key = 'thread_open'),
+                (select id from tests_fixture where key = 'thread_closed'));
+  if v_cnt <> 2 then
+    raise exception 'THREADS_10 REGRESSION: an authenticated user read % of the 2 thread fixture row(s), expected 2', v_cnt;
+  end if;
+  insert into tests_results values ('THREADS_10_authed', true, 'ok');
+exception when others then
+  insert into tests_results values ('THREADS_10_authed', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_anon();
+do $$
+declare
+  v_raised boolean := false;
+  v_state text;
+begin
+  begin
+    perform 1 from public.threads limit 1;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised then
+    raise exception 'THREADS_10 REGRESSION: anon selected from public.threads without error -- threads was never granted SELECT to anon';
+  end if;
+  if v_state <> '42501' then
+    raise exception 'THREADS_10 WRONG REASON: anon threads select raised SQLSTATE % -- expected 42501 (permission denied for table threads)', v_state;
+  end if;
+  insert into tests_results values ('THREADS_10_anon', true, 'ok');
+exception when others then
+  insert into tests_results values ('THREADS_10_anon', false, sqlerrm);
+end $$;
+reset role;
+
 -- ============ report ============
 -- Print the PASS/FAIL table FIRST so the operator sees exactly which assertions
 -- failed, then raise so psql exits non-zero and the harness actually gates.
@@ -926,7 +1441,7 @@ declare v_failed int;
 begin
   select count(*) into v_failed from tests_results where not passed;
   if v_failed > 0 then
-    raise exception '% assertion(s) failed — see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count.', v_failed;
+    raise exception '% assertion(s) failed — see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, THREADS_9, THREADS_10_authed, THREADS_10_anon.', v_failed;
   end if;
 end $$;
 

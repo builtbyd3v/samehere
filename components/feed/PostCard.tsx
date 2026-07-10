@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { IconPin } from "@/components/icons";
 import ReactionRow from "./ReactionRow";
 import PostMediaGrid from "./PostMediaGrid";
 import PostMenu from "./PostMenu";
@@ -11,7 +12,7 @@ import LocalTime from "@/components/ui/LocalTime";
 import type { PostMedia } from "@/lib/media";
 
 export const POST_SELECT =
-  "id, content, created_at, user_id, media, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, is_private, is_pro, is_founder, is_campus_founder, verified_student, profile_school(school)), reactions(user_id, type), reposts(user_id), bookmarks(user_id), comments(count)";
+  "id, content, created_at, user_id, media, thread_id, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, is_private, is_pro, is_founder, is_campus_founder, verified_student, profile_school(school)), reactions(user_id, type), reposts(user_id), bookmarks(user_id), comments(count)";
 
 export const PAGE = 20;
 
@@ -21,6 +22,7 @@ export type FeedPost = {
   created_at: string;
   user_id: string;
   media: PostMedia[];
+  thread_id: string | null;
   author: {
     username: string;
     display_name: string | null;
@@ -145,6 +147,16 @@ export default function PostCard({
                 <PostMenu postId={post.id} authorId={post.user_id} authorUsername={a.username} viewerId={viewerId} />
               )}
             </div>
+          )}
+
+          {!embedded && post.thread_id && (
+            <Link
+              href="/community?tab=threads"
+              className="mt-1.5 inline-flex items-center gap-1 rounded-full border border-[var(--border)] px-2 py-0.5 text-[11px] text-[var(--ink-muted)] transition hover:text-[var(--ink)]"
+            >
+              <IconPin className="h-3 w-3" />
+              Answering this week&apos;s prompt
+            </Link>
           )}
 
           {embedded && a && (

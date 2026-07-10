@@ -99,10 +99,23 @@ export async function createPost(_prev: ComposerState, formData: FormData): Prom
     if (mediaErr) return { error: mediaErr };
   }
 
+  // Optional weekly-thread answer. Shape-checked here only (non-empty uuid) —
+  // whether it's actually the CURRENT open thread is enforced by the posts
+  // INSERT RLS policy (thread_id must equal current_thread_id()), not here.
+  let threadId: string | null = null;
+  const rawThreadId = formData.get("thread_id");
+  if (typeof rawThreadId === "string" && rawThreadId.trim().length > 0) {
+    const t = rawThreadId.trim();
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(t)) {
+      return { error: "Invalid prompt." };
+    }
+    threadId = t;
+  }
+
   const { error } = await supabase
     .from("posts")
-    .insert({ user_id: user.id, content, media });
-  if (error) return { error: "Could not publish your post. Try again." };
+    .insert({ user_id: user.id, content, media, thread_id: threadId });
+  if (error) return { error: threadId ? "That prompt has closed." : "Could not publish your post. Try again." };
 
   const posthog = getPostHogServerClient();
   posthog?.capture({

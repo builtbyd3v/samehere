@@ -52,7 +52,7 @@ async function downscaleImage(file: File): Promise<File> {
   return new File([blob], file.name.replace(/\.\w+$/, "") + ".webp", { type: "image/webp" });
 }
 
-export default function PostComposer({ isPro = false }: { isPro?: boolean }) {
+export default function PostComposer({ isPro = false, threadId }: { isPro?: boolean; threadId?: string }) {
   const [state, formAction, pending] = useActionState<ComposerState, FormData>(createPost, {});
   const ref = useRef<HTMLFormElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -239,6 +239,7 @@ export default function PostComposer({ isPro = false }: { isPro?: boolean }) {
           .
         </p>
       )}
+      {threadId && <input type="hidden" name="thread_id" value={threadId} />}
       <MentionTextarea
         textareaRef={textareaRef}
         name="content"
@@ -251,9 +252,11 @@ export default function PostComposer({ isPro = false }: { isPro?: boolean }) {
           setLen(v.trim().length);
         }}
         placeholder={
-          shortcutLabel
-            ? `Share what you're building… Type @ to mention (${shortcutLabel} to post)`
-            : "Share what you're building… Type @ to mention"
+          threadId
+            ? "Answer this week's prompt…"
+            : shortcutLabel
+              ? `Share what you're building… Type @ to mention (${shortcutLabel} to post)`
+              : "Share what you're building… Type @ to mention"
         }
         className="w-full resize-y bg-transparent text-[16px] leading-[1.55] text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
       />

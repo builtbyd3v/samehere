@@ -1,5 +1,6 @@
 import CommunityTabs from "@/components/community/CommunityTabs";
-import EmptyState from "@/components/ui/EmptyState";
+import ClubsTab from "@/app/(app)/community/ClubsTab";
+import ThreadsTab from "@/app/(app)/community/ThreadsTab";
 
 // Community shell: Clubs (default) + Threads tabs, server-rendered via searchParams
 // like /leaderboard's scope. Both tabs are empty-state placeholders for now — a
@@ -21,13 +22,13 @@ export default async function CommunityPage({
 
       <CommunityTabs tab={tab} />
 
-      <div className="card mt-5">
-        {tab === "clubs" ? (
-          <EmptyState title="No clubs yet" description="Clubs are coming soon." />
-        ) : (
-          <EmptyState title="No prompt this week" description="Check back soon for this week's thread." />
-        )}
-      </div>
+      {tab === "clubs" ? (
+        <ClubsTab />
+      ) : (
+        <div className="card mt-5">
+          <ThreadsTab />
+        </div>
+      )}
     </main>
   );
 }
