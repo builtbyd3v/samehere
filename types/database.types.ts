@@ -1128,7 +1128,6 @@ export type Database = {
           content: string
           created_at: string
           id: string
-          like_count: number
           repost_count: number
           samehere_count: number
         }[]
@@ -1199,7 +1198,6 @@ export type Database = {
           author_verified_student: boolean
           created_at: string
           id: string
-          like_count: number
           post_content: string
           post_created_at: string
           post_id: string
