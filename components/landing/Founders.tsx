@@ -73,8 +73,8 @@ export default function Founders({ spotsLeft }: { spotsLeft?: number }) {
 
             <h3 className="mt-5 text-xl font-semibold tracking-[-0.01em] text-[var(--ink)]">Social Butterfly</h3>
             <p className="mt-2 text-sm leading-relaxed text-[var(--ink-muted)]">
-              Share your referral link, and when 100 students join from it,
-              you earn a permanent green badge for growing samehere.
+              Share your referral link. When 50 students join from it, you earn a
+              permanent green badge. Hit 100 and you also get a free semester of Pro.
             </p>
 
             {/* referral-program preview — mirrors the in-app share card */}
@@ -87,12 +87,12 @@ export default function Founders({ spotsLeft }: { spotsLeft?: number }) {
               </div>
               <div className="mt-4 flex items-center justify-between text-xs">
                 <span className="font-medium text-[var(--ink)]">Social Butterfly</span>
-                <span className="font-medium text-[var(--ink)]">0 / 100</span>
+                <span className="font-medium text-[var(--ink)]">0 / 50</span>
               </div>
               <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-[var(--featured-surface)]">
                 <div className="h-full w-[4%] rounded-full bg-[var(--campus-founder)]" />
               </div>
-              <p className="mt-2 text-xs text-[var(--ink-muted)]">Every student who joins from your link counts toward 100.</p>
+              <p className="mt-2 text-xs text-[var(--ink-muted)]">Every student who joins from your link counts toward the badge at 50.</p>
             </div>
           </div>
         </RevealItem>

@@ -65,7 +65,7 @@ Each action type counts once per day. Daily square intensity reflects total poin
 - **Shareable OG card** with the heatmap for each profile
 
 ### AI features (Claude via the `openai` SDK)
-- Peer matching: suggested users ranked by profile-signal overlap (school, year, major, skills, goals, courses), recency fallback on thin data
+- Peer matching: suggested users ranked by profile-signal overlap (school, year, major, goals, bio), recency fallback on thin data
 - Connection prompts: one AI sentence per suggested-follow card explaining the fit (cached)
 - Natural-language people search ("cs juniors at UF who know rust") — parsed server-side into structured filters
 - Composer writing prompts, weekly prompt + weekly recap, profile-completion nudges

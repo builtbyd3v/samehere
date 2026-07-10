@@ -8,7 +8,7 @@ export default function LandingFooter() {
           <div>
             <p className="text-lg font-semibold tracking-[-0.02em]">samehere</p>
             <p className="mt-2 max-w-[34ch] text-sm leading-relaxed text-[var(--ink-muted)]">
-              The network for verified students. Built for the people figuring it out.
+              The network for students. Built for the people figuring it out.
             </p>
           </div>
           <nav className="flex flex-wrap gap-x-8 gap-y-3 text-sm text-[var(--ink-muted)]">

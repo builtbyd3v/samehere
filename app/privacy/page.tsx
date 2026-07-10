@@ -65,8 +65,10 @@ export default function PrivacyPage() {
           <h2 className="text-lg font-semibold text-[var(--ink)]">3. What others can see</h2>
           <p className="mt-2">
             Your profile and posts are visible to other signed-in students by default. Logged-out visitors
-            cannot see profiles or content. You control visibility with account settings: private accounts
-            require follow approval and hide their posts, comments, and follower lists from non-followers; you
+            can view a public profile or an individual post opened by direct link, which powers link
+            previews, but not your feed. You control visibility with account settings: private accounts
+            require follow approval and hide their posts, comments, and follower lists from non-followers
+            (including from logged-out visitors); you
             can also hide your school and restrict your heatmap to followers. Direct messages are visible only
             to you and the recipient. Bookmarks are private to you.
           </p>

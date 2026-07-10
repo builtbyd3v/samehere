@@ -7,8 +7,8 @@ import { landingH2 } from "@/lib/landing/styles";
 const FAQ_ITEMS = [
   ["Is samehere free?", "Yes. Free for every student. Core features are never gated."],
   ["Who can join?", "Anyone. Sign up with any email, then verify a .edu (now or later in settings) to get the verified student badge."],
-  ["What makes samehere different?", "Built for students: an optional .edu verification badge, a contribution heatmap on every profile, streaks and leaderboards, AI that matches you with the right peers, and SameHere when a post sounds like your life."],
-  ["Is my data private?", "You control it. Private accounts, a hideable school, and a heatmap visibility setting. Logged-out visitors see nothing."],
+  ["What makes samehere different?", "Built for students: an optional .edu verification badge, a contribution heatmap on every profile, streaks and leaderboards, clubs and weekly threads, AI that matches you with the right peers, and SameHere when a post sounds like your life."],
+  ["Is my data private?", "You control it. Private accounts, a hideable school, and a heatmap visibility setting. Logged-out visitors can open a public profile or a post you share, but private accounts stay hidden."],
   ["What is Pro?", "Optional upgrades: a stronger AI model with 150 uses a day, natural-language people search, Improve-my-post and AI icebreakers, who viewed your profile, a custom accent color, a profile banner, an animated avatar, and a badge. $4.99/mo or $12.99/semester. Weekly matches and profile themes are coming soon."],
 ] as const;
 

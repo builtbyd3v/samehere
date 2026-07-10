@@ -10,7 +10,7 @@ const STEPS = [
   },
   {
     title: "Post, react, and build your heatmap",
-    body: "Share what's going on and react with SameHere. Every post, comment, and connection lands on your contribution heatmap, plus streaks and your school's leaderboard. A year of real effort, not a highlight reel.",
+    body: "Share what's going on and react with SameHere. Every post, comment, and connection lands on your contribution heatmap, plus streaks and leaderboards. A year of real effort, not a highlight reel.",
   },
   {
     title: "Get AI-matched and DM your people",
