@@ -6,7 +6,6 @@ import ChangePasswordForm from "@/components/settings/ChangePasswordForm";
 import DeleteAccountSection from "@/components/settings/DeleteAccountSection";
 import AvatarImage from "@/components/ui/AvatarImage";
 import ThemeToggle from "@/components/ui/ThemeToggle";
-import ComingSoonFeatures from "@/components/settings/ComingSoonFeatures";
 import StudentVerification from "@/components/settings/StudentVerification";
 import { unblockUser } from "./actions";
 
@@ -42,14 +41,12 @@ export default async function SettingsPage() {
 
       <div className="space-y-5">
         <section className="card p-6">
-          <h2 className="mb-1 text-lg font-semibold text-[var(--ink)]">Appearance</h2>
-          <p className="mb-4 text-sm text-[var(--ink-muted)]">Choose light, dark, or match your system.</p>
-          <ThemeToggle />
-        </section>
-
-        <section className="card p-6">
-          <h2 className="mb-4 text-lg font-semibold text-[var(--ink)]">Privacy</h2>
-          <PrivacyForm initial={profile} />
+          <h2 className="mb-4 text-lg font-semibold text-[var(--ink)]">Account</h2>
+          <p className="mb-4 text-sm text-[var(--ink-muted)]">
+            Username and profile details live in{" "}
+            <Link href="/profile/edit" className="underline hover:text-[var(--ink)]">Edit profile</Link>.
+          </p>
+          <ChangePasswordForm />
         </section>
 
         <section className="card p-6">
@@ -58,14 +55,10 @@ export default async function SettingsPage() {
         </section>
 
         <section className="card p-6">
-          <h2 className="mb-4 text-lg font-semibold text-[var(--ink)]">Account</h2>
-          <ChangePasswordForm />
-        </section>
+          <h2 className="mb-4 text-lg font-semibold text-[var(--ink)]">Privacy</h2>
+          <PrivacyForm initial={profile} />
 
-        <ComingSoonFeatures />
-
-        <section className="card p-6">
-          <h2 className="mb-4 text-lg font-semibold text-[var(--ink)]">Blocked users</h2>
+          <h3 className="mb-4 mt-6 text-sm font-semibold text-[var(--ink)]">Blocked users</h3>
           {!blocks?.length ? (
             <p className="text-sm text-[var(--ink-muted)]">No blocked users.</p>
           ) : (
@@ -97,6 +90,12 @@ export default async function SettingsPage() {
               })}
             </ul>
           )}
+        </section>
+
+        <section className="card p-6">
+          <h2 className="mb-1 text-lg font-semibold text-[var(--ink)]">Appearance</h2>
+          <p className="mb-4 text-sm text-[var(--ink-muted)]">Choose light, dark, or match your system.</p>
+          <ThemeToggle />
         </section>
 
         <DeleteAccountSection username={profile.username} />

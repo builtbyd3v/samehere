@@ -37,11 +37,16 @@ Deno.serve(async (req) => {
 
   const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-  const { error: profileError } = await adminClient.from("profiles").delete().eq("id", user.id);
-  if (profileError) return json({ error: "Failed to delete account data" }, 500);
-
+  // Auth user FIRST: profiles.id FK is ON DELETE CASCADE (20260712100000), so
+  // this one call removes the profile and all its children atomically. The old
+  // order (profile first) could strand a live auth user with no profile if the
+  // second call failed — an unrecoverable half-deleted account.
   const { error: authError } = await adminClient.auth.admin.deleteUser(user.id);
   if (authError) return json({ error: "Failed to delete auth user" }, 500);
+
+  // Defensive no-op when the cascade did its job; covers any future FK change.
+  const { error: profileError } = await adminClient.from("profiles").delete().eq("id", user.id);
+  if (profileError) return json({ error: "Failed to delete account data" }, 500);
 
   return json({ ok: true }, 200);
 });

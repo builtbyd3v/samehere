@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { POST_SELECT, PAGE, type FeedPost } from "@/components/feed/PostCard";
-import { attachSignedMedia } from "@/lib/media";
+import { attachSignedMedia, verifyMediaLimits } from "@/lib/media";
 import { aiEnabled, generateText, modelForTier, type AiResult } from "@/lib/ai";
 import { COMPOSER_SYSTEM, IMPROVE_SYSTEM, PEOPLE_SEARCH_SYSTEM, untrusted } from "@/lib/ai-prompts";
 import { getPostHogServerClient } from "@/lib/posthog-server";
@@ -79,7 +79,20 @@ export async function createPost(_prev: ComposerState, formData: FormData): Prom
     media = parsed as { path: string; type: "image" | "video" }[];
   }
 
-  const { error } = await supabase.from("posts").insert({ user_id: user.id, content, media });
+  if (media.length > 0) {
+    const mediaErr = await verifyMediaLimits(supabase, user.id, media);
+    if (mediaErr) return { error: mediaErr };
+  }
+
+  // Client-declared intent only ("I'm answering this week's prompt") — the
+  // posts_award_contribution trigger derives the ISO week itself from the
+  // server clock, so this boolean can't be used to backdate points to a past
+  // week; it only decides whether this row is eligible for THIS week's bonus.
+  const answersPrompt = formData.get("answersPrompt") === "1";
+
+  const { error } = await supabase
+    .from("posts")
+    .insert({ user_id: user.id, content, media, answers_prompt: answersPrompt });
   if (error) return { error: "Could not publish your post. Try again." };
 
   const posthog = getPostHogServerClient();

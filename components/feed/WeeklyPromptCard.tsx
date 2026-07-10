@@ -36,7 +36,7 @@ export default function WeeklyPromptCard({ prompt, weekKey }: { prompt: string; 
         </button>
       </div>
       <p className="mt-1 text-[var(--ink)]">{prompt}</p>
-      <Link href="/feed?compose=1" className="btn-primary mt-3 inline-flex !py-1.5 text-sm">
+      <Link href="/feed?compose=1&prompt=1" className="btn-primary mt-3 inline-flex !py-1.5 text-sm">
         Post about this
       </Link>
     </div>

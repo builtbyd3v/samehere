@@ -77,7 +77,7 @@ export default function OnboardingChecklist({ avatarUrl, bio, postCount, followi
           </Link>
         )}
       </div>
-      {needsPost && <p className="mt-2 text-xs text-[var(--ink-muted)]">A post of 150+ characters earns 5 heatmap points.</p>}
+      {needsPost && <p className="mt-2 text-xs text-[var(--ink-muted)]">A post of 150+ characters earns 4 heatmap points.</p>}
 
       <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1.5 border-t border-[var(--border)] pt-3">
         {steps.map((s) => (

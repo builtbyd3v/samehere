@@ -64,7 +64,7 @@ export async function searchMentionUsers(
 
   const { data } = await supabase
     .from("profiles")
-    .select("username, display_name, avatar_url, is_pro, is_founder, is_campus_founder")
+    .select("username, display_name, avatar_url, is_pro, is_founder, is_campus_founder, verified_student")
     .or(`username.ilike.${q}%,display_name.ilike.%${q}%`)
     .limit(6);
 
