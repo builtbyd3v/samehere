@@ -200,6 +200,49 @@ export type Database = {
           },
         ]
       }
+      club_bans: {
+        Row: {
+          banned_by: string
+          club_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          banned_by: string
+          club_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          banned_by?: string
+          club_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_bans_banned_by_fkey"
+            columns: ["banned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_bans_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_bans_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       club_channels: {
         Row: {
           club_id: string
@@ -1269,18 +1312,22 @@ export type Database = {
         Args: { p_club: string; p_user: string }
         Returns: undefined
       }
+      club_ban: { Args: { p_club: string; p_user: string }; Returns: undefined }
       club_create_channel: {
         Args: { p_club: string; p_min_role: string; p_name: string }
         Returns: string
       }
       club_delete_channel: { Args: { p_channel: string }; Returns: undefined }
       club_join: { Args: { p_club: string }; Returns: string }
+      club_kick: {
+        Args: { p_club: string; p_user: string }
+        Returns: undefined
+      }
       club_leave: { Args: { p_club: string }; Returns: undefined }
       club_reject: {
         Args: { p_club: string; p_user: string }
         Returns: undefined
       }
-      club_rename: { Args: { p_club: string; p_name: string }; Returns: string }
       club_role: { Args: { p_club: string }; Returns: string }
       club_set_role: {
         Args: {
@@ -1289,6 +1336,10 @@ export type Database = {
           p_title: string
           p_user: string
         }
+        Returns: undefined
+      }
+      club_unban: {
+        Args: { p_club: string; p_user: string }
         Returns: undefined
       }
       confirm_school_verification: {
