@@ -40,3 +40,8 @@ $$;
 
 revoke all on function public.get_group_conversation(uuid) from public;
 grant execute on function public.get_group_conversation(uuid) to authenticated;
+-- `revoke all from public` does NOT strip anon in this project -- Supabase
+-- grants EXECUTE to anon/authenticated via schema-level default privileges,
+-- not via PUBLIC. The fresh CREATE above re-opened anon EXECUTE, undoing
+-- 20260716180000; name anon explicitly to re-close it (default-privileges trap).
+revoke execute on function public.get_group_conversation(uuid) from anon;
