@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { notifyPush } from "@/lib/push-actions";
 import { IconSame, IconComment, IconRepost, IconBookmark } from "@/components/icons";
 import Menu from "@/components/ui/Menu";
 import QuoteRepostModal from "./QuoteRepostModal";
@@ -95,10 +94,6 @@ export default function ReactionRow(props: Props) {
             : { post_id: postId, user_id: viewerId, type },
         );
     if (error) setS((p) => ({ ...p, mineSamehere: mine, samehere: p.samehere - d }));
-    // Only plain post reactions notify (matches trg_notify_reaction, which
-    // only fires off posts.post_id — quote-repost reactions aren't notified
-    // today either). Fire-and-forget: never block the reaction UI.
-    else if (!mine && !quoteId) void notifyPush("reaction", { postId });
   }
 
   async function toggleRepost() {

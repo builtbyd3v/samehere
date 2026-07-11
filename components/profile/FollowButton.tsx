@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import posthog from "posthog-js";
 import { createClient } from "@/lib/supabase/client";
-import { notifyPush } from "@/lib/push-actions";
 
 export type FollowState = "none" | "pending" | "following";
 
@@ -33,8 +32,6 @@ export default function FollowButton({
     if (!error) {
       posthog.capture("follow_created", { status: data === "accepted" ? "accepted" : "pending" });
       setState(data === "accepted" ? "following" : "pending");
-      // Fire-and-forget: never block the follow UI on a push send.
-      void notifyPush(data === "accepted" ? "follow" : "follow_request", { targetUserId: targetId });
       router.refresh();
     }
   }
