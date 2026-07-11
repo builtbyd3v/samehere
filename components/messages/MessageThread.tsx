@@ -26,7 +26,7 @@ export default function MessageThread({
       {messages.map((m) => {
         const mine = m.sender_id === viewerId;
         return (
-          <div key={m.id} className={`group flex items-start gap-1 ${mine ? "justify-end" : "justify-start"}`}>
+          <div key={m.id} className={`msg-in group flex items-start gap-1 ${mine ? "justify-end" : "justify-start"}`}>
             <div className={`max-w-[min(82%,24rem)] ${mine ? "items-end" : "items-start"} flex flex-col`}>
               <div
                 className={`whitespace-pre-wrap break-words px-3.5 py-2.5 text-[15px] leading-relaxed ${

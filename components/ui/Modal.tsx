@@ -33,7 +33,7 @@ export default function Modal({
       onClick={(e) => {
         if (e.target === ref.current) onClose();
       }}
-      className="fixed inset-0 m-auto w-full max-w-sm rounded-2xl border border-[var(--border)] bg-[var(--surface-card)] p-0 text-[var(--ink)] shadow-paper backdrop:backdrop-blur-sm open:animate-[modal-in_180ms_ease] motion-reduce:open:animate-none [&::backdrop]:bg-black/40"
+      className="fixed inset-0 m-auto w-full max-w-sm rounded-2xl border border-[var(--border)] bg-[var(--surface-card)] p-0 text-[var(--ink)] shadow-paper backdrop:backdrop-blur-sm open:animate-[modal-in_200ms_var(--ease-out)] motion-reduce:open:animate-none [&::backdrop]:bg-black/40"
     >
       <div className="p-5">
         <div className="mb-3 flex items-center justify-between">

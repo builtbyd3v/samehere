@@ -5,9 +5,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { aiEnabled, generateText, modelForTier } from "@/lib/ai";
 import { ICEBREAKER_SYSTEM, untrusted } from "@/lib/ai-prompts";
-import { getPostHogServerClient } from "@/lib/posthog-server";
 import { isPro } from "@/lib/pro";
-import { TEXT_LIMITS, textLimitError } from "@/lib/utils/validation";
+import { TEXT_LIMITS } from "@/lib/utils/validation";
 
 export async function startDmWithUsername(username: string) {
   const supabase = await createClient();
@@ -32,8 +31,6 @@ export async function startDmWithUsername(username: string) {
 
   redirect(`/messages/${conversationId}`);
 }
-
-export type SendMessageState = { error?: string; ok?: boolean };
 
 export type MessageUserResult = {
   id: string;
@@ -68,46 +65,6 @@ export async function searchUsersForMessage(query: string): Promise<MessageUserR
 
   const blockedSet = new Set((blocked ?? []) as string[]);
   return (profiles ?? []).filter((p) => !blockedSet.has(p.id));
-}
-
-export async function sendMessage(
-  _prev: SendMessageState,
-  formData: FormData,
-): Promise<SendMessageState> {
-  const conversationId = String(formData.get("conversation_id") ?? "");
-  const content = String(formData.get("content") ?? "").trim();
-  if (!conversationId || !content) return { error: "Message cannot be empty." };
-  const limitErr = textLimitError("Messages", TEXT_LIMITS.message, content.length);
-  if (limitErr) return { error: limitErr };
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "You must be logged in." };
-
-  const { error } = await supabase.from("messages").insert({
-    conversation_id: conversationId,
-    sender_id: user.id,
-    content,
-  });
-
-  if (error) return { error: "Could not send message. Try again." };
-
-  const posthog = getPostHogServerClient();
-  posthog?.capture({
-    distinctId: user.id,
-    event: "message_sent",
-    properties: {
-      conversation_id: conversationId,
-      character_count: content.length,
-    },
-  });
-
-  revalidatePath(`/messages/${conversationId}`);
-  revalidatePath("/messages");
-  revalidatePath("/", "layout");
-  return { ok: true };
 }
 
 export type IcebreakerResult = { locked: true } | { text: string } | { error: true };

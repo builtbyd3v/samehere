@@ -16,9 +16,13 @@ import DemoAvatar from "./DemoAvatar";
 // Live SameHere — the landing's signature interaction. Local state only;
 // nothing is persisted, it's a demo of the product's core verb.
 function SameHereLive({ initial }: { initial: number }) {
+  const reduce = useReducedMotion();
   const [on, setOn] = useState(false);
   const [burst, setBurst] = useState(0);
   const count = initial + (on ? 1 : 0);
+  // Spring impulse instead of a keyed keyframe restart — rapid taps retarget
+  // the spring (carrying velocity) instead of snapping back to frame zero.
+  const iconScale = useSpring(1, { stiffness: 550, damping: 18 });
 
   return (
     <button
@@ -27,15 +31,19 @@ function SameHereLive({ initial }: { initial: number }) {
       aria-label={on ? "Remove your same here" : "Say same here"}
       onClick={() => {
         if (!on) setBurst((b) => b + 1);
+        if (!reduce) {
+          iconScale.jump(on ? 0.9 : 1.3);
+          iconScale.set(1);
+        }
         setOn((v) => !v);
       }}
       className={`relative mt-2.5 flex items-center gap-1.5 text-[12px] font-medium transition-colors ${
         on ? "text-[var(--blue)]" : "text-[var(--ink-muted)] hover:text-[var(--blue)]"
       }`}
     >
-      <span className={burst > 0 && on ? "same-pop inline-flex" : "inline-flex"} key={`i-${burst}-${on}`}>
+      <motion.span className="inline-flex" style={{ scale: iconScale }}>
         <IconSame on={on} />
-      </span>
+      </motion.span>
       <span className="same-tick inline-block tabular-nums" key={count}>
         {count}
       </span>
@@ -84,8 +92,11 @@ function ScatterCard({
   const { pos, float } = peer;
   // nearer cards (higher z) parallax more → depth illusion
   const depth = pos.z / 40;
-  const px = useTransform(mx, (v) => v * 30 * depth);
-  const py = useTransform(my, (v) => v * 20 * depth);
+  // Single transform-string MotionValue (not x/y shorthands) so this is a
+  // GPU-composited transform write, not a main-thread style recalc per frame.
+  const t = useTransform([mx, my] as const, ([x, y]: number[]) =>
+    `translate3d(${x * 30 * depth}px, ${y * 20 * depth}px, 0)`
+  );
 
   return (
     // Base opacity/scale sit in inline style, not in the keyframe's `from` —
@@ -105,7 +116,7 @@ function ScatterCard({
         ["--i" as string]: i,
       }}
     >
-      <motion.div style={{ x: px, y: py }}>
+      <motion.div style={{ transform: t }}>
         <div
           className="cluster-float"
           style={{

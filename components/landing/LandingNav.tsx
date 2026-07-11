@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useReducedMotion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { signupCtaSm } from "./cta";
 
@@ -218,7 +218,9 @@ export default function LandingNav() {
                 >
                   {link.label}
                   {activeId === link.id && (
-                    <span
+                    <motion.span
+                      layoutId="nav-underline"
+                      transition={reduceMotion ? { duration: 0 } : { type: "spring", duration: 0.4, bounce: 0.15 }}
                       className="absolute inset-x-3 -bottom-0.5 h-[2px] rounded-full bg-[var(--blue)]"
                       aria-hidden
                     />
@@ -261,7 +263,7 @@ export default function LandingNav() {
           {menuOpen && (
             <nav
               id="landing-mobile-menu"
-              className="border-t border-[var(--border)] px-3 py-3 md:hidden"
+              className="origin-top border-t border-[var(--border)] px-3 py-3 md:hidden animate-[menu-pop_150ms_var(--ease-out)] motion-reduce:animate-none"
               aria-label="Page sections"
             >
               <ul className="flex flex-col gap-0.5">

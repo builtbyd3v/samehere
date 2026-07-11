@@ -53,7 +53,7 @@ export default function OnboardingChecklist({
   if (dismissed || (!needsPost && !needsFollow)) return null;
 
   return (
-    <section className="card mb-3 animate-[modal-in_220ms_ease] p-4 motion-reduce:animate-none sm:p-5">
+    <section className="card mb-3 animate-[modal-in_200ms_var(--ease-out)] p-4 motion-reduce:animate-none sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold text-[var(--ink)]">Get your feed going</h2>

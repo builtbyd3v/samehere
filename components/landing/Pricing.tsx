@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { motion, useReducedMotion } from "motion/react";
 import Reveal from "./Reveal";
 import { IconBolt } from "@/components/icons";
 import { landingCard, landingH2 } from "@/lib/landing/styles";
@@ -26,11 +25,9 @@ const PRO_FEATURES: { label: string; icon?: "bolt" }[] = [
 
 const PRO_COMING_SOON = ["Weekly “3 people to meet”", "Profile themes"];
 
-const card = `flex h-full flex-col ${landingCard}`;
+const card = `flex h-full flex-col card-hover ${landingCard}`;
 
 export default function Pricing() {
-  const reduce = useReducedMotion();
-
   return (
     <section id="pricing" className="scroll-mt-[5.5rem] mx-auto max-w-[1200px] px-5 py-20">
       <Reveal>
@@ -42,11 +39,7 @@ export default function Pricing() {
 
       <div className="mt-10 grid gap-4 md:grid-cols-2 md:items-stretch">
         <Reveal className="h-full">
-          <motion.div
-            className={card}
-            whileHover={reduce ? undefined : { y: -2 }}
-            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-          >
+          <div className={card}>
             <p className="text-sm text-[var(--ink-muted)]">Free</p>
             <p className="mt-2 text-[48px] font-semibold leading-none tracking-[-0.03em]">$0</p>
             <p className="mt-1 text-sm text-[var(--ink-muted)]">Always free to join</p>
@@ -63,14 +56,12 @@ export default function Pricing() {
                 Join free
               </Link>
             </div>
-          </motion.div>
+          </div>
         </Reveal>
 
         <Reveal className="h-full" delay={0.08}>
-          <motion.div
+          <div
             className={`${card} relative overflow-hidden border-[var(--blue)]/45 ring-1 ring-[var(--blue)]/25 [&>:not([aria-hidden])]:relative`}
-            whileHover={reduce ? undefined : { y: -2 }}
-            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
           >
             {/* soft blue bloom — Pro reads as the premium material */}
             <span
@@ -112,7 +103,7 @@ export default function Pricing() {
                 Go Pro
               </Link>
             </div>
-          </motion.div>
+          </div>
         </Reveal>
       </div>
     </section>
