@@ -45,16 +45,19 @@ export async function verifyMediaLimits(
   userId: string,
   media: RawMedia[],
 ): Promise<string | null> {
-  for (const m of media) {
-    const fileName = m.path.slice(userId.length + 1);
-    const { data } = await supabase.storage.from("post-media").list(userId, { search: fileName });
-    const obj = data?.find((f) => f.name === fileName);
-    if (!obj) return "Media upload not found. Try again.";
-    const meta = (obj.metadata ?? {}) as { size?: number; mimetype?: string };
-    if (!MEDIA_MIME[m.type].includes(meta.mimetype ?? "")) return "Unsupported media type.";
-    if ((meta.size ?? 0) > MEDIA_LIMITS[m.type]) {
-      return m.type === "image" ? "Images must be under 8 MB." : "Videos must be under 100 MB.";
-    }
-  }
-  return null;
+  const results = await Promise.all(
+    media.map(async (m): Promise<string | null> => {
+      const fileName = m.path.slice(userId.length + 1);
+      const { data } = await supabase.storage.from("post-media").list(userId, { search: fileName });
+      const obj = data?.find((f) => f.name === fileName);
+      if (!obj) return "Media upload not found. Try again.";
+      const meta = (obj.metadata ?? {}) as { size?: number; mimetype?: string };
+      if (!MEDIA_MIME[m.type].includes(meta.mimetype ?? "")) return "Unsupported media type.";
+      if ((meta.size ?? 0) > MEDIA_LIMITS[m.type]) {
+        return m.type === "image" ? "Images must be under 8 MB." : "Videos must be under 100 MB.";
+      }
+      return null;
+    }),
+  );
+  return results.find(Boolean) ?? null;
 }
