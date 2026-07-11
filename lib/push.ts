@@ -1,5 +1,5 @@
 import webpush from "web-push";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getPostHogServerClient } from "@/lib/posthog-server";
 
 // ponytail: inline fire-and-forget sends, one recipient at a time via
@@ -25,12 +25,23 @@ export type PushPayload = { title: string; body: string; url: string };
 // a push failure must never break the action that triggered it (follow,
 // comment, reaction). Dead subscriptions (404/410) are deleted as they're
 // found.
+//
+// The recipient is a DIFFERENT user than the actor whose session triggered
+// this, so reading their subscriptions crosses the owner-only
+// push_subscriptions RLS. This runs only from server-only code reached
+// through the "use server" boundary (never a client module), so it uses the
+// sanctioned admin client (see lib/supabase/admin.ts) exactly like the digest
+// cron's cross-user recipient read — NOT a definer RPC any authenticated
+// client could call for an arbitrary user_id.
 export async function sendPushToUser(userId: string, payload: PushPayload): Promise<void> {
   if (!ensureConfigured()) return;
 
   try {
-    const supabase = await createClient();
-    const { data: subs } = await supabase.rpc("get_push_subscriptions", { p_user_id: userId });
+    const admin = createAdminClient();
+    const { data: subs } = await admin
+      .from("push_subscriptions")
+      .select("endpoint, p256dh, auth")
+      .eq("user_id", userId);
     if (!subs?.length) return;
 
     await Promise.all(
@@ -48,7 +59,7 @@ export async function sendPushToUser(userId: string, payload: PushPayload): Prom
         } catch (err) {
           const statusCode = (err as { statusCode?: number } | null)?.statusCode;
           if (statusCode === 404 || statusCode === 410) {
-            await supabase.rpc("delete_dead_push_subscription", { p_endpoint: sub.endpoint });
+            await admin.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
           }
         }
       }),

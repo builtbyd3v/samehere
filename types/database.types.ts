@@ -1362,10 +1362,6 @@ export type Database = {
       }
       current_is_admin: { Args: never; Returns: boolean }
       current_is_suspended: { Args: never; Returns: boolean }
-      delete_dead_push_subscription: {
-        Args: { p_endpoint: string }
-        Returns: undefined
-      }
       expire_lapsed_pro: { Args: never; Returns: number }
       get_blocked_ids: { Args: never; Returns: string[] }
       get_dm_peer: {
@@ -1541,14 +1537,6 @@ export type Database = {
           reposter_username: string
           reposter_verified_student: boolean
           samehere_count: number
-        }[]
-      }
-      get_push_subscriptions: {
-        Args: { p_user_id: string }
-        Returns: {
-          auth: string
-          endpoint: string
-          p256dh: string
         }[]
       }
       get_referral_stats: {
