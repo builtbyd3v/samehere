@@ -79,7 +79,7 @@ export default function NavIconBadge({
     >
       {children}
       {badge && (
-        <span className="absolute -right-0.5 -top-0.5 grid min-w-[18px] animate-[badge-pop_260ms_var(--ease-out)] place-items-center rounded-full bg-[var(--blue)] px-1 py-0.5 text-[10px] font-semibold leading-none text-white motion-reduce:animate-none">
+        <span className="absolute -right-0.5 -top-0.5 grid min-w-[18px] animate-[badge-pop_180ms_var(--ease-out)] place-items-center rounded-full bg-[var(--blue)] px-1 py-0.5 text-[10px] font-semibold leading-none text-white motion-reduce:animate-none">
           {badge}
         </span>
       )}

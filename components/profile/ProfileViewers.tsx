@@ -69,8 +69,8 @@ function ViewersModal({ viewers, count, onClose }: { viewers: ProfileViewer[]; c
   if (typeof document === "undefined") return null;
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center" role="dialog" aria-modal="true" aria-label="Who viewed your profile">
-      <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-      <div className="relative z-10 flex max-h-[82dvh] w-full max-w-md flex-col overflow-hidden rounded-t-2xl border border-[var(--border)] bg-[var(--surface-card)] shadow-paper animate-[modal-in_200ms_var(--ease-out)] motion-reduce:animate-none sm:rounded-2xl">
+      <button type="button" aria-label="Close" onClick={onClose} className="backdrop-fade absolute inset-0 bg-black/40 backdrop-blur-sm" />
+      <div className="relative z-10 flex max-h-[82dvh] w-full max-w-md flex-col overflow-hidden rounded-t-2xl border border-[var(--border)] bg-[var(--surface-card)] shadow-paper animate-[sheet-in_var(--duration-modal)_var(--ease-drawer)] motion-reduce:animate-none sm:animate-[modal-in_200ms_var(--ease-out)] sm:rounded-2xl">
         <div className="flex items-center justify-between border-b border-[var(--border)] px-5 py-4">
           <h2 className="text-base font-semibold text-[var(--ink)]">
             Who viewed your profile <span className="font-normal text-[var(--ink-muted)]">· {count}</span>

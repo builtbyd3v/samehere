@@ -45,7 +45,9 @@ export default function FeedToolbar({
 
       {/* Search is a persistent bar — the primary way to discover people. */}
       <div className="mb-4">{search}</div>
-      {composeOpen ? <div className="mb-2">{composer}</div> : null}
+      {composeOpen ? (
+        <div className="mb-2 animate-[modal-in_200ms_var(--ease-out)] motion-reduce:animate-none">{composer}</div>
+      ) : null}
     </>
   );
 }
