@@ -319,7 +319,7 @@ function ChannelMessages({
               return (
                 <div
                   key={m.id}
-                  className={`flex items-end gap-2 ${mine ? "flex-row-reverse" : "justify-start"} ${grouped ? "mt-0.5" : "mt-3"}`}
+                  className={`msg-in flex items-end gap-2 ${mine ? "flex-row-reverse" : "justify-start"} ${grouped ? "mt-0.5" : "mt-3"}`}
                 >
                   {!mine &&
                     (grouped ? (

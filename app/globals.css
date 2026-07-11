@@ -337,6 +337,19 @@ summary {
   }
 }
 
+/* Chat message entrance — a transition (not a keyframe) via @starting-style,
+ * so a burst of realtime inserts can't restart mid-flight; each row just
+ * retargets. Applies to both DM (MessageThread) and club (ClubChat) rows. */
+@media (prefers-reduced-motion: no-preference) {
+  .msg-in {
+    transition: opacity 200ms var(--ease-out), translate 200ms var(--ease-out);
+    @starting-style {
+      opacity: 0;
+      translate: 0 6px;
+    }
+  }
+}
+
 /* ---------------------------------------------------------------------
  * Wave-1 shared utilities (see DESIGN.md). Component classes below are
  * self-contained — apply one class, no need to stack Tailwind utilities

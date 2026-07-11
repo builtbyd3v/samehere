@@ -1,9 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isPro } from "@/lib/pro";
-import MessageComposer from "@/components/messages/MessageComposer";
+import DmChat from "@/components/messages/DmChat";
 import MessageMarkRead from "@/components/messages/MessageMarkRead";
-import MessageThreadLive from "@/components/messages/MessageThreadLive";
 import { MessageThreadHeader } from "@/components/messages/MessageThread";
 import type { DmMessage } from "@/lib/messages";
 
@@ -71,14 +70,12 @@ export default async function MessageThreadPage({
           displayName={displayName}
           avatarUrl={peer.peer_avatar_url}
         />
-        <div className="min-h-0 flex-1 overflow-y-auto bg-[var(--canvas)]">
-          <MessageThreadLive conversationId={id} initialMessages={messages} viewerId={user.id} />
-        </div>
-        <MessageComposer
+        <DmChat
           conversationId={id}
+          initialMessages={messages}
+          viewerId={user.id}
           peerId={peer.peer_id}
           viewerIsPro={viewerIsPro}
-          empty={messages.length === 0}
         />
       </section>
     </main>
