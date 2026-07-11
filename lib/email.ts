@@ -6,11 +6,13 @@ export async function sendEmail({
   to,
   subject,
   text,
+  html,
   from,
 }: {
   to: string;
   subject: string;
   text: string;
+  html?: string;
   from?: string;
 }): Promise<void> {
   const res = await fetch(RESEND_URL, {
@@ -19,7 +21,7 @@ export async function sendEmail({
       Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ from: from ?? FROM, to, subject, text }),
+    body: JSON.stringify({ from: from ?? FROM, to, subject, text, ...(html ? { html } : {}) }),
   });
 
   if (!res.ok) {

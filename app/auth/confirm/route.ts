@@ -3,6 +3,7 @@ import type { EmailOtpType, User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { getPostHogServerClient } from "@/lib/posthog-server";
 import { sendEmail } from "@/lib/email";
+import { welcomeEmail } from "@/lib/emails/welcome";
 
 // Email-confirmation landing (the emailRedirectTo target from signUp).
 // Supports both Supabase link shapes: the PKCE `?code=` default and the
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
   const nextParam = searchParams.get("next");
   const dest = nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//")
     ? nextParam
-    : "/feed";
+    : "/onboarding";
 
   const supabase = await createClient();
   let ok = false;
@@ -46,12 +47,8 @@ export async function GET(request: NextRequest) {
   // may welcome — an `email_change`/`invite` token_hash link with no `next` must not.
   const isSignupConfirm = !nextParam && (Boolean(code) || type === "signup" || type === "email");
   if (ok && user?.email && isSignupConfirm) {
-    sendEmail({
-      to: user.email,
-      from: "noreply@samehere.dev",
-      subject: "welcome to samehere",
-      text: "hey — you're in. samehere is small right now, on purpose: every person here was invited. three things worth doing first: finish your profile, post something real, and join a club at https://samehere.dev/community. — Dev",
-    }).catch(() => {});
+    const { subject, text, html } = welcomeEmail();
+    sendEmail({ to: user.email, from: "noreply@samehere.dev", subject, text, html }).catch(() => {});
   }
 
   if (ok && user) {

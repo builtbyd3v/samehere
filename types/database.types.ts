@@ -905,6 +905,7 @@ export type Database = {
           last_subscription_event_at: string | null
           leaderboard_opt_out: boolean
           major: string | null
+          onboarded_at: string | null
           pro_source: string | null
           pro_until: string | null
           referral_code: string | null
@@ -936,6 +937,7 @@ export type Database = {
           last_subscription_event_at?: string | null
           leaderboard_opt_out?: boolean
           major?: string | null
+          onboarded_at?: string | null
           pro_source?: string | null
           pro_until?: string | null
           referral_code?: string | null
@@ -967,6 +969,7 @@ export type Database = {
           last_subscription_event_at?: string | null
           leaderboard_opt_out?: boolean
           major?: string | null
+          onboarded_at?: string | null
           pro_source?: string | null
           pro_until?: string | null
           referral_code?: string | null
