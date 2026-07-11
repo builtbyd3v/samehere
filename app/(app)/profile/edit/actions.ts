@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { aiEnabled, generateText, modelForTier, type AiResult } from "@/lib/ai";
 import { PROFILE_DRAFT_SYSTEM, PROFILE_NUDGE_SYSTEM } from "@/lib/ai-prompts";
 import { isPro } from "@/lib/pro";
+import { getPostHogServerClient } from "@/lib/posthog-server";
 import { fallbackProfileNudge, getProfileGaps } from "@/lib/profile-completion";
 import type { TablesUpdate } from "@/types/database.types";
 
@@ -66,6 +67,8 @@ export async function updateProfile(_prev: EditState, formData: FormData): Promi
   // 1 pt for a profile update is awarded by the profiles_award_contribution
   // AFTER UPDATE trigger (fires only when a meaningful content field changed;
   // 7-day cooldown + dedupe live in the trigger) — nothing to call here.
+
+  getPostHogServerClient()?.capture({ distinctId: user.id, event: "profile_updated" });
 
   const { data: prof } = await supabase
     .from("profiles")

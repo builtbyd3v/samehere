@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
+import posthog from "posthog-js";
 import { signUp, type AuthState } from "@/app/(auth)/actions";
 import AuthAlert from "./AuthAlert";
 import AuthCard from "./AuthCard";
@@ -16,6 +17,17 @@ export default function SignupForm() {
   const [state, formAction, pending] = useActionState<AuthState, FormData>(signUp, {});
   const hasError = !!state.error;
   const refFromLink = useSearchParams().get("ref") ?? "";
+
+  // Fire once when the form transitions to success. Ref guard so a re-render of
+  // the success branch can't re-capture. Declared above the early-return so the
+  // hook order stays stable (Rules of Hooks).
+  const capturedRef = useRef(false);
+  useEffect(() => {
+    if (state.ok && !capturedRef.current) {
+      capturedRef.current = true;
+      posthog.capture("signup_submitted", { has_ref: !!refFromLink });
+    }
+  }, [state.ok, refFromLink]);
 
   if (state.ok && state.email) {
     return <SignupSuccess email={state.email} />;

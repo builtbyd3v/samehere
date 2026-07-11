@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import { getPostHogServerClient } from "@/lib/posthog-server";
 
 // Email-confirmation landing (the emailRedirectTo target from signUp).
 // Supports both Supabase link shapes: the PKCE `?code=` default and the
@@ -26,6 +27,13 @@ export async function GET(request: NextRequest) {
   } else if (tokenHash && type) {
     const { error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
     ok = !error;
+  }
+
+  if (ok) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) getPostHogServerClient()?.capture({ distinctId: user.id, event: "email_confirmed" });
   }
 
   return NextResponse.redirect(`${origin}${ok ? dest : "/login?error=confirm"}`);
