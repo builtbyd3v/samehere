@@ -115,6 +115,26 @@ export async function createPost(_prev: ComposerState, formData: FormData): Prom
     },
   });
 
+  // activated: fires once, on the user's first post ever. Wrapped defensively —
+  // a failure here must never surface as a broken post action.
+  try {
+    if (posthog) {
+      const { count } = await supabase
+        .from("posts")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id);
+      if (count === 1) {
+        posthog.capture({
+          distinctId: user.id,
+          event: "activated",
+          properties: { via: "first_post" },
+        });
+      }
+    }
+  } catch {
+    // analytics only — never break the post action
+  }
+
   revalidatePath("/feed");
   return { ok: true };
 }
