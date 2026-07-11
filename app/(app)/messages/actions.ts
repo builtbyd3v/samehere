@@ -191,6 +191,50 @@ export async function icebreaker(peerId: string): Promise<IcebreakerResult> {
   return text ? { text } : { error: true };
 }
 
+export type GroupMemberActionResult = { error?: string };
+
+// Thin wrappers around the add_group_member / remove_group_member definer
+// RPCs (20260716200000_group_membership.sql). "Leave" has no equivalent
+// wrapper here -- the existing leaveConversation action below already
+// covers it for any conversation kind, group included.
+export async function addGroupMember(
+  conversationId: string,
+  memberId: string
+): Promise<GroupMemberActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { error } = await supabase.rpc("add_group_member", {
+    p_conversation_id: conversationId,
+    p_member_id: memberId,
+  });
+  if (error) return { error: error.message };
+  revalidatePath(`/messages/${conversationId}`);
+  return {};
+}
+
+export async function removeGroupMember(
+  conversationId: string,
+  memberId: string
+): Promise<GroupMemberActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { error } = await supabase.rpc("remove_group_member", {
+    p_conversation_id: conversationId,
+    p_member_id: memberId,
+  });
+  if (error) return { error: error.message };
+  revalidatePath(`/messages/${conversationId}`);
+  return {};
+}
+
 export async function leaveConversation(conversationId: string) {
   const supabase = await createClient();
   const {

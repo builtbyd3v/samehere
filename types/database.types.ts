@@ -1291,6 +1291,10 @@ export type Database = {
         Returns: undefined
       }
       accept_follow: { Args: { p_follower: string }; Returns: undefined }
+      add_group_member: {
+        Args: { p_conversation_id: string; p_member_id: string }
+        Returns: undefined
+      }
       admin_hide_post: { Args: { p_post_id: string }; Returns: undefined }
       admin_list_reports: {
         Args: never
@@ -1674,6 +1678,10 @@ export type Database = {
       qualifying_length: { Args: { p_content: string }; Returns: number }
       record_profile_view: { Args: { p_viewed: string }; Returns: undefined }
       reject_follow: { Args: { p_follower: string }; Returns: undefined }
+      remove_group_member: {
+        Args: { p_conversation_id: string; p_member_id: string }
+        Returns: undefined
+      }
       request_follow: { Args: { p_target: string }; Returns: string }
       request_school_verification: {
         Args: { p_code_hash: string; p_email: string }

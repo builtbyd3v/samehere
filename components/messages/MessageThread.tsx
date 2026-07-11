@@ -5,6 +5,7 @@ import { IconChevronLeft } from "@/components/icons";
 import MessageTime from "@/components/messages/MessageTime";
 import DmMessageReport from "@/components/messages/DmMessageReport";
 import DmThreadMenu from "@/components/messages/DmThreadMenu";
+import GroupManage from "@/components/messages/GroupManage";
 import type { DmMessage, GroupMember, ChatParticipant } from "@/lib/messages";
 
 export default function MessageThread({
@@ -145,10 +146,14 @@ export function GroupThreadHeader({
   conversationId,
   title,
   members,
+  createdBy,
+  isCreator,
 }: {
   conversationId: string;
   title: string;
   members: GroupMember[];
+  createdBy: string | null;
+  isCreator: boolean;
 }) {
   const subtitle = members.map((m) => m.display_name ?? m.username).join(", ");
   return (
@@ -169,7 +174,7 @@ export function GroupThreadHeader({
           <p className="truncate text-xs text-[var(--ink-muted)]">{subtitle}</p>
         </div>
       </div>
-      <DmThreadMenu conversationId={conversationId} />
+      <GroupManage conversationId={conversationId} members={members} createdBy={createdBy} isCreator={isCreator} />
     </header>
   );
 }
