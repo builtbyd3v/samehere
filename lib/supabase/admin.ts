@@ -1,7 +1,7 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 
-// service_role client — bypasses RLS. THREE sanctioned uses, none of which
+// service_role client — bypasses RLS. FOUR sanctioned uses, none of which
 // write a value the caller can steer:
 //   1. Stripe webhook (app/api/stripe/webhook/route.ts) — is_pro/pro_until/
 //      stripe_customer_id, pinned against the session client by guard_profile_privileged.
@@ -10,6 +10,10 @@ import type { Database } from "@/types/database.types";
 //   3. Unsubscribe (app/api/email/unsubscribe/route.ts) — single hardcoded
 //      boolean write (email_digest_opt_out) to the row an HMAC-verified token
 //      names; no session exists (one-click link from an email).
+//   4. Push send (lib/push.ts) — cross-user READ of a notification recipient's
+//      push_subscriptions (+ prune of dead endpoints), reached only through the
+//      "use server" boundary; the recipient's user_id is derived server-side
+//      from the triggering action, never supplied by the client.
 // (A second use, the weekly-prompt cache, was removed with that feature.)
 // Do NOT add a use that writes user-controllable data or targets a user-chosen
 // row — that class of write belongs in a session-client path under RLS, or a

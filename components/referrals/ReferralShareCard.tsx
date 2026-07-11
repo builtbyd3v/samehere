@@ -105,8 +105,8 @@ export default function ReferralShareCard({
           {/* Progress bar with tick at 50% */}
           <div className="relative h-2 w-full overflow-hidden rounded-full bg-[var(--featured-surface)]">
             <div
-              className="h-full rounded-full bg-[var(--campus-founder)] transition-[width]"
-              style={{ width: `${(progress / GOAL) * 100}%` }}
+              className="h-full w-full origin-left rounded-full bg-[var(--campus-founder)] transition-transform"
+              style={{ transform: `scaleX(${progress / GOAL})` }}
             />
             {/* Tick marker at 50% */}
             <div className="absolute top-0 h-full w-0.5 bg-[var(--ink-muted)] opacity-30" style={{ left: "50%" }} />

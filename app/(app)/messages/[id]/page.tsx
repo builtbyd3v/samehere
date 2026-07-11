@@ -3,8 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { isPro } from "@/lib/pro";
 import DmChat from "@/components/messages/DmChat";
 import MessageMarkRead from "@/components/messages/MessageMarkRead";
-import { MessageThreadHeader } from "@/components/messages/MessageThread";
-import type { DmMessage } from "@/lib/messages";
+import { MessageThreadHeader, GroupThreadHeader } from "@/components/messages/MessageThread";
+import type { DmMessage, GroupMember } from "@/lib/messages";
 
 type MessageRow = {
   id: string;
@@ -21,6 +21,14 @@ type PeerRow = {
   peer_is_pro: boolean;
 };
 
+type GroupRow = {
+  title: string;
+  member_id: string;
+  member_username: string;
+  member_display_name: string | null;
+  member_avatar_url: string | null;
+};
+
 export default async function MessageThreadPage({
   params,
 }: {
@@ -33,8 +41,8 @@ export default async function MessageThreadPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [{ data: peerRows }, { data: messageRows }, { data: viewer }] = await Promise.all([
-    supabase.rpc("get_dm_peer", { p_conversation_id: id }),
+  const [{ data: conversation }, { data: messageRows }, { data: viewer }] = await Promise.all([
+    supabase.from("conversations").select("kind").eq("id", id).maybeSingle(),
     supabase
       .from("messages")
       .select("id, sender_id, content, created_at")
@@ -45,12 +53,9 @@ export default async function MessageThreadPage({
     supabase.from("profiles").select("is_pro, pro_until").eq("id", user.id).single(),
   ]);
 
-  const peer = (peerRows as PeerRow[] | null)?.[0];
-  if (!peer) notFound();
+  if (!conversation) notFound();
 
   const viewerIsPro = isPro(viewer ?? { is_pro: false, pro_until: null });
-
-  const displayName = peer.peer_display_name ?? peer.peer_username;
   const messages: DmMessage[] = (messageRows ?? []).map((m) => ({
     id: m.id,
     sender_id: m.sender_id,
@@ -58,6 +63,40 @@ export default async function MessageThreadPage({
     created_at: m.created_at,
     sender: null,
   }));
+
+  if (conversation.kind === "group") {
+    const { data: groupRows } = await supabase.rpc("get_group_conversation", { p_conversation_id: id });
+    const rows = (groupRows ?? []) as GroupRow[];
+    if (rows.length === 0) notFound();
+
+    const members: GroupMember[] = rows.map((r) => ({
+      id: r.member_id,
+      username: r.member_username,
+      display_name: r.member_display_name,
+      avatar_url: r.member_avatar_url,
+    }));
+
+    return (
+      <main className="page-enter mx-auto flex min-h-[calc(100dvh-3.5rem)] max-w-2xl flex-col px-4 py-4 sm:px-5 sm:py-6">
+        <MessageMarkRead conversationId={id} />
+        <section className="card flex min-h-0 flex-1 flex-col overflow-hidden">
+          <GroupThreadHeader conversationId={id} title={rows[0].title} members={members} />
+          <DmChat
+            conversationId={id}
+            initialMessages={messages}
+            viewerId={user.id}
+            members={members}
+          />
+        </section>
+      </main>
+    );
+  }
+
+  const { data: peerRows } = await supabase.rpc("get_dm_peer", { p_conversation_id: id });
+  const peer = (peerRows as PeerRow[] | null)?.[0];
+  if (!peer) notFound();
+
+  const displayName = peer.peer_display_name ?? peer.peer_username;
 
   return (
     <main className="page-enter mx-auto flex min-h-[calc(100dvh-3.5rem)] max-w-2xl flex-col px-4 py-4 sm:px-5 sm:py-6">

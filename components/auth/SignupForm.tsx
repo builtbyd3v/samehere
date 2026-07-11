@@ -25,9 +25,18 @@ export default function SignupForm() {
   useEffect(() => {
     if (state.ok && !capturedRef.current) {
       capturedRef.current = true;
-      posthog.capture("signup_submitted", { has_ref: !!refFromLink });
+      posthog.capture("signup_submitted", { has_ref: !!refFromLink, method: "password" });
     }
   }, [state.ok, refFromLink]);
+
+  // signup_started: first interaction with any field, ref-guarded to fire once.
+  const startedRef = useRef(false);
+  function handleFormFocus() {
+    if (!startedRef.current) {
+      startedRef.current = true;
+      posthog.capture("signup_started");
+    }
+  }
 
   if (state.ok && state.email) {
     return <SignupSuccess email={state.email} />;
@@ -35,10 +44,10 @@ export default function SignupForm() {
 
   return (
     <AuthCard title="Create your account">
-      <form action={formAction}>
+      <form action={formAction} onFocus={handleFormFocus}>
         {state.error && <AuthAlert message={state.error} />}
 
-        <OAuthButtons />
+        <OAuthButtons variant="signup" />
         <OAuthDivider />
 
         <div className="mb-3">

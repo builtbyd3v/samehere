@@ -31,6 +31,7 @@ export const metadata: Metadata = {
   },
   description: DESCRIPTION,
   applicationName: "samehere",
+  manifest: "/manifest.json",
   openGraph: {
     type: "website",
     siteName: "samehere",

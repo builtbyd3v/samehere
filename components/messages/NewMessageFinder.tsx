@@ -20,12 +20,8 @@ export default function NewMessageFinder() {
   }, [open]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !query.trim()) return;
     clearTimeout(debounceRef.current);
-    if (!query.trim()) {
-      setResults([]);
-      return;
-    }
     debounceRef.current = window.setTimeout(async () => {
       setLoading(true);
       const users = await searchUsersForMessage(query);
@@ -34,6 +30,10 @@ export default function NewMessageFinder() {
     }, 200);
     return () => clearTimeout(debounceRef.current);
   }, [query, open]);
+
+  // Stale results shouldn't show once the query is cleared -- derive instead
+  // of clearing `results` state from an effect.
+  const visibleResults = query.trim() ? results : [];
 
   function close() {
     setOpen(false);
@@ -75,15 +75,15 @@ export default function NewMessageFinder() {
           Cancel
         </button>
       </div>
-      {(loading || results.length > 0 || query.trim()) && (
+      {(loading || visibleResults.length > 0 || query.trim()) && (
         <ul className="max-h-52 overflow-y-auto border-t border-[var(--border)]">
           {loading && (
             <li className="px-4 py-3 text-sm text-[var(--ink-muted)]">Searching…</li>
           )}
-          {!loading && query.trim() && results.length === 0 && (
+          {!loading && query.trim() && visibleResults.length === 0 && (
             <li className="px-4 py-3 text-sm text-[var(--ink-muted)]">No one found.</li>
           )}
-          {results.map((u) => {
+          {visibleResults.map((u) => {
             const name = u.display_name ?? u.username;
             return (
               <li key={u.id}>

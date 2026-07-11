@@ -1,5 +1,7 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
+import posthog from "posthog-js";
 import { createClient } from "@/lib/supabase/client";
 
 function GoogleMark() {
@@ -24,8 +26,16 @@ function GitHubMark() {
 // Shared OAuth entry points for signup + login. Client-side kickoff via the
 // browser Supabase client; the actual session exchange happens server-side
 // in app/auth/callback/route.ts after the provider redirects back.
-export default function OAuthButtons() {
+export default function OAuthButtons({ variant }: { variant?: "signup" | "login" }) {
+  const refFromLink = useSearchParams().get("ref") ?? "";
+
   async function start(provider: "google" | "github") {
+    // Capture before kicking off the redirect: signInWithOAuth calls
+    // window.location.assign internally, so anything queued after the
+    // await risks being dropped by the navigation.
+    if (variant === "signup") {
+      posthog.capture("signup_submitted", { has_ref: !!refFromLink, method: "oauth", provider });
+    }
     const supabase = createClient();
     await supabase.auth.signInWithOAuth({
       provider,

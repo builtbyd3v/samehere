@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { IconCompose } from "@/components/icons";
 
@@ -24,9 +24,11 @@ export default function FeedToolbar({
   // A soft nav to ?compose=1 changes the param without remounting this client
   // component, so open the composer in response to the param, not just from
   // the initial state.
-  useEffect(() => {
+  const [prevSearchParams, setPrevSearchParams] = useState(searchParams);
+  if (searchParams !== prevSearchParams) {
+    setPrevSearchParams(searchParams);
     if (searchParams.get("compose") === "1") setComposeOpen(true);
-  }, [searchParams]);
+  }
 
   return (
     <>
@@ -45,7 +47,9 @@ export default function FeedToolbar({
 
       {/* Search is a persistent bar — the primary way to discover people. */}
       <div className="mb-4">{search}</div>
-      {composeOpen ? <div className="mb-2">{composer}</div> : null}
+      {composeOpen ? (
+        <div className="mb-2 animate-[modal-in_200ms_var(--ease-out)] motion-reduce:animate-none">{composer}</div>
+      ) : null}
     </>
   );
 }

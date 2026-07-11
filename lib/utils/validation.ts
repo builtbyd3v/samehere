@@ -24,6 +24,7 @@ export const TEXT_LIMITS = {
   reportDetail: 500,
   searchQuery: 100,
   dmUserSearch: 80,
+  groupTitle: 60,
 } as const;
 
 export function textLimitError(label: string, max: number, length: number): string | null {

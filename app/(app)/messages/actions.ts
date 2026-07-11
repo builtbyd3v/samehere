@@ -40,6 +40,53 @@ export type MessageUserResult = {
   is_pro: boolean;
 };
 
+// Candidates for the "New group" picker: accounts the viewer follows
+// (accepted), minus anyone blocked either direction. Followed-only is a UI
+// choice, not an RLS/RPC requirement -- create_group_conversation itself only
+// hard-rejects a blocked creator<->member pair (see plan 025 NOTES).
+export async function listFollowedForGroup(): Promise<MessageUserResult[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const [{ data: blocked }, { data: rows }] = await Promise.all([
+    supabase.rpc("get_blocked_ids"),
+    supabase
+      .from("follows")
+      .select("following:profiles!follows_following_id_fkey(id, username, display_name, avatar_url, is_pro)")
+      .eq("follower_id", user.id)
+      .eq("status", "accepted"),
+  ]);
+
+  const blockedSet = new Set((blocked ?? []) as string[]);
+  return (rows ?? [])
+    .map((r) => (Array.isArray(r.following) ? r.following[0] : r.following))
+    .filter((p): p is MessageUserResult => !!p && !blockedSet.has(p.id));
+}
+
+export type CreateGroupResult = { error: string } | { conversationId: string };
+
+export async function createGroupConversation(title: string, memberIds: string[]): Promise<CreateGroupResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { data: conversationId, error } = await supabase.rpc("create_group_conversation", {
+    p_title: title,
+    p_member_ids: memberIds,
+  });
+
+  if (error || !conversationId) {
+    return { error: error?.message ?? "Could not create group" };
+  }
+
+  return { conversationId };
+}
+
 export async function searchUsersForMessage(query: string): Promise<MessageUserResult[]> {
   const q = query.trim().slice(0, TEXT_LIMITS.dmUserSearch);
   if (q.length < 1) return [];

@@ -15,8 +15,6 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      # TODO: make blocking once existing lint errors are triaged (see plans/019)
       - run: npm run lint
-        continue-on-error: true
       - run: npx tsc --noEmit
       - run: npm test

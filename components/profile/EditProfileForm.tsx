@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useRef, useState, useTransition } from "react";
+import { useActionState, useRef, useState, useTransition } from "react";
 import { draftProfileText, updateProfile, uploadAvatar, uploadBanner, type AvatarState, type DraftState, type EditState } from "@/app/(app)/profile/edit/actions";
 import { isPro } from "@/lib/pro";
+import { PROFILE_THEME_KEYS, PROFILE_THEMES, isProfileTheme, type ProfileTheme } from "@/lib/themes";
 import AvatarImage from "@/components/ui/AvatarImage";
 import ProfileNudgePanel from "@/components/profile/ProfileNudgePanel";
 import SchoolAutocomplete from "@/components/profile/SchoolAutocomplete";
@@ -25,6 +26,7 @@ export type EditInitial = {
   is_pro: boolean;
   pro_until: string | null;
   accent_color: string | null;
+  profile_theme: string | null;
 };
 
 const label = "block text-sm font-medium text-[var(--ink)]";
@@ -43,11 +45,14 @@ const YEARS: [string, string][] = [
 export default function EditProfileForm({ initial }: { initial: EditInitial }) {
   const [state, formAction, pending] = useActionState<EditState, FormData>(updateProfile, {});
 
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(initial.avatar_url);
   const [avatarState, avatarAction, avatarBusy] = useActionState<AvatarState, FormData>(uploadAvatar, {});
-  const [bannerUrl, setBannerUrl] = useState<string | null>(initial.banner_url);
+  const avatarUrl = avatarState.url ?? initial.avatar_url;
   const [bannerState, bannerAction, bannerBusy] = useActionState<AvatarState, FormData>(uploadBanner, {});
+  const bannerUrl = bannerState.url ?? initial.banner_url;
   const [accentColor, setAccentColor] = useState<string | null>(initial.accent_color);
+  const [profileTheme, setProfileTheme] = useState<ProfileTheme | null>(
+    isProfileTheme(initial.profile_theme) ? initial.profile_theme : null
+  );
   const pro = isPro(initial);
 
   // Bio + goals are uncontrolled (defaultValue); the draft button writes into
@@ -68,13 +73,6 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
 
   // Server action validates MIME/size/animation and gates animated avatars
   // behind Pro (client checks below are UX only, not the trust boundary).
-  useEffect(() => {
-    if (avatarState.url) setAvatarUrl(avatarState.url);
-  }, [avatarState.url]);
-
-  useEffect(() => {
-    if (bannerState.url) setBannerUrl(bannerState.url);
-  }, [bannerState.url]);
 
   function onAvatar(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -233,6 +231,65 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
               defaultValue={initial.goals ?? ""} placeholder="What are you working toward?" className={field} />
           </div>
 
+          {/* TODO(themes redesign): re-enable picker after redesign (plan 023).
+              Hidden field still carries the (unchangeable) stored value so an
+              existing theme round-trips on save instead of getting cleared. */}
+          <input type="hidden" name="profile_theme" value={profileTheme ?? ""} />
+          {false && (
+            <div className="border-t border-[var(--border)] pt-4">
+              <label className={label}>Profile theme</label>
+              {pro ? (
+                <>
+                  <div className="mt-1.5 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setProfileTheme(null)}
+                      aria-pressed={profileTheme === null}
+                      className={`h-9 rounded-full border px-3 text-sm active:scale-[0.98] ${
+                        profileTheme === null
+                          ? "border-[var(--ink)] text-[var(--ink)]"
+                          : "border-[var(--border)] text-[var(--ink-muted)]"
+                      }`}
+                    >
+                      None
+                    </button>
+                    {PROFILE_THEME_KEYS.map((key) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setProfileTheme(key)}
+                        aria-pressed={profileTheme === key}
+                        title={PROFILE_THEMES[key].label}
+                        className={`flex h-9 items-center gap-2 rounded-full border px-3 text-sm active:scale-[0.98] ${
+                          profileTheme === key
+                            ? "border-[var(--ink)] text-[var(--ink)]"
+                            : "border-[var(--border)] text-[var(--ink-muted)]"
+                        }`}
+                      >
+                        <span
+                          aria-hidden
+                          className="h-3.5 w-3.5 rounded-full"
+                          style={{ background: PROFILE_THEMES[key].accent }}
+                        />
+                        {PROFILE_THEMES[key].label}
+                      </button>
+                    ))}
+                  </div>
+                  <p className={hint}>
+                    A curated look for your profile. Overrides your accent color below when set.
+                  </p>
+                </>
+              ) : (
+                <div className="mt-1.5 flex items-center gap-3">
+                  <div className="h-9 w-24 rounded-full border border-[var(--border)] bg-[var(--canvas)] opacity-50" />
+                  <Link href="/pro" className="text-sm text-[var(--ink-muted)] underline">
+                    Profile themes · Pro
+                  </Link>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="border-t border-[var(--border)] pt-4">
             <label className={label}>Accent color</label>
             {pro ? (
@@ -258,7 +315,11 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
                     </button>
                   )}
                 </div>
-                <p className={hint}>Shown as a ring around your avatar.</p>
+                <p className={hint}>
+                  {profileTheme
+                    ? "Not shown while a profile theme is set."
+                    : "Shown as a ring around your avatar."}
+                </p>
               </>
             ) : (
               <div className="mt-1.5 flex items-center gap-3">

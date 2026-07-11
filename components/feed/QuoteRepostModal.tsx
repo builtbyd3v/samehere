@@ -34,13 +34,17 @@ export default function QuoteRepostModal({
 
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- resets the draft when the modal (re)opens; paired with the ref.focus() side effect below.
       setText("");
       setError(null);
       ref.current?.focus();
     }
   }, [open]);
 
-  useEffect(() => setShortcutLabel(submitShortcutLabel()), []);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- navigator-based label deferred to post-hydration to avoid an SSR/client mismatch
+    setShortcutLabel(submitShortcutLabel());
+  }, []);
 
   const submit = useCallback(async () => {
     const quote = text.trim();

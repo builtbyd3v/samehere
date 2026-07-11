@@ -33,6 +33,7 @@ export default function OnboardingChecklist({
   const [dismissed, setDismissed] = useState(true);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- deliberate mount-time localStorage read deferred past hydration to avoid an SSR/client mismatch (server always renders the `dismissed: true` default)
     setDismissed(localStorage.getItem(DISMISS_KEY) === "1");
   }, []);
 

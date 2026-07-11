@@ -554,20 +554,26 @@ export type Database = {
       conversations: {
         Row: {
           created_at: string
+          created_by: string | null
           id: string
           kind: string
+          title: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           id?: string
           kind?: string
+          title?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           id?: string
           kind?: string
+          title?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -905,8 +911,10 @@ export type Database = {
           last_subscription_event_at: string | null
           leaderboard_opt_out: boolean
           major: string | null
+          onboarded_at: string | null
           pro_source: string | null
           pro_until: string | null
+          profile_theme: string | null
           referral_code: string | null
           stripe_customer_id: string | null
           username: string
@@ -936,8 +944,10 @@ export type Database = {
           last_subscription_event_at?: string | null
           leaderboard_opt_out?: boolean
           major?: string | null
+          onboarded_at?: string | null
           pro_source?: string | null
           pro_until?: string | null
+          profile_theme?: string | null
           referral_code?: string | null
           stripe_customer_id?: string | null
           username: string
@@ -967,8 +977,10 @@ export type Database = {
           last_subscription_event_at?: string | null
           leaderboard_opt_out?: boolean
           major?: string | null
+          onboarded_at?: string | null
           pro_source?: string | null
           pro_until?: string | null
+          profile_theme?: string | null
           referral_code?: string | null
           stripe_customer_id?: string | null
           username?: string
@@ -976,6 +988,38 @@ export type Database = {
           year?: string | null
         }
         Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          p256dh: string
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          p256dh: string
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          p256dh?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reactions: {
         Row: {
@@ -1315,6 +1359,10 @@ export type Database = {
         Args: { p_code: string }
         Returns: boolean
       }
+      create_group_conversation: {
+        Args: { p_member_ids: string[]; p_title: string }
+        Returns: string
+      }
       current_is_admin: { Args: never; Returns: boolean }
       current_is_suspended: { Args: never; Returns: boolean }
       expire_lapsed_pro: { Args: never; Returns: number }
@@ -1331,6 +1379,16 @@ export type Database = {
       }
       get_dm_unread_total: { Args: never; Returns: number }
       get_founder_spots_left: { Args: never; Returns: number }
+      get_group_conversation: {
+        Args: { p_conversation_id: string }
+        Returns: {
+          member_avatar_url: string
+          member_display_name: string
+          member_id: string
+          member_username: string
+          title: string
+        }[]
+      }
       get_heatmap: {
         Args: { p_profile_id: string }
         Returns: {
@@ -1354,6 +1412,20 @@ export type Database = {
           username: string
           verified_student: boolean
           weekly_points: number
+        }[]
+      }
+      get_match_candidates: {
+        Args: { p_user: string }
+        Returns: {
+          avatar_url: string
+          bio: string
+          display_name: string
+          goals: string
+          id: string
+          major: string
+          school: string
+          username: string
+          year: string
         }[]
       }
       get_my_billing: {
@@ -1540,6 +1612,18 @@ export type Database = {
           unread_count: number
         }[]
       }
+      list_group_inbox: {
+        Args: never
+        Returns: {
+          conversation_id: string
+          last_message: string
+          last_message_at: string
+          last_sender_id: string
+          members: Json
+          title: string
+          unread_count: number
+        }[]
+      }
       list_notifications: {
         Args: { p_limit?: number }
         Returns: {
@@ -1564,6 +1648,20 @@ export type Database = {
           email: string
           notif_unread: number
           user_id: string
+        }[]
+      }
+      list_weekly_match_recipients: {
+        Args: never
+        Returns: {
+          bio: string
+          email: string
+          goals: string
+          is_pro: boolean
+          major: string
+          pro_until: string
+          school: string
+          user_id: string
+          year: string
         }[]
       }
       mark_all_notifications_read: { Args: never; Returns: undefined }

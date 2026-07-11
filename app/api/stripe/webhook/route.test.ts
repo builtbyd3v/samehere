@@ -16,7 +16,7 @@ type Call = { table: string; method: string; args: any[] }; // eslint-disable-li
 
 const { fakeAdmin } = vi.hoisted(() => {
   function createFakeAdminClient() {
-    const calls: Call[] = []; // eslint-disable-line no-undef
+    const calls: Call[] = [];
     let insertResult: { error: unknown } = { error: null };
     let updateResult: { error: unknown } = { error: null };
 

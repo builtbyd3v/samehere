@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import LandingPage from "@/components/landing/LandingPage";
+import LandingAnalytics from "@/components/landing/LandingAnalytics";
 import { getFounderSpotsLeft } from "@/lib/founder";
 
 export const metadata: Metadata = {
@@ -23,5 +24,10 @@ export const metadata: Metadata = {
 
 export default async function Home() {
   const founderSpotsLeft = await getFounderSpotsLeft();
-  return <LandingPage founderSpotsLeft={founderSpotsLeft} />;
+  return (
+    <>
+      <LandingAnalytics />
+      <LandingPage founderSpotsLeft={founderSpotsLeft} />
+    </>
+  );
 }

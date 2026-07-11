@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { notifyPush } from "@/lib/push-actions";
 import { IconSame, IconComment, IconRepost, IconBookmark } from "@/components/icons";
+import Menu from "@/components/ui/Menu";
 import QuoteRepostModal from "./QuoteRepostModal";
 import type { FeedPost } from "./PostCard";
 
@@ -93,6 +95,10 @@ export default function ReactionRow(props: Props) {
             : { post_id: postId, user_id: viewerId, type },
         );
     if (error) setS((p) => ({ ...p, mineSamehere: mine, samehere: p.samehere - d }));
+    // Only plain post reactions notify (matches trg_notify_reaction, which
+    // only fires off posts.post_id — quote-repost reactions aren't notified
+    // today either). Fire-and-forget: never block the reaction UI.
+    else if (!mine && !quoteId) void notifyPush("reaction", { postId });
   }
 
   async function toggleRepost() {
@@ -132,7 +138,11 @@ export default function ReactionRow(props: Props) {
           className={`${action} ${sameColor(s.mineSamehere)}`}
         >
           <IconSame on={s.mineSamehere} />
-          {s.samehere > 0 && <span>{s.samehere}</span>}
+          {s.samehere > 0 && (
+            <span className="same-tick inline-block tabular-nums" key={s.samehere}>
+              {s.samehere}
+            </span>
+          )}
         </ActionButton>
 
         {!hideComments && (
@@ -142,48 +152,48 @@ export default function ReactionRow(props: Props) {
           </Link>
         )}
 
-        <div className="relative">
-          <ActionButton
-            onClick={() => {
-              if (authorPrivate) return;
-              if (post) setRepostMenu((o) => !o);
-              else toggleRepost();
-            }}
-            disabled={!viewerId || authorPrivate}
-            aria-pressed={s.mineRepost}
-            aria-expanded={repostMenu}
-            aria-label={authorPrivate ? "Reposting is off for private accounts" : s.mineRepost ? "Reposted" : "Repost"}
-            title={authorPrivate ? "Private posts can't be reposted" : undefined}
-            className={`${action} ${repostColor(s.mineRepost)}`}
+        <Menu
+          placement="top"
+          align="start"
+          customTrigger
+          open={post ? repostMenu : false}
+          onOpenChange={setRepostMenu}
+          trigger={
+            <ActionButton
+              onClick={() => {
+                if (authorPrivate) return;
+                if (post) setRepostMenu((o) => !o);
+                else toggleRepost();
+              }}
+              disabled={!viewerId || authorPrivate}
+              aria-pressed={s.mineRepost}
+              aria-label={authorPrivate ? "Reposting is off for private accounts" : s.mineRepost ? "Reposted" : "Repost"}
+              title={authorPrivate ? "Private posts can't be reposted" : undefined}
+              className={`${action} ${repostColor(s.mineRepost)}`}
+            >
+              <IconRepost />
+              {s.repost > 0 && <span>{s.repost}</span>}
+            </ActionButton>
+          }
+        >
+          <button
+            type="button"
+            onClick={toggleRepost}
+            className="block w-full px-3 py-2 text-left text-sm transition hover:bg-[var(--featured-surface)] active:scale-[0.98]"
           >
-            <IconRepost />
-            {s.repost > 0 && <span>{s.repost}</span>}
-          </ActionButton>
-          {repostMenu && post && (
-            <>
-              <button type="button" className="fixed inset-0 z-10" aria-label="Close menu" onClick={() => setRepostMenu(false)} />
-              <div className="absolute bottom-full left-0 z-20 mb-1 min-w-[9rem] rounded-lg border border-[var(--border)] bg-[var(--surface-card)] py-1 shadow-lg animate-[menu-pop_120ms_var(--ease-out)] motion-reduce:animate-none">
-                <button
-                  type="button"
-                  onClick={toggleRepost}
-                  className="block w-full px-3 py-2 text-left text-sm transition hover:bg-[var(--featured-surface)] active:scale-[0.98]"
-                >
-                  {s.mineRepost ? "Undo repost" : "Repost"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setRepostMenu(false);
-                    setQuoteOpen(true);
-                  }}
-                  className="block w-full px-3 py-2 text-left text-sm transition hover:bg-[var(--featured-surface)] active:scale-[0.98]"
-                >
-                  Quote
-                </button>
-              </div>
-            </>
-          )}
-        </div>
+            {s.mineRepost ? "Undo repost" : "Repost"}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setRepostMenu(false);
+              setQuoteOpen(true);
+            }}
+            className="block w-full px-3 py-2 text-left text-sm transition hover:bg-[var(--featured-surface)] active:scale-[0.98]"
+          >
+            Quote
+          </button>
+        </Menu>
 
         <ActionButton
           onClick={toggleBookmark}

@@ -25,6 +25,7 @@ const GROUPS: { title: string; subtitle: string; features: string[] }[] = [
       "A stronger AI model, 150 uses a day",
       "Improve my post: AI rewrites your draft",
       "AI icebreakers for first messages",
+      "Weekly “5 people to meet” email, with AI reasons",
     ],
   },
   {
@@ -36,10 +37,7 @@ const GROUPS: { title: string; subtitle: string; features: string[] }[] = [
   },
 ];
 
-const COMING_SOON_TO_PRO = [
-  "Weekly “3 people to meet”",
-  "Profile themes",
-];
+const COMING_SOON_TO_PRO: string[] = ["Profile themes"];
 
 const NEVER_GATED = [
   "student verification",
@@ -196,17 +194,19 @@ export default async function ProPage({
         ))}
       </div>
 
-      {/* Coming soon */}
-      <div className="mt-4 card p-6">
-        <h2 className="text-[15px] font-semibold text-[var(--ink)]">Coming soon to Pro</h2>
-        <ul className="mt-3 flex flex-wrap gap-2">
-          {COMING_SOON_TO_PRO.map((f) => (
-            <li key={f} className="rounded-full border border-[var(--border)] bg-[var(--canvas)] px-3 py-1 text-sm text-[var(--ink-muted)]">
-              {f}
-            </li>
-          ))}
-        </ul>
-      </div>
+      {/* Coming soon — hidden when nothing is queued */}
+      {COMING_SOON_TO_PRO.length > 0 && (
+        <div className="mt-4 card p-6">
+          <h2 className="text-[15px] font-semibold text-[var(--ink)]">Coming soon to Pro</h2>
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {COMING_SOON_TO_PRO.map((f) => (
+              <li key={f} className="rounded-full border border-[var(--border)] bg-[var(--canvas)] px-3 py-1 text-sm text-[var(--ink-muted)]">
+                {f}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Never gated */}
       <p className="mt-6 text-sm leading-relaxed text-[var(--ink-muted)]">
