@@ -1385,6 +1385,7 @@ export type Database = {
           member_avatar_url: string
           member_display_name: string
           member_id: string
+          member_is_pro: boolean
           member_username: string
           title: string
         }[]

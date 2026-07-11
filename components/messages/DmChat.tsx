@@ -9,7 +9,7 @@ import { icebreaker } from "@/app/(app)/messages/actions";
 import { IconSend } from "@/components/icons";
 import { useSubmitShortcut } from "@/lib/useSubmitShortcut";
 import { TEXT_LIMITS, textLimitError } from "@/lib/utils/validation";
-import type { DmMessage, GroupMember } from "@/lib/messages";
+import type { DmMessage, GroupMember, ChatParticipant } from "@/lib/messages";
 
 const MAX = TEXT_LIMITS.message;
 
@@ -63,6 +63,7 @@ export default function DmChat({
   peerId,
   viewerIsPro = false,
   members,
+  roster,
 }: {
   conversationId: string;
   initialMessages: DmMessage[];
@@ -71,6 +72,8 @@ export default function DmChat({
   viewerIsPro?: boolean;
   /** Group roster, for per-bubble sender name/avatar. Omit for 1:1 threads (unchanged). */
   members?: GroupMember[];
+  /** Every participant (peer/members + viewer), for per-bubble avatar/badge lookup on ANY bubble, including own. */
+  roster?: ChatParticipant[];
 }) {
   const [supabase] = useState(createClient);
   const [messages, setMessages] = useState<DmMessage[]>(initialMessages);
@@ -195,7 +198,7 @@ export default function DmChat({
   return (
     <>
       <div className="min-h-0 flex-1 overflow-y-auto bg-[var(--canvas)]">
-        <MessageThread messages={messages} viewerId={viewerId} members={members} />
+        <MessageThread messages={messages} viewerId={viewerId} members={members} roster={roster} />
         <div ref={bottomRef} aria-hidden className="h-px shrink-0" />
       </div>
       <form
