@@ -11,6 +11,7 @@ export type PrivacyInitial = {
   hide_school: boolean;
   heatmap_visibility: string;
   leaderboard_opt_out: boolean;
+  email_digest_opt_out: boolean;
 };
 
 export default function PrivacyForm({ initial }: { initial: PrivacyInitial }) {
@@ -36,6 +37,10 @@ export default function PrivacyForm({ initial }: { initial: PrivacyInitial }) {
       <label className="flex items-center gap-2.5 text-sm text-[var(--ink)]">
         <input type="checkbox" name="show_on_leaderboard" defaultChecked={!initial.leaderboard_opt_out} className="h-4 w-4 accent-[var(--ink)]" />
         <span>Show me on leaderboards</span>
+      </label>
+      <label className="flex items-center gap-2.5 text-sm text-[var(--ink)]">
+        <input type="checkbox" name="daily_digest_email" defaultChecked={!initial.email_digest_opt_out} className="h-4 w-4 accent-[var(--ink)]" />
+        <span>Daily unread-activity email <span className="text-[var(--ink-muted)]">, only sent when you have something unread</span></span>
       </label>
       <div>
         <label htmlFor="heatmap_visibility" className={label}>Heatmap visibility</label>
