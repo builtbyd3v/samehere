@@ -107,6 +107,7 @@ export default function ContributionHeatmap({
   // animate mode: fire the fill wave once the grid scrolls into view.
   useEffect(() => {
     if (!animate) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- deliberately deferred to client mount only: if `armed` defaulted true it would render pre-hidden in SSR/no-JS output with nothing to reveal it (progressive enhancement).
     setArmed(true);
     const el = gridRef.current;
     if (!el) return;

@@ -77,12 +77,15 @@ export default function PostComposer({
   // Latest files for the unmount-only revoke below (avoids a [files]-dep effect
   // that would revoke still-shown previews on every add).
   const filesRef = useRef(files);
-  filesRef.current = files;
+  useEffect(() => {
+    filesRef.current = files;
+  });
 
   // Reset the form and counter after a successful post.
   useEffect(() => {
     if (state.ok) {
       ref.current?.reset();
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reacts to useActionState completion (no synchronous onSuccess in React 19's action model); paired with the form.reset()/revokeObjectURL side effects here.
       setContent("");
       setLen(0);
       files.forEach((f) => URL.revokeObjectURL(f.url));
@@ -94,7 +97,10 @@ export default function PostComposer({
   // Revoke object URLs on unmount only.
   useEffect(() => () => filesRef.current.forEach((f) => URL.revokeObjectURL(f.url)), []);
 
-  useEffect(() => setShortcutLabel(submitShortcutLabel()), []);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- navigator-based label deferred to post-hydration to avoid an SSR/client mismatch
+    setShortcutLabel(submitShortcutLabel());
+  }, []);
 
   const qualifies = len >= POINT_AT;
 

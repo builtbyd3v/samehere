@@ -32,6 +32,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
     const initial = stored === "light" || stored === "dark" || stored === "system" ? stored : "system";
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- deliberate mount-time localStorage read deferred past hydration to avoid an SSR/client mismatch (server always renders the "system" default)
     setThemeState(initial);
     applyTheme(initial);
     setResolved(resolveTheme(initial));
@@ -39,6 +40,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     applyTheme(theme);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resolveTheme() reads window.matchMedia, a browser-only API unavailable during SSR render; must run post-mount, paired with the DOM class mutation above.
     setResolved(resolveTheme(theme));
 
     if (theme !== "system") return;

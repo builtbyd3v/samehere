@@ -51,6 +51,7 @@ export default function Menu({
 
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- coordinates mount/exit-animation timing with the setTimeout below; moving this to render-time would shift when the exit class commits relative to the timer.
       setMounted(true);
       setClosing(false);
       return;

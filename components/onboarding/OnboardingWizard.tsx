@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState, useTransition, type ReactNode } from "react";
+import { useActionState, useState, useTransition, type ReactNode } from "react";
 import { uploadAvatar, type AvatarState, type EditState } from "@/app/(app)/profile/edit/actions";
 import { createPost, type ComposerState } from "@/app/(app)/feed/actions";
 import { saveOnboardingBasics, finishOnboarding } from "@/app/(app)/onboarding/actions";
@@ -46,11 +46,8 @@ export default function OnboardingWizard({
 
   // Avatar upload has no redirect in its own action, so it's called directly
   // (same pattern as EditProfileForm) — no wrapper needed.
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(profile.avatar_url);
   const [avatarState, avatarAction, avatarBusy] = useActionState<AvatarState, FormData>(uploadAvatar, {});
-  useEffect(() => {
-    if (avatarState.url) setAvatarUrl(avatarState.url);
-  }, [avatarState.url]);
+  const avatarUrl = avatarState.url ?? profile.avatar_url;
 
   function onAvatar(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];

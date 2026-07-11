@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useRef, useState, useTransition } from "react";
+import { useActionState, useRef, useState, useTransition } from "react";
 import { draftProfileText, updateProfile, uploadAvatar, uploadBanner, type AvatarState, type DraftState, type EditState } from "@/app/(app)/profile/edit/actions";
 import { isPro } from "@/lib/pro";
 import { PROFILE_THEME_KEYS, PROFILE_THEMES, isProfileTheme, type ProfileTheme } from "@/lib/themes";
@@ -45,10 +45,10 @@ const YEARS: [string, string][] = [
 export default function EditProfileForm({ initial }: { initial: EditInitial }) {
   const [state, formAction, pending] = useActionState<EditState, FormData>(updateProfile, {});
 
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(initial.avatar_url);
   const [avatarState, avatarAction, avatarBusy] = useActionState<AvatarState, FormData>(uploadAvatar, {});
-  const [bannerUrl, setBannerUrl] = useState<string | null>(initial.banner_url);
+  const avatarUrl = avatarState.url ?? initial.avatar_url;
   const [bannerState, bannerAction, bannerBusy] = useActionState<AvatarState, FormData>(uploadBanner, {});
+  const bannerUrl = bannerState.url ?? initial.banner_url;
   const [accentColor, setAccentColor] = useState<string | null>(initial.accent_color);
   const [profileTheme, setProfileTheme] = useState<ProfileTheme | null>(
     isProfileTheme(initial.profile_theme) ? initial.profile_theme : null
@@ -73,13 +73,6 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
 
   // Server action validates MIME/size/animation and gates animated avatars
   // behind Pro (client checks below are UX only, not the trust boundary).
-  useEffect(() => {
-    if (avatarState.url) setAvatarUrl(avatarState.url);
-  }, [avatarState.url]);
-
-  useEffect(() => {
-    if (bannerState.url) setBannerUrl(bannerState.url);
-  }, [bannerState.url]);
 
   function onAvatar(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];

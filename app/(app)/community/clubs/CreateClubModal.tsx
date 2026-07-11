@@ -33,6 +33,7 @@ export default function CreateClubModal() {
 
   useEffect(() => {
     if (state.ok && state.slug) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reacts to useActionState completion (no synchronous onSuccess in React 19's action model); paired with the router.push side effect below.
       setOpen(false);
       router.push(`/community/clubs/${state.slug}`);
     }

@@ -82,9 +82,13 @@ export default function DmChat({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
-  useEffect(() => {
+  // Folds in a fresh server-rendered `initialMessages` when this component
+  // instance persists across a thread-to-thread navigation (see mergeById above).
+  const [prevInitialMessages, setPrevInitialMessages] = useState(initialMessages);
+  if (initialMessages !== prevInitialMessages) {
+    setPrevInitialMessages(initialMessages);
     setMessages((prev) => mergeById(prev, initialMessages));
-  }, [initialMessages]);
+  }
 
   useEffect(() => {
     const channel = supabase

@@ -24,7 +24,13 @@ export default function NavIconBadge({
   children: React.ReactNode;
 }) {
   const [liveCount, setLiveCount] = useState(count);
-  useEffect(() => setLiveCount(count), [count]);
+  // Resync liveCount whenever the server-provided count prop changes (e.g. a
+  // fresh page load), without fighting the poll/realtime updates below.
+  const [prevCount, setPrevCount] = useState(count);
+  if (count !== prevCount) {
+    setPrevCount(count);
+    setLiveCount(count);
+  }
   const [supabase] = useState(createClient);
 
   useEffect(() => {

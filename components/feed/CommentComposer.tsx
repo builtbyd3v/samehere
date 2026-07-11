@@ -22,11 +22,15 @@ export default function CommentComposer({ postId, quoteId }: { postId?: string; 
   const [len, setLen] = useState(0);
   const [shortcutLabel, setShortcutLabel] = useState("");
 
-  useEffect(() => setShortcutLabel(submitShortcutLabel()), []);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- navigator-based label deferred to post-hydration to avoid an SSR/client mismatch
+    setShortcutLabel(submitShortcutLabel());
+  }, []);
 
   useEffect(() => {
     if (state.ok) {
       ref.current?.reset();
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reacts to useActionState completion (no synchronous onSuccess in React 19's action model); paired with the form.reset() side effect above.
       setContent("");
       setLen(0);
     }
