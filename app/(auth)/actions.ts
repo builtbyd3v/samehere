@@ -41,12 +41,17 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
   });
 
   if (error) {
-    // We already validated charset/reserved/.edu/length, so a failure here is
-    // almost always a taken username (the trigger's unique violation surfaces as
-    // a generic "Database error saving new user"). Duplicate *emails* don't error —
-    // Supabase silently resends to prevent enumeration.
-    // ponytail: coarse mapping; add a username_available RPC if signups get confusing.
-    return { error: "That username may already be taken. Try another." };
+    // Map the real failure instead of always blaming the username. The trigger's
+    // unique-username violation surfaces as a 500 "Database error saving new user";
+    // duplicate email and rate limits come back with their own codes/status.
+    const code = error.code ?? "";
+    if (code.includes("rate_limit") || error.status === 429)
+      return { error: "Too many attempts — wait a minute and try again." };
+    if (code === "user_already_exists" || code === "email_exists")
+      return { error: "An account with that email already exists. Log in or reset your password." };
+    if (error.status === 500 || /database error/i.test(error.message))
+      return { error: "That username is taken. Try another." };
+    return { error: "Couldn't create your account. Try again in a moment." };
   }
 
   return { ok: true, email };
