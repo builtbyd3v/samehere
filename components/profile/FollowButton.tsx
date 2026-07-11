@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import posthog from "posthog-js";
 import { createClient } from "@/lib/supabase/client";
 
 export type FollowState = "none" | "pending" | "following";
@@ -29,6 +30,7 @@ export default function FollowButton({
     const { data, error } = await supabase.rpc("request_follow", { p_target: targetId });
     setBusy(false);
     if (!error) {
+      posthog.capture("follow_created", { status: data === "accepted" ? "accepted" : "pending" });
       setState(data === "accepted" ? "following" : "pending");
       router.refresh();
     }
