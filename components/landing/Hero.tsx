@@ -47,14 +47,14 @@ export default function Hero() {
 
           <p
             className="fade-rise mx-auto mt-6 max-w-[42ch] text-lg leading-[1.45] text-[var(--ink-muted)] md:text-xl"
-            style={{ ["--y" as string]: "20px", ["--delay" as string]: "0.5s" }}
+            style={{ ["--y" as string]: "20px", ["--delay" as string]: "0.3s" }}
           >
             Post what&apos;s real. Grow a heatmap. Let AI find your people.
           </p>
 
           <div
             className="fade-rise mt-9 flex flex-wrap items-center justify-center gap-3"
-            style={{ ["--y" as string]: "20px", ["--delay" as string]: "0.62s" }}
+            style={{ ["--y" as string]: "20px", ["--delay" as string]: "0.4s" }}
           >
             <span className="relative">
               {/* blue glow bloom behind the primary CTA — SameHere signature as
