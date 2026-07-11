@@ -13,6 +13,7 @@ const GROUPS: { title: string; subtitle: string; features: string[] }[] = [
     features: [
       "Pro badge on your profile",
       "Custom profile accent color",
+      "Curated profile themes",
       "Profile banner",
       "Animated profile picture (GIF / animated-webp)",
     ],
@@ -37,9 +38,7 @@ const GROUPS: { title: string; subtitle: string; features: string[] }[] = [
   },
 ];
 
-const COMING_SOON_TO_PRO = [
-  "Profile themes",
-];
+const COMING_SOON_TO_PRO: string[] = [];
 
 const NEVER_GATED = [
   "student verification",
@@ -196,17 +195,19 @@ export default async function ProPage({
         ))}
       </div>
 
-      {/* Coming soon */}
-      <div className="mt-4 card p-6">
-        <h2 className="text-[15px] font-semibold text-[var(--ink)]">Coming soon to Pro</h2>
-        <ul className="mt-3 flex flex-wrap gap-2">
-          {COMING_SOON_TO_PRO.map((f) => (
-            <li key={f} className="rounded-full border border-[var(--border)] bg-[var(--canvas)] px-3 py-1 text-sm text-[var(--ink-muted)]">
-              {f}
-            </li>
-          ))}
-        </ul>
-      </div>
+      {/* Coming soon — hidden when nothing is queued */}
+      {COMING_SOON_TO_PRO.length > 0 && (
+        <div className="mt-4 card p-6">
+          <h2 className="text-[15px] font-semibold text-[var(--ink)]">Coming soon to Pro</h2>
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {COMING_SOON_TO_PRO.map((f) => (
+              <li key={f} className="rounded-full border border-[var(--border)] bg-[var(--canvas)] px-3 py-1 text-sm text-[var(--ink-muted)]">
+                {f}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Never gated */}
       <p className="mt-6 text-sm leading-relaxed text-[var(--ink-muted)]">

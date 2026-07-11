@@ -914,6 +914,7 @@ export type Database = {
           onboarded_at: string | null
           pro_source: string | null
           pro_until: string | null
+          profile_theme: string | null
           referral_code: string | null
           stripe_customer_id: string | null
           username: string
@@ -946,6 +947,7 @@ export type Database = {
           onboarded_at?: string | null
           pro_source?: string | null
           pro_until?: string | null
+          profile_theme?: string | null
           referral_code?: string | null
           stripe_customer_id?: string | null
           username: string
@@ -978,6 +980,7 @@ export type Database = {
           onboarded_at?: string | null
           pro_source?: string | null
           pro_until?: string | null
+          profile_theme?: string | null
           referral_code?: string | null
           stripe_customer_id?: string | null
           username?: string

@@ -22,9 +22,10 @@ import UserBadges from "@/components/profile/UserBadges";
 import AvatarImage from "@/components/ui/AvatarImage";
 import ContributionHeatmap, { type HeatmapDay } from "@/components/profile/ContributionHeatmap";
 import { isPro } from "@/lib/pro";
+import { PROFILE_THEMES, isProfileTheme, themeCssVars } from "@/lib/themes";
 
 const PROFILE_SELECT =
-  "id, username, display_name, avatar_url, banner_url, year, major, bio, goals, is_private, heatmap_visibility, is_pro, pro_until, is_founder, is_campus_founder, accent_color, verified_student";
+  "id, username, display_name, avatar_url, banner_url, year, major, bio, goals, is_private, heatmap_visibility, is_pro, pro_until, is_founder, is_campus_founder, accent_color, profile_theme, verified_student";
 
 // Shared by generateMetadata and the page component so they hit one query
 // instead of two — React's cache() dedupes by argument (username) within a
@@ -350,19 +351,29 @@ export default async function ProfilePage({
   const metaLine =
     metaParts.length <= 1 ? metaParts[0] ?? null : `${metaParts[0]} · ${metaParts.slice(1).join(", ")}`;
 
-  // Banner and accent colour are Pro perks. The DB keeps both columns when a
-  // subscription lapses (guard_profile_privileged only freezes them), so the
-  // gate has to live here — otherwise a lapsed subscriber keeps wearing them.
-  // Rendering off is_pro, not a nulled column, means resubscribing restores the
-  // banner instantly with nothing to re-upload.
+  // Banner, accent colour, and profile theme are Pro perks. The DB keeps all
+  // three columns when a subscription lapses (guard_profile_privileged only
+  // freezes them), so the gate has to live here — otherwise a lapsed
+  // subscriber keeps wearing them. Rendering off is_pro, not a nulled column,
+  // means resubscribing restores them instantly with nothing to redo.
   const pro = isPro(profile);
   const bannerUrl = pro ? profile.banner_url : null;
-  const accentColor = pro ? profile.accent_color : null;
+  const theme = pro && isProfileTheme(profile.profile_theme) ? profile.profile_theme : null;
+  // Precedence: a theme sets the accent when present; accent_color is the
+  // manual escape hatch used only when no theme is set (see lib/themes.ts).
+  const accentColor = theme ? PROFILE_THEMES[theme].accent : pro ? profile.accent_color : null;
+  const themeVars = themeCssVars(theme);
 
   return (
-    <main className="page-enter mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8">
-      {/* Identity header — banner with the avatar overlapping its bottom edge */}
-      <section className="card overflow-hidden">
+    <main className="page-enter mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8" style={themeVars}>
+      {/* Identity header — banner with the avatar overlapping its bottom edge.
+          Theme tint renders as a soft outline glow here, not a wash — the
+          gradient below stays blue-only per DESIGN.md ("blue is kept ONLY
+          for the profile card + heatmap"). */}
+      <section
+        className="card overflow-hidden"
+        style={theme ? { boxShadow: "0 0 0 1px var(--profile-tint)" } : undefined}
+      >
         {bannerUrl ? (
           // ponytail: plain <img>, not next/image. `fill` is position:absolute,
           // which paints above the in-flow avatar that pulls up over the banner
