@@ -4,14 +4,17 @@ import { IconChevronLeft } from "@/components/icons";
 import MessageTime from "@/components/messages/MessageTime";
 import DmMessageReport from "@/components/messages/DmMessageReport";
 import DmThreadMenu from "@/components/messages/DmThreadMenu";
-import type { DmMessage } from "@/lib/messages";
+import type { DmMessage, GroupMember } from "@/lib/messages";
 
 export default function MessageThread({
   messages,
   viewerId,
+  members,
 }: {
   messages: DmMessage[];
   viewerId: string;
+  /** Group roster, for per-bubble sender name/avatar. Omit for 1:1 threads (unchanged). */
+  members?: GroupMember[];
 }) {
   if (messages.length === 0) {
     return (
@@ -25,9 +28,15 @@ export default function MessageThread({
     <div className="flex flex-col gap-4 px-4 py-5 sm:px-5">
       {messages.map((m) => {
         const mine = m.sender_id === viewerId;
+        const sender = members?.find((mem) => mem.id === m.sender_id);
         return (
           <div key={m.id} className={`msg-in group flex items-start gap-1 ${mine ? "justify-end" : "justify-start"}`}>
             <div className={`max-w-[min(82%,24rem)] ${mine ? "items-end" : "items-start"} flex flex-col`}>
+              {sender && !mine && (
+                <p className="mb-0.5 px-1 text-xs font-medium text-[var(--ink-muted)]">
+                  {sender.display_name ?? sender.username}
+                </p>
+              )}
               <div
                 className={`whitespace-pre-wrap break-words px-3.5 py-2.5 text-[15px] leading-relaxed ${
                   mine
@@ -90,6 +99,39 @@ export function MessageThreadHeader({
           <p className="truncate text-xs text-[var(--ink-muted)]">@{username}</p>
         </div>
       </Link>
+      <DmThreadMenu conversationId={conversationId} />
+    </header>
+  );
+}
+
+export function GroupThreadHeader({
+  conversationId,
+  title,
+  members,
+}: {
+  conversationId: string;
+  title: string;
+  members: GroupMember[];
+}) {
+  const subtitle = members.map((m) => m.display_name ?? m.username).join(", ");
+  return (
+    <header className="flex shrink-0 items-center gap-2 border-b border-[var(--border)] bg-[var(--surface-card)] px-3 py-2.5 sm:px-4">
+      <Link
+        href="/messages"
+        className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-[var(--ink-muted)] transition hover:bg-[var(--featured-surface)] hover:text-[var(--ink)]"
+        aria-label="Back to inbox"
+      >
+        <IconChevronLeft />
+      </Link>
+      <div className="flex min-w-0 flex-1 items-center gap-2.5 px-1 py-1">
+        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-sm font-semibold text-[var(--ink-muted)]">
+          {title.charAt(0).toUpperCase()}
+        </div>
+        <div className="min-w-0">
+          <p className="truncate text-[15px] font-semibold text-[var(--ink)]">{title}</p>
+          <p className="truncate text-xs text-[var(--ink-muted)]">{subtitle}</p>
+        </div>
+      </div>
       <DmThreadMenu conversationId={conversationId} />
     </header>
   );
