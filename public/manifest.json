@@ -1,0 +1,17 @@
+{
+  "name": "samehere",
+  "short_name": "samehere",
+  "description": "The social network built for students.",
+  "start_url": "/feed",
+  "display": "standalone",
+  "background_color": "#f7f4ed",
+  "theme_color": "#0075de",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
