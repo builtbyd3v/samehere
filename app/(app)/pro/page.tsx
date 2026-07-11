@@ -25,6 +25,7 @@ const GROUPS: { title: string; subtitle: string; features: string[] }[] = [
       "A stronger AI model, 150 uses a day",
       "Improve my post: AI rewrites your draft",
       "AI icebreakers for first messages",
+      "Weekly “5 people to meet” email, with AI reasons",
     ],
   },
   {
@@ -37,7 +38,6 @@ const GROUPS: { title: string; subtitle: string; features: string[] }[] = [
 ];
 
 const COMING_SOON_TO_PRO = [
-  "Weekly “3 people to meet”",
   "Profile themes",
 ];
 

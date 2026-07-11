@@ -20,10 +20,11 @@ const PRO_FEATURES: { label: string; icon?: "bolt" }[] = [
   { label: "Improve my post and AI icebreakers" },
   { label: "See who viewed your profile" },
   { label: "Custom accent color, banner, and animated avatar" },
+  { label: "Weekly “5 people to meet” email, with AI reasons" },
   { label: "Pro badge on your profile", icon: "bolt" },
 ];
 
-const PRO_COMING_SOON = ["Weekly “3 people to meet”", "Profile themes"];
+const PRO_COMING_SOON = ["Profile themes"];
 
 const card = `flex h-full flex-col card-hover ${landingCard}`;
 

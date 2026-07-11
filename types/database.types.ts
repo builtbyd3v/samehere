@@ -1411,6 +1411,20 @@ export type Database = {
           weekly_points: number
         }[]
       }
+      get_match_candidates: {
+        Args: { p_user: string }
+        Returns: {
+          avatar_url: string
+          bio: string
+          display_name: string
+          goals: string
+          id: string
+          major: string
+          school: string
+          username: string
+          year: string
+        }[]
+      }
       get_my_billing: {
         Args: never
         Returns: {
@@ -1631,6 +1645,20 @@ export type Database = {
           email: string
           notif_unread: number
           user_id: string
+        }[]
+      }
+      list_weekly_match_recipients: {
+        Args: never
+        Returns: {
+          bio: string
+          email: string
+          goals: string
+          is_pro: boolean
+          major: string
+          pro_until: string
+          school: string
+          user_id: string
+          year: string
         }[]
       }
       mark_all_notifications_read: { Args: never; Returns: undefined }

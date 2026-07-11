@@ -1,5 +1,6 @@
 {
   "crons": [
-    { "path": "/api/cron/unread-digest", "schedule": "0 16 * * *" }
+    { "path": "/api/cron/unread-digest", "schedule": "0 16 * * *" },
+    { "path": "/api/cron/weekly-matches", "schedule": "0 15 * * 1" }
   ]
 }
