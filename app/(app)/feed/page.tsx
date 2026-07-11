@@ -40,12 +40,13 @@ export default async function FeedPage({
 
   // Independent queries (both keyed off user.id, neither reads the other's
   // result) — fetched concurrently instead of two serial round trips.
-  const [onboardingProfile, onboardingCounts] = user
+  const [onboardingProfile, onboardingCounts, onboardingClubs] = user
     ? await Promise.all([
-        supabase.from("profiles").select("avatar_url, bio, is_pro, pro_until").eq("id", user.id).single(),
+        supabase.from("profiles").select("avatar_url, bio, is_pro, pro_until, verified_student").eq("id", user.id).single(),
         supabase.rpc("get_profile_counts", { p_profile_id: user.id }),
+        supabase.from("club_members").select("club_id", { count: "exact", head: true }).eq("user_id", user.id),
       ])
-    : [{ data: null }, { data: null }];
+    : [{ data: null }, { data: null }, { count: null }];
   const composerPro = isPro(onboardingProfile.data ?? { is_pro: false, pro_until: null });
 
   return (
@@ -78,6 +79,8 @@ export default async function FeedPage({
           bio={onboardingProfile.data?.bio ?? null}
           postCount={Number(onboardingCounts.data?.[0]?.posts ?? 0)}
           followingCount={Number(onboardingCounts.data?.[0]?.following ?? 0)}
+          verifiedStudent={!!onboardingProfile.data?.verified_student}
+          inClub={(onboardingClubs.count ?? 0) > 0}
         />
       )}
 

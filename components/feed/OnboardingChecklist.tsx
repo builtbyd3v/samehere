@@ -10,6 +10,8 @@ type Props = {
   bio: string | null;
   postCount: number;
   followingCount: number;
+  verifiedStudent: boolean;
+  inClub: boolean;
 };
 
 // ponytail: composer toggle lives as local state inside FeedToolbar (owned
@@ -20,7 +22,14 @@ function openComposer() {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-export default function OnboardingChecklist({ avatarUrl, bio, postCount, followingCount }: Props) {
+export default function OnboardingChecklist({
+  avatarUrl,
+  bio,
+  postCount,
+  followingCount,
+  verifiedStudent,
+  inClub,
+}: Props) {
   const [dismissed, setDismissed] = useState(true);
 
   useEffect(() => {
@@ -32,6 +41,10 @@ export default function OnboardingChecklist({ avatarUrl, bio, postCount, followi
     { done: !!(bio && bio.trim().length > 10), label: "Write a short bio", href: "/profile/edit" },
     { done: postCount > 0, label: "Publish your first post", href: "/feed" },
     { done: followingCount > 0, label: "Follow someone", href: "/feed?search=1" },
+    { done: verifiedStudent, label: "Verify your school email", href: "/settings" },
+    { done: inClub, label: "Join a club", href: "/community" },
+    // ponytail: no client-side completion signal for "shared their link" — pointer, not a tracked task.
+    { done: false, label: "Share your invite link", href: "/referrals" },
   ];
 
   const needsPost = postCount === 0;
