@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { TEXT_LIMITS, textLimitError } from "@/lib/utils/validation";
-import { notifyPush } from "@/lib/push-actions";
 
 export type CommentState = { error?: string; ok?: boolean };
 
@@ -33,9 +32,6 @@ export async function createComment(_prev: CommentState, formData: FormData): Pr
 
   const { error } = await supabase.from("comments").insert({ post_id: postId, user_id: user.id, content });
   if (error) return { error: "Could not post your comment. Try again." };
-
-  // Fire-and-forget: never block the comment on a push send.
-  void notifyPush("comment", { postId });
 
   revalidatePath(`/post/${postId}`);
   return { ok: true };

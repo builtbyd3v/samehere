@@ -8,8 +8,6 @@ import DeleteAccountSection from "@/components/settings/DeleteAccountSection";
 import AvatarImage from "@/components/ui/AvatarImage";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import StudentVerification from "@/components/settings/StudentVerification";
-import PushToggle from "@/components/settings/PushToggle";
-import { hasPushSubscription } from "@/lib/push-actions";
 import { unblockUser } from "./actions";
 
 type BlockedRow = {
@@ -24,7 +22,7 @@ export default async function SettingsPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [{ data: profile }, { data: blocks }, pushSubscribed] = await Promise.all([
+  const [{ data: profile }, { data: blocks }] = await Promise.all([
     supabase
       .from("profiles")
       .select("username, is_private, hide_school, heatmap_visibility, leaderboard_opt_out, email_digest_opt_out, verified_student")
@@ -35,7 +33,6 @@ export default async function SettingsPage() {
       .select("blocked_id, blocked:profiles!blocks_blocked_id_fkey(username, display_name, avatar_url, is_pro)")
       .eq("blocker_id", user.id)
       .returns<BlockedRow[]>(),
-    hasPushSubscription(),
   ]);
   if (!profile) redirect("/login");
 
@@ -96,11 +93,6 @@ export default async function SettingsPage() {
               })}
             </ul>
           )}
-        </section>
-
-        <section className="card p-6">
-          <h2 className="mb-4 text-lg font-semibold text-[var(--ink)]">Push notifications</h2>
-          <PushToggle initialSubscribed={pushSubscribed} />
         </section>
 
         <section className="card p-6">
