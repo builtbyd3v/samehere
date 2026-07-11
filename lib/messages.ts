@@ -20,6 +20,7 @@ export type DmMessage = {
     username: string;
     display_name: string | null;
     avatar_url: string | null;
+    is_pro?: boolean;
   } | null;
 };
 
@@ -28,6 +29,16 @@ export type GroupMember = {
   username: string;
   display_name: string | null;
   avatar_url: string | null;
+  is_pro: boolean;
+};
+
+/** Roster entry for per-bubble sender lookup (1:1 peer+viewer, or group members+viewer). */
+export type ChatParticipant = {
+  id: string;
+  username: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  is_pro: boolean;
 };
 
 export type GroupInboxRow = {

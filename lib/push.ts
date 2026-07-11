@@ -58,6 +58,8 @@ export async function sendPushToUser(userId: string, payload: PushPayload): Prom
           });
         } catch (err) {
           const statusCode = (err as { statusCode?: number } | null)?.statusCode;
+          const body = (err as { body?: unknown } | null)?.body;
+          console.error("[push] send failed", { statusCode, body });
           if (statusCode === 404 || statusCode === 410) {
             await admin.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
           }

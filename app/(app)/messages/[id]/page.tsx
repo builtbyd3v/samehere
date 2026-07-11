@@ -4,7 +4,7 @@ import { isPro } from "@/lib/pro";
 import DmChat from "@/components/messages/DmChat";
 import MessageMarkRead from "@/components/messages/MessageMarkRead";
 import { MessageThreadHeader, GroupThreadHeader } from "@/components/messages/MessageThread";
-import type { DmMessage, GroupMember } from "@/lib/messages";
+import type { DmMessage, GroupMember, ChatParticipant } from "@/lib/messages";
 
 type MessageRow = {
   id: string;
@@ -27,6 +27,7 @@ type GroupRow = {
   member_username: string;
   member_display_name: string | null;
   member_avatar_url: string | null;
+  member_is_pro: boolean;
 };
 
 export default async function MessageThreadPage({
@@ -42,7 +43,7 @@ export default async function MessageThreadPage({
   if (!user) redirect("/login");
 
   const [{ data: conversation }, { data: messageRows }, { data: viewer }] = await Promise.all([
-    supabase.from("conversations").select("kind").eq("id", id).maybeSingle(),
+    supabase.from("conversations").select("kind, created_by").eq("id", id).maybeSingle(),
     supabase
       .from("messages")
       .select("id, sender_id, content, created_at")
@@ -50,12 +51,23 @@ export default async function MessageThreadPage({
       .order("created_at", { ascending: true })
       .limit(200)
       .returns<MessageRow[]>(),
-    supabase.from("profiles").select("is_pro, pro_until").eq("id", user.id).single(),
+    supabase
+      .from("profiles")
+      .select("username, display_name, avatar_url, is_pro, pro_until")
+      .eq("id", user.id)
+      .single(),
   ]);
 
   if (!conversation) notFound();
 
   const viewerIsPro = isPro(viewer ?? { is_pro: false, pro_until: null });
+  const viewerParticipant: ChatParticipant = {
+    id: user.id,
+    username: viewer?.username ?? "",
+    display_name: viewer?.display_name ?? null,
+    avatar_url: viewer?.avatar_url ?? null,
+    is_pro: viewer?.is_pro ?? false,
+  };
   const messages: DmMessage[] = (messageRows ?? []).map((m) => ({
     id: m.id,
     sender_id: m.sender_id,
@@ -74,18 +86,27 @@ export default async function MessageThreadPage({
       username: r.member_username,
       display_name: r.member_display_name,
       avatar_url: r.member_avatar_url,
+      is_pro: r.member_is_pro,
     }));
+    const roster: ChatParticipant[] = [...members, viewerParticipant];
 
     return (
       <main className="page-enter mx-auto flex min-h-[calc(100dvh-3.5rem)] max-w-2xl flex-col px-4 py-4 sm:px-5 sm:py-6">
         <MessageMarkRead conversationId={id} />
         <section className="card flex min-h-0 flex-1 flex-col overflow-hidden">
-          <GroupThreadHeader conversationId={id} title={rows[0].title} members={members} />
+          <GroupThreadHeader
+            conversationId={id}
+            title={rows[0].title}
+            members={members}
+            createdBy={conversation.created_by ?? null}
+            isCreator={conversation.created_by === user.id}
+          />
           <DmChat
             conversationId={id}
             initialMessages={messages}
             viewerId={user.id}
             members={members}
+            roster={roster}
           />
         </section>
       </main>
@@ -97,6 +118,16 @@ export default async function MessageThreadPage({
   if (!peer) notFound();
 
   const displayName = peer.peer_display_name ?? peer.peer_username;
+  const roster: ChatParticipant[] = [
+    {
+      id: peer.peer_id,
+      username: peer.peer_username,
+      display_name: peer.peer_display_name,
+      avatar_url: peer.peer_avatar_url,
+      is_pro: peer.peer_is_pro ?? false,
+    },
+    viewerParticipant,
+  ];
 
   return (
     <main className="page-enter mx-auto flex min-h-[calc(100dvh-3.5rem)] max-w-2xl flex-col px-4 py-4 sm:px-5 sm:py-6">
@@ -115,6 +146,7 @@ export default async function MessageThreadPage({
           viewerId={user.id}
           peerId={peer.peer_id}
           viewerIsPro={viewerIsPro}
+          roster={roster}
         />
       </section>
     </main>
