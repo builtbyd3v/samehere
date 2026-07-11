@@ -8,8 +8,10 @@ import { createClient } from "@/lib/supabase/client";
 // samehere", and strips it back to the plain page title at zero. Seeded from
 // the same server-computed total the navbar bell/inbox icons use (dm unread +
 // notification unread) -- see TabTitleUnread in app/(app)/layout.tsx. A normal
-// navigation/refresh re-fetches and re-seeds `initialTotal`, so the Realtime
-// subscription below only needs to INCREMENT between seeds.
+// navigation/refresh re-fetches and re-seeds `initialTotal`. Between seeds,
+// the Realtime subscription below re-fetches the true combined total on any
+// notifications change (insert/update/delete), so the badge always reflects
+// reality instead of drifting from a blind increment.
 //
 // PREFIX, not replace: keeps per-page context ("@alice · samehere") intact.
 // A MutationObserver re-applies the badge whenever Next.js rewrites <title>
@@ -61,19 +63,39 @@ export default function TabTitleNotifier({ initialTotal }: { initialTotal: numbe
 
   // Same Realtime pattern as NavIconBadge's bell (postgres_changes on
   // `notifications`, no filter needed -- RLS already scopes the broadcast to
-  // this user's own rows). DM unread isn't wired here; notifications alone
-  // covers v1.
+  // this user's own rows). On ANY change (insert/update/delete) we debounce
+  // and re-fetch the TRUE unread total -- the same two RPCs NavbarUnread uses
+  // server-side (get_dm_unread_total + get_notification_unread_total) -- so
+  // the badge goes back down when a notification is removed/read instead of
+  // only ever climbing, and can't diverge from reality under spam.
   useEffect(() => {
+    let active = true;
+    const timer: { current: ReturnType<typeof setTimeout> | null } = { current: null };
+
+    const refetchTotal = () => {
+      if (timer.current) clearTimeout(timer.current);
+      timer.current = setTimeout(async () => {
+        const [{ data: dmUnread }, { data: notificationUnread }] = await Promise.all([
+          supabase.rpc("get_dm_unread_total"),
+          supabase.rpc("get_notification_unread_total"),
+        ]);
+        if (!active) return;
+        setTotal(Number(dmUnread ?? 0) + Number(notificationUnread ?? 0));
+      }, 500);
+    };
+
     const channel = supabase
       .channel("tab-title-notifications")
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "notifications" },
-        () => setTotal((t) => t + 1),
+        { event: "*", schema: "public", table: "notifications" },
+        refetchTotal,
       )
       .subscribe();
 
     return () => {
+      active = false;
+      if (timer.current) clearTimeout(timer.current);
       supabase.removeChannel(channel);
     };
   }, [supabase]);
