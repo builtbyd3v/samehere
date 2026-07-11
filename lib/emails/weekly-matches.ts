@@ -61,7 +61,9 @@ export function weeklyMatchesEmail({
   isPro: boolean;
   unsubUrl: string;
 }): { subject: string; text: string; html: string } {
-  const subject = isPro ? `${cards.length} students to meet this week` : "3 students to meet this week";
+  const subject = isPro
+    ? `${cards.length} students to meet this week`
+    : `${cards.length} student${cards.length === 1 ? "" : "s"} to meet this week`;
 
   const text = [
     isPro ? "Students to meet this week:" : "3 students to meet this week:",
