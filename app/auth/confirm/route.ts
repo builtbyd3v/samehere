@@ -42,7 +42,10 @@ export async function GET(request: NextRequest) {
   // Fire-and-forget: a failed welcome email must never break the redirect.
   // `code`/`token_hash` are single-use, so a re-click of the same link fails
   // exchange (ok=false) and can't re-send — natural idempotency, no dedupe needed.
-  if (ok && user?.email && !nextParam) {
+  // Type-gated: only a signup confirmation (PKCE `code`, or `type=signup`/`email`)
+  // may welcome — an `email_change`/`invite` token_hash link with no `next` must not.
+  const isSignupConfirm = !nextParam && (Boolean(code) || type === "signup" || type === "email");
+  if (ok && user?.email && isSignupConfirm) {
     sendEmail({
       to: user.email,
       from: "noreply@samehere.dev",

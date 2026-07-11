@@ -51,6 +51,19 @@ describe("GET /api/cron/unread-digest — auth guard", () => {
     expect(res.status).toBe(200);
     expect(rpcMock).toHaveBeenCalledWith("list_unread_digest_recipients");
   });
+
+  it("returns 401 and never calls the RPC when CRON_SECRET is unset (fail-closed)", async () => {
+    vi.stubEnv("CRON_SECRET", undefined);
+    const res = await GET(buildRequest("Bearer undefined"));
+    expect(res.status).toBe(401);
+    expect(rpcMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 401 when the header is a different length than expected", async () => {
+    const res = await GET(buildRequest("Bearer short"));
+    expect(res.status).toBe(401);
+    expect(rpcMock).not.toHaveBeenCalled();
+  });
 });
 
 describe("GET /api/cron/unread-digest — sends per recipient", () => {
