@@ -7,6 +7,7 @@ import { aiEnabled, generateText, modelForTier } from "@/lib/ai";
 import { ICEBREAKER_SYSTEM, untrusted } from "@/lib/ai-prompts";
 import { isPro } from "@/lib/pro";
 import { TEXT_LIMITS } from "@/lib/utils/validation";
+import { sendPushToUser } from "@/lib/push";
 
 export async function startDmWithUsername(username: string) {
   const supabase = await createClient();
@@ -257,4 +258,41 @@ export async function markDmRead(conversationId: string) {
   await supabase.rpc("mark_dm_read", { p_conversation_id: conversationId });
   revalidatePath("/", "layout");
   revalidatePath("/messages");
+}
+
+// Fire-and-forget push for a just-sent message, called from DmChat right after
+// the client-side insert succeeds. Works for both 1:1 and group threads --
+// recipients are just "every other active member" of the conversation, read
+// under the session client (conversation_members SELECT is member-scoped, see
+// "member read peers" in 20260703240000_direct_messaging.sql). Never throws:
+// every await here is best-effort, same contract as notifyPush/sendPushToUser.
+export async function notifyMessagePush(conversationId: string, preview: string): Promise<void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const [{ data: members }, { data: sender }, { data: blocked }] = await Promise.all([
+    supabase
+      .from("conversation_members")
+      .select("user_id")
+      .eq("conversation_id", conversationId)
+      .neq("user_id", user.id)
+      .is("left_at", null),
+    supabase.from("profiles").select("username, display_name").eq("id", user.id).single(),
+    supabase.rpc("get_blocked_ids"),
+  ]);
+  if (!members?.length || !sender) return;
+
+  const blockedSet = new Set((blocked ?? []) as string[]);
+  const title = sender.display_name || sender.username;
+  const body = preview.length > 80 ? `${preview.slice(0, 80)}…` : preview;
+  const url = `/messages/${conversationId}`;
+
+  await Promise.allSettled(
+    members
+      .filter((m) => !blockedSet.has(m.user_id))
+      .map((m) => sendPushToUser(m.user_id, { title, body, url })),
+  );
 }

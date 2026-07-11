@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import posthog from "posthog-js";
 import { createClient } from "@/lib/supabase/client";
 import MessageThread from "@/components/messages/MessageThread";
-import { icebreaker } from "@/app/(app)/messages/actions";
+import { icebreaker, notifyMessagePush } from "@/app/(app)/messages/actions";
 import { IconSend } from "@/components/icons";
 import { useSubmitShortcut } from "@/lib/useSubmitShortcut";
 import { TEXT_LIMITS, textLimitError } from "@/lib/utils/validation";
@@ -188,6 +188,7 @@ export default function DmChat({
         conversation_id: conversationId,
         character_count: text.length,
       });
+      notifyMessagePush(conversationId, text).catch(() => {});
       el?.focus();
     }
     setPending(false);

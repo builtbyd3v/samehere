@@ -51,8 +51,18 @@ export default function PushToggle({ initialSubscribed }: { initialSubscribed: b
 
       posthog.capture("push_optin");
       setSubscribed(true);
-    } catch {
-      setError("Could not enable push notifications. Try again.");
+    } catch (e) {
+      console.error("[push] enable failed", e);
+      // iOS only allows web push for a PWA added to the Home Screen -- a very
+      // likely cause of failure on iPhone/iPad when not installed that way.
+      const nav = navigator as Navigator & { standalone?: boolean };
+      const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent);
+      if (isIOS && nav.standalone === false) {
+        setError("On iPhone/iPad, add samehere to your Home Screen first, then enable push.");
+      } else {
+        const reason = e instanceof Error ? e.message : String(e);
+        setError(`Could not enable push notifications: ${reason}`);
+      }
     } finally {
       setBusy(false);
     }
@@ -67,8 +77,10 @@ export default function PushToggle({ initialSubscribed }: { initialSubscribed: b
       await sub?.unsubscribe();
       await unsubscribeFromPush();
       setSubscribed(false);
-    } catch {
-      setError("Could not disable push notifications. Try again.");
+    } catch (e) {
+      console.error("[push] disable failed", e);
+      const reason = e instanceof Error ? e.message : String(e);
+      setError(`Could not disable push notifications: ${reason}`);
     } finally {
       setBusy(false);
     }
