@@ -231,61 +231,64 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
               defaultValue={initial.goals ?? ""} placeholder="What are you working toward?" className={field} />
           </div>
 
-          <div className="border-t border-[var(--border)] pt-4">
-            <label className={label}>Profile theme</label>
-            {pro ? (
-              <>
-                {/* Hidden field carries the submitted key; buttons are the picker
-                    UI (no name) so the value can be cleared back to "None". */}
-                <input type="hidden" name="profile_theme" value={profileTheme ?? ""} />
-                <div className="mt-1.5 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setProfileTheme(null)}
-                    aria-pressed={profileTheme === null}
-                    className={`h-9 rounded-full border px-3 text-sm active:scale-[0.98] ${
-                      profileTheme === null
-                        ? "border-[var(--ink)] text-[var(--ink)]"
-                        : "border-[var(--border)] text-[var(--ink-muted)]"
-                    }`}
-                  >
-                    None
-                  </button>
-                  {PROFILE_THEME_KEYS.map((key) => (
+          {/* TODO(themes redesign): re-enable picker after redesign (plan 023).
+              Hidden field still carries the (unchangeable) stored value so an
+              existing theme round-trips on save instead of getting cleared. */}
+          <input type="hidden" name="profile_theme" value={profileTheme ?? ""} />
+          {false && (
+            <div className="border-t border-[var(--border)] pt-4">
+              <label className={label}>Profile theme</label>
+              {pro ? (
+                <>
+                  <div className="mt-1.5 flex flex-wrap gap-2">
                     <button
-                      key={key}
                       type="button"
-                      onClick={() => setProfileTheme(key)}
-                      aria-pressed={profileTheme === key}
-                      title={PROFILE_THEMES[key].label}
-                      className={`flex h-9 items-center gap-2 rounded-full border px-3 text-sm active:scale-[0.98] ${
-                        profileTheme === key
+                      onClick={() => setProfileTheme(null)}
+                      aria-pressed={profileTheme === null}
+                      className={`h-9 rounded-full border px-3 text-sm active:scale-[0.98] ${
+                        profileTheme === null
                           ? "border-[var(--ink)] text-[var(--ink)]"
                           : "border-[var(--border)] text-[var(--ink-muted)]"
                       }`}
                     >
-                      <span
-                        aria-hidden
-                        className="h-3.5 w-3.5 rounded-full"
-                        style={{ background: PROFILE_THEMES[key].accent }}
-                      />
-                      {PROFILE_THEMES[key].label}
+                      None
                     </button>
-                  ))}
+                    {PROFILE_THEME_KEYS.map((key) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setProfileTheme(key)}
+                        aria-pressed={profileTheme === key}
+                        title={PROFILE_THEMES[key].label}
+                        className={`flex h-9 items-center gap-2 rounded-full border px-3 text-sm active:scale-[0.98] ${
+                          profileTheme === key
+                            ? "border-[var(--ink)] text-[var(--ink)]"
+                            : "border-[var(--border)] text-[var(--ink-muted)]"
+                        }`}
+                      >
+                        <span
+                          aria-hidden
+                          className="h-3.5 w-3.5 rounded-full"
+                          style={{ background: PROFILE_THEMES[key].accent }}
+                        />
+                        {PROFILE_THEMES[key].label}
+                      </button>
+                    ))}
+                  </div>
+                  <p className={hint}>
+                    A curated look for your profile. Overrides your accent color below when set.
+                  </p>
+                </>
+              ) : (
+                <div className="mt-1.5 flex items-center gap-3">
+                  <div className="h-9 w-24 rounded-full border border-[var(--border)] bg-[var(--canvas)] opacity-50" />
+                  <Link href="/pro" className="text-sm text-[var(--ink-muted)] underline">
+                    Profile themes · Pro
+                  </Link>
                 </div>
-                <p className={hint}>
-                  A curated look for your profile. Overrides your accent color below when set.
-                </p>
-              </>
-            ) : (
-              <div className="mt-1.5 flex items-center gap-3">
-                <div className="h-9 w-24 rounded-full border border-[var(--border)] bg-[var(--canvas)] opacity-50" />
-                <Link href="/pro" className="text-sm text-[var(--ink-muted)] underline">
-                  Profile themes · Pro
-                </Link>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
 
           <div className="border-t border-[var(--border)] pt-4">
             <label className={label}>Accent color</label>

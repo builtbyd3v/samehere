@@ -13,7 +13,6 @@ const GROUPS: { title: string; subtitle: string; features: string[] }[] = [
     features: [
       "Pro badge on your profile",
       "Custom profile accent color",
-      "Curated profile themes",
       "Profile banner",
       "Animated profile picture (GIF / animated-webp)",
     ],
@@ -38,7 +37,7 @@ const GROUPS: { title: string; subtitle: string; features: string[] }[] = [
   },
 ];
 
-const COMING_SOON_TO_PRO: string[] = [];
+const COMING_SOON_TO_PRO: string[] = ["Profile themes"];
 
 const NEVER_GATED = [
   "student verification",
