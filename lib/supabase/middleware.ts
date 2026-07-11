@@ -58,6 +58,9 @@ export async function updateSession(request: NextRequest) {
     path === '/suspended' ||
     path.startsWith('/auth/') ||
     path === '/api/stripe/webhook' ||
+    // Both do their own auth: cron via secret header, unsubscribe via HMAC token.
+    path === '/api/cron/unread-digest' ||
+    path === '/api/email/unsubscribe' ||
     isMetadataImage ||
     isPublicProfile ||
     isPublicPost ||
@@ -73,6 +76,7 @@ export async function updateSession(request: NextRequest) {
     path === '/terms' ||
     path === '/privacy' ||
     path.startsWith('/auth/') ||
+    path === '/api/email/unsubscribe' ||
     isMetadataImage
 
   // OAuth recovery: if Supabase ever redirects to the Site URL root instead of
