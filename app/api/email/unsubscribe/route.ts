@@ -21,7 +21,13 @@ export async function GET(request: NextRequest) {
   // can't go through the normal RLS owner-write path. Scoped to exactly the
   // opt-out flag on the token-verified user's own row.
   const admin = createAdminClient();
-  await admin.from("profiles").update({ email_digest_opt_out: true }).eq("id", userId);
+  const { error } = await admin.from("profiles").update({ email_digest_opt_out: true }).eq("id", userId);
+  if (error) {
+    return new Response("Could not process unsubscribe, try again.", {
+      status: 500,
+      headers: { "Content-Type": "text/plain" },
+    });
+  }
 
   return new Response("You're unsubscribed from the daily activity email.", {
     status: 200,

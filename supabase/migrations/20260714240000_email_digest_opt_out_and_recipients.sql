@@ -32,6 +32,10 @@ set search_path = ''
 stable
 as $$
   with dm_counts as (
+    -- Scope DMs exactly like list_dm_inbox (20260714140000_clubs.sql): only
+    -- kind='dm' conversations (excludes club channels), only memberships the
+    -- user hasn't left. Once kind='dm' is enforced a conversation has exactly
+    -- two members, so `m.sender_id <> cm.user_id` == "peer's messages".
     select cm.user_id as uid,
       count(*) filter (
         where m.sender_id <> cm.user_id
@@ -43,7 +47,9 @@ as $$
           )
       )::int as dm_unread
     from public.conversation_members cm
+    join public.conversations c on c.id = cm.conversation_id and c.kind = 'dm'
     join public.messages m on m.conversation_id = cm.conversation_id
+    where cm.left_at is null
     group by cm.user_id
   ),
   notif_counts as (
