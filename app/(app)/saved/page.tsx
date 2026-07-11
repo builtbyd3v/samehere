@@ -61,14 +61,26 @@ export default async function SavedPage() {
   } = await supabase.auth.getUser();
   const viewerId = user?.id ?? null;
 
-  const { data: rows } = await supabase
-    .from("bookmarks")
-    .select(BOOKMARK_SELECT)
-    .order("created_at", { ascending: false })
-    .limit(PAGE)
-    .returns<BookmarkRow[]>();
+  const [{ data: rows }, { data: blockedIds }] = await Promise.all([
+    supabase
+      .from("bookmarks")
+      .select(BOOKMARK_SELECT)
+      .order("created_at", { ascending: false })
+      .limit(PAGE)
+      .returns<BookmarkRow[]>(),
+    supabase.rpc("get_blocked_ids"),
+  ]);
 
-  const rawRows = rows ?? [];
+  // Blocking is app-side, not in posts RLS — drop any saved row whose relevant
+  // author (post author, reposter, or the reposted original's author) is
+  // blocked either direction. Mirrors the fetch-then-filter in feed/actions.ts.
+  const blocked = new Set(blockedIds ?? []);
+  const rawRows = (rows ?? []).filter((r) => {
+    if (r.post) return !blocked.has(r.post.user_id);
+    if (r.repost)
+      return !blocked.has(r.repost.user_id) && !(r.repost.post && blocked.has(r.repost.post.user_id));
+    return true;
+  });
   // posts/reposts RLS re-checks visibility on the embed, so a saved post or
   // quote-repost that became invisible/deleted comes back null and is
   // filtered out below.
