@@ -1,0 +1,5 @@
+{
+  "crons": [
+    { "path": "/api/cron/unread-digest", "schedule": "0 16 * * *" }
+  ]
+}

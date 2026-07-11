@@ -890,6 +890,7 @@ export type Database = {
           bio: string | null
           created_at: string | null
           display_name: string | null
+          email_digest_opt_out: boolean
           email_domain: string | null
           goals: string | null
           heatmap_visibility: string
@@ -920,6 +921,7 @@ export type Database = {
           bio?: string | null
           created_at?: string | null
           display_name?: string | null
+          email_digest_opt_out?: boolean
           email_domain?: string | null
           goals?: string | null
           heatmap_visibility?: string
@@ -950,6 +952,7 @@ export type Database = {
           bio?: string | null
           created_at?: string | null
           display_name?: string | null
+          email_digest_opt_out?: boolean
           email_domain?: string | null
           goals?: string | null
           heatmap_visibility?: string
@@ -1552,6 +1555,15 @@ export type Database = {
           read: boolean
           repost_id: string
           type: string
+        }[]
+      }
+      list_unread_digest_recipients: {
+        Args: never
+        Returns: {
+          dm_unread: number
+          email: string
+          notif_unread: number
+          user_id: string
         }[]
       }
       mark_all_notifications_read: { Args: never; Returns: undefined }
