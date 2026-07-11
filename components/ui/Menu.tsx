@@ -60,7 +60,7 @@ export default function Menu({
         {open && (
           <div
             role="menu"
-            className={`absolute top-full z-50 mt-1 min-w-[9rem] origin-top overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)] py-1 shadow-lg animate-[menu-pop_120ms_ease] motion-reduce:animate-none ${
+            className={`absolute top-full z-50 mt-1 min-w-[9rem] origin-top overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)] py-1 shadow-lg animate-[menu-pop_120ms_var(--ease-out)] motion-reduce:animate-none ${
               align === "end" ? "right-0 origin-top-right" : "left-0 origin-top-left"
             }`}
           >
