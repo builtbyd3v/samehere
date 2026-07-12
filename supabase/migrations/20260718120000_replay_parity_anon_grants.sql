@@ -8,7 +8,15 @@
 --    so an anon SELECT that reaches the policy now 42501s ("permission denied for
 --    function get_blocked_ids"). Re-grant to anon; it returns the empty set when
 --    auth.uid() is null, so there is no data exposure.
-grant execute on function public.get_blocked_ids() to anon;
+-- 20260708004649's note names the full set of definer helpers that RLS policies
+-- call and must stay anon-callable so anon policy evaluation can't error out:
+-- get_blocked_ids, current_is_admin, current_is_suspended, is_conversation_member.
+-- Each self-checks auth.uid() and returns empty/false for anon, so re-granting
+-- EXECUTE to anon exposes nothing.
+grant execute on function public.get_blocked_ids()            to anon;
+grant execute on function public.current_is_admin()          to anon;
+grant execute on function public.current_is_suspended()      to anon;
+grant execute on function public.is_conversation_member(uuid) to anon;
 
 -- 2. profiles carries column-level SELECT (the table-level SELECT was revoked so
 --    hidden fields stay hidden). Three later columns were granted to authenticated
