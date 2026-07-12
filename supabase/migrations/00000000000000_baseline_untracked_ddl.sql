@@ -72,11 +72,18 @@
 -- Every table below already exists in production, so `create table if not
 -- exists` is a complete no-op there (constraints/columns inside are never
 -- inspected once the table is found) — applying this file to live prod
--- remains a no-op, same invariant as BASELINE PART 1. Table-level grants to
--- anon/authenticated are intentionally omitted, matching BASELINE PART 1:
--- confirmed via information_schema.table_privileges that Supabase's default
--- privileges already grant these at table-creation time; RLS is what
--- actually gates access.
+-- remains a no-op, same invariant as BASELINE PART 1.
+--
+-- Table-level grants: on the live project Supabase's ALTER DEFAULT PRIVILEGES
+-- (for role postgres) already granted anon/authenticated at table-creation
+-- time, so every prod table carries them and RLS is what gates access. A fresh
+-- `supabase db start` / db reset does NOT reproduce that: migration-created
+-- tables ship with NO anon/authenticated grants, so every authenticated write
+-- 42501s (surfaced by supabase/tests/rls_test.sql — its first UNGUARDED authed
+-- insert, into reports, aborted the run). So we assert the same default
+-- privileges HERE, before the first CREATE TABLE, so every table this chain
+-- creates gets the grants prod has. Idempotent; a no-op on the live DB. Grants
+-- never bypass RLS, so this only restores prod's table-privilege baseline.
 --
 -- NOT handled here: the `on_auth_user_created` trigger binding
 -- `handle_new_user()` to `auth.users` is ALSO dashboard-only — confirmed by
@@ -92,6 +99,12 @@
 -- public.profiles until a real migration (timestamped after 20260705160000)
 -- adds it. Flagged for a follow-up migration, intentionally not fixed here.
 -- ============================================================================
+
+-- Restore Supabase's default table grants for a fresh replay (see the
+-- "Table-level grants" note above). Runs before any CREATE TABLE so every
+-- table this migration chain creates is granted, matching production.
+alter default privileges in schema public
+  grant all on tables to anon, authenticated, service_role;
 
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id),
