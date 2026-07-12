@@ -33,6 +33,7 @@ export default function ComposerToggle({ isPro, avatarUrl }: { isPro: boolean; a
     <button
       type="button"
       onClick={() => setOpen(true)}
+      aria-label="New post"
       className="flex w-full items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-card)] p-4 text-left transition hover:border-[var(--border-strong)] sm:p-5"
     >
       {avatarUrl ? (
