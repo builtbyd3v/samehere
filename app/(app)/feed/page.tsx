@@ -8,9 +8,10 @@ import FeedLoadMore from "@/components/feed/FeedLoadMore";
 import EmptyState from "@/components/ui/EmptyState";
 import FollowRequests, { type FollowRequest } from "@/components/profile/FollowRequests";
 import { attachSignedMedia } from "@/lib/media";
-import { mergeFeedTimeline } from "@/lib/feed-timeline";
+import { mergeFeedTimeline, itemId } from "@/lib/feed-timeline";
 import { fetchQuotedReposts } from "@/lib/feed-quotes";
 import { fetchPlainReposts } from "@/lib/feed-reposts";
+import { encodeCursor } from "@/lib/feed-cursor";
 import { isPro } from "@/lib/pro";
 import RightRail, { RightRailFallback } from "./RightRail";
 import ComposerToggle from "./ComposerToggle";
@@ -139,17 +140,37 @@ function FeedTimelineFallback() {
 async function LatestTab({ viewerId }: { viewerId: string | null }) {
   const supabase = await createClient();
   const [{ data }, { data: blockedIds }] = await Promise.all([
-    supabase.from("posts").select(POST_SELECT).order("created_at", { ascending: false }).limit(PAGE).returns<FeedPost[]>(),
+    supabase
+      .from("posts")
+      .select(POST_SELECT)
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
+      .limit(PAGE)
+      .returns<FeedPost[]>(),
     viewerId ? supabase.rpc("get_blocked_ids") : Promise.resolve({ data: [] as string[] }),
   ]);
   const blocked = new Set(blockedIds ?? []);
-  const filtered = data?.filter((p) => !blocked.has(p.user_id));
-  const [posts, quotes, reposts] = await Promise.all([
-    filtered ? attachSignedMedia(supabase, filtered) : Promise.resolve(null),
+  const filtered = (data ?? []).filter((p) => !blocked.has(p.user_id));
+
+  const [rawQuotes, rawReposts] = await Promise.all([
     fetchQuotedReposts(supabase, { limit: PAGE, blockedIds: blocked }),
     fetchPlainReposts(supabase, { limit: PAGE, blockedIds: blocked }),
   ]);
-  const timeline = posts ? mergeFeedTimeline(posts, quotes, reposts).slice(0, PAGE) : [];
+
+  // Shared signing batch: ONE Storage round trip for every original post
+  // surfaced by any of the three sources (was 3 separate attachSignedMedia
+  // calls -- one inline here, one inside fetchQuotedReposts, one inside
+  // fetchPlainReposts).
+  const allForSigning = [...filtered, ...rawQuotes.map((q) => q.original), ...rawReposts.map((r) => r.original)];
+  const signedById = new Map(
+    (allForSigning.length ? await attachSignedMedia(supabase, allForSigning) : []).map((p) => [p.id, p]),
+  );
+  const posts = filtered.map((p) => signedById.get(p.id) ?? p);
+  const quotes = rawQuotes.map((q) => ({ ...q, original: signedById.get(q.original.id) ?? q.original }));
+  const reposts = rawReposts.map((r) => ({ ...r, original: signedById.get(r.original.id) ?? r.original }));
+
+  const timeline =
+    posts.length || quotes.length || reposts.length ? mergeFeedTimeline(posts, quotes, reposts).slice(0, PAGE) : [];
 
   if (timeline.length === 0) {
     return (
@@ -160,19 +181,15 @@ async function LatestTab({ viewerId }: { viewerId: string | null }) {
       />
     );
   }
+  const last = timeline[timeline.length - 1];
+  const lastCursor = encodeCursor(last.created_at, itemId(last));
   return (
     <section className="flex flex-col gap-3">
       <NewPostsPill since={timeline[0].created_at} />
       <FeedTimeline items={timeline} viewerId={viewerId} />
       {/* key by the last cursor so a router.refresh() (new-posts pill) remounts
           this with fresh pagination state instead of keeping the stale cursor. */}
-      <FeedLoadMore
-        key={timeline[timeline.length - 1].created_at}
-        auto
-        cursor={timeline[timeline.length - 1].created_at}
-        hasMore={timeline.length === PAGE}
-        viewerId={viewerId}
-      />
+      <FeedLoadMore key={lastCursor} auto cursor={lastCursor} hasMore={timeline.length === PAGE} viewerId={viewerId} />
     </section>
   );
 }
@@ -204,16 +221,32 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
     .filter((id): id is string => !!id);
   const quoteAuthorIds = [userId, ...acceptedIds];
 
-  const [{ data: followFeed }, quotes, reposts] = await Promise.all([
+  const [{ data: followFeed }, rawQuotes, rawReposts] = await Promise.all([
     acceptedIds.length
-      ? supabase.from("posts").select(POST_SELECT).in("user_id", acceptedIds).order("created_at", { ascending: false }).limit(PAGE).returns<FeedPost[]>()
+      ? supabase
+          .from("posts")
+          .select(POST_SELECT)
+          .in("user_id", acceptedIds)
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: false })
+          .limit(PAGE)
+          .returns<FeedPost[]>()
       : Promise.resolve({ data: [] as FeedPost[] }),
     fetchQuotedReposts(supabase, { userIds: quoteAuthorIds, limit: PAGE, blockedIds: blocked }),
     fetchPlainReposts(supabase, { userIds: quoteAuthorIds, limit: PAGE, blockedIds: blocked }),
   ]);
-  const feedPosts = followFeed?.length ? await attachSignedMedia(supabase, followFeed) : null;
+
+  // Shared signing batch (see LatestTab above for why).
+  const filtered = followFeed ?? [];
+  const allForSigning = [...filtered, ...rawQuotes.map((q) => q.original), ...rawReposts.map((r) => r.original)];
+  const signedById = new Map(
+    (allForSigning.length ? await attachSignedMedia(supabase, allForSigning) : []).map((p) => [p.id, p]),
+  );
+  const feedPosts = filtered.map((p) => signedById.get(p.id) ?? p);
+  const quotes = rawQuotes.map((q) => ({ ...q, original: signedById.get(q.original.id) ?? q.original }));
+  const reposts = rawReposts.map((r) => ({ ...r, original: signedById.get(r.original.id) ?? r.original }));
   const timeline =
-    feedPosts || quotes.length || reposts.length ? mergeFeedTimeline(feedPosts ?? [], quotes, reposts).slice(0, PAGE) : [];
+    feedPosts.length || quotes.length || reposts.length ? mergeFeedTimeline(feedPosts, quotes, reposts).slice(0, PAGE) : [];
 
   return (
     <section className="flex flex-col gap-3">

@@ -326,7 +326,17 @@ export default async function ProfilePage({
   const school = schoolRes.data?.school ?? null;
   const counts = countRes.data?.[0] ?? { posts: 0, followers: 0, following: 0 };
   const isAcceptedFollower = relRes.data?.status === "accepted";
-  const posts = await attachSignedMedia(supabase, postsRes.data ?? []);
+  // Shared signing batch: ONE Storage round trip for every original post
+  // surfaced by posts + quotes + reposts (was 3 separate attachSignedMedia
+  // calls -- see plan 010 Phase 1).
+  const rawPosts = postsRes.data ?? [];
+  const allForSigning = [...rawPosts, ...quotesRes.map((q) => q.original), ...repostsRes.map((r) => r.original)];
+  const signedById = new Map(
+    (allForSigning.length ? await attachSignedMedia(supabase, allForSigning) : []).map((p) => [p.id, p]),
+  );
+  const posts = rawPosts.map((p) => signedById.get(p.id) ?? p);
+  const quotes = quotesRes.map((q) => ({ ...q, original: signedById.get(q.original.id) ?? q.original }));
+  const reposts = repostsRes.map((r) => ({ ...r, original: signedById.get(r.original.id) ?? r.original }));
   const isBlocked = !!(blockedIdsRes.data ?? []).includes(profile.id);
   const amIBlocking = !!myBlockRes.data;
   const profileIsPro = isPro(profile);
@@ -335,7 +345,7 @@ export default async function ProfilePage({
     relRes.data?.status === "accepted" ? "following" : relRes.data?.status === "pending" ? "pending" : "none";
 
   const contentHidden = (profile.is_private && !isOwner && !isAcceptedFollower) || isBlocked;
-  const timeline = contentHidden ? [] : mergeFeedTimeline(posts, quotesRes, repostsRes).slice(0, 20);
+  const timeline = contentHidden ? [] : mergeFeedTimeline(posts, quotes, reposts).slice(0, 20);
   const canSeeHeatmap = isOwner || isAcceptedFollower || profile.heatmap_visibility === "public";
   // "Why you two match" renders only where post content would be visible to
   // this viewer (mirrors contentHidden: excludes private-non-follower and

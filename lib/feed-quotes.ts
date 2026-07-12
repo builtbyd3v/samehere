@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { POST_SELECT, type FeedPost } from "@/components/feed/PostCard";
 import type { QuotedRepost } from "@/components/feed/QuotedRepostCard";
 import { attachSignedMedia } from "@/lib/media";
+import type { FeedCursor } from "@/lib/feed-cursor";
 import type { Database } from "@/types/database.types";
 
 const QUOTE_ENGAGEMENT =
@@ -41,7 +42,7 @@ export async function fetchQuotedReposts(
   opts: {
     userIds?: string[];
     limit?: number;
-    cursor?: string;
+    cursor?: FeedCursor;
     blockedIds?: Set<string>;
   },
 ): Promise<QuotedRepost[]> {
@@ -49,11 +50,16 @@ export async function fetchQuotedReposts(
     .from("reposts")
     .select(REPOST_QUOTE_SELECT)
     .not("quote_text", "is", null)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false });
 
   if (opts.userIds?.length) query = query.in("user_id", opts.userIds);
   if (opts.limit) query = query.limit(opts.limit);
-  if (opts.cursor) query = query.lt("created_at", opts.cursor);
+  if (opts.cursor) {
+    query = query.or(
+      `created_at.lt.${opts.cursor.created_at},and(created_at.eq.${opts.cursor.created_at},id.lt.${opts.cursor.id})`,
+    );
+  }
 
   const { data, error } = await query;
   if (error) {
@@ -70,12 +76,12 @@ export async function fetchQuotedReposts(
       !(opts.blockedIds?.has(r.user_id) ?? false),
   );
 
-  const originals = visible.map((r) => r.post!);
-  const withMedia = originals.length ? await attachSignedMedia(supabase, originals) : [];
-  const mediaByPostId = new Map(withMedia.map((p) => [p.id, p]));
-
+  // Media signing moved to the caller (one shared batch across posts +
+  // quotes + reposts -- see app/(app)/feed/page.tsx's LatestTab). `original`
+  // here is UNSIGNED (media entries lack a real `url`) until the caller
+  // fixes it up.
   return visible
-    .map((r) => mapQuoteRow(r, mediaByPostId))
+    .map((r) => mapQuoteRow(r, new Map()))
     .filter((q): q is QuotedRepost => q !== null);
 }
 

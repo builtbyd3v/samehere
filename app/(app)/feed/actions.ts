@@ -6,7 +6,8 @@ import { POST_SELECT, PAGE, type FeedPost } from "@/components/feed/PostCard";
 import { attachSignedMedia, verifyMediaLimits } from "@/lib/media";
 import { fetchQuotedReposts } from "@/lib/feed-quotes";
 import { fetchPlainReposts } from "@/lib/feed-reposts";
-import { mergeFeedTimeline, type FeedTimelineItem } from "@/lib/feed-timeline";
+import { mergeFeedTimeline, itemId, type FeedTimelineItem } from "@/lib/feed-timeline";
+import { decodeCursor, encodeCursor } from "@/lib/feed-cursor";
 import { aiEnabled, generateText, modelForTier, type AiResult } from "@/lib/ai";
 import { COMPOSER_SYSTEM, IMPROVE_SYSTEM, PEOPLE_SEARCH_SYSTEM, untrusted } from "@/lib/ai-prompts";
 import { getPostHogServerClient } from "@/lib/posthog-server";
@@ -25,27 +26,46 @@ export async function loadMorePosts(
   cursor: string,
 ): Promise<{ items: FeedTimelineItem[]; nextCursor: string | null }> {
   const supabase = await createClient();
+  const decoded = decodeCursor(cursor);
+  // A malformed/tampered cursor (see lib/feed-cursor.ts's comment on this
+  // being attacker-controlled Server Action input) must never reach a query
+  // filter unvalidated -- stop pagination rather than guess.
+  if (!decoded) return { items: [], nextCursor: null };
+
   // ponytail: app-side filter post-fetch, not RLS on posts — mirrors the first page in feed/page.tsx.
-  const query = supabase
+  let query = supabase
     .from("posts")
     .select(POST_SELECT)
-    .lt("created_at", cursor)
     .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
     .limit(PAGE);
+  query = query.or(
+    `created_at.lt.${decoded.created_at},and(created_at.eq.${decoded.created_at},id.lt.${decoded.id})`,
+  );
 
   const [{ data }, { data: blockedIds }] = await Promise.all([
     query.returns<FeedPost[]>(),
     supabase.rpc("get_blocked_ids"),
   ]);
   const blocked = new Set(blockedIds ?? []);
-  const filtered = data?.filter((p) => !blocked.has(p.user_id)) ?? [];
-  const [posts, quotes, reposts] = await Promise.all([
-    attachSignedMedia(supabase, filtered),
-    fetchQuotedReposts(supabase, { limit: PAGE, cursor, blockedIds: blocked }),
-    fetchPlainReposts(supabase, { limit: PAGE, cursor, blockedIds: blocked }),
+  const filtered = (data ?? []).filter((p) => !blocked.has(p.user_id));
+
+  const [rawQuotes, rawReposts] = await Promise.all([
+    fetchQuotedReposts(supabase, { limit: PAGE, cursor: decoded, blockedIds: blocked }),
+    fetchPlainReposts(supabase, { limit: PAGE, cursor: decoded, blockedIds: blocked }),
   ]);
+
+  const allForSigning = [...filtered, ...rawQuotes.map((q) => q.original), ...rawReposts.map((r) => r.original)];
+  const signedById = new Map(
+    (allForSigning.length ? await attachSignedMedia(supabase, allForSigning) : []).map((p) => [p.id, p]),
+  );
+  const posts = filtered.map((p) => signedById.get(p.id) ?? p);
+  const quotes = rawQuotes.map((q) => ({ ...q, original: signedById.get(q.original.id) ?? q.original }));
+  const reposts = rawReposts.map((r) => ({ ...r, original: signedById.get(r.original.id) ?? r.original }));
+
   const items = mergeFeedTimeline(posts, quotes, reposts).slice(0, PAGE);
-  const nextCursor = items.length ? items[items.length - 1].created_at : null;
+  const last = items[items.length - 1];
+  const nextCursor = last ? encodeCursor(last.created_at, itemId(last)) : null;
   return { items, nextCursor };
 }
 
