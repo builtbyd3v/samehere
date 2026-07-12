@@ -31,8 +31,6 @@ const MAX_AI_RECIPIENTS = 50;
 const FREE_TAKE = 3;
 const PRO_TAKE = 5;
 
-export const maxDuration = 300;
-
 function norm(s: string | null): string {
   return s?.trim().toLowerCase() ?? "";
 }

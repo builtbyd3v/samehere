@@ -12,8 +12,6 @@ export const maxDuration = 60;
 const MAX_RECIPIENTS = 200;
 const BATCH_SIZE = 5;
 
-export const maxDuration = 300;
-
 export async function GET(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
   const provided = request.headers.get("authorization") ?? "";
