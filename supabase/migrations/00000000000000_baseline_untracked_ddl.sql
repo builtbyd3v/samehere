@@ -107,6 +107,11 @@ create table if not exists public.profiles (
   year text check (year in ('freshman','sophomore','junior','senior','grad')),
   bio text,
   goals text,
+  -- skills: dashboard-era column, never added by a tracked migration (courses
+  -- is, at 20260705150000). Referenced by 20260711140000 before being dropped
+  -- at 20260713182000_remove_skills_courses. Present here so a fresh replay has
+  -- it to reference and then drop; matches prod (where it's since been dropped).
+  skills text[],
   is_private boolean not null default false,
   heatmap_visibility text not null default 'public' check (heatmap_visibility in ('public','followers')),
   hide_school boolean not null default false,
