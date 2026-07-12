@@ -20,11 +20,9 @@ function MenuLink({ href, children }: { href: string; children: React.ReactNode 
 }
 
 function MenuItems({
-  username,
   isAdmin,
   onFeedback,
 }: {
-  username: string;
   isAdmin: boolean;
   onFeedback: () => void;
 }) {
@@ -40,8 +38,11 @@ function MenuItems({
         <span className="text-sm font-medium text-[var(--ink)]">Invite friends</span>
         <span className="text-xs text-[var(--ink-muted)]">Share your link, race to 100</span>
       </Link>
-      <MenuLink href={`/profile/${username}`}>Profile</MenuLink>
-      <MenuLink href="/saved">Saved</MenuLink>
+      {/* Saved is in the desktop left nav but NOT the mobile bottom bar, so it
+          stays here on mobile only. Profile lives in both navs — dropped. */}
+      <div className="lg:hidden">
+        <MenuLink href="/saved">Saved</MenuLink>
+      </div>
       <MenuLink href="/settings">Settings</MenuLink>
       {isAdmin && <MenuLink href="/admin">Admin</MenuLink>}
       <button
@@ -99,7 +100,7 @@ export default function NavMenu({
           )
         }
       >
-        <MenuItems username={username} isAdmin={isAdmin} onFeedback={() => setFeedbackOpen(true)} />
+        <MenuItems isAdmin={isAdmin} onFeedback={() => setFeedbackOpen(true)} />
       </Menu>
       <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </>
