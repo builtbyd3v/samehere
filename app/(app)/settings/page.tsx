@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import PrivacyForm from "@/components/settings/PrivacyForm";
@@ -8,12 +9,71 @@ import DeleteAccountSection from "@/components/settings/DeleteAccountSection";
 import AvatarImage from "@/components/ui/AvatarImage";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import StudentVerification from "@/components/settings/StudentVerification";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { unblockUser } from "./actions";
 
 type BlockedRow = {
   blocked_id: string;
   blocked: { username: string; display_name: string | null; avatar_url: string | null; is_pro: boolean } | null;
 };
+
+function BlockedUsersFallback() {
+  return (
+    <ul className="space-y-2">
+      {[0, 1].map((i) => (
+        <li key={i} className="flex items-center gap-3 rounded-lg border border-[var(--border)] p-3">
+          <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
+          <div className="min-w-0 flex-1 space-y-2">
+            <Skeleton className="h-4 w-32" />
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+async function BlockedUsers({ userId }: { userId: string }) {
+  const supabase = await createClient();
+  const { data: blocks } = await supabase
+    .from("blocks")
+    .select("blocked_id, blocked:profiles!blocks_blocked_id_fkey(username, display_name, avatar_url, is_pro)")
+    .eq("blocker_id", userId)
+    .returns<BlockedRow[]>();
+
+  if (!blocks?.length) {
+    return <p className="text-sm text-[var(--ink-muted)]">No blocked users.</p>;
+  }
+
+  return (
+    <ul className="space-y-2">
+      {blocks.map((b) => {
+        const name = b.blocked?.display_name ?? b.blocked?.username ?? "Unknown";
+        return (
+          <li key={b.blocked_id} className="flex items-center gap-3 rounded-lg border border-[var(--border)] p-3 transition hover:border-[var(--border-strong)]">
+            {b.blocked?.avatar_url ? (
+              <AvatarImage src={b.blocked.avatar_url} alt="" className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover" pro={b.blocked.is_pro ?? false} />
+            ) : (
+              <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--canvas)] text-sm font-semibold text-[var(--ink-muted)]">
+                {name.charAt(0).toUpperCase()}
+              </div>
+            )}
+            <div className="min-w-0 flex-1 text-sm text-[var(--ink)]">
+              {b.blocked ? (
+                <Link href={`/profile/${b.blocked.username}`} className="font-medium hover:underline">{name}</Link>
+              ) : (
+                <span className="font-medium">{name}</span>
+              )}
+              {b.blocked && <span className="ml-1.5 text-[var(--ink-muted)]">@{b.blocked.username}</span>}
+            </div>
+            <form action={unblockUser.bind(null, b.blocked_id)}>
+              <button type="submit" className="cursor-pointer text-sm text-[var(--ink-muted)] underline transition hover:text-[var(--ink)]">Unblock</button>
+            </form>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -22,18 +82,11 @@ export default async function SettingsPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [{ data: profile }, { data: blocks }] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("username, is_private, hide_school, heatmap_visibility, leaderboard_opt_out, email_digest_opt_out, verified_student")
-      .eq("id", user.id)
-      .single(),
-    supabase
-      .from("blocks")
-      .select("blocked_id, blocked:profiles!blocks_blocked_id_fkey(username, display_name, avatar_url, is_pro)")
-      .eq("blocker_id", user.id)
-      .returns<BlockedRow[]>(),
-  ]);
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("username, is_private, hide_school, heatmap_visibility, leaderboard_opt_out, email_digest_opt_out, verified_student")
+    .eq("id", user.id)
+    .single();
   if (!profile) redirect("/login");
 
   return (
@@ -62,37 +115,9 @@ export default async function SettingsPage() {
           <PrivacyForm initial={profile} />
 
           <h3 className="mb-4 mt-6 text-sm font-semibold text-[var(--ink)]">Blocked users</h3>
-          {!blocks?.length ? (
-            <p className="text-sm text-[var(--ink-muted)]">No blocked users.</p>
-          ) : (
-            <ul className="space-y-2">
-              {blocks.map((b) => {
-                const name = b.blocked?.display_name ?? b.blocked?.username ?? "Unknown";
-                return (
-                  <li key={b.blocked_id} className="flex items-center gap-3 rounded-lg border border-[var(--border)] p-3 transition hover:border-[var(--border-strong)]">
-                    {b.blocked?.avatar_url ? (
-                      <AvatarImage src={b.blocked.avatar_url} alt="" className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover" pro={b.blocked.is_pro ?? false} />
-                    ) : (
-                      <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--canvas)] text-sm font-semibold text-[var(--ink-muted)]">
-                        {name.charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                    <div className="min-w-0 flex-1 text-sm text-[var(--ink)]">
-                      {b.blocked ? (
-                        <Link href={`/profile/${b.blocked.username}`} className="font-medium hover:underline">{name}</Link>
-                      ) : (
-                        <span className="font-medium">{name}</span>
-                      )}
-                      {b.blocked && <span className="ml-1.5 text-[var(--ink-muted)]">@{b.blocked.username}</span>}
-                    </div>
-                    <form action={unblockUser.bind(null, b.blocked_id)}>
-                      <button type="submit" className="cursor-pointer text-sm text-[var(--ink-muted)] underline transition hover:text-[var(--ink)]">Unblock</button>
-                    </form>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+          <Suspense fallback={<BlockedUsersFallback />}>
+            <BlockedUsers userId={user.id} />
+          </Suspense>
         </section>
 
         <section className="card p-6">
