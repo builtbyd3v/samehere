@@ -1,9 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import PostComposer from "@/components/feed/PostComposer";
+import dynamic from "next/dynamic";
 import AvatarImage from "@/components/ui/AvatarImage";
 import { IconCompose } from "@/components/icons";
+
+const PostComposer = dynamic(() => import("@/components/feed/PostComposer"), {
+  loading: () => (
+    <div
+      aria-hidden
+      className="h-32 animate-pulse rounded-2xl border border-[var(--border)] bg-[var(--surface-card)]"
+    />
+  ),
+});
 
 export default function ComposerToggle({ isPro, avatarUrl }: { isPro: boolean; avatarUrl: string | null }) {
   const [open, setOpen] = useState(false);
@@ -40,7 +49,7 @@ export default function ComposerToggle({ isPro, avatarUrl }: { isPro: boolean; a
       ) : (
         <div className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] bg-[var(--featured-surface)]" aria-hidden />
       )}
-      <span className="flex-1 text-[16px] text-[var(--ink-faint)]">Share what you're building…</span>
+      <span className="flex-1 text-[16px] text-[var(--ink-faint)]">Share what you&apos;re building…</span>
       <span className="shrink-0 text-[var(--ink-muted)]" aria-hidden>
         <IconCompose />
       </span>
