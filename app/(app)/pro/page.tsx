@@ -24,7 +24,7 @@ const GROUPS: { title: string; subtitle: string; features: string[] }[] = [
       "150 natural-language people searches a day",
       "A stronger AI model, 150 uses a day",
       "Improve my post: AI rewrites your draft",
-      "AI icebreakers for first messages",
+      "150 AI icebreakers a day",
       "Weekly “5 people to meet” email, with AI reasons",
     ],
   },
@@ -32,12 +32,13 @@ const GROUPS: { title: string; subtitle: string; features: string[] }[] = [
     title: "Belong",
     subtitle: "See and be seen",
     features: [
+      "Profile themes",
       "See who viewed your profile",
     ],
   },
 ];
 
-const COMING_SOON_TO_PRO: string[] = ["Profile themes"];
+const COMING_SOON_TO_PRO: string[] = [];
 
 const NEVER_GATED = [
   "student verification",
