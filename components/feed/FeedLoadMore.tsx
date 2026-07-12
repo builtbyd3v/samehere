@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { type FeedPost, PAGE } from "./PostCard";
 import FeedTimeline from "./FeedTimeline";
 import type { FeedTimelineItem } from "@/lib/feed-timeline";
@@ -31,16 +31,34 @@ export default function FeedLoadMore({
   hasMore,
   viewerId,
   action = loadMorePosts,
+  auto = false,
 }: {
   cursor: string;
   hasMore: boolean;
   viewerId: string | null;
   action?: (cursor: string) => Promise<LoadMoreResult>;
+  auto?: boolean;
 }) {
   const [items, setItems] = useState<FeedTimelineItem[]>([]);
   const [next, setNext] = useState<string>(cursor);
   const [more, setMore] = useState(hasMore);
   const [loading, setLoading] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!auto) return;
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && more && !loading) onMore();
+      },
+      { rootMargin: "600px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auto, more, loading]);
 
   async function onMore() {
     setLoading(true);
@@ -56,9 +74,12 @@ export default function FeedLoadMore({
     <>
       <FeedTimeline items={items} viewerId={viewerId} />
       {more && (
-        <button type="button" onClick={onMore} disabled={loading} className="btn-ghost mx-auto mt-3">
-          {loading ? "Loading…" : "Load more"}
-        </button>
+        <>
+          <div ref={sentinelRef} aria-hidden />
+          <button type="button" onClick={onMore} disabled={loading} className="btn-ghost mx-auto mt-3">
+            {loading ? "Loading…" : "Load more"}
+          </button>
+        </>
       )}
     </>
   );

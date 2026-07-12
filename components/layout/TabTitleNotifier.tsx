@@ -64,7 +64,7 @@ export default function TabTitleNotifier({ initialTotal }: { initialTotal: numbe
   // Same Realtime pattern as NavIconBadge's bell (postgres_changes on
   // `notifications`, no filter needed -- RLS already scopes the broadcast to
   // this user's own rows). On ANY change (insert/update/delete) we debounce
-  // and re-fetch the TRUE unread total -- the same two RPCs NavbarUnread uses
+  // and re-fetch the TRUE unread total -- the same two RPCs getUnreadCounts uses
   // server-side (get_dm_unread_total + get_notification_unread_total) -- so
   // the badge goes back down when a notification is removed/read instead of
   // only ever climbing, and can't diverge from reality under spam.

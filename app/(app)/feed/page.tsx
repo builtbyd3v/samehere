@@ -1,111 +1,106 @@
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
-import PostComposer from "@/components/feed/PostComposer";
 import { POST_SELECT, PAGE, type FeedPost } from "@/components/feed/PostCard";
+import FeedTabs from "@/components/feed/FeedTabs";
+import FeedTimeline from "@/components/feed/FeedTimeline";
 import FeedLoadMore from "@/components/feed/FeedLoadMore";
+import EmptyState from "@/components/ui/EmptyState";
 import FollowRequests, { type FollowRequest } from "@/components/profile/FollowRequests";
 import { attachSignedMedia } from "@/lib/media";
-import { scoreOverlap, type MatchSignal } from "@/lib/match";
-import { isPro } from "@/lib/pro";
-import SuggestedFollows, { SuggestedFollowsFallback } from "@/components/feed/SuggestedFollows";
-import FeedToolbar from "@/components/feed/FeedToolbar";
-import FeedTabs from "@/components/feed/FeedTabs";
-import EmptyState from "@/components/ui/EmptyState";
-import OnboardingChecklist from "@/components/feed/OnboardingChecklist";
-import FeedTimeline from "@/components/feed/FeedTimeline";
 import { mergeFeedTimeline } from "@/lib/feed-timeline";
 import { fetchQuotedReposts } from "@/lib/feed-quotes";
 import { fetchPlainReposts } from "@/lib/feed-reposts";
-import { FeedSearchForm, FeedSearchResults } from "@/components/feed/FeedSearch";
-import PeopleSearch from "@/components/feed/PeopleSearch";
-import WeeklyRecap from "@/components/feed/WeeklyRecap";
+import { isPro } from "@/lib/pro";
+import RightRail, { RightRailFallback } from "./RightRail";
+import ComposerToggle from "./ComposerToggle";
+import LeftRail, { LeftRailFallback } from "./LeftRail";
+import OnboardingChecklist from "@/components/feed/OnboardingChecklist";
+import NewPostsPill from "./NewPostsPill";
 
-// Twitter-style feed: Latest (global recency) and Following (followed users'
-// posts + follow requests + suggested users — formerly the dashboard). Only
-// the active tab's data is fetched.
+// Desktop feed redesign, now the live /feed. The app shell (app/(app)/layout.tsx)
+// supplies the persistent left nav; this page is a two-column layout — the
+// Latest/Following timeline centered, with a right rail stacking profile+heatmap
+// (LeftRail) above trending/suggested/leaderboard/invite (RightRail). The
+// composer is collapsed behind a trigger; `data-feed-page` lets the shell drop
+// its right spacer so this page's own rail balances the left nav.
+//
+// Known gaps vs the previous feed (see README follow-ups): natural-language
+// people-search UI is not wired here yet, and the weekly recap card was folded
+// into the profile heatmap.
 export default async function FeedPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; q?: string; search?: string; compose?: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }) {
   const params = await searchParams;
   const tab = params.tab === "following" ? "following" : "latest";
-  const q = (params.q ?? "").trim();
   const supabase = await createClient();
-
   const {
     data: { user },
   } = await supabase.auth.getUser();
   const viewerId = user?.id ?? null;
 
-  // Independent queries (both keyed off user.id, neither reads the other's
-  // result) — fetched concurrently instead of two serial round trips.
-  const [onboardingProfile, onboardingCounts, onboardingClubs] = user
+  const { data: composerProfile } = user
+    ? await supabase.from("profiles").select("avatar_url, bio, is_pro, pro_until, verified_student").eq("id", user.id).single()
+    : { data: null };
+  const composerPro = isPro(composerProfile ?? { is_pro: false, pro_until: null });
+  const [onboardingCounts, onboardingClubs] = user
     ? await Promise.all([
-        supabase.from("profiles").select("avatar_url, bio, is_pro, pro_until, verified_student").eq("id", user.id).single(),
         supabase.rpc("get_profile_counts", { p_profile_id: user.id }),
         supabase.from("club_members").select("club_id", { count: "exact", head: true }).eq("user_id", user.id),
       ])
-    : [{ data: null }, { data: null }, { count: null }];
-  const composerPro = isPro(onboardingProfile.data ?? { is_pro: false, pro_until: null });
+    : [{ data: null }, { count: null }];
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8">
-      <div className="sticky top-14 z-30 -mx-4 mb-6 border-b border-[var(--border)] bg-[var(--canvas)]/95 px-4 pb-4 backdrop-blur sm:-mx-5 sm:px-5">
-        <FeedToolbar
-          title={<h1 className="text-xl font-semibold tracking-[-0.02em] sm:text-2xl">Feed</h1>}
-          search={
-            <PeopleSearch
-              isPro={composerPro}
-              keyword={
-                <>
-                  <FeedSearchForm q={q} tab={tab} />
-                  <FeedSearchResults q={q} />
-                </>
-              }
-            />
-          }
-          composer={<PostComposer isPro={composerPro} />}
-          initialComposeOpen={params.compose === "1"}
-        />
-        <div className="mt-3">
-          <FeedTabs tab={tab} />
+    <main data-feed-page className="page-enter grid grid-cols-1 justify-center gap-7 py-6 lg:grid-cols-[minmax(0,600px)_340px] lg:py-8">
+      <div className="min-w-0">
+        <div className="sticky top-14 z-30 mb-4 -mt-2 border-b border-[var(--border)] bg-[var(--canvas)]/95 pt-2 pb-3 backdrop-blur">
+          <h1 className="sr-only">Feed</h1>
+          <ComposerToggle isPro={composerPro} avatarUrl={composerProfile?.avatar_url ?? null} />
+          <div className="mt-3">
+            <FeedTabs tab={tab} basePath="/feed" />
+          </div>
         </div>
+
+        {user && (
+          <OnboardingChecklist
+            avatarUrl={composerProfile?.avatar_url ?? null}
+            bio={composerProfile?.bio ?? null}
+            postCount={Number(onboardingCounts.data?.[0]?.posts ?? 0)}
+            followingCount={Number(onboardingCounts.data?.[0]?.following ?? 0)}
+            verifiedStudent={!!composerProfile?.verified_student}
+            inClub={(onboardingClubs.count ?? 0) > 0}
+          />
+        )}
+
+        {tab === "latest" ? (
+          <LatestTab viewerId={viewerId} />
+        ) : (
+          <FollowingTab userId={user?.id ?? null} viewerId={viewerId} />
+        )}
       </div>
 
-      {user && (
-        <OnboardingChecklist
-          avatarUrl={onboardingProfile.data?.avatar_url ?? null}
-          bio={onboardingProfile.data?.bio ?? null}
-          postCount={Number(onboardingCounts.data?.[0]?.posts ?? 0)}
-          followingCount={Number(onboardingCounts.data?.[0]?.following ?? 0)}
-          verifiedStudent={!!onboardingProfile.data?.verified_student}
-          inClub={(onboardingClubs.count ?? 0) > 0}
-        />
-      )}
-
-      {user && <WeeklyRecap userId={user.id} />}
-
-      {tab === "latest" ? (
-        <LatestTab viewerId={viewerId} />
-      ) : (
-        <FollowingTab userId={user?.id ?? null} viewerId={viewerId} />
-      )}
+      {/* Right rail — desktop only; the feed reads full-width on mobile. */}
+      <aside className="hidden lg:block">
+        <div className="sticky top-20 flex flex-col gap-4">
+          <Suspense fallback={<LeftRailFallback />}>
+            <LeftRail />
+          </Suspense>
+          <Suspense fallback={<RightRailFallback />}>
+            <RightRail />
+          </Suspense>
+        </div>
+      </aside>
     </main>
   );
 }
 
-// ponytail: Latest = global recency; becomes a personalized "For You" once Phase 12 AI ranking lands.
+// Latest = global recency. Posts + quote-reposts + plain reposts merged, blocked
+// authors filtered app-side, sliced to one page.
 async function LatestTab({ viewerId }: { viewerId: string | null }) {
   const supabase = await createClient();
-  const query = supabase
-    .from("posts")
-    .select(POST_SELECT)
-    .order("created_at", { ascending: false })
-    .limit(PAGE);
-
   const [{ data }, { data: blockedIds }] = await Promise.all([
-    query.returns<FeedPost[]>(),
+    supabase.from("posts").select(POST_SELECT).order("created_at", { ascending: false }).limit(PAGE).returns<FeedPost[]>(),
     viewerId ? supabase.rpc("get_blocked_ids") : Promise.resolve({ data: [] as string[] }),
   ]);
   const blocked = new Set(blockedIds ?? []);
@@ -117,162 +112,80 @@ async function LatestTab({ viewerId }: { viewerId: string | null }) {
   ]);
   const timeline = posts ? mergeFeedTimeline(posts, quotes, reposts).slice(0, PAGE) : [];
 
+  if (timeline.length === 0) {
+    return (
+      <EmptyState
+        title="Nothing here yet"
+        description="Be the first to share what you are building or figuring out."
+        action={{ label: "Explore the community", href: "/community" }}
+      />
+    );
+  }
   return (
     <section className="flex flex-col gap-3">
-      {timeline.length === 0 ? (
-        <EmptyState
-          title="Nothing here yet"
-          description="Be the first to share what you are building or figuring out."
-          action={{ label: "Find students", href: "/feed?search=1" }}
-        />
-      ) : (
-        <>
-          <FeedTimeline items={timeline} viewerId={viewerId} />
-          <FeedLoadMore
-            cursor={timeline[timeline.length - 1].created_at}
-            hasMore={timeline.length === PAGE}
-            viewerId={viewerId}
-          />
-        </>
-      )}
+      <NewPostsPill since={timeline[0].created_at} />
+      <FeedTimeline items={timeline} viewerId={viewerId} />
+      {/* key by the last cursor so a router.refresh() (new-posts pill) remounts
+          this with fresh pagination state instead of keeping the stale cursor. */}
+      <FeedLoadMore
+        key={timeline[timeline.length - 1].created_at}
+        auto
+        cursor={timeline[timeline.length - 1].created_at}
+        hasMore={timeline.length === PAGE}
+        viewerId={viewerId}
+      />
     </section>
   );
 }
 
-async function FollowingTab({
-  userId,
-  viewerId,
-}: {
-  userId: string | null;
-  viewerId: string | null;
-}) {
-  // proxy already gates this route; userId is only null for a type-narrowing edge case.
-  if (!userId) return null;
+// Following = followed users' posts (first page). Pending follow requests render
+// above the timeline so private-account approvals still have a home on the feed.
+async function FollowingTab({ userId, viewerId }: { userId: string | null; viewerId: string | null }) {
+  if (!userId) return null; // proxy gates this route; null is a type edge case
 
   const supabase = await createClient();
-
-  const [{ data: requests }, { data: myFollows }, { data: viewerProfile }, { data: blockedIds }] = await Promise.all([
+  const [{ data: myFollows }, { data: requests }, { data: blockedIds }] = await Promise.all([
+    supabase.from("follows").select("following_id, status").eq("follower_id", userId),
     supabase
       .from("follows")
-      .select("follower_id, requester:profiles!follows_follower_id_fkey(username, display_name, avatar_url, is_pro, is_founder, is_campus_founder, verified_student)")
+      .select(
+        "follower_id, requester:profiles!follows_follower_id_fkey(username, display_name, avatar_url, is_pro, is_founder, is_campus_founder, verified_student)",
+      )
       .eq("following_id", userId)
       .eq("status", "pending")
       .order("created_at", { ascending: false })
       .returns<FollowRequest[]>(),
-    supabase.from("follows").select("following_id, status").eq("follower_id", userId),
-    supabase
-      .from("profiles")
-      .select("year, major, goals, bio, is_pro, pro_until, profile_school(school)")
-      .eq("id", userId)
-      .single(),
-    // ponytail: app-side filter post-fetch, not RLS on posts.
     supabase.rpc("get_blocked_ids"),
   ]);
   const blocked = new Set(blockedIds ?? []);
   const visibleRequests = (requests ?? []).filter((r) => !blocked.has(r.follower_id));
+  const acceptedIds = (myFollows ?? [])
+    .filter((f) => f.status === "accepted")
+    .map((f) => f.following_id)
+    .filter((id): id is string => !!id);
+  const quoteAuthorIds = [userId, ...acceptedIds];
 
-  const acceptedIds = (myFollows ?? []).filter((f) => f.status === "accepted").map((f) => f.following_id);
-  const excludeIds = [userId, ...blocked, ...(myFollows ?? []).map((f) => f.following_id)]; // never empty (has me)
-
-  // ponytail: Following feed is first-page only; add cursor load-more if it grows.
-  const quoteAuthorIds = [userId, ...acceptedIds].filter((id): id is string => !!id);
-
-  const followPostsPromise = (async () => {
-    if (!acceptedIds.length) return { data: [] as FeedPost[] };
-    const q = supabase
-      .from("posts")
-      .select(POST_SELECT)
-      .in("user_id", acceptedIds)
-      .order("created_at", { ascending: false })
-      .limit(PAGE);
-    return q.returns<FeedPost[]>();
-  })();
-
-  const [{ data: followFeed }, quotes, reposts, { data: suggestedPool }] = await Promise.all([
-    followPostsPromise,
-    fetchQuotedReposts(supabase, {
-      userIds: quoteAuthorIds,
-      limit: PAGE,
-      blockedIds: blocked,
-    }),
-    fetchPlainReposts(supabase, {
-      userIds: quoteAuthorIds,
-      limit: PAGE,
-      blockedIds: blocked,
-    }),
-    supabase
-      .from("profiles")
-      .select("id, username, display_name, avatar_url, created_at, year, major, goals, bio, is_pro, pro_until, is_founder, is_campus_founder, verified_student, profile_school(school)")
-      .not("id", "in", `(${excludeIds.join(",")})`)
-      .order("created_at", { ascending: false })
-      .limit(30),
+  const [{ data: followFeed }, quotes, reposts] = await Promise.all([
+    acceptedIds.length
+      ? supabase.from("posts").select(POST_SELECT).in("user_id", acceptedIds).order("created_at", { ascending: false }).limit(PAGE).returns<FeedPost[]>()
+      : Promise.resolve({ data: [] as FeedPost[] }),
+    fetchQuotedReposts(supabase, { userIds: quoteAuthorIds, limit: PAGE, blockedIds: blocked }),
+    fetchPlainReposts(supabase, { userIds: quoteAuthorIds, limit: PAGE, blockedIds: blocked }),
   ]);
-  const feedPosts = followFeed ? await attachSignedMedia(supabase, followFeed) : null;
+  const feedPosts = followFeed?.length ? await attachSignedMedia(supabase, followFeed) : null;
   const timeline =
-    feedPosts || quotes.length || reposts.length
-      ? mergeFeedTimeline(feedPosts ?? [], quotes, reposts).slice(0, PAGE)
-      : [];
-
-  // ponytail: rank a 30-row recency pool; widen only if suggestions feel stale.
-  const viewerPro = isPro(viewerProfile ?? { is_pro: false, pro_until: null });
-  const viewerSignal: MatchSignal = {
-    year: viewerProfile?.year ?? null,
-    major: viewerProfile?.major ?? null,
-    goals: viewerProfile?.goals ?? null,
-    bio: viewerProfile?.bio ?? null,
-    school: viewerProfile?.profile_school?.school ?? null,
-  };
-  const suggested = (suggestedPool ?? [])
-    .map((s) => ({
-      ...s,
-      _score: scoreOverlap(viewerSignal, {
-        year: s.year,
-        major: s.major,
-        goals: s.goals,
-        bio: s.bio,
-        school: s.profile_school?.school ?? null,
-      }),
-    }))
-    .sort((a, b) => b._score - a._score || ((a.created_at ?? "") < (b.created_at ?? "") ? 1 : -1))
-    .slice(0, 5);
+    feedPosts || quotes.length || reposts.length ? mergeFeedTimeline(feedPosts ?? [], quotes, reposts).slice(0, PAGE) : [];
 
   return (
     <section className="flex flex-col gap-3">
       {visibleRequests.length > 0 && <FollowRequests requests={visibleRequests} />}
-
-      {/* Suggested-users card is AI-generated (up to 5 connectionPrompt calls) —
-          wrapped in its own Suspense so it never blocks the timeline below from
-          streaming. Fallback reuses the already-fetched (non-AI) suggested pool. */}
-      {timeline.length > 0 && suggested.length > 0 && (
-        <section className="card mb-3 p-4 sm:p-5">
-          <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">People to follow</h2>
-          <Suspense fallback={<SuggestedFollowsFallback suggested={suggested} />}>
-            <SuggestedFollows userId={userId} viewerSignal={viewerSignal} viewerPro={viewerPro} suggested={suggested} />
-          </Suspense>
-        </section>
-      )}
-
       {timeline.length > 0 ? (
-        <div className="flex flex-col gap-3">
-          <FeedTimeline items={timeline} viewerId={viewerId} />
-        </div>
-      ) : suggested.length > 0 ? (
-        <section className="card px-4 py-8 text-center sm:px-6">
-          <p className="font-medium text-[var(--ink)]">Your feed is empty</p>
-          <p className="mx-auto mt-1.5 max-w-sm text-sm text-[var(--ink-muted)]">
-            Follow a few students below to start seeing their posts here.
-          </p>
-          <div className="mt-5 text-left">
-            <Suspense fallback={<SuggestedFollowsFallback suggested={suggested} />}>
-              <SuggestedFollows userId={userId} viewerSignal={viewerSignal} viewerPro={viewerPro} suggested={suggested} />
-            </Suspense>
-          </div>
-        </section>
+        <FeedTimeline items={timeline} viewerId={viewerId} />
       ) : (
         <EmptyState
           title="Your feed is empty"
-          description="Follow students to see their posts and quote reposts here."
-          action={{ label: "Search students", href: "/feed?search=1" }}
+          description="Follow students to see their posts here. Suggested peers are in the sidebar."
+          action={{ label: "Find people", href: "/community" }}
         />
       )}
     </section>

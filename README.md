@@ -25,12 +25,16 @@ Students don't have a dedicated space that combines verified peer identity, real
 - Privacy: private accounts (follow approval), hideable school (separate RLS-gated table), per-profile heatmap visibility
 - Profile hover-previews across the app
 
+### App shell & navigation
+- Persistent left nav rail on desktop (Home, Notifications, Messages, Community, Saved, Profile, Pro) with live unread badges; a fixed bottom tab bar on mobile — one shell across every signed-in page, page content centered in the viewport (a reserved scrollbar gutter keeps it from shifting between short and long pages)
+- The signed-in feed is a three-column layout: the timeline centered between the left nav and a right rail — your profile + contribution heatmap, trending, suggested peers, people from your school, the weekly leaderboard (with your own rank pinned on top), and an invite CTA. Search lives in the top bar
+
 ### Social feed
-- Latest + Following tabs, chronological, cursor pagination
-- Composer with image/video upload (private bucket, signed URLs), live point counter, and @mention autocomplete
+- Latest + Following tabs, chronological, cursor pagination with infinite scroll and a "N new posts" pill
+- Composer collapsed behind a trigger (expands and focuses inline); image/video upload (private bucket, signed URLs), live point counter, and @mention autocomplete
 - Reactions: Like, SameHere, Repost, Bookmark
 - Comments, quote-reposts and plain reposts (surfaced on the reposter's profile) with engagement counts, individual post pages
-- "Looking for teammate" post type
+- Pending follow requests and onboarding checklist surface inline; "Looking for teammate" post type
 - Report button and post menus
 
 ### Follow system
@@ -102,6 +106,7 @@ Each action type counts once per day. Daily square intensity reflects total poin
 - Weekly "people to meet" email digest
 - PWA + web push (DB scaffold only — `push_subscriptions` table exists; no manifest, service worker, or web-push dependency yet)
 - Job board
+- Inline natural-language people-search on the redesigned feed — the AI search action still exists, but its on-feed UI is being re-wired for the new three-column layout
 
 ## Tech stack
 

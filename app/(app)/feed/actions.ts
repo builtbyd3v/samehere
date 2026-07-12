@@ -404,3 +404,17 @@ export async function peopleSearch(query: string): Promise<PeopleSearchState> {
   // Parse failed / model returned nothing usable → still show the prefilter pool.
   return { results: ranked.length ? ranked : candidates.slice(0, 8).map(toResult) };
 }
+
+// Count posts newer than a timestamp, for the feed's "N new posts" pill. Capped
+// at 30 — the pill only needs "many", not an exact count. Blocked authors are
+// filtered app-side, mirroring the first-page query in page.tsx.
+export async function countNewerPosts(sinceIso: string): Promise<number> {
+  const supabase = await createClient();
+  const [{ data }, { data: blockedIds }] = await Promise.all([
+    supabase.from("posts").select("id, user_id").gt("created_at", sinceIso).order("created_at", { ascending: false }).limit(30),
+    supabase.rpc("get_blocked_ids"),
+  ]);
+  if (!data) return 0;
+  const blocked = new Set(blockedIds ?? []);
+  return data.filter((p) => !blocked.has(p.user_id ?? "")).length;
+}

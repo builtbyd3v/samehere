@@ -54,8 +54,10 @@ async function downscaleImage(file: File): Promise<File> {
 
 export default function PostComposer({
   isPro = false,
+  autoFocus = false,
 }: {
   isPro?: boolean;
+  autoFocus?: boolean;
 }) {
   const [state, formAction, pending] = useActionState<ComposerState, FormData>(createPost, {});
   const ref = useRef<HTMLFormElement>(null);
@@ -101,6 +103,11 @@ export default function PostComposer({
     // eslint-disable-next-line react-hooks/set-state-in-effect -- navigator-based label deferred to post-hydration to avoid an SSR/client mismatch
     setShortcutLabel(submitShortcutLabel());
   }, []);
+
+  useEffect(() => {
+    if (autoFocus) textareaRef.current?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoFocus]);
 
   const qualifies = len >= POINT_AT;
 

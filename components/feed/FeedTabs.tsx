@@ -3,7 +3,13 @@ import Link from "next/link";
 const pill =
   "rounded-full px-4 py-1.5 text-sm font-medium transition active:scale-[0.97]";
 
-export default function FeedTabs({ tab }: { tab: "latest" | "following" }) {
+export default function FeedTabs({
+  tab,
+  basePath = "/feed",
+}: {
+  tab: "latest" | "following";
+  basePath?: string;
+}) {
   return (
     <div
       className="inline-flex gap-0.5 rounded-full border border-[var(--border)] p-0.5"
@@ -11,7 +17,7 @@ export default function FeedTabs({ tab }: { tab: "latest" | "following" }) {
       aria-label="Feed"
     >
       <Link
-        href="/feed"
+        href={basePath}
         role="tab"
         aria-selected={tab === "latest"}
         className={
@@ -23,7 +29,7 @@ export default function FeedTabs({ tab }: { tab: "latest" | "following" }) {
         Latest
       </Link>
       <Link
-        href="/feed?tab=following"
+        href={`${basePath}?tab=following`}
         role="tab"
         aria-selected={tab === "following"}
         className={

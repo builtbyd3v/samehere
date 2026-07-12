@@ -90,6 +90,16 @@
   }
 }
 
+/* Always reserve the scrollbar gutter so the centered app shell (and the left
+   nav) don't jump horizontally between a scrolling page (feed) and a short one
+   (e.g. /referrals) as the scrollbar appears/disappears. */
+html { scrollbar-gutter: stable; }
+
+/* Feed page opts out of the shell's right spacer (it has its own right rail), so
+   its feed column can use the full content width. Other pages keep the spacer,
+   which balances the left nav and centers their content in the viewport. */
+body:has([data-feed-page]) .shell-rspacer { display: none; }
+
 /* Interactive affordance — links already default to pointer in most browsers */
 button:not(:disabled),
 [type="button"]:not(:disabled),
