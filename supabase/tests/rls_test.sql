@@ -260,24 +260,25 @@ end $$;
 -- Points are now a byproduct of AFTER INSERT/UPDATE triggers reading the real
 -- row (posts_award_contribution / comments_award_contribution /
 -- profiles_award_contribution), which call the internal primitive
--- _log_contribution(uuid,text,int,jsonb) — SECURITY DEFINER, revoked from
+-- _log_contribution(uuid,text,int,uuid,jsonb) — SECURITY DEFINER, revoked from
 -- public/anon/authenticated, reachable only from inside another definer
 -- function's body (as the function owner), never directly over PostgREST.
--- Assert both halves: the old forgeable RPC is gone, and its replacement is
--- not directly callable either.
+-- (20260712110000_contribution_v2 dropped the original 4-arg _log_contribution
+-- in favour of this 5-arg source-id form.) Assert both halves: the old forgeable
+-- RPC is gone, and its replacement is not directly callable either.
 do $$
 declare
   v_old_oid oid := to_regprocedure('public.log_contribution(text,jsonb)');
-  v_new_oid oid := to_regprocedure('public._log_contribution(uuid,text,int,jsonb)');
+  v_new_oid oid := to_regprocedure('public._log_contribution(uuid,text,int,uuid,jsonb)');
 begin
   if v_old_oid is not null then
     raise exception 'H1 REGRESSION: public.log_contribution(text,jsonb) still exists — the forgeable client-callable RPC was supposed to be dropped by 20260711110100';
   end if;
   if v_new_oid is null then
-    raise exception 'H1 SETUP: public._log_contribution(uuid,text,int,jsonb) does not exist — the expected replacement primitive is missing';
+    raise exception 'H1 SETUP: public._log_contribution(uuid,text,int,uuid,jsonb) does not exist — the expected replacement primitive is missing';
   end if;
   if has_function_privilege('authenticated', v_new_oid, 'execute') then
-    raise exception 'H1 REGRESSION: authenticated role can EXECUTE public._log_contribution(uuid,text,int,jsonb) directly — a client could call it with a fabricated action_type/points and mint heatmap/streak/leaderboard points with no real post/comment/connection behind them';
+    raise exception 'H1 REGRESSION: authenticated role can EXECUTE public._log_contribution(uuid,text,int,uuid,jsonb) directly — a client could call it with a fabricated action_type/points and mint heatmap/streak/leaderboard points with no real post/comment/connection behind them';
   end if;
   insert into tests_results values ('H1', true, 'ok');
 exception when others then
@@ -303,12 +304,15 @@ begin
     raise exception 'H1_positive REGRESSION: a short post created % contribution_log row(s) — short posts must earn zero points', v_cnt;
   end if;
 
-  -- a 200-char (>=150) post earns exactly one row worth 5 points.
-  insert into public.posts (user_id, content) values (v_c, repeat('x', 200)) returning id into v_long_id;
+  -- a 200-char (>=150) post earns exactly one row worth 4 points. Content must
+  -- be VARIED, not repeat('x',200): 20260712110000_contribution_v2 scores on
+  -- qualifying_length(), which collapses any run of 3+ identical chars to 2 (so
+  -- 'xxxx…' would count as 2). Post scoring is 4 (<600 qualifying chars) / 6 (>=600).
+  insert into public.posts (user_id, content) values (v_c, repeat('ab', 100)) returning id into v_long_id;
   select count(*), max(points) into v_cnt, v_points from public.contribution_log
    where user_id = v_c and date = v_today and action_type = 'post';
-  if v_cnt <> 1 or v_points <> 5 then
-    raise exception 'H1_positive REGRESSION: a 200-char post produced % contribution_log row(s) with points=% — expected exactly 1 row with points=5', v_cnt, v_points;
+  if v_cnt <> 1 or v_points <> 4 then
+    raise exception 'H1_positive REGRESSION: a 200-char post produced % contribution_log row(s) with points=% — expected exactly 1 row with points=4', v_cnt, v_points;
   end if;
 
   -- deleting the qualifying post revokes the same-day point.
@@ -1751,135 +1755,10 @@ exception when others then
 end $$;
 reset role;
 
--- ============ CLUBS_V2_10 — clubs cannot share a name case-insensitively ============
--- Reuses club_pending2 as the creator: 0 clubs created so far, well under the
--- 24h/2 cap even after the two attempts below (the second never commits).
-select tests.as_user(id) from tests_fixture where key = 'club_pending2';
-do $$
-declare
-  v_id uuid;
-  v_committed boolean := false;
-  v_state text;
-begin
-  insert into public.clubs (slug, name, purpose, is_open, created_by)
-  values ('rls-test-robotics-a', 'Robotics',
-          'fixture club for the case-insensitive unique-name proof', true, (select auth.uid()))
-  returning id into v_id;
-
-  begin
-    insert into public.clubs (slug, name, purpose, is_open, created_by)
-    values ('rls-test-robotics-b', 'robotics',
-            'a second club colliding on name, different case', true, (select auth.uid()));
-    v_committed := true;
-  exception when others then
-    v_committed := false;
-    v_state := sqlstate;
-  end;
-
-  if v_committed then
-    raise exception 'CLUBS_V2_10 REGRESSION: two clubs named ''Robotics'' and ''robotics'' both inserted -- clubs_name_lower_unique_idx is not enforced';
-  end if;
-  if v_state <> '23505' then
-    raise exception 'CLUBS_V2_10 WRONG REASON: the colliding-name insert raised SQLSTATE % -- expected 23505 (unique_violation on lower(name))', v_state;
-  end if;
-
-  insert into tests_results values ('CLUBS_V2_10', true, 'ok');
-exception when others then
-  insert into tests_results values ('CLUBS_V2_10', false, sqlerrm);
-end $$;
-reset role;
-
--- ============ CLUBS_V2_11 — club_rename: owner OK, non-owner denied, direct slug UPDATE still frozen ============
-select tests.as_user(id) from tests_fixture where key = 'club_owner';
-do $$
-declare
-  v_returned_slug text;
-  v_name text;
-  v_slug text;
-begin
-  v_returned_slug := public.club_rename(
-    (select id from tests_fixture where key = 'club_open'), 'RLS Renamed Club Two'
-  );
-  if v_returned_slug <> 'rls-renamed-club-two' then
-    raise exception 'CLUBS_V2_11a REGRESSION: club_rename returned slug %, expected rls-renamed-club-two', v_returned_slug;
-  end if;
-
-  select name, slug into v_name, v_slug from public.clubs
-   where id = (select id from tests_fixture where key = 'club_open');
-  if v_name <> 'RLS Renamed Club Two' or v_slug <> 'rls-renamed-club-two' then
-    raise exception 'CLUBS_V2_11a REGRESSION: clubs row reads name=%, slug=% after club_rename, expected ''RLS Renamed Club Two'' / rls-renamed-club-two', v_name, v_slug;
-  end if;
-
-  insert into tests_results values ('CLUBS_V2_11a', true, 'ok');
-exception when others then
-  insert into tests_results values ('CLUBS_V2_11a', false, sqlerrm);
-end $$;
-reset role;
-
-select tests.as_user(id) from tests_fixture where key = 'club_outsider';
-do $$
-declare
-  v_raised boolean := false;
-begin
-  begin
-    perform public.club_rename(
-      (select id from tests_fixture where key = 'club_open'), 'Hijacked Name'
-    );
-  exception when others then
-    v_raised := true;
-    if sqlerrm <> 'not authorized' then
-      raise exception 'CLUBS_V2_11b WRONG REASON: club_rename raised %, expected the plain ''not authorized'' guard', sqlerrm;
-    end if;
-  end;
-  if not v_raised then
-    raise exception 'CLUBS_V2_11b REGRESSION: a non-owner (club_outsider, no role at all in club_open) called club_rename() and it did not raise';
-  end if;
-  insert into tests_results values ('CLUBS_V2_11b', true, 'ok');
-exception when others then
-  insert into tests_results values ('CLUBS_V2_11b', false, sqlerrm);
-end $$;
-reset role;
-
-set local role postgres;
-do $$
-declare
-  v_name text;
-  v_slug text;
-begin
-  select name, slug into v_name, v_slug from public.clubs
-   where id = (select id from tests_fixture where key = 'club_open');
-  if v_name <> 'RLS Renamed Club Two' or v_slug <> 'rls-renamed-club-two' then
-    raise exception 'CLUBS_V2_11b REGRESSION: clubs row reads name=%, slug=% after a rejected non-owner club_rename() call -- expected unchanged (RLS Renamed Club Two / rls-renamed-club-two)', v_name, v_slug;
-  end if;
-  insert into tests_results values ('CLUBS_V2_11b_unchanged', true, 'ok');
-exception when others then
-  insert into tests_results values ('CLUBS_V2_11b_unchanged', false, sqlerrm);
-end $$;
-reset role;
-
-select tests.as_user(id) from tests_fixture where key = 'club_owner';
-do $$
-begin
-  update public.clubs set slug = 'direct-update-hack'
-   where id = (select id from tests_fixture where key = 'club_open');
-end $$;
-reset role;
-
-set local role postgres;
-do $$
-declare
-  v_slug text;
-begin
-  select slug into v_slug from public.clubs
-   where id = (select id from tests_fixture where key = 'club_open');
-  if v_slug <> 'rls-renamed-club-two' then
-    raise exception 'CLUBS_V2_11c REGRESSION: a direct owner UPDATE of clubs.slug changed it to %, expected it frozen at rls-renamed-club-two -- guard_clubs_privileged''s UPDATE branch regressed', v_slug;
-  end if;
-  insert into tests_results values ('CLUBS_V2_11c', true, 'ok');
-exception when others then
-  insert into tests_results values ('CLUBS_V2_11c', false, sqlerrm);
-end $$;
-reset role;
+-- CLUBS_V2_10 (case-insensitive name uniqueness) and CLUBS_V2_11 (club_rename)
+-- were removed: 20260714220000_clubs_v3_codes_and_moderation retired both the
+-- clubs_name_lower_unique_idx and the club_rename() function (slug is frozen at
+-- creation, no rename), so there is nothing left to assert.
 
 -- ============ CLUBS_V2_12 — club-avatars storage listing is member-scoped, not public ============
 -- Regression guard for 20260714160000 recreating the unscoped "club avatars
@@ -1953,7 +1832,7 @@ declare v_failed int;
 begin
   select count(*) into v_failed from tests_results where not passed;
   if v_failed > 0 then
-    raise exception '% assertion(s) failed — see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, CLUBS_V2_1, CLUBS_V2_2, CLUBS_V2_3, CLUBS_V2_7a, CLUBS_V2_4, CLUBS_V2_7b, CLUBS_V2_5_officer_denied, CLUBS_V2_5_owner_allowed, CLUBS_V2_6_outsider, CLUBS_V2_6_pending, CLUBS_V2_8, CLUBS_V2_9, CLUBS_V2_10, CLUBS_V2_11a, CLUBS_V2_11b, CLUBS_V2_11b_unchanged, CLUBS_V2_11c, H1_suggested_profiles, CLUBS_V2_12_outsider, CLUBS_V2_12_anon.', v_failed;
+    raise exception '% assertion(s) failed — see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, CLUBS_V2_1, CLUBS_V2_2, CLUBS_V2_3, CLUBS_V2_7a, CLUBS_V2_4, CLUBS_V2_7b, CLUBS_V2_5_officer_denied, CLUBS_V2_5_owner_allowed, CLUBS_V2_6_outsider, CLUBS_V2_6_pending, CLUBS_V2_8, CLUBS_V2_9, H1_suggested_profiles, CLUBS_V2_12_outsider, CLUBS_V2_12_anon.', v_failed;
 
   end if;
 end $$;
