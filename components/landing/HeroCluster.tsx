@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import {
-  motion,
+  LazyMotion,
+  domAnimation,
+  m,
   useMotionValue,
   useSpring,
   useTransform,
@@ -41,9 +43,9 @@ function SameHereLive({ initial }: { initial: number }) {
         on ? "text-[var(--blue)]" : "text-[var(--ink-muted)] hover:text-[var(--blue)]"
       }`}
     >
-      <motion.span className="inline-flex" style={{ scale: iconScale }}>
+      <m.span className="inline-flex" style={{ scale: iconScale }}>
         <IconSame on={on} />
-      </motion.span>
+      </m.span>
       <span className="same-tick inline-block tabular-nums" key={count}>
         {count}
       </span>
@@ -116,7 +118,7 @@ function ScatterCard({
         ["--i" as string]: i,
       }}
     >
-      <motion.div style={{ transform: t }}>
+      <m.div style={{ transform: t }}>
         <div
           className="cluster-float"
           style={{
@@ -129,7 +131,7 @@ function ScatterCard({
         >
           <CardFace peer={peer} />
         </div>
-      </motion.div>
+      </m.div>
     </div>
   );
 }
@@ -186,31 +188,33 @@ export default function HeroCluster() {
   }
 
   return (
-    <div className="pointer-events-none relative mx-auto w-full max-w-[1040px]">
-      {/* soft ambient bloom behind the cluster — warm depth, barely there */}
-      <div
-        aria-hidden
-        className="absolute left-1/2 top-1/2 h-[70%] w-[80%] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[80px]"
-        style={{ background: "radial-gradient(closest-side, var(--accent-glow), transparent 75%)" }}
-      />
+    <LazyMotion features={domAnimation} strict>
+      <div className="pointer-events-none relative mx-auto w-full max-w-[1040px]">
+        {/* soft ambient bloom behind the cluster — warm depth, barely there */}
+        <div
+          aria-hidden
+          className="absolute left-1/2 top-1/2 h-[70%] w-[80%] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[80px]"
+          style={{ background: "radial-gradient(closest-side, var(--accent-glow), transparent 75%)" }}
+        />
 
-      {/* desktop scatter with cursor parallax */}
-      <div
-        className="pointer-events-auto absolute inset-0 hidden lg:block"
-        onMouseMove={reduce ? undefined : onMove}
-        onMouseLeave={reset}
-      >
-        {HERO_PEERS.map((peer, i) => (
-          <ScatterCard key={peer.username} peer={peer} i={i} mx={mx} my={my} />
-        ))}
-      </div>
-      {/* desktop needs explicit height (children are absolute); mobile uses the stack's height */}
-      <div className="hidden h-[46vh] max-h-[440px] min-h-[330px] lg:block" />
+        {/* desktop scatter with cursor parallax */}
+        <div
+          className="pointer-events-auto absolute inset-0 hidden lg:block"
+          onMouseMove={reduce ? undefined : onMove}
+          onMouseLeave={reset}
+        >
+          {HERO_PEERS.map((peer, i) => (
+            <ScatterCard key={peer.username} peer={peer} i={i} mx={mx} my={my} />
+          ))}
+        </div>
+        {/* desktop needs explicit height (children are absolute); mobile uses the stack's height */}
+        <div className="hidden h-[46vh] max-h-[440px] min-h-[330px] lg:block" />
 
-      {/* mobile stack */}
-      <div className="lg:hidden">
-        <MobileStack />
+        {/* mobile stack */}
+        <div className="lg:hidden">
+          <MobileStack />
+        </div>
       </div>
-    </div>
+    </LazyMotion>
   );
 }

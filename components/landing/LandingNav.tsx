@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { motion, useReducedMotion } from "motion/react";
+import { LazyMotion, domMax, m, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { signupCtaSm } from "./cta";
 
@@ -180,7 +180,7 @@ export default function LandingNav() {
     activeId === id ? "font-medium text-[var(--blue)]" : "text-[var(--ink-muted)] hover:text-[var(--ink)]";
 
   return (
-    <>
+    <LazyMotion features={domMax} strict>
       {menuOpen && (
         <button
           type="button"
@@ -218,7 +218,7 @@ export default function LandingNav() {
                 >
                   {link.label}
                   {activeId === link.id && (
-                    <motion.span
+                    <m.span
                       layoutId="nav-underline"
                       transition={reduceMotion ? { duration: 0 } : { type: "spring", duration: 0.4, bounce: 0.15 }}
                       className="absolute inset-x-3 -bottom-0.5 h-[2px] rounded-full bg-[var(--blue)]"
@@ -296,6 +296,6 @@ export default function LandingNav() {
           )}
         </div>
       </header>
-    </>
+    </LazyMotion>
   );
 }
