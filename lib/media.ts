@@ -1,21 +1,71 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { unstable_cache } from "next/cache";
 import type { Database } from "@/types/database.types";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export type PostMedia = { path: string; type: "image" | "video"; url: string };
 type RawMedia = { path: string; type: "image" | "video" };
 const TTL = 3600; // 1h — outlives a page view; media is re-signed on next load.
 
-// Private bucket: post-RLS already decided the viewer may see these posts, so we
-// mint signed URLs for their media. One batched createSignedUrls call.
+const CACHE_REVALIDATE = 3000; // 50min — must stay safely under TTL (3600s)
+// below, so a cache entry can never outlive the signed URL it stored (600s
+// safety margin). If TTL ever changes, keep this at least 600s under it.
+
+// Per-path cache: unstable_cache's cache key includes this callback's actual
+// call arguments (not just the ["post-media-signed-url"] key below), so
+// calling this with one path string yields ONE cache entry per distinct
+// path — a brand-new post's paths are the only misses; every other path
+// already in cache is a hit, regardless of which arbitrary batch of posts
+// they show up alongside on a given render. See lib/leaderboard.ts and
+// lib/founder.ts for this repo's other unstable_cache usages.
+//
+// Signs via the ADMIN (service-role) client, not the per-viewer session
+// client passed into attachSignedMedia below — unstable_cache callbacks
+// cannot depend on the current request's cookies/session (see
+// lib/founder.ts's comment on the same constraint), and a cache entry
+// shared across viewers must produce the same URL for all of them, which
+// only works if signing doesn't depend on who's asking.
+//
+// SAFETY INVARIANT — READ BEFORE ADDING A NEW CALLER: this bypasses the
+// per-viewer storage RLS policy ("post-media visible via parent post",
+// supabase/migrations/20260711100100_post_media_visible_via_parent_post.sql)
+// that would otherwise re-check visibility at sign time. That is safe ONLY
+// because this function is called exclusively from attachSignedMedia below,
+// which only ever receives `posts` rows already fetched through an
+// RLS-gated `public.posts` select (the storage policy re-derives that exact
+// same visibility rule independently — this collapses two redundant checks
+// into one). NEVER call signPath, or add a new attachSignedMedia call site,
+// with a path that did not come from an RLS-gated posts query — doing so
+// would turn this cache into an unrestricted read primitive over the entire
+// private post-media bucket.
+const signPath = unstable_cache(
+  async (path: string): Promise<string | null> => {
+    const admin = createAdminClient();
+    const { data } = await admin.storage.from("post-media").createSignedUrls([path], TTL);
+    return data?.[0]?.signedUrl ?? null;
+  },
+  ["post-media-signed-url"],
+  { revalidate: CACHE_REVALIDATE },
+);
+
+// Private bucket: post-RLS already decided the viewer may see these posts —
+// see the SAFETY INVARIANT comment on signPath above for why it's then safe
+// to sign via a shared, admin-signed cache. `supabase` is unused for signing
+// now (kept as a parameter so none of this function's 10 call sites need to
+// change) — prefixed with `_` to satisfy the unused-var lint rule.
 export async function attachSignedMedia<T extends { media: unknown }>(
-  supabase: SupabaseClient<Database>,
+  _supabase: SupabaseClient<Database>,
   posts: T[],
 ): Promise<(Omit<T, "media"> & { media: PostMedia[] })[]> {
   const paths = posts.flatMap((p) => ((p.media as RawMedia[] | null) ?? []).map((m) => m.path));
+  const uniquePaths = [...new Set(paths)];
   const signed = new Map<string, string>();
-  if (paths.length > 0) {
-    const { data } = await supabase.storage.from("post-media").createSignedUrls(paths, TTL);
-    for (const d of data ?? []) if (d.signedUrl && d.path) signed.set(d.path, d.signedUrl);
+  if (uniquePaths.length > 0) {
+    const urls = await Promise.all(uniquePaths.map((p) => signPath(p)));
+    uniquePaths.forEach((p, i) => {
+      const url = urls[i];
+      if (url) signed.set(p, url);
+    });
   }
   return posts.map((p) => ({
     ...p,
