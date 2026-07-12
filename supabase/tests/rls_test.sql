@@ -1881,6 +1881,61 @@ exception when others then
 end $$;
 reset role;
 
+-- ============ CLUBS_V2_12 — club-avatars storage listing is member-scoped, not public ============
+-- Regression guard for 20260714160000 recreating the unscoped "club avatars
+-- public read" policy that 20260710225238 had already dropped (Postgres ORs
+-- permissive policies, so the broad one silently wins). Fixed by
+-- 20260717100000. Seed one club-avatars object under club_open's folder as
+-- its owner, then assert neither a non-member nor a logged-out caller can
+-- list it via the storage API.
+select tests.as_user(id) from tests_fixture where key = 'club_owner';
+do $$
+declare
+  v_open_id uuid := (select id from tests_fixture where key = 'club_open');
+begin
+  insert into storage.objects (bucket_id, name)
+  values ('club-avatars', v_open_id::text || '/avatar.jpg');
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'club_outsider';
+do $$
+declare
+  v_open_id uuid := (select id from tests_fixture where key = 'club_open');
+  v_cnt int;
+begin
+  select count(*) into v_cnt
+  from storage.objects
+  where bucket_id = 'club-avatars'
+    and (storage.foldername(name))[1] = v_open_id::text;
+  if v_cnt <> 0 then
+    raise exception 'CLUBS_V2_12 REGRESSION: a non-member of club_open can list % club-avatars object(s) via storage.objects — "club avatars public read" is back', v_cnt;
+  end if;
+  insert into tests_results values ('CLUBS_V2_12_outsider', true, 'ok');
+exception when others then
+  insert into tests_results values ('CLUBS_V2_12_outsider', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_anon();
+do $$
+declare
+  v_open_id uuid := (select id from tests_fixture where key = 'club_open');
+  v_cnt int;
+begin
+  select count(*) into v_cnt
+  from storage.objects
+  where bucket_id = 'club-avatars'
+    and (storage.foldername(name))[1] = v_open_id::text;
+  if v_cnt <> 0 then
+    raise exception 'CLUBS_V2_12 REGRESSION: an anon (logged-out) caller can list % club-avatars object(s) via storage.objects — "club avatars public read" is back', v_cnt;
+  end if;
+  insert into tests_results values ('CLUBS_V2_12_anon', true, 'ok');
+exception when others then
+  insert into tests_results values ('CLUBS_V2_12_anon', false, sqlerrm);
+end $$;
+reset role;
+
 -- ============ report ============
 -- Print the PASS/FAIL table FIRST so the operator sees exactly which assertions
 -- failed, then raise so psql exits non-zero and the harness actually gates.
@@ -1898,7 +1953,8 @@ declare v_failed int;
 begin
   select count(*) into v_failed from tests_results where not passed;
   if v_failed > 0 then
-    raise exception '% assertion(s) failed — see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, CLUBS_V2_1, CLUBS_V2_2, CLUBS_V2_3, CLUBS_V2_7a, CLUBS_V2_4, CLUBS_V2_7b, CLUBS_V2_5_officer_denied, CLUBS_V2_5_owner_allowed, CLUBS_V2_6_outsider, CLUBS_V2_6_pending, CLUBS_V2_8, CLUBS_V2_9, CLUBS_V2_10, CLUBS_V2_11a, CLUBS_V2_11b, CLUBS_V2_11b_unchanged, CLUBS_V2_11c, H1_suggested_profiles.', v_failed;
+    raise exception '% assertion(s) failed — see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, CLUBS_V2_1, CLUBS_V2_2, CLUBS_V2_3, CLUBS_V2_7a, CLUBS_V2_4, CLUBS_V2_7b, CLUBS_V2_5_officer_denied, CLUBS_V2_5_owner_allowed, CLUBS_V2_6_outsider, CLUBS_V2_6_pending, CLUBS_V2_8, CLUBS_V2_9, CLUBS_V2_10, CLUBS_V2_11a, CLUBS_V2_11b, CLUBS_V2_11b_unchanged, CLUBS_V2_11c, H1_suggested_profiles, CLUBS_V2_12_outsider, CLUBS_V2_12_anon.', v_failed;
+
   end if;
 end $$;
 
