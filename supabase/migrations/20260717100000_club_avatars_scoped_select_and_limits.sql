@@ -15,3 +15,16 @@ update storage.buckets
 set file_size_limit = 2097152,
     allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp']
 where id = 'club-avatars';
+
+-- 3. Member-scoped SELECT policy. Originally created by 20260710225238, but it
+--    depends on public.club_role() which is only created (tracked) at
+--    20260714140000, so on a fresh replay it could not exist that early. Created
+--    here instead — club_role exists by now. Idempotent (drop-if-exists) so it is
+--    a no-op on the live DB, which already carries this policy from 20260710225238.
+drop policy if exists "club avatars scoped select" on storage.objects;
+create policy "club avatars scoped select" on storage.objects
+  for select to authenticated
+  using (
+    bucket_id = 'club-avatars'
+    and public.club_role(((storage.foldername(name))[1])::uuid) is not null
+  );

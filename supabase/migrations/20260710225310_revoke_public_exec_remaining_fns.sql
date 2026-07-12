@@ -7,10 +7,20 @@ revoke execute on function public.current_is_admin() from public;
 revoke execute on function public.current_is_suspended() from public;
 revoke execute on function public.get_blocked_ids() from public;
 revoke execute on function public.get_founder_spots_left() from public;
-revoke execute on function public.reactivate_on_message() from public;
 
 grant execute on function public.current_is_admin() to authenticated;
 grant execute on function public.current_is_suspended() to authenticated;
 grant execute on function public.get_blocked_ids() to authenticated;
 grant execute on function public.get_founder_spots_left() to authenticated;
-grant execute on function public.reactivate_on_message() to authenticated;
+
+-- reactivate_on_message() is dashboard-era and only gets a tracked CREATE at
+-- 20260711130000, so on a fresh replay it doesn't exist yet. Guard so replay
+-- skips it (it's a trigger function — not directly callable, so the PUBLIC grant
+-- is inert); unchanged on the live DB where it exists.
+do $$
+begin
+  if to_regprocedure('public.reactivate_on_message()') is not null then
+    revoke execute on function public.reactivate_on_message() from public;
+    grant execute on function public.reactivate_on_message() to authenticated;
+  end if;
+end $$;
