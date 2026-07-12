@@ -10,6 +10,12 @@ import { aiEnabled, generateText, modelForTier } from "@/lib/ai";
 import { CONNECTION_SYSTEM, untrusted } from "@/lib/ai-prompts";
 import { weeklyMatchesEmail, type MatchCard } from "@/lib/emails/weekly-matches";
 
+// Worst-case budget (see plan 011 for the full math): ~2 AI-heavy batches at
+// ~52s each (up to 5 sequential generateText calls per recipient before
+// MAX_AI_RECIPIENTS is exhausted) + ~38 lighter batches at ~3s each ≈ 218s,
+// plus margin for latency variance.
+export const maxDuration = 300;
+
 // ponytail: same ceilings as unread-digest — hard cap + sequential-batch
 // throttle, not a real queue/backoff. Fine at current scale.
 const MAX_RECIPIENTS = 200;
@@ -76,6 +82,8 @@ export async function GET(request: NextRequest) {
   if (!secret || a.length !== b.length || !timingSafeEqual(a, b)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const startedAt = Date.now();
 
   // Sanctioned admin-client read (mirrors unread-digest): no user session
   // (Vercel Cron caller), and the RPCs iterate every user / a cross-user
@@ -181,6 +189,11 @@ export async function GET(request: NextRequest) {
         }
       })
     );
+  }
+
+  const elapsedMs = Date.now() - startedAt;
+  if (elapsedMs > maxDuration * 1000 * 0.8) {
+    console.error(`weekly-matches: elapsed ${elapsedMs}ms crossed 80% of maxDuration (${maxDuration}s)`);
   }
 
   return NextResponse.json({ sent, total: sorted.length });

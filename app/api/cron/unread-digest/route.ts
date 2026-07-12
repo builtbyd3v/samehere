@@ -4,6 +4,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email";
 import { makeUnsubToken } from "@/lib/email-unsub";
 
+// Worst case: 40 sequential batches of concurrent sendEmail calls, ~1s each ≈ 40s, plus margin.
+export const maxDuration = 60;
+
 // ponytail: hard ceiling on one cron run + sequential-batch throttle. Not a
 // real queue/backoff — fine at current scale, revisit only if volume grows.
 const MAX_RECIPIENTS = 200;
@@ -18,6 +21,8 @@ export async function GET(request: NextRequest) {
   if (!secret || a.length !== b.length || !timingSafeEqual(a, b)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const startedAt = Date.now();
 
   // Sanctioned admin-client read (Plan 013 / SESSION DECISION #2): this route
   // has no user session (it's invoked by Vercel Cron), and the underlying RPC
@@ -69,6 +74,11 @@ export async function GET(request: NextRequest) {
         }
       })
     );
+  }
+
+  const elapsedMs = Date.now() - startedAt;
+  if (elapsedMs > maxDuration * 1000 * 0.8) {
+    console.error(`unread-digest: elapsed ${elapsedMs}ms crossed 80% of maxDuration (${maxDuration}s)`);
   }
 
   return NextResponse.json({ sent, total: recipients.length });
