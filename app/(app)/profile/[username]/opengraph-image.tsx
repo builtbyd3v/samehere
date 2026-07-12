@@ -31,6 +31,10 @@ export const runtime = "nodejs"; // sharp is not available on the edge runtime.
 export const alt = "samehere profile";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+export const revalidate = 3600; // 1h — crawlers/unfurls re-hit the same profile
+// repeatedly; the card only needs to reflect activity/stat changes roughly
+// hourly, not on every hit. See lib/leaderboard.ts / lib/founder.ts for the
+// same revalidate-window reasoning applied elsewhere in this repo.
 
 const level = (points: number) => (points === 0 ? 0 : points <= 3 ? 1 : points <= 7 ? 2 : 3);
 
