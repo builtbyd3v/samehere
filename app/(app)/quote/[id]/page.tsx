@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
 import { createClient as createAnonClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import QuotedRepostCard from "@/components/feed/QuotedRepostCard";
@@ -193,8 +194,19 @@ async function PublicQuoteView({ id }: { id: string }) {
   );
 }
 
+// Anon crawler unfurls and logged-out visits are the common case for this
+// route; skip constructing the cookie-bound Supabase client entirely when no
+// Supabase auth cookie is present at all. See plans/006-request-layer-dedup.md
+// for the same predicate used in lib/supabase/middleware.ts.
+async function hasAuthCookie() {
+  const store = await cookies();
+  return store.getAll().some((c) => c.name.startsWith("sb-") && c.name.includes("-auth-token"));
+}
+
 export default async function QuotePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  if (!(await hasAuthCookie())) return <PublicQuoteView id={id} />;
+
   const supabase = await createClient();
   const {
     data: { user },
