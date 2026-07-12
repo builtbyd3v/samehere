@@ -70,14 +70,16 @@ export default function TabTitleNotifier({
   }, []);
 
   // Same Realtime pattern as NavIconBadge's bell (postgres_changes on
-  // `notifications`), filtered to this user's own rows (user_id=eq.<userId>)
-  // so the platform-wide notifications firehose isn't fanned out to every
-  // connected tab -- RLS still applies as defense-in-depth, but the filter is
-  // what stops the fan-out cost. On ANY change (insert/update/delete) we debounce
-  // and re-fetch the TRUE unread total -- the same two RPCs getUnreadCounts uses
-  // server-side (get_dm_unread_total + get_notification_unread_total) -- so
-  // the badge goes back down when a notification is removed/read instead of
-  // only ever climbing, and can't diverge from reality under spam.
+  // `notifications` and `messages`). notifications is filtered to this
+  // user's own rows (user_id=eq.<userId>) so the platform-wide firehose
+  // isn't fanned out to every connected tab; messages has no user_id column
+  // to filter on, so RLS alone scopes that broadcast to conversations this
+  // user can read. On ANY change (insert/update/delete) on either table we
+  // debounce and re-fetch the TRUE unread total -- the same two RPCs
+  // getUnreadCounts uses server-side (get_dm_unread_total +
+  // get_notification_unread_total) -- so the badge goes back down when a
+  // notification/message is removed/read instead of only ever climbing, and
+  // can't diverge from reality under spam.
   useEffect(() => {
     let active = true;
     const timer: { current: ReturnType<typeof setTimeout> | null } = { current: null };
@@ -99,6 +101,11 @@ export default function TabTitleNotifier({
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
+        refetchTotal,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "messages" },
         refetchTotal,
       )
       .subscribe();
