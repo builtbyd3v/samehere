@@ -27,7 +27,7 @@ import { isPro } from "@/lib/pro";
 import { PROFILE_THEMES, isProfileTheme, themeCssVars } from "@/lib/themes";
 
 const PROFILE_SELECT =
-  "id, username, display_name, avatar_url, banner_url, year, major, bio, goals, is_private, heatmap_visibility, is_pro, pro_until, is_founder, is_campus_founder, accent_color, profile_theme, verified_student";
+  "id, username, display_name, avatar_url, banner_url, year, major, bio, goals, is_private, heatmap_visibility, is_pro, pro_until, is_founder, is_campus_founder, profile_theme, verified_student";
 
 // Shared by generateMetadata and the page component so they hit one query
 // instead of two — React's cache() dedupes by argument (username) within a
@@ -47,10 +47,15 @@ const YEAR_LABEL: Record<string, string> = {
   grad: "Grad student",
 };
 
-function Stat({ value, label }: { value: number; label: string }) {
+function Stat({ value, label, accent }: { value: number; label: string; accent?: boolean }) {
   return (
     <span className="text-[15px]">
-      <b className="font-semibold tracking-[-0.01em] text-[var(--ink)]">{value.toLocaleString()}</b>{" "}
+      <b
+        className={`font-semibold tracking-[-0.01em] ${accent ? "" : "text-[var(--ink)]"}`}
+        style={accent ? { color: "var(--profile-accent)" } : undefined}
+      >
+        {value.toLocaleString()}
+      </b>{" "}
       <span className="text-[var(--ink-muted)]">{label}</span>
     </span>
   );
@@ -395,21 +400,24 @@ export default async function ProfilePage({
   const pro = isPro(profile);
   const bannerUrl = pro ? profile.banner_url : null;
   const theme = pro && isProfileTheme(profile.profile_theme) ? profile.profile_theme : null;
-  // Precedence: a theme sets the accent when present; accent_color is the
-  // manual escape hatch used only when no theme is set (see lib/themes.ts).
-  const accentColor = theme ? PROFILE_THEMES[theme].accent : pro ? profile.accent_color : null;
+  // Accent only comes from a set theme now — the manual accent_color picker
+  // was removed (lib/themes.ts is the only accent source).
+  const accentColor = theme ? PROFILE_THEMES[theme].accent : null;
   const themeVars = themeCssVars(theme);
 
   return (
-    <main className="page-enter mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8" style={themeVars}>
+    <main
+      className={`page-enter mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8${theme ? " profile-themed" : ""}`}
+      style={themeVars}
+    >
+      {/* theme-zone scopes the bold theme rules (app/globals.css) to the
+          identity zone below — the Posts section further down stays outside
+          so post cards never pick up themed borders/accents. */}
+      <div className="theme-zone">
       {/* Identity header — banner with the avatar overlapping its bottom edge.
-          Theme tint renders as a soft outline glow here, not a wash — the
-          gradient below stays blue-only per DESIGN.md ("blue is kept ONLY
-          for the profile card + heatmap"). */}
-      <section
-        className="card overflow-hidden"
-        style={theme ? { boxShadow: "0 0 0 1px var(--profile-tint)" } : undefined}
-      >
+          Themed profiles get a soft top-down wash instead of the old 1px
+          outline, so the accent visibly owns the header band. */}
+      <section className="card overflow-hidden">
         {bannerUrl ? (
           // ponytail: plain <img>, not next/image. `fill` is position:absolute,
           // which paints above the in-flow avatar that pulls up over the banner
@@ -423,7 +431,9 @@ export default async function ProfilePage({
           <div
             aria-hidden
             className="aspect-[4/1] w-full"
-            style={{ background: "linear-gradient(120deg, color-mix(in srgb, var(--blue) 14%, var(--surface-card)) 0%, var(--surface-card) 62%)" }}
+            style={{
+              background: `linear-gradient(120deg, color-mix(in srgb, ${theme ? "var(--profile-accent)" : "var(--blue)"} 14%, var(--surface-card)) 0%, var(--surface-card) 62%)`,
+            }}
           />
         )}
 
@@ -491,9 +501,9 @@ export default async function ProfilePage({
             )}
 
             <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1">
-              <Stat value={Number(counts.posts)} label="posts" />
-              <Stat value={Number(counts.followers)} label="followers" />
-              <Stat value={Number(counts.following)} label="following" />
+              <Stat value={Number(counts.posts)} label="posts" accent={!!theme} />
+              <Stat value={Number(counts.followers)} label="followers" accent={!!theme} />
+              <Stat value={Number(counts.following)} label="following" accent={!!theme} />
             </div>
           </div>
 
@@ -550,6 +560,7 @@ export default async function ProfilePage({
           <ProfileViewersSection profileId={profile.id} profileIsPro={profileIsPro} />
         </Suspense>
       )}
+      </div>
 
       <section className="mt-6">
         <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">Posts</h2>

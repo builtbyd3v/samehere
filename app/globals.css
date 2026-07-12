@@ -574,6 +574,16 @@ summary {
   border: 1px solid var(--border);
   background: var(--surface-card);
 }
+
+/* Pro profile-theme tiles — only bites when the profile wrapper carries
+   `.profile-themed` (theme set + vars present via themeCssVars); a no-op on
+   every other page/card since --profile-border/--profile-accent are unset there.
+   Scoped to `.theme-zone` (identity zone only, see [username]/page.tsx) so the
+   Posts timeline's cards don't pick up a themed border. */
+.profile-themed .theme-zone .card {
+  background: var(--profile-surface);
+  border-color: var(--profile-border);
+}
 @media (hover: hover) and (pointer: fine) {
   .card-hover:hover {
     border-color: var(--border-strong);
@@ -630,4 +640,31 @@ summary {
 }
 
 } /* @layer components */
+
+/* Unlayered (deliberately outside @layer components): these override Tailwind
+   utility classes (e.g. text-[var(--ink)], bg-[var(--ink)]) applied inline on
+   the same elements. Utilities sit in Tailwind's own `utilities` layer, which
+   always wins over an equally-specific rule in an earlier layer regardless of
+   selector specificity — unlayered CSS is the one thing that outranks it. */
+
+/* Section headers everywhere on a themed profile, including the Posts h2
+   (which sits outside .card and outside .theme-zone as a direct child of
+   <main>) — just not post content itself. */
+.profile-themed > section > h2,
+.profile-themed .theme-zone h2 {
+  color: var(--profile-accent);
+}
+/* Follow CTA (FollowButton "none" state, pill variant) + owner's "Edit
+   profile" link take the accent as their primary color when themed. */
+.profile-themed .theme-zone .btn-inset.rounded-full,
+.profile-themed .theme-zone .btn-ghost {
+  background: var(--profile-accent);
+  border-color: var(--profile-accent);
+  color: #fff;
+}
+/* Heatmap cell hover outline picks up the accent instead of the generic border. */
+.profile-themed .theme-zone [role="img"]:hover {
+  outline-color: var(--profile-accent);
+}
+
 

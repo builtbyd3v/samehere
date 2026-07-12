@@ -40,11 +40,27 @@ export function isProfileTheme(value: unknown): value is ProfileTheme {
 // light-dark() so a single inline style works in both themes without any new
 // globals.css rule — light-dark() resolves off the ambient color-scheme the
 // .light/.dark classes already set.
+//
+// --hm1..3 override the global blue heatmap ramp (app/globals.css) so
+// ContributionHeatmap recolors for free — it just reads var(--hm1..3), and
+// this cascades down from the profile wrapper without any heatmap changes.
+// --hm1..3 = a lightness ramp of the accent, direction flipped per scheme with
+// light-dark(): DARK mode lightens the accent (mix toward white) so even a
+// low-luminance accent like violet/rose reads as bright cells above the dark,
+// now-tinted card; LIGHT mode keeps/darkens the accent so cells read as
+// increasingly saturated marks on the pale card. Mixing in OKLCH keeps the hue
+// vivid while shifting lightness (plain srgb white-mix would wash it to pastel).
+// More activity = more prominent in both schemes (dark: brighter, light: darker).
 export function themeCssVars(key: string | null | undefined): CSSProperties | undefined {
   if (!isProfileTheme(key)) return undefined;
   const t = PROFILE_THEMES[key];
   return {
     "--profile-accent": t.accent,
     "--profile-tint": `light-dark(${t.tintLight}, ${t.tintDark})`,
+    "--profile-surface": `light-dark(color-mix(in srgb, ${t.accent} 8%, var(--surface-card)), color-mix(in srgb, ${t.accent} 14%, var(--surface-card)))`,
+    "--profile-border": `color-mix(in srgb, ${t.accent} 22%, var(--border))`,
+    "--hm1": `light-dark(color-mix(in oklch, ${t.accent}, white 58%), color-mix(in oklch, ${t.accent}, white 20%))`,
+    "--hm2": `light-dark(color-mix(in oklch, ${t.accent}, white 30%), color-mix(in oklch, ${t.accent}, white 42%))`,
+    "--hm3": `light-dark(${t.accent}, color-mix(in oklch, ${t.accent}, white 58%))`,
   } as CSSProperties;
 }
