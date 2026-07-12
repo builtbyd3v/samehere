@@ -52,6 +52,11 @@ const nextConfig: NextConfig = {
           ]
         : []),
     ],
+    // Avatar/banner URLs are cache-busted with ?v=<timestamp> on every upload
+    // (app/(app)/profile/edit/actions.ts, uploadAvatar/uploadBanner) — a
+    // changed image always arrives at a new URL, so the optimizer never needs
+    // to re-check a URL for staleness. Safe to cache for a year.
+    minimumCacheTTL: 31536000,
   },
   async rewrites() {
     if (!posthogHost) {
