@@ -25,7 +25,6 @@ export type EditInitial = {
   heatmap_visibility: string;
   is_pro: boolean;
   pro_until: string | null;
-  accent_color: string | null;
   profile_theme: string | null;
 };
 
@@ -49,7 +48,6 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
   const avatarUrl = avatarState.url ?? initial.avatar_url;
   const [bannerState, bannerAction, bannerBusy] = useActionState<AvatarState, FormData>(uploadBanner, {});
   const bannerUrl = bannerState.url ?? initial.banner_url;
-  const [accentColor, setAccentColor] = useState<string | null>(initial.accent_color);
   const [profileTheme, setProfileTheme] = useState<ProfileTheme | null>(
     isProfileTheme(initial.profile_theme) ? initial.profile_theme : null
   );
@@ -231,11 +229,10 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
               defaultValue={initial.goals ?? ""} placeholder="What are you working toward?" className={field} />
           </div>
 
-          {/* TODO(themes redesign): re-enable picker after redesign (plan 023).
-              Hidden field still carries the (unchangeable) stored value so an
-              existing theme round-trips on save instead of getting cleared. */}
+          {/* Hidden field carries the submitted value; the swatch buttons below
+              just drive `profileTheme` state (no name attr of their own). */}
           <input type="hidden" name="profile_theme" value={profileTheme ?? ""} />
-          {false && (
+          {(
             <div className="border-t border-[var(--border)] pt-4">
               <label className={label}>Profile theme</label>
               {pro ? (
@@ -275,9 +272,7 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
                       </button>
                     ))}
                   </div>
-                  <p className={hint}>
-                    A curated look for your profile. Overrides your accent color below when set.
-                  </p>
+                  <p className={hint}>A curated look for your profile.</p>
                 </>
               ) : (
                 <div className="mt-1.5 flex items-center gap-3">
@@ -289,47 +284,6 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
               )}
             </div>
           )}
-
-          <div className="border-t border-[var(--border)] pt-4">
-            <label className={label}>Accent color</label>
-            {pro ? (
-              <>
-                {/* Hidden field carries the submitted value; the color input is
-                    just the picker UI (no name) so "Clear" can null it out. */}
-                <input type="hidden" name="accent_color" value={accentColor ?? ""} />
-                <div className="mt-1.5 flex items-center gap-3">
-                  <input
-                    type="color"
-                    aria-label="Accent color"
-                    value={accentColor ?? "#3b82f6"}
-                    onChange={(e) => setAccentColor(e.target.value)}
-                    className="h-10 w-14 cursor-pointer rounded-md border border-[var(--border)] bg-[var(--surface)] p-1"
-                  />
-                  {accentColor && (
-                    <button
-                      type="button"
-                      onClick={() => setAccentColor(null)}
-                      className="text-sm text-[var(--ink-muted)] underline active:scale-[0.98]"
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
-                <p className={hint}>
-                  {profileTheme
-                    ? "Not shown while a profile theme is set."
-                    : "Shown as a ring around your avatar."}
-                </p>
-              </>
-            ) : (
-              <div className="mt-1.5 flex items-center gap-3">
-                <div className="h-10 w-14 rounded-md border border-[var(--border)] bg-[var(--canvas)] opacity-50" />
-                <Link href="/pro" className="text-sm text-[var(--ink-muted)] underline">
-                  Custom accent · Pro
-                </Link>
-              </div>
-            )}
-          </div>
         </div>
 
         <button type="submit" disabled={pending}

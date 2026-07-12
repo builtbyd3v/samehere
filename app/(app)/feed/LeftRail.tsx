@@ -4,6 +4,8 @@ import AvatarImage from "@/components/ui/AvatarImage";
 import UserBadges from "@/components/profile/UserBadges";
 import ContributionHeatmap, { type HeatmapDay } from "@/components/profile/ContributionHeatmap";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { isPro } from "@/lib/pro";
+import { isProfileTheme, themeCssVars } from "@/lib/themes";
 
 function Initials({ name, className }: { name: string; className: string }) {
   return (
@@ -34,8 +36,15 @@ export default async function LeftRail() {
   const name = profile?.display_name ?? profile?.username ?? "You";
   const school = profile?.profile_school?.school ?? null;
 
+  // Pro profile theme, same gate + precedence as the full profile page. When
+  // set, the two wrapper divs + inline vars let the shared `.profile-themed
+  // .theme-zone .card` rules tint this mini-card and recolor its heatmap.
+  const theme = profile && isPro(profile) && isProfileTheme(profile.profile_theme) ? profile.profile_theme : null;
+  const themeVars = themeCssVars(theme);
+
   return (
-    <>
+    <div className={theme ? "profile-themed" : undefined} style={themeVars}>
+      <div className={theme ? "theme-zone" : undefined}>
       <section className="card p-5">
         <div className="flex items-center gap-3">
           {profile?.avatar_url ? (
@@ -55,15 +64,15 @@ export default async function LeftRail() {
         </div>
         <div className="mt-4 grid grid-cols-3 gap-2 border-y border-[var(--border)] py-3 text-center">
           <Link href={`/profile/${profile?.username}`} className="transition hover:opacity-80">
-            <div className="text-base font-semibold tabular-nums text-[var(--ink)]">{counts.posts}</div>
+            <div className="text-base font-semibold tabular-nums text-[var(--ink)]" style={theme ? { color: "var(--profile-accent)" } : undefined}>{counts.posts}</div>
             <div className="text-xs text-[var(--ink-muted)]">Posts</div>
           </Link>
           <Link href={`/profile/${profile?.username}`} className="transition hover:opacity-80">
-            <div className="text-base font-semibold tabular-nums text-[var(--ink)]">{counts.followers}</div>
+            <div className="text-base font-semibold tabular-nums text-[var(--ink)]" style={theme ? { color: "var(--profile-accent)" } : undefined}>{counts.followers}</div>
             <div className="text-xs text-[var(--ink-muted)]">Followers</div>
           </Link>
           <Link href={`/profile/${profile?.username}`} className="transition hover:opacity-80">
-            <div className="text-base font-semibold tabular-nums text-[var(--ink)]">{counts.following}</div>
+            <div className="text-base font-semibold tabular-nums text-[var(--ink)]" style={theme ? { color: "var(--profile-accent)" } : undefined}>{counts.following}</div>
             <div className="text-xs text-[var(--ink-muted)]">Following</div>
           </Link>
         </div>
@@ -71,7 +80,8 @@ export default async function LeftRail() {
           <ContributionHeatmap data={heatmap} />
         </div>
       </section>
-    </>
+      </div>
+    </div>
   );
 }
 

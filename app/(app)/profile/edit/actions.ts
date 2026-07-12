@@ -11,7 +11,6 @@ import { fallbackProfileNudge, getProfileGaps } from "@/lib/profile-completion";
 import type { TablesUpdate } from "@/types/database.types";
 
 const YEARS = ["freshman", "sophomore", "junior", "senior", "grad"];
-const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 const ALLOWED_AVATAR_MIME = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 const ALLOWED_BANNER_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -45,12 +44,10 @@ export async function updateProfile(_prev: EditState, formData: FormData): Promi
   };
 
   // Trust boundary: never take the client's word for Pro status. Non-Pro
-  // requests simply don't touch accent_color/profile_theme (a lapsed Pro keeps
-  // their color/theme until they next edit it).
+  // requests simply don't touch profile_theme (a lapsed Pro keeps their
+  // theme until they next edit it).
   const { data: proRow } = await supabase.from("profiles").select("is_pro, pro_until").eq("id", user.id).single();
   if (isPro(proRow ?? { is_pro: false, pro_until: null })) {
-    const accentRaw = str("accent_color", 7);
-    updates.accent_color = HEX_COLOR.test(accentRaw) ? accentRaw : null;
     const themeRaw = str("profile_theme", 20);
     updates.profile_theme = isProfileTheme(themeRaw) ? themeRaw : null;
   }
