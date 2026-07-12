@@ -229,8 +229,22 @@ export async function POST(req: Request) {
         break;
     }
   } catch (err) {
+    console.error("stripe-webhook: handler error", { type: event.type, id: event.id }, err);
     const message = err instanceof Error ? err.message : "Webhook handler error";
     return NextResponse.json({ error: message }, { status: 500 });
+  }
+
+  // Flush any PostHog event captured above before the function returns — the
+  // client is configured with flushAt: 1 but serverless functions can freeze
+  // right after return, dropping an unflushed capture. A PostHog outage must
+  // never fail the webhook, so this is best-effort.
+  const posthog = getPostHogServerClient();
+  if (posthog) {
+    try {
+      await posthog.flush();
+    } catch (err) {
+      console.error("stripe-webhook: posthog flush failed", err);
+    }
   }
 
   return NextResponse.json({ received: true });

@@ -24,6 +24,8 @@ const MAX_AI_RECIPIENTS = 50;
 const FREE_TAKE = 3;
 const PRO_TAKE = 5;
 
+export const maxDuration = 300;
+
 function norm(s: string | null): string {
   return s?.trim().toLowerCase() ?? "";
 }
@@ -82,6 +84,7 @@ export async function GET(request: NextRequest) {
   const admin = createAdminClient();
   const { data, error } = await admin.rpc("list_weekly_match_recipients");
   if (error) {
+    console.error("weekly-matches: recipients RPC failed", error);
     return NextResponse.json({ error: "Could not load recipients" }, { status: 500 });
   }
 
@@ -174,10 +177,23 @@ export async function GET(request: NextRequest) {
         const { subject, text, html } = weeklyMatchesEmail({ cards, isPro: recipientPro, unsubUrl });
 
         try {
-          await sendEmail({ to: r.email, from: "noreply@samehere.dev", subject, text, html });
+          await sendEmail({
+            to: r.email,
+            from: "noreply@samehere.dev",
+            subject,
+            text,
+            html,
+            headers: {
+              "List-Unsubscribe": `<https://samehere.dev/api/email/unsubscribe?u=${token}>`,
+              "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+            },
+          });
           sent += 1;
         } catch {
-          // one recipient's failure must not block the rest of the run
+          // one recipient's failure must not block the rest of the run. Do not
+          // log the caught error — sendEmail's failure message can echo back
+          // the recipient's email address from Resend's response body.
+          console.error("weekly-matches: send failed for recipient", r.user_id);
         }
       })
     );

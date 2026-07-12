@@ -6,8 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 // email itself. The HMAC token (see lib/email-unsub.ts) is the only auth;
 // a tampered or malformed token is rejected before anything is written.
 // Plain text response, matching the plain-text emails.
-export async function GET(request: NextRequest) {
-  const token = new URL(request.url).searchParams.get("u") ?? "";
+async function optOut(token: string): Promise<Response> {
   const userId = verifyUnsubToken(token);
   if (!userId) {
     return new Response("This unsubscribe link is invalid or expired.", {
@@ -33,4 +32,17 @@ export async function GET(request: NextRequest) {
     status: 200,
     headers: { "Content-Type": "text/plain" },
   });
+}
+
+export async function GET(request: NextRequest) {
+  const token = new URL(request.url).searchParams.get("u") ?? "";
+  return optOut(token);
+}
+
+// RFC 8058 one-click unsubscribe: mail clients that support
+// List-Unsubscribe-Post send a POST here instead of following the link, so it
+// must opt out directly too, same as GET — not a confirm page either way.
+export async function POST(request: NextRequest) {
+  const token = new URL(request.url).searchParams.get("u") ?? "";
+  return optOut(token);
 }
