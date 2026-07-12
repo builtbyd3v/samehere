@@ -11,9 +11,6 @@ import { IconHash } from "@/components/icons";
 import FollowButton from "@/components/profile/FollowButton";
 import UserBadges from "@/components/profile/UserBadges";
 
-const SUGGESTED_SELECT =
-  "id, username, display_name, avatar_url, year, major, goals, bio, is_pro, is_founder, is_campus_founder, verified_student, profile_school(school)";
-
 function Initials({ name, className }: { name: string; className: string }) {
   return (
     <div className={`grid shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-sm font-semibold text-[var(--ink-muted)] ${className}`}>
@@ -30,40 +27,27 @@ export default async function RightRail() {
   const { supabase, user } = await getViewer();
   if (!user) return null; // proxy already gates this route
 
-  const [profile, leaderboard, { data: myFollows }] =
-    await Promise.all([
-      getViewerProfile(),
-      getCachedLeaderboard(supabase),
-      supabase.from("follows").select("following_id").eq("follower_id", user.id),
-    ]);
+  const [profile, leaderboard] = await Promise.all([getViewerProfile(), getCachedLeaderboard(supabase)]);
 
   const topRanks = (leaderboard ?? []).slice(0, 3);
 
-  // Suggested: recent profiles excluding self + anyone already followed. Sync
-  // pool only (SuggestedFollowsFallback) — the AI "why follow" line is a feed
-  // concern, not needed for a rail test.
-  const excludeIds = [user.id, ...(myFollows ?? []).map((f) => f.following_id)];
+  // Suggested: recent profiles excluding self + anyone already followed (any
+  // status) + blocked users (either direction) — all done SQL-side by
+  // get_suggested_profiles, replacing an app-side fetch-all-follows +
+  // comma-joined NOT IN filter that also never excluded blocks (see plan 010
+  // Phase 1). Sync pool only (SuggestedFollowsFallback) — the AI "why follow"
+  // line is a feed concern, not needed for a rail test.
   const school = profile?.profile_school?.school ?? null;
-  const [{ data: suggestedPool }, { data: schoolData }] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select(SUGGESTED_SELECT)
-      .not("id", "in", `(${excludeIds.join(",")})`)
-      .order("created_at", { ascending: false })
-      .limit(3)
-      .returns<SuggestedProfile[]>(),
-    school
-      ? supabase
-          .from("profiles")
-          .select("id, username, display_name, avatar_url, is_pro, is_founder, is_campus_founder, verified_student, profile_school!inner(school)")
-          .eq("profile_school.school", school)
-          .not("id", "in", `(${excludeIds.join(",")})`)
-          .limit(3)
-          .returns<SuggestedProfile[]>()
-      : Promise.resolve({ data: [] as SuggestedProfile[] }),
+  const [{ data: suggestedRows }, { data: schoolRows }] = await Promise.all([
+    supabase.rpc("get_suggested_profiles", { p_limit: 3 }),
+    school ? supabase.rpc("get_suggested_profiles", { p_school: school, p_limit: 3 }) : Promise.resolve({ data: [] }),
   ]);
-  const suggested = suggestedPool ?? [];
-  const schoolPeople = schoolData ?? [];
+  const toSuggestedProfile = (r: NonNullable<typeof suggestedRows>[number]): SuggestedProfile => ({
+    ...r,
+    profile_school: r.school ? { school: r.school } : null,
+  });
+  const suggested = (suggestedRows ?? []).map(toSuggestedProfile);
+  const schoolPeople = (schoolRows ?? []).map(toSuggestedProfile);
 
   const viewerSignal: MatchSignal = {
     year: profile?.year ?? null,

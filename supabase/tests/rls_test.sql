@@ -1299,6 +1299,22 @@ exception when others then
 end $$;
 reset role;
 
+-- ============ H1_suggested_profiles — anon cannot execute get_suggested_profiles ============
+do $$
+declare
+  v_oid oid := to_regprocedure('public.get_suggested_profiles(text,integer)');
+begin
+  if v_oid is null then
+    raise exception 'H1_suggested_profiles SETUP: public.get_suggested_profiles(text,integer) does not exist';
+  end if;
+  if has_function_privilege('anon', v_oid, 'execute') then
+    raise exception 'H1_suggested_profiles REGRESSION: anon role can EXECUTE public.get_suggested_profiles() directly';
+  end if;
+  insert into tests_results values ('H1_suggested_profiles', true, 'ok');
+exception when others then
+  insert into tests_results values ('H1_suggested_profiles', false, sqlerrm);
+end $$;
+
 -- ============ clubs v2: channels + role-gating + verified + rename
 -- (20260714160000_clubs_v2_channels_verified_avatar.sql,
 --  20260714170000_clubs_v2_revoke_anon.sql,
@@ -1882,7 +1898,7 @@ declare v_failed int;
 begin
   select count(*) into v_failed from tests_results where not passed;
   if v_failed > 0 then
-    raise exception '% assertion(s) failed — see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, CLUBS_V2_1, CLUBS_V2_2, CLUBS_V2_3, CLUBS_V2_7a, CLUBS_V2_4, CLUBS_V2_7b, CLUBS_V2_5_officer_denied, CLUBS_V2_5_owner_allowed, CLUBS_V2_6_outsider, CLUBS_V2_6_pending, CLUBS_V2_8, CLUBS_V2_9, CLUBS_V2_10, CLUBS_V2_11a, CLUBS_V2_11b, CLUBS_V2_11b_unchanged, CLUBS_V2_11c.', v_failed;
+    raise exception '% assertion(s) failed — see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, CLUBS_V2_1, CLUBS_V2_2, CLUBS_V2_3, CLUBS_V2_7a, CLUBS_V2_4, CLUBS_V2_7b, CLUBS_V2_5_officer_denied, CLUBS_V2_5_owner_allowed, CLUBS_V2_6_outsider, CLUBS_V2_6_pending, CLUBS_V2_8, CLUBS_V2_9, CLUBS_V2_10, CLUBS_V2_11a, CLUBS_V2_11b, CLUBS_V2_11b_unchanged, CLUBS_V2_11c, H1_suggested_profiles.', v_failed;
   end if;
 end $$;
 
