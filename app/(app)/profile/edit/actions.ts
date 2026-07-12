@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { aiEnabled, generateText, modelForTier, type AiResult } from "@/lib/ai";
-import { PROFILE_DRAFT_SYSTEM, PROFILE_NUDGE_SYSTEM } from "@/lib/ai-prompts";
+import { PROFILE_DRAFT_SYSTEM, PROFILE_NUDGE_SYSTEM, untrusted } from "@/lib/ai-prompts";
 import { isPro } from "@/lib/pro";
 import { isProfileTheme } from "@/lib/themes";
 import { getPostHogServerClient } from "@/lib/posthog-server";
@@ -118,7 +118,7 @@ export async function profileNudge(): Promise<AiResult> {
     const text = await generateText(
       PROFILE_NUDGE_SYSTEM,
       `Missing or weak fields: ${missing}.`,
-      { model: modelForTier(pro), maxTokens: 100 },
+      { model: modelForTier(pro), maxTokens: 100, temperature: 0.3 },
     );
     if (text) return { text };
   }
@@ -147,13 +147,17 @@ export async function draftProfileText(): Promise<DraftState> {
   if (!allowed) return pro ? { error: "Try again." } : { overCap: true };
 
   const facts = [
-    p?.display_name ? `name: ${p.display_name}` : "",
-    p?.year ? `year: ${p.year}` : "",
-    p?.major ? `major: ${p.major}` : "",
-    schoolRow?.school ? `school: ${schoolRow.school}` : "",
+    p?.display_name ? `name: ${untrusted(p.display_name)}` : "",
+    p?.year ? `year: ${untrusted(String(p.year))}` : "",
+    p?.major ? `major: ${untrusted(p.major)}` : "",
+    schoolRow?.school ? `school: ${untrusted(schoolRow.school)}` : "",
   ].filter(Boolean).join("\n");
 
-  const raw = await generateText(PROFILE_DRAFT_SYSTEM, `Facts:\n${facts || "(no facts yet)"}`, { model: modelForTier(pro), maxTokens: 220 });
+  const raw = await generateText(PROFILE_DRAFT_SYSTEM, `Facts:\n${facts || "(no facts yet)"}`, {
+    model: modelForTier(pro),
+    maxTokens: 220,
+    temperature: 0.3,
+  });
   if (!raw) return { error: "Couldn't draft right now. Try again." };
   try {
     const cleaned = raw.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();

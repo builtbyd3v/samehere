@@ -187,7 +187,11 @@ export async function icebreaker(peerId: string): Promise<IcebreakerResult> {
     `Sender (you): ${facts(me, mySchool?.school ?? null)}. ` +
     `Recipient (${untrusted(peerName)}): ${facts(peer, peerSchool?.school ?? null)}.`;
 
-  const text = await generateText(ICEBREAKER_SYSTEM, prompt, { model: modelForTier(pro), maxTokens: 140 });
+  const text = await generateText(ICEBREAKER_SYSTEM, prompt, {
+    model: modelForTier(pro),
+    maxTokens: 140,
+    temperature: 0.6,
+  });
   return text ? { text } : { error: true };
 }
 

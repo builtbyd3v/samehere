@@ -3,16 +3,23 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 // ---- Hoisted mock state (vi.mock factories run before imports, so shared
 // mutable fakes must be created via vi.hoisted) ----
 
-const { rpcMock, sendEmailMock, cachedPromptsMock, aiEnabledMock, generateTextMock, modelForTierMock, insertCalls } =
-  vi.hoisted(() => ({
-    rpcMock: vi.fn(),
-    sendEmailMock: vi.fn(),
-    cachedPromptsMock: vi.fn(),
-    aiEnabledMock: vi.fn(),
-    generateTextMock: vi.fn(),
-    modelForTierMock: vi.fn(),
-    insertCalls: [] as Array<{ table: string; args: unknown }>,
-  }));
+const {
+  rpcMock,
+  sendEmailMock,
+  cachedPromptsMock,
+  generateConnectionLineMock,
+  aiEnabledMock,
+  modelForTierMock,
+  insertCalls,
+} = vi.hoisted(() => ({
+  rpcMock: vi.fn(),
+  sendEmailMock: vi.fn(),
+  cachedPromptsMock: vi.fn(),
+  generateConnectionLineMock: vi.fn(),
+  aiEnabledMock: vi.fn(),
+  modelForTierMock: vi.fn(),
+  insertCalls: [] as Array<{ table: string; args: unknown }>,
+}));
 
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({
@@ -32,11 +39,11 @@ vi.mock("@/lib/email", () => ({
 
 vi.mock("@/lib/connection-prompt", () => ({
   cachedConnectionPrompts: cachedPromptsMock,
+  generateConnectionLine: generateConnectionLineMock,
 }));
 
 vi.mock("@/lib/ai", () => ({
   aiEnabled: aiEnabledMock,
-  generateText: generateTextMock,
   modelForTier: modelForTierMock,
 }));
 
@@ -131,8 +138,8 @@ beforeEach(() => {
   aiEnabledMock.mockReset();
   aiEnabledMock.mockReturnValue(false);
 
-  generateTextMock.mockReset();
-  generateTextMock.mockResolvedValue(null);
+  generateConnectionLineMock.mockReset();
+  generateConnectionLineMock.mockResolvedValue(null);
 
   modelForTierMock.mockReset();
   modelForTierMock.mockReturnValue("test-model");
@@ -208,7 +215,7 @@ describe("GET /api/cron/weekly-matches — batched prompt-cache lookup", () => {
 });
 
 describe("GET /api/cron/weekly-matches — MAX_AI_RECIPIENTS ceiling", () => {
-  it("caps generateText calls at MAX_AI_RECIPIENTS plus the documented BATCH_SIZE overshoot", async () => {
+  it("caps generateConnectionLine calls at MAX_AI_RECIPIENTS plus the documented BATCH_SIZE overshoot", async () => {
     // 20 Pro recipients x 5 cache-missing, fact-sharing candidates each =
     // up to 100 potential AI calls, well past the 50-call cap.
     recipientsData = Array.from({ length: 20 }, (_, i) =>
@@ -217,15 +224,15 @@ describe("GET /api/cron/weekly-matches — MAX_AI_RECIPIENTS ceiling", () => {
     candidatesData = Array.from({ length: 5 }, (_, i) => makeCandidate({ id: `cand-${i}`, major: "Computer Science" }));
 
     aiEnabledMock.mockReturnValue(true);
-    generateTextMock.mockResolvedValue("AI generated reason");
+    generateConnectionLineMock.mockResolvedValue("AI generated reason");
     cachedPromptsMock.mockResolvedValue(new Map<string, string>()); // every candidate cache-misses
 
     const res = await GET(buildRequest("Bearer cron-test-secret"));
     expect(res.status).toBe(200);
 
     // MAX_AI_RECIPIENTS = 50, BATCH_SIZE = 5 — code's own documented tolerance.
-    expect(generateTextMock.mock.calls.length).toBeGreaterThan(0);
-    expect(generateTextMock.mock.calls.length).toBeLessThanOrEqual(55);
+    expect(generateConnectionLineMock.mock.calls.length).toBeGreaterThan(0);
+    expect(generateConnectionLineMock.mock.calls.length).toBeLessThanOrEqual(55);
   });
 });
 
