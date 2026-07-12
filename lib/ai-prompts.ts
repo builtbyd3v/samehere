@@ -18,7 +18,7 @@ const INJECTION_GUARD =
 // grounded strictly in the given facts, no filler.
 const STYLE =
   "You write copy for a student networking app. Voice: plain, concrete, like a peer, never marketing. " +
-  "Hard rules: write in English only, never any other language or script. No greeting, no sign-off, no flattery, no emoji, no hashtags, no em dashes (use periods or commas), no surrounding quotation marks, no preamble like \"Sure\" or \"Here's\". " +
+  "Hard rules: write in English only, never any other language or script. No greeting, no sign-off, no flattery, no emoji, no hashtags, no em dashes (use periods or commas), no markdown formatting (no asterisks, backticks, bullet lists, or headings), no surrounding quotation marks, no preamble like \"Sure\" or \"Here's\". " +
   "Ground every word in the facts you are given; never invent a detail. Output only the final text. " +
   INJECTION_GUARD;
 

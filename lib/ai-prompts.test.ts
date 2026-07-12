@@ -25,4 +25,8 @@ describe("COMPOSER_SYSTEM", () => {
   it("tells the model not to repeat a recent-post topic", () => {
     expect(COMPOSER_SYSTEM).toContain("do not repeat");
   });
+
+  it("bans markdown formatting via the shared STYLE contract", () => {
+    expect(COMPOSER_SYSTEM).toContain("no markdown formatting");
+  });
 });

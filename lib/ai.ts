@@ -36,18 +36,29 @@ export async function generateText(
 ): Promise<string | null> {
   const useModel = opts?.model ?? model;
   if (!client || !useModel) return null;
-  try {
-    const res = await client.chat.completions.create({
+
+  const call = (withTemp: boolean) =>
+    client!.chat.completions.create({
       model: useModel,
       max_completion_tokens: opts?.maxTokens ?? 80,
-      ...(opts?.temperature !== undefined ? { temperature: opts.temperature } : {}),
+      ...(withTemp && opts?.temperature !== undefined ? { temperature: opts.temperature } : {}),
       messages: [
         { role: "system", content: system },
         { role: "user", content: prompt },
       ],
     });
+
+  try {
+    const res = await call(true);
     return res.choices[0]?.message?.content?.trim() || null;
   } catch {
-    return null;
+    if (opts?.temperature === undefined) return null;
+    // ponytail: retry-once-without-temperature on any error — some models (claude-sonnet-5 via OpenAI compat) 400 on the param; no per-model capability table.
+    try {
+      const res = await call(false);
+      return res.choices[0]?.message?.content?.trim() || null;
+    } catch {
+      return null;
+    }
   }
 }
