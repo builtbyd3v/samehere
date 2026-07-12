@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email";
 import { makeUnsubToken } from "@/lib/email-unsub";
+import { cachedConnectionPrompts } from "@/lib/connection-prompt";
 import { scoreOverlap, type MatchSignal } from "@/lib/match";
 import { isPro } from "@/lib/pro";
 import { aiEnabled, generateText, modelForTier } from "@/lib/ai";
@@ -118,20 +119,19 @@ export async function GET(request: NextRequest) {
         const top = ranked.slice(0, recipientPro ? PRO_TAKE : FREE_TAKE);
         if (top.length === 0) return;
 
+        const promptCache = recipientPro
+          ? await cachedConnectionPrompts(admin, r.user_id, top.map((c) => c.id))
+          : new Map<string, string>();
+
         const cards: MatchCard[] = [];
         for (const cand of top) {
           let reason: string | null = null;
 
           if (recipientPro) {
-            const { data: cached } = await admin
-              .from("ai_connection_prompts")
-              .select("prompt")
-              .eq("viewer_id", r.user_id)
-              .eq("candidate_id", cand.id)
-              .maybeSingle();
+            const cached = promptCache.get(cand.id);
 
             if (cached) {
-              reason = cached.prompt;
+              reason = cached;
             } else if (aiEnabled() && aiUsed < MAX_AI_RECIPIENTS) {
               const candidateSignal: MatchSignal = { year: cand.year, major: cand.major, goals: cand.goals, bio: cand.bio, school: cand.school };
               const fact = sharedFactLine(viewerSignal, candidateSignal);
