@@ -172,7 +172,9 @@ function ChannelMessages({
             "id, sender_id, content, created_at, sender:profiles!messages_sender_id_fkey(username, display_name, avatar_url, is_pro)",
           )
           .eq("conversation_id", conversationId)
-          .order("created_at", { ascending: true })
+          // LIMIT applies after ORDER BY, so fetch newest-first to get the
+          // most recent window, then reverse below for oldest-first display.
+          .order("created_at", { ascending: false })
           .limit(200)
           .returns<ClubMessage[]>(),
         supabase
@@ -182,11 +184,12 @@ function ChannelMessages({
           .single(),
       ]);
       if (cancelled) return;
-      for (const m of messageRows ?? []) {
+      const rows = (messageRows ?? []).slice().reverse(); // newest 200, oldest-first for display
+      for (const m of rows) {
         if (m.sender) senderCache.current.set(m.sender_id, m.sender);
       }
       if (viewerRow) senderCache.current.set(viewerId, viewerRow);
-      setMessages(messageRows ?? []);
+      setMessages(rows);
       setViewerSender(viewerRow ?? null);
       setLoading(false);
     })();
