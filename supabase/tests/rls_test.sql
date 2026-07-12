@@ -901,7 +901,7 @@ begin
   where schemaname = 'storage' and tablename = 'objects'
     and cmd = 'SELECT' and policyname like 'post-media%';
   if v_cnt <> 1 then
-    raise exception 'storage_post_media_policy_count REGRESSION: found % SELECT polic(ies) on storage.objects named post-media% — expected exactly 1', v_cnt;
+    raise exception 'storage_post_media_policy_count REGRESSION: found % SELECT polic(ies) on storage.objects named post-media%% — expected exactly 1', v_cnt;
   end if;
   insert into tests_results values ('storage_post_media_policy_count', true, 'ok');
 exception when others then
