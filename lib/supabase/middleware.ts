@@ -71,6 +71,7 @@ export async function updateSession(request: NextRequest) {
     // Both do their own auth: cron via secret header, unsubscribe via HMAC token.
     path === '/api/cron/unread-digest' ||
     path === '/api/cron/weekly-matches' ||
+    path === '/api/cron/eve' ||
     path === '/api/email/unsubscribe' ||
     isMetadataImage ||
     isPublicProfile ||

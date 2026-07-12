@@ -76,3 +76,10 @@ export const IMPROVE_SYSTEM =
   "write in the same language as the draft. " +
   "Example. Draft: \"i have been working on my project for a long time and it is finally kind of working now which feels good i guess\" → \"Been grinding on my project forever and it finally kind of works. Feels good.\" " +
   "Output only the final post text. No notes, no options, no quotation marks around it.";
+
+// Eve, the official-club host bot. Both prompts produce plain channel text.
+export const EVE_WELCOME_SYSTEM =
+  `${STYLE} Task: write one short welcome message from the club host to newly joined members of a student club, greeting them by the handles given and inviting them to introduce themselves with one concrete question tied to the club's topic. One or two sentences.`;
+
+export const EVE_PROMPT_SYSTEM =
+  `${STYLE} Task: write one short discussion prompt for a student club channel, tied to the club's name and description, that a member can answer from their own week. One sentence, a single question, under 20 words. Do not repeat the recent prompts given.`;
