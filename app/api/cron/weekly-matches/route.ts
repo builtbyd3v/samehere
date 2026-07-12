@@ -3,15 +3,14 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email";
 import { makeUnsubToken } from "@/lib/email-unsub";
-import { cachedConnectionPrompts } from "@/lib/connection-prompt";
+import { cachedConnectionPrompts, generateConnectionLine } from "@/lib/connection-prompt";
 import { scoreOverlap, type MatchSignal } from "@/lib/match";
 import { isPro } from "@/lib/pro";
-import { aiEnabled, generateText, modelForTier } from "@/lib/ai";
-import { CONNECTION_SYSTEM, untrusted } from "@/lib/ai-prompts";
+import { aiEnabled, modelForTier } from "@/lib/ai";
 import { weeklyMatchesEmail, type MatchCard } from "@/lib/emails/weekly-matches";
 
 // Worst-case budget (see plan 011 for the full math): ~2 AI-heavy batches at
-// ~52s each (up to 5 sequential generateText calls per recipient before
+// ~52s each (up to 5 sequential generateConnectionLine calls per recipient before
 // MAX_AI_RECIPIENTS is exhausted) + ~38 lighter batches at ~3s each ≈ 218s,
 // plus margin for latency variance.
 export const maxDuration = 300;
@@ -154,17 +153,14 @@ export async function GET(request: NextRequest) {
                   .filter(Boolean)
                   .join("; ");
                 const name = cand.display_name ?? cand.username;
-                const text = await generateText(
-                  CONNECTION_SYSTEM,
-                  `Person: ${untrusted(name)}. Shared facts: ${untrusted(facts)}.`,
-                  { model: modelForTier(true) }
+                const text = await generateConnectionLine(
+                  admin,
+                  r.user_id,
+                  { id: cand.id, name },
+                  facts,
+                  modelForTier(true),
                 );
-                if (text) {
-                  reason = text;
-                  await admin.from("ai_connection_prompts").insert({ viewer_id: r.user_id, candidate_id: cand.id, prompt: text });
-                } else {
-                  reason = fact;
-                }
+                reason = text ?? fact;
               }
             }
           }
