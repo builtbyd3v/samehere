@@ -40,7 +40,7 @@ export default function ComposerToggle({ isPro, avatarUrl }: { isPro: boolean; a
       ) : (
         <div className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] bg-[var(--featured-surface)]" aria-hidden />
       )}
-      <span className="flex-1 text-[16px] text-[var(--ink-faint)]">Share what you're building…</span>
+      <span className="flex-1 text-[16px] text-[var(--ink-faint)]">Share what you&apos;re building…</span>
       <span className="shrink-0 text-[var(--ink-muted)]" aria-hidden>
         <IconCompose />
       </span>

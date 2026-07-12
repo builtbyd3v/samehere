@@ -8,9 +8,16 @@ export default function NewPostsPill({ since }: { since: string }) {
   const router = useRouter();
   const [count, setCount] = useState(0);
 
+  // Reset the count when the top post changes (fresh page load / refresh) — the
+  // render-phase prop-change pattern, so we never call setState inside the effect.
+  const [prevSince, setPrevSince] = useState(since);
+  if (since !== prevSince) {
+    setPrevSince(since);
+    setCount(0);
+  }
+
   useEffect(() => {
     let cancelled = false;
-    setCount(0);
 
     async function poll() {
       const n = await countNewerPosts(since);

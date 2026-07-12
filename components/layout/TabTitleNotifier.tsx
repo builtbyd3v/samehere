@@ -43,10 +43,12 @@ export default function TabTitleNotifier({ initialTotal }: { initialTotal: numbe
   const [supabase] = useState(createClient);
 
   // Latest total for the observer callback to read without re-subscribing.
+  // Updated in an effect (not during render) so the ref write stays a commit
+  // side effect.
   const totalRef = useRef(total);
-  totalRef.current = total;
 
   useEffect(() => {
+    totalRef.current = total;
     applyBadge(total);
   }, [total]);
 
