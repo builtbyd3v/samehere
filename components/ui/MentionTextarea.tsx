@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { getBrowserClient } from "@/lib/supabase/client";
 import { activeMentionAt } from "@/lib/mentions";
 import { searchMentionUsers, type MentionSuggestion } from "@/lib/profile-preview";
 import MentionSuggestionList from "@/components/profile/MentionSuggestionList";
@@ -29,7 +29,7 @@ export default function MentionTextarea({
   placeholder,
   className,
 }: Props) {
-  const [supabase] = useState(createClient);
+  const [supabase] = useState(getBrowserClient);
   const [suggestions, setSuggestions] = useState<MentionSuggestion[]>([]);
   const [range, setRange] = useState<{ start: number; end: number } | null>(null);
   const [highlight, setHighlight] = useState(0);

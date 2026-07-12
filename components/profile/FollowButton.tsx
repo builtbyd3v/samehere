@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import posthog from "posthog-js";
-import { createClient } from "@/lib/supabase/client";
+import { getBrowserClient } from "@/lib/supabase/client";
 
 export type FollowState = "none" | "pending" | "following";
 
@@ -18,7 +18,7 @@ export default function FollowButton({
   variant?: "default" | "pill";
   className?: string;
 }) {
-  const [supabase] = useState(createClient);
+  const [supabase] = useState(getBrowserClient);
   const router = useRouter();
   const [state, setState] = useState<FollowState>(initial);
   const [busy, setBusy] = useState(false);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { getBrowserClient } from "@/lib/supabase/client";
 import Modal from "@/components/ui/Modal";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
@@ -67,7 +67,7 @@ export default function ChannelBar({
   onCreated: (channel: ClubChannel) => void;
   onDeleted: (channelId: string) => void;
 }) {
-  const [supabase] = useState(createClient);
+  const [supabase] = useState(getBrowserClient);
   const canManage = viewerRole === "owner" || viewerRole === "officer";
 
   const [showCreate, setShowCreate] = useState(false);

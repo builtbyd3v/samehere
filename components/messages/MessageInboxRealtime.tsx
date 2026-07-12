@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { getBrowserClient } from "@/lib/supabase/client";
 
 // Makes the /messages inbox live. Subscribes to Realtime INSERTs on `messages`
 // and refreshes the server component when one arrives, so the conversation list
@@ -16,7 +16,7 @@ import { createClient } from "@/lib/supabase/client";
 // Requires `messages` in the `supabase_realtime` publication (see *_messages_realtime.sql).
 export default function MessageInboxRealtime() {
   const router = useRouter();
-  const [supabase] = useState(createClient);
+  const [supabase] = useState(getBrowserClient);
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { getBrowserClient } from "@/lib/supabase/client";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
 // Low-key secondary control — Block/Unblock live next to FollowButton, not
@@ -17,7 +17,7 @@ export default function BlockButton({
   initialBlocked: boolean;
   className?: string;
 }) {
-  const [supabase] = useState(createClient);
+  const [supabase] = useState(getBrowserClient);
   const router = useRouter();
   const [blocked, setBlocked] = useState(initialBlocked);
   const [busy, setBusy] = useState(false);

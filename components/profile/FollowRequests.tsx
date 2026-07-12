@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { getBrowserClient } from "@/lib/supabase/client";
 import UserBadges from "./UserBadges";
 import AvatarImage from "@/components/ui/AvatarImage";
 
@@ -12,7 +12,7 @@ export type FollowRequest = {
 };
 
 export default function FollowRequests({ requests }: { requests: FollowRequest[] }) {
-  const [supabase] = useState(createClient);
+  const [supabase] = useState(getBrowserClient);
   const [list, setList] = useState(requests);
   const [busy, setBusy] = useState<string | null>(null);
 

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { getBrowserClient } from "@/lib/supabase/client";
 import AvatarImage from "@/components/ui/AvatarImage";
 import { unbanMember } from "@/app/(app)/community/clubs/actions";
 
@@ -14,7 +14,7 @@ type BanRow = { user_id: string; created_at: string; user: BannedProfile };
 // owner/officer (see clubs v3 moderation migration), so this renders empty
 // for anyone else -- no canManage prop needed, RLS does the filtering.
 export default function BannedMembers({ clubId }: { clubId: string }) {
-  const [supabase] = useState(createClient);
+  const [supabase] = useState(getBrowserClient);
   const [bans, setBans] = useState<BanRow[] | null>(null);
   const [pending, startTransition] = useTransition();
 

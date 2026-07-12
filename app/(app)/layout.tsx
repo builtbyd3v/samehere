@@ -15,9 +15,9 @@ import { isPro } from "@/lib/pro";
 // request-cached getUnreadCounts() with the nav badge wrappers, so the whole
 // shell makes one pair of unread RPCs, not one pair per consumer. Its own
 // Suspense boundary (decoration, must never block the shell on a slow count).
-async function TabTitleUnread() {
+async function TabTitleUnread({ userId }: { userId: string }) {
   const { dm, notif } = await getUnreadCounts();
-  return <TabTitleNotifier initialTotal={dm + notif} />;
+  return <TabTitleNotifier initialTotal={dm + notif} userId={userId} />;
 }
 
 // Wraps every authed page with the app shell: top bar, a persistent left nav
@@ -50,7 +50,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <Navbar {...navbarProps} />
       {user && (
         <Suspense fallback={null}>
-          <TabTitleUnread />
+          <TabTitleUnread userId={user.id} />
         </Suspense>
       )}
       <div className="mx-auto flex w-full max-w-[1320px] justify-center gap-7 px-4 pb-20 sm:px-6 lg:pb-0">

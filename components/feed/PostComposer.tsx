@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { createPost, composerNudge, improvePost, type ComposerState } from "@/app/(app)/feed/actions";
-import { createClient } from "@/lib/supabase/client";
+import { getBrowserClient } from "@/lib/supabase/client";
 import { useSubmitShortcut } from "@/lib/useSubmitShortcut";
 import { submitShortcutLabel } from "@/lib/keyboard";
 import { TEXT_LIMITS } from "@/lib/utils/validation";
@@ -67,7 +67,7 @@ export default function PostComposer({
   const [files, setFiles] = useState<Picked[]>([]);
   const [mediaErr, setMediaErr] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [supabase] = useState(createClient);
+  const [supabase] = useState(getBrowserClient);
   const [hint, setHint] = useState<string | null>(null);
   const [overCap, setOverCap] = useState(false);
   const [shortcutLabel, setShortcutLabel] = useState("");

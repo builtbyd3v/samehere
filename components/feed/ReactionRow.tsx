@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { getBrowserClient } from "@/lib/supabase/client";
 import { IconSame, IconComment, IconRepost, IconBookmark } from "@/components/icons";
 import Menu from "@/components/ui/Menu";
 import QuoteRepostModal from "./QuoteRepostModal";
@@ -67,7 +67,7 @@ function ActionButton({
 
 export default function ReactionRow(props: Props) {
   const { postId, quoteId, post, viewerId, authorPrivate, commentCount, compact = false, hideComments = false } = props;
-  const [supabase] = useState(createClient);
+  const [supabase] = useState(getBrowserClient);
   const targetCol = quoteId ? ("repost_id" as const) : ("post_id" as const);
   const targetId = quoteId ?? postId;
   const commentsHref = quoteId ? `/quote/${quoteId}` : `/post/${postId}`;

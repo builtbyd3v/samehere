@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
 import posthog from "posthog-js";
-import { createClient } from "@/lib/supabase/client";
+import { getBrowserClient } from "@/lib/supabase/client";
 import MessageThread from "@/components/messages/MessageThread";
 import { icebreaker } from "@/app/(app)/messages/actions";
 import { IconSend } from "@/components/icons";
@@ -75,7 +75,7 @@ export default function DmChat({
   /** Every participant (peer/members + viewer), for per-bubble avatar/badge lookup on ANY bubble, including own. */
   roster?: ChatParticipant[];
 }) {
-  const [supabase] = useState(createClient);
+  const [supabase] = useState(getBrowserClient);
   const [messages, setMessages] = useState<DmMessage[]>(initialMessages);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);

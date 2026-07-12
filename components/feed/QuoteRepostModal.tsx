@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { getBrowserClient } from "@/lib/supabase/client";
 import PostCard, { type FeedPost } from "@/components/feed/PostCard";
 import MentionTextarea from "@/components/ui/MentionTextarea";
 import { submitShortcutLabel } from "@/lib/keyboard";
@@ -28,7 +28,7 @@ export default function QuoteRepostModal({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [shortcutLabel, setShortcutLabel] = useState("");
-  const [supabase] = useState(createClient);
+  const [supabase] = useState(getBrowserClient);
   const ref = useRef<HTMLTextAreaElement>(null);
   const router = useRouter();
 

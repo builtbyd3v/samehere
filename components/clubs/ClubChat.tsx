@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { getBrowserClient } from "@/lib/supabase/client";
 import AvatarImage from "@/components/ui/AvatarImage";
 import UserBadges from "@/components/profile/UserBadges";
 import MessageTime from "@/components/messages/MessageTime";
@@ -68,7 +68,7 @@ export default function ClubChat({
   viewerId: string;
   viewerRole: string;
 }) {
-  const [supabase] = useState(createClient);
+  const [supabase] = useState(getBrowserClient);
   const [channels, setChannels] = useState<ClubChannel[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -149,7 +149,7 @@ function ChannelMessages({
   channelName: string;
   viewerId: string;
 }) {
-  const [supabase] = useState(createClient);
+  const [supabase] = useState(getBrowserClient);
   const [messages, setMessages] = useState<ClubMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewerSender, setViewerSender] = useState<Sender | null>(null);

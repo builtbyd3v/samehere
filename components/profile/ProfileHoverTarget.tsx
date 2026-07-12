@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { createClient } from "@/lib/supabase/client";
+import { getBrowserClient } from "@/lib/supabase/client";
 import { fetchProfilePreview, type ProfilePreview } from "@/lib/profile-preview";
 import ProfilePreviewCard from "./ProfilePreviewCard";
 
@@ -23,7 +23,7 @@ export default function ProfileHoverTarget({
   const anchorRef = useRef<HTMLSpanElement>(null);
   const showTimer = useRef<number | undefined>(undefined);
   const hideTimer = useRef<number | undefined>(undefined);
-  const [supabase] = useState(createClient);
+  const [supabase] = useState(getBrowserClient);
 
   const place = useCallback(() => {
     const rect = anchorRef.current?.getBoundingClientRect();

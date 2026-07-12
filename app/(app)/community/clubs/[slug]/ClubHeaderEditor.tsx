@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { getBrowserClient } from "@/lib/supabase/client";
 import { updateClubAvatar } from "../actions";
 
 // Owner-only club avatar upload. (Name/purpose/tags/delete live in
@@ -12,7 +12,7 @@ import { updateClubAvatar } from "../actions";
 // v2 migration), then persists the URL via updateClubAvatar.
 export default function ClubHeaderEditor({ clubId }: { clubId: string }) {
   const router = useRouter();
-  const [supabase] = useState(createClient);
+  const [supabase] = useState(getBrowserClient);
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);

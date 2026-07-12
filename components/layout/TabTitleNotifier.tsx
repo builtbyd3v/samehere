@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { getBrowserClient } from "@/lib/supabase/client";
 
 // Twitter-style unread badge on the browser tab title: prefixes the page's
 // real title with "(3) " when there's unread activity, e.g. "(3) @alice ·
@@ -30,7 +30,13 @@ function applyBadge(total: number) {
   if (document.title !== desired) document.title = desired;
 }
 
-export default function TabTitleNotifier({ initialTotal }: { initialTotal: number }) {
+export default function TabTitleNotifier({
+  initialTotal,
+  userId,
+}: {
+  initialTotal: number;
+  userId: string;
+}) {
   const [total, setTotal] = useState(initialTotal);
   // Resync whenever the server-provided total changes (fresh page load),
   // mirroring NavIconBadge's prevCount pattern -- without fighting the
@@ -40,13 +46,13 @@ export default function TabTitleNotifier({ initialTotal }: { initialTotal: numbe
     setPrevTotal(initialTotal);
     setTotal(initialTotal);
   }
-  const [supabase] = useState(createClient);
+  const [supabase] = useState(getBrowserClient);
 
   // Latest total for the observer callback to read without re-subscribing.
   const totalRef = useRef(total);
-  totalRef.current = total;
 
   useEffect(() => {
+    totalRef.current = total;
     applyBadge(total);
   }, [total]);
 
@@ -62,8 +68,10 @@ export default function TabTitleNotifier({ initialTotal }: { initialTotal: numbe
   }, []);
 
   // Same Realtime pattern as NavIconBadge's bell (postgres_changes on
-  // `notifications`, no filter needed -- RLS already scopes the broadcast to
-  // this user's own rows). On ANY change (insert/update/delete) we debounce
+  // `notifications`), filtered to this user's own rows (user_id=eq.<userId>)
+  // so the platform-wide notifications firehose isn't fanned out to every
+  // connected tab -- RLS still applies as defense-in-depth, but the filter is
+  // what stops the fan-out cost. On ANY change (insert/update/delete) we debounce
   // and re-fetch the TRUE unread total -- the same two RPCs getUnreadCounts uses
   // server-side (get_dm_unread_total + get_notification_unread_total) -- so
   // the badge goes back down when a notification is removed/read instead of
@@ -88,7 +96,7 @@ export default function TabTitleNotifier({ initialTotal }: { initialTotal: numbe
       .channel("tab-title-notifications")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "notifications" },
+        { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
         refetchTotal,
       )
       .subscribe();
@@ -98,7 +106,7 @@ export default function TabTitleNotifier({ initialTotal }: { initialTotal: numbe
       if (timer.current) clearTimeout(timer.current);
       supabase.removeChannel(channel);
     };
-  }, [supabase]);
+  }, [supabase, userId]);
 
   return null;
 }

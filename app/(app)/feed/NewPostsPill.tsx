@@ -7,22 +7,37 @@ import { countNewerPosts } from "./actions";
 export default function NewPostsPill({ since }: { since: string }) {
   const router = useRouter();
   const [count, setCount] = useState(0);
+  // Reset the count whenever `since` changes (e.g. the feed's baseline moves
+  // forward), computed during render rather than a synchronous setState in
+  // the effect below -- same pattern as TabTitleNotifier's prevTotal resync.
+  const [prevSince, setPrevSince] = useState(since);
+  if (since !== prevSince) {
+    setPrevSince(since);
+    setCount(0);
+  }
 
   useEffect(() => {
     let cancelled = false;
-    setCount(0);
 
     async function poll() {
+      if (document.hidden) return;
       const n = await countNewerPosts(since);
       if (!cancelled) setCount(n);
     }
 
     const initial = setTimeout(poll, 3000);
     const interval = setInterval(poll, 25000);
+    const onVisible = () => {
+      if (!document.hidden) poll();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
     return () => {
       cancelled = true;
       clearTimeout(initial);
       clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
     };
   }, [since]);
 
