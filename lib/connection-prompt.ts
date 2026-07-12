@@ -26,6 +26,31 @@ export async function cachedConnectionPrompts(
   return map;
 }
 
+// Shared generate+cache path for connection one-liners (on-demand match + weekly
+// digest). `supabase` may be a session client or the admin cron client; both
+// write the same cache row shape. Returns null when the model call fails.
+export async function generateConnectionLine(
+  supabase: SupabaseClient,
+  viewerId: string,
+  candidate: { id: string; name: string },
+  sharedFacts: string,
+  model: string | undefined,
+): Promise<string | null> {
+  const text = await generateText(
+    CONNECTION_SYSTEM,
+    `Person: ${untrusted(candidate.name)}. Shared facts: ${untrusted(sharedFacts)}.`,
+    { model, temperature: 0.4 },
+  );
+  if (text) {
+    await supabase.from("ai_connection_prompts").insert({
+      viewer_id: viewerId,
+      candidate_id: candidate.id,
+      prompt: text,
+    });
+  }
+  return text;
+}
+
 // One sentence on why the viewer should follow candidate, grounded in shared
 // public profile facts only (never bio/goals text or post content). Cached
 // per (viewer, candidate); falls back to a deterministic template when AI is
@@ -75,15 +100,14 @@ export async function connectionPrompt(
       ]
         .filter(Boolean)
         .join("; ");
-      const text = await generateText(
-        CONNECTION_SYSTEM,
-        `Person: ${untrusted(candidate.name)}. Shared facts: ${untrusted(facts)}.`,
-        { model: modelForTier(viewerIsPro) }
+      const text = await generateConnectionLine(
+        supabase,
+        viewerId,
+        candidate,
+        facts,
+        modelForTier(viewerIsPro),
       );
-      if (text) {
-        await supabase.from("ai_connection_prompts").insert({ viewer_id: viewerId, candidate_id: candidate.id, prompt: text });
-        return text;
-      }
+      if (text) return text;
     }
   }
 

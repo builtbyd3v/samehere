@@ -104,14 +104,14 @@ export function buildDemoHeatmap(seed: string, today = new Date()): HeatmapDay[]
 
     if (roll > 0.42) {
       if (roll > 0.82) {
-        points = 5;
-        breakdown.post = 5;
+        points = 4;
+        breakdown.post = 4;
       } else if (roll > 0.68) {
         points = 3;
         breakdown.comment = 3;
       } else if (roll > 0.55) {
-        points = 2;
-        breakdown.connection = 2;
+        points = 5;
+        breakdown.connection = 5;
       } else {
         points = 1;
         breakdown.profile_update = 1;

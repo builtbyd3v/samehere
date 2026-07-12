@@ -1,6 +1,7 @@
 {
   "crons": [
     { "path": "/api/cron/unread-digest", "schedule": "0 16 * * *" },
-    { "path": "/api/cron/weekly-matches", "schedule": "0 15 * * 1" }
+    { "path": "/api/cron/weekly-matches", "schedule": "0 15 * * 1" },
+    { "path": "/api/cron/eve", "schedule": "0 14 * * *" }
   ]
 }

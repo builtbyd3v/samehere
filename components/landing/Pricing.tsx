@@ -11,20 +11,20 @@ const FREE_FEATURES = [
   "Follow, DMs, and private accounts",
   "Streaks, leaderboards, and your heatmap",
   "Search and saved posts",
-  "AI matching with daily free caps",
+  "AI matching and icebreakers, with daily free caps",
 ] as const;
 
 const PRO_FEATURES: { label: string; icon?: "bolt" }[] = [
   { label: "150 natural-language people searches a day" },
   { label: "A stronger AI model, 150 uses a day" },
-  { label: "Improve my post and AI icebreakers" },
+  { label: "Improve my post: AI rewrites your draft" },
   { label: "See who viewed your profile" },
-  { label: "Custom accent color, banner, and animated avatar" },
+  { label: "Profile themes, accent color, banner, and animated avatar" },
   { label: "Weekly “5 people to meet” email, with AI reasons" },
   { label: "Pro badge on your profile", icon: "bolt" },
 ];
 
-const PRO_COMING_SOON: string[] = ["Profile themes"];
+const PRO_COMING_SOON: string[] = [];
 
 const card = `flex h-full flex-col card-hover ${landingCard}`;
 

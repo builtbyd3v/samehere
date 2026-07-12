@@ -73,7 +73,7 @@ export default function Founders({ spotsLeft }: { spotsLeft?: number }) {
 
             <h3 className="mt-5 text-xl font-semibold tracking-[-0.01em] text-[var(--ink)]">Social Butterfly</h3>
             <p className="mt-2 text-sm leading-relaxed text-[var(--ink-muted)]">
-              Share your referral link. When 50 students join from it, you earn a
+              Share your referral link. When 50 students join from it and get active, you earn a
               permanent green badge. Hit 100 and you also get a free semester of Pro.
             </p>
 
@@ -92,7 +92,7 @@ export default function Founders({ spotsLeft }: { spotsLeft?: number }) {
               <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-[var(--featured-surface)]">
                 <div className="h-full w-[4%] rounded-full bg-[var(--campus-founder)]" />
               </div>
-              <p className="mt-2 text-xs text-[var(--ink-muted)]">Every student who joins from your link counts toward the badge at 50.</p>
+              <p className="mt-2 text-xs text-[var(--ink-muted)]">Every student who joins from your link counts toward the badge at 50 once they get active.</p>
             </div>
           </div>
         </RevealItem>

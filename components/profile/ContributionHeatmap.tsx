@@ -18,8 +18,11 @@ const level = (p: number) => (p === 0 ? 0 : p <= 3 ? 1 : p <= 7 ? 2 : 3);
 
 const ACTION_LABEL: Record<string, string> = {
   post: "Post",
+  post_media: "Media",
   comment: "Comment",
+  quote: "Quote",
   connection: "Connection",
+  referral: "Referral",
   profile_update: "Profile update",
 };
 

@@ -27,25 +27,38 @@ export function modelForTier(isPro: boolean): string | undefined {
 // Generated text, or null if AI is unconfigured OR the call fails — every caller
 // MUST have a non-AI fallback. Output is untrusted: callers render it as plain
 // text, never dangerouslySetInnerHTML. `opts.model` overrides the default model
-// (see modelForTier); `opts.maxTokens` caps output length.
+// (see modelForTier); `opts.maxTokens` caps output length; `opts.temperature`
+// is omitted when unset so the provider default still applies.
 export async function generateText(
   system: string,
   prompt: string,
-  opts?: { model?: string; maxTokens?: number },
+  opts?: { model?: string; maxTokens?: number; temperature?: number },
 ): Promise<string | null> {
   const useModel = opts?.model ?? model;
   if (!client || !useModel) return null;
-  try {
-    const res = await client.chat.completions.create({
+
+  const call = (withTemp: boolean) =>
+    client!.chat.completions.create({
       model: useModel,
       max_completion_tokens: opts?.maxTokens ?? 80,
+      ...(withTemp && opts?.temperature !== undefined ? { temperature: opts.temperature } : {}),
       messages: [
         { role: "system", content: system },
         { role: "user", content: prompt },
       ],
     });
+
+  try {
+    const res = await call(true);
     return res.choices[0]?.message?.content?.trim() || null;
   } catch {
-    return null;
+    if (opts?.temperature === undefined) return null;
+    // ponytail: retry-once-without-temperature on any error — some models (claude-sonnet-5 via OpenAI compat) 400 on the param; no per-model capability table.
+    try {
+      const res = await call(false);
+      return res.choices[0]?.message?.content?.trim() || null;
+    } catch {
+      return null;
+    }
   }
 }
