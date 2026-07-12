@@ -58,10 +58,11 @@ export default function JoinLeaveButton({
       ) : status === "pending" ? (
         <button
           type="button"
-          disabled
-          className="rounded-md border border-[var(--border)] px-4 py-1.5 text-sm font-medium text-[var(--ink-muted)] opacity-70"
+          onClick={handleLeave}
+          disabled={pending}
+          className="rounded-md border border-[var(--border)] px-4 py-1.5 text-sm font-medium text-[var(--ink-muted)] transition hover:bg-[var(--featured-surface)] active:scale-[0.98] active:opacity-80 disabled:opacity-50"
         >
-          Requested
+          {pending ? "…" : "Cancel request"}
         </button>
       ) : (
         <button

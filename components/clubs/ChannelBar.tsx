@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Modal from "@/components/ui/Modal";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { createChannel, deleteChannel } from "@/app/(app)/community/clubs/actions";
 
 export type ClubChannel = {
   id: string;
@@ -76,6 +77,7 @@ export default function ChannelBar({
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [toDelete, setToDelete] = useState<ClubChannel | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -84,14 +86,10 @@ export default function ChannelBar({
     setCreating(true);
     setCreateError(null);
 
-    const { data: channelId, error } = await supabase.rpc("club_create_channel", {
-      p_club: clubId,
-      p_name: trimmed,
-      p_min_role: minRole,
-    });
+    const res = await createChannel(clubId, trimmed, minRole);
 
-    if (error || !channelId) {
-      setCreateError("Could not create channel.");
+    if (res.error || !res.channelId) {
+      setCreateError(res.error ?? "Could not create channel.");
       setCreating(false);
       return;
     }
@@ -99,7 +97,7 @@ export default function ChannelBar({
     const { data: row } = await supabase
       .from("club_channels")
       .select("id, name, min_role, conversation_id, is_general")
-      .eq("id", channelId)
+      .eq("id", res.channelId)
       .single();
 
     setCreating(false);
@@ -113,8 +111,13 @@ export default function ChannelBar({
 
   async function handleDelete() {
     if (!toDelete) return;
-    const { error } = await supabase.rpc("club_delete_channel", { p_channel: toDelete.id });
-    if (!error) onDeleted(toDelete.id);
+    setDeleteError(null);
+    const res = await deleteChannel(toDelete.id);
+    if (res.error) {
+      setDeleteError(res.error);
+      return;
+    }
+    onDeleted(toDelete.id);
   }
 
   return (
@@ -138,7 +141,10 @@ export default function ChannelBar({
             {canManage && !c.is_general && (
               <button
                 type="button"
-                onClick={() => setToDelete(c)}
+                onClick={() => {
+                  setDeleteError(null);
+                  setToDelete(c);
+                }}
                 aria-label={`Delete #${c.name}`}
                 className="rounded-full p-1 text-[var(--ink-faint)] opacity-50 transition hover:bg-[var(--featured-surface)] hover:text-[var(--danger)] hover:opacity-100"
               >
@@ -206,6 +212,12 @@ export default function ChannelBar({
         confirmLabel="Delete"
         destructive
       />
+
+      {deleteError && (
+        <p role="alert" className="w-full text-sm text-[var(--danger)]">
+          {deleteError}
+        </p>
+      )}
     </div>
   );
 }

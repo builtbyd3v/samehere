@@ -61,9 +61,12 @@ function mapRpcError(
 // messages in this codebase's definer functions are short and already
 // user-safe (e.g. 'already a member') -- pass those through as-is; only
 // unique_violation and the rate-limit RAISE get a custom rewrite.
-function friendlyDbError(error: { code?: string; message?: string } | null): string {
+function friendlyDbError(
+  error: { code?: string; message?: string } | null,
+  options?: { conflictMessage?: string },
+): string {
   if (!error) return "Something went wrong.";
-  if (error.code === "23505") return "That URL is taken.";
+  if (error.code === "23505") return options?.conflictMessage ?? "That URL is taken.";
   const message = error.message ?? "";
   if (message.includes("rate limit")) return "You've created too many clubs today.";
   // Postgres wraps RAISE EXCEPTION text verbatim in error.message.
@@ -80,6 +83,7 @@ function friendlyDbError(error: { code?: string; message?: string } | null): str
     "cannot act on a pending member",
     "the last owner cannot leave; transfer ownership first",
     "cannot demote the last owner",
+    "you are banned from this club",
   ];
   const hit = known.find((k) => message.includes(k));
   return hit ? hit.charAt(0).toUpperCase() + hit.slice(1) : "Something went wrong.";
@@ -135,7 +139,7 @@ export async function joinClub(clubId: string): Promise<ClubActionState & { stat
   if (!user) return { error: "You must be logged in." };
 
   const { data, error } = await supabase.rpc("club_join", { p_club: clubId });
-  if (error) return { error: friendlyDbError(error) };
+  if (error) return { error: friendlyDbError(error, { conflictMessage: "You're already a member." }) };
 
   const path = await clubDetailPath(supabase, clubId);
   if (path) revalidatePath(path);

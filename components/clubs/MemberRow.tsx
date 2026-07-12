@@ -47,6 +47,7 @@ export default function MemberRow({
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [kickOpen, setKickOpen] = useState(false);
   const [banOpen, setBanOpen] = useState(false);
   const [modPending, startModTransition] = useTransition();
   const name = profile?.display_name ?? profile?.username ?? "Unknown";
@@ -153,7 +154,7 @@ export default function MemberRow({
         <div className="flex shrink-0 items-center gap-3 text-xs font-medium">
           <button
             type="button"
-            onClick={kick}
+            onClick={() => setKickOpen(true)}
             disabled={modPending}
             className="text-[var(--ink-muted)] transition hover:text-[var(--ink)] hover:underline disabled:opacity-50"
           >
@@ -169,6 +170,16 @@ export default function MemberRow({
           </button>
         </div>
       )}
+
+      <ConfirmDialog
+        open={kickOpen}
+        onClose={() => setKickOpen(false)}
+        onConfirm={kick}
+        title="Remove member?"
+        message={`${name} will be removed from this club.`}
+        confirmLabel="Remove"
+        destructive
+      />
 
       <ConfirmDialog
         open={banOpen}
