@@ -49,6 +49,8 @@ export default function TabTitleNotifier({
   const [supabase] = useState(getBrowserClient);
 
   // Latest total for the observer callback to read without re-subscribing.
+  // Updated in an effect (not during render) so the ref write stays a commit
+  // side effect.
   const totalRef = useRef(total);
 
   useEffect(() => {
