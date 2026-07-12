@@ -14,8 +14,9 @@ type Props = {
   inClub: boolean;
 };
 
-// ponytail: composer toggle lives as local state inside FeedToolbar (owned
+// ponytail: composer toggle lives as local state inside ComposerToggle (owned
 // elsewhere); click through the DOM instead of lifting that state up.
+// Contract: ComposerToggle's closed-state trigger must keep its "New post" aria-label.
 function openComposer() {
   const btn = document.querySelector<HTMLButtonElement>('button[aria-label="New post"]');
   btn?.click();
