@@ -62,6 +62,10 @@ export async function updateSession(request: NextRequest) {
     path === '/terms' ||
     path === '/privacy' ||
     path === '/suspended' ||
+    // Crawler metadata routes (app/robots.ts, app/sitemap.ts) — without these
+    // the middleware 307s crawlers to /signup and SEO directives never serve.
+    path === '/robots.txt' ||
+    path === '/sitemap.xml' ||
     path.startsWith('/auth/') ||
     path === '/api/stripe/webhook' ||
     // Both do their own auth: cron via secret header, unsubscribe via HMAC token.
