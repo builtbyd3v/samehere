@@ -102,6 +102,13 @@ export async function startCheckout(formData: FormData) {
     event: "stripe_checkout_started",
     properties: { billing_provider: "stripe", plan },
   });
+  if (posthog) {
+    try {
+      await posthog.flush();
+    } catch (err) {
+      console.error("startCheckout: posthog flush failed", err);
+    }
+  }
 
   if (!session.url) redirect("/pro");
   redirect(session.url);
@@ -140,6 +147,13 @@ export async function openBillingPortal() {
       billing_provider: "stripe",
     },
   });
+  if (posthog) {
+    try {
+      await posthog.flush();
+    } catch (err) {
+      console.error("openBillingPortal: posthog flush failed", err);
+    }
+  }
 
   redirect(session.url);
 }

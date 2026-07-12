@@ -8,12 +8,14 @@ export async function sendEmail({
   text,
   html,
   from,
+  headers,
 }: {
   to: string;
   subject: string;
   text: string;
   html?: string;
   from?: string;
+  headers?: Record<string, string>;
 }): Promise<void> {
   const res = await fetch(RESEND_URL, {
     method: "POST",
@@ -21,7 +23,14 @@ export async function sendEmail({
       Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ from: from ?? FROM, to, subject, text, ...(html ? { html } : {}) }),
+    body: JSON.stringify({
+      from: from ?? FROM,
+      to,
+      subject,
+      text,
+      ...(html ? { html } : {}),
+      ...(headers ? { headers } : {}),
+    }),
   });
 
   if (!res.ok) {

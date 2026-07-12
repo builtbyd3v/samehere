@@ -92,4 +92,21 @@ describe("GET /api/cron/unread-digest — sends per recipient", () => {
     expect(res.status).toBe(500);
     expect(sendEmailMock).not.toHaveBeenCalled();
   });
+
+  it("sends the List-Unsubscribe-Post one-click header", async () => {
+    rpcMock.mockResolvedValue({
+      data: [{ user_id: "u1", email: "a@example.com", dm_unread: 2, notif_unread: 0 }],
+      error: null,
+    });
+
+    const res = await GET(buildRequest("Bearer cron-test-secret"));
+    expect(res.status).toBe(200);
+    expect(sendEmailMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+        }),
+      })
+    );
+  });
 });

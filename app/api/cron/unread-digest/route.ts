@@ -12,6 +12,8 @@ export const maxDuration = 60;
 const MAX_RECIPIENTS = 200;
 const BATCH_SIZE = 5;
 
+export const maxDuration = 300;
+
 export async function GET(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
   const provided = request.headers.get("authorization") ?? "";
@@ -32,6 +34,7 @@ export async function GET(request: NextRequest) {
   const admin = createAdminClient();
   const { data, error } = await admin.rpc("list_unread_digest_recipients");
   if (error) {
+    console.error("unread-digest: recipients RPC failed", error);
     return NextResponse.json({ error: "Could not load recipients" }, { status: 500 });
   }
 
@@ -67,10 +70,17 @@ export async function GET(request: NextRequest) {
             from: "noreply@samehere.dev",
             subject: `you have ${total} unread on samehere`,
             text,
+            headers: {
+              "List-Unsubscribe": `<https://samehere.dev/api/email/unsubscribe?u=${token}>`,
+              "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+            },
           });
           sent += 1;
         } catch {
-          // one recipient's failure must not block the rest of the run
+          // one recipient's failure must not block the rest of the run. Do not
+          // log the caught error — sendEmail's failure message can echo back
+          // the recipient's email address from Resend's response body.
+          console.error("unread-digest: send failed for recipient", r.user_id);
         }
       })
     );
