@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, type ReactNode } from "react";
+import { useEffect, useState, useTransition, type ReactNode } from "react";
 import Link from "next/link";
 import { peopleSearch, type PeopleSearchState } from "@/app/(app)/feed/actions";
 import UserBadges from "@/components/profile/UserBadges";
@@ -21,9 +21,19 @@ function tab(active: boolean): string {
   }`;
 }
 
-export default function PeopleSearch({ keyword, isPro = false }: { keyword: ReactNode; isPro?: boolean }) {
-  const [smart, setSmart] = useState(false);
-  const [q, setQ] = useState("");
+export default function PeopleSearch({
+  keyword,
+  isPro = false,
+  initialQuery = "",
+  initialSmart = false,
+}: {
+  keyword: ReactNode;
+  isPro?: boolean;
+  initialQuery?: string;
+  initialSmart?: boolean;
+}) {
+  const [smart, setSmart] = useState(initialSmart);
+  const [q, setQ] = useState(initialQuery);
   const [state, setState] = useState<PeopleSearchState>({});
   const [pending, startTransition] = useTransition();
 
@@ -35,6 +45,15 @@ export default function PeopleSearch({ keyword, isPro = false }: { keyword: Reac
       setState(await peopleSearch(query));
     });
   }
+
+  // Arrived already in Smart mode with a query (nav/page search picked "✦ Smart")
+  // → run the AI search once on mount so the user doesn't have to search again.
+  useEffect(() => {
+    if (initialSmart && initialQuery.trim()) {
+      startTransition(async () => setState(await peopleSearch(initialQuery.trim())));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div>

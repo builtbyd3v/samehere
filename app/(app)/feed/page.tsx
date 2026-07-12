@@ -28,9 +28,9 @@ import { Skeleton, PostCardSkeleton } from "@/components/ui/Skeleton";
 // composer is collapsed behind a trigger; `data-feed-page` lets the shell drop
 // its right spacer so this page's own rail balances the left nav.
 //
-// Known gaps vs the previous feed (see README follow-ups): natural-language
-// people-search UI is not wired here yet, and the weekly recap card was folded
-// into the profile heatmap.
+// Known gaps vs the previous feed (see README follow-ups): the weekly recap card
+// was folded into the profile heatmap. People-search is NOT on the feed; it
+// lives at /search now.
 export default async function FeedPage({
   searchParams,
 }: {

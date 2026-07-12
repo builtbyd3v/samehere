@@ -1,5 +1,6 @@
 import Link from "next/link";
 import NavMenu from "./NavMenu";
+import SearchBar from "@/components/search/SearchBar";
 import { IconBolt } from "@/components/icons";
 import { signupCtaSm, ghostCtaSm } from "@/components/landing/cta";
 
@@ -31,14 +32,7 @@ export default function Navbar({
             </Link>
           )}
         </div>
-        {username && (
-          <form action="/search" className="nav-search hidden min-w-0 flex-1 justify-center px-4 md:flex">
-            <div className="flex w-full max-w-sm items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface-raised)] px-4 py-2 text-sm transition focus-within:border-[var(--border-strong)]">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="shrink-0 text-[var(--ink-muted)]" aria-hidden><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
-              <input name="q" type="search" placeholder="Search students…" aria-label="Search students" className="w-full bg-transparent text-[var(--ink)] placeholder:text-[var(--ink-muted)] focus:outline-none" />
-            </div>
-          </form>
-        )}
+        {username && <SearchBar variant="nav" />}
         {username ? (
           <div className="flex items-center gap-1 text-sm sm:gap-1.5">
             {!isPro && (

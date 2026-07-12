@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { IconBell, IconMail, IconCommunity } from "@/components/icons";
+import { IconBell, IconMail, IconCommunity, IconSearch } from "@/components/icons";
 
 export default function MobileNav({
   username,
@@ -26,6 +26,7 @@ export default function MobileNav({
         </svg>
       ),
     },
+    { label: "Search", href: "/search", icon: <IconSearch /> },
     { label: "Notifications", href: "/notifications", icon: <IconBell />, dot: notifUnread > 0 },
     { label: "Messages", href: "/messages", icon: <IconMail />, dot: dmUnread > 0 },
     { label: "Community", href: "/community", icon: <IconCommunity /> },
