@@ -576,7 +576,15 @@ export type Database = {
           title?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "conversations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       dm_pairs: {
         Row: {
@@ -1544,6 +1552,24 @@ export type Database = {
           current_streak: number
           longest_streak: number
           today_earned: boolean
+        }[]
+      }
+      get_suggested_profiles: {
+        Args: { p_limit?: number; p_school?: string }
+        Returns: {
+          avatar_url: string
+          bio: string
+          display_name: string
+          goals: string
+          id: string
+          is_campus_founder: boolean
+          is_founder: boolean
+          is_pro: boolean
+          major: string
+          school: string
+          username: string
+          verified_student: boolean
+          year: string
         }[]
       }
       insert_notification: {
