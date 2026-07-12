@@ -3,17 +3,32 @@
 -- in /community instead. Reversible via git history + this file's inverse if
 -- ever un-deferred.
 --
+-- Renamed from 20260710225723 -> 20260714151000: the original timestamp placed
+-- this BEFORE 20260714130000_threads.sql (which adds the feature) and
+-- 20260714150000_clubs_threads_revoke_anon.sql (which revokes current_thread_id),
+-- so a fresh replay tried to remove threads before they existed. Running it after
+-- both reproduces prod's end-state (threads absent).
+--
 -- Order matters: the posts INSERT policy's with-check references thread_id,
 -- so it must be rewritten (dropping the thread_id conjunct) before the column
 -- can be dropped. Reproduces the pre-thread_id check from
 -- 20260714130000_threads.sql verbatim, minus the appended conjunct.
 
 -- 1. Unschedule the two weekly cron jobs that called the weekly-thread edge
---    function. The edge function itself is left deployed (no MCP tool to
+--    function. Scheduled via the dashboard (not a migration), so on a fresh
+--    replay they don't exist -- cron.unschedule errors on a missing job, so
+--    guard each. The edge function itself is left deployed (no MCP tool to
 --    delete it) -- delete supabase/functions/weekly-thread manually via the
 --    Supabase dashboard or CLI (`supabase functions delete weekly-thread`).
-select cron.unschedule('thread-generate');
-select cron.unschedule('thread-summarize');
+do $$
+begin
+  if exists (select 1 from cron.job where jobname = 'thread-generate') then
+    perform cron.unschedule('thread-generate');
+  end if;
+  if exists (select 1 from cron.job where jobname = 'thread-summarize') then
+    perform cron.unschedule('thread-summarize');
+  end if;
+end $$;
 
 -- 2. Drop the thread_id conjunct from the posts INSERT policy.
 alter policy "authed users create posts" on public.posts
