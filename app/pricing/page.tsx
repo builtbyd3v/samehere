@@ -4,6 +4,8 @@ import Pricing from "@/components/landing/Pricing";
 import LandingFooter from "@/components/landing/LandingFooter";
 import { signupCtaSm } from "@/components/landing/cta";
 
+export const dynamic = "force-static";
+
 export const metadata: Metadata = {
   // Root layout appends " · samehere" via the title template. Saying it here too
   // rendered "Pricing — samehere · samehere".

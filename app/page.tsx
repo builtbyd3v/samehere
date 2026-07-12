@@ -3,6 +3,9 @@ import LandingPage from "@/components/landing/LandingPage";
 import LandingAnalytics from "@/components/landing/LandingAnalytics";
 import { getFounderSpotsLeft } from "@/lib/founder";
 
+export const dynamic = "force-static";
+export const revalidate = 300;
+
 export const metadata: Metadata = {
   title: "samehere: the social network built for students",
   description:
