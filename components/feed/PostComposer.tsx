@@ -207,22 +207,26 @@ export default function PostComposer({
         return setMediaErr("You must be logged in.");
       }
 
-      const media: { path: string; type: "image" | "video" }[] = [];
-      for (const { file, type } of files) {
-        // GIFs and video pass through untouched — canvas would flatten a GIF to
-        // one frame, and video isn't an image at all. Only static images resize.
-        const upload = type === "image" && file.type !== "image/gif" ? await downscaleImage(file) : file;
-        const ext = upload.name.includes(".") ? upload.name.split(".").pop() : upload.type.split("/")[1];
-        const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
-        const { error: upErr } = await supabase.storage.from("post-media").upload(path, upload);
-        if (upErr) {
-          setUploading(false);
-          return setMediaErr("Media upload failed. Try again.");
-        }
-        media.push({ path, type });
+      const results = await Promise.all(
+        files.map(async ({ file, type }) => {
+          // GIFs and video pass through untouched — canvas would flatten a GIF to
+          // one frame, and video isn't an image at all. Only static images resize.
+          const upload = type === "image" && file.type !== "image/gif" ? await downscaleImage(file) : file;
+          const ext = upload.name.includes(".") ? upload.name.split(".").pop() : upload.type.split("/")[1];
+          const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
+          const { error } = await supabase.storage.from("post-media").upload(path, upload);
+          return { path, type, error };
+        }),
+      );
+
+      const failed = results.find((r) => r.error);
+      if (failed) {
+        setUploading(false);
+        return setMediaErr("Media upload failed. Try again.");
       }
+
       setUploading(false);
-      formData.set("media", JSON.stringify(media));
+      formData.set("media", JSON.stringify(results.map(({ path, type }) => ({ path, type }))));
     }
 
     startSubmit(() => {
