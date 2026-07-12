@@ -40,22 +40,24 @@ export default function AvatarImage({
   className,
   style,
   pro = false,
+  priority = false,
 }: {
   src: string;
   alt?: string;
   className?: string;
   style?: CSSProperties;
   pro?: boolean;
+  priority?: boolean;
 }) {
   const animated = pro && isAnimatedAvatarUrl(src);
 
   if (!animated) {
     // An animated file rendered through the optimizer collapses to its first
     // frame — exactly the still we want for a non-Pro owner.
-    return <Image src={src} alt={alt} width={SIZE} height={SIZE} className={className} style={style} />;
+    return <Image src={src} alt={alt} width={SIZE} height={SIZE} className={className} style={style} priority={priority} />;
   }
 
-  return <AnimatedAvatarImage src={src} alt={alt} className={className} style={style} />;
+  return <AnimatedAvatarImage src={src} alt={alt} className={className} style={style} priority={priority} />;
 }
 
 function AnimatedAvatarImage({
@@ -63,11 +65,13 @@ function AnimatedAvatarImage({
   alt,
   className,
   style,
+  priority = false,
 }: {
   src: string;
   alt: string;
   className?: string;
   style?: CSSProperties;
+  priority?: boolean;
 }) {
   const ref = useRef<HTMLImageElement>(null);
   const tabVisible = useSyncExternalStore(subscribeTabVisible, getTabVisible, () => true);
@@ -99,6 +103,7 @@ function AnimatedAvatarImage({
       unoptimized
       className={className}
       style={style}
+      priority={priority}
     />
   );
 }
