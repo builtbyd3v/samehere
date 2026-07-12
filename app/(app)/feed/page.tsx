@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { getViewer, getViewerProfile, getViewerProfileCounts } from "@/lib/viewer";
-import { POST_SELECT, PAGE, type FeedPost } from "@/components/feed/PostCard";
+import { POST_SELECT, PAGE, withEngagement, type PostRow } from "@/components/feed/PostCard";
 import FeedTabs from "@/components/feed/FeedTabs";
 import FeedTimeline from "@/components/feed/FeedTimeline";
 import FeedLoadMore from "@/components/feed/FeedLoadMore";
@@ -9,8 +9,9 @@ import EmptyState from "@/components/ui/EmptyState";
 import FollowRequests, { type FollowRequest } from "@/components/profile/FollowRequests";
 import { attachSignedMedia } from "@/lib/media";
 import { mergeFeedTimeline, itemId } from "@/lib/feed-timeline";
-import { fetchQuotedReposts } from "@/lib/feed-quotes";
+import { fetchQuotedReposts, toQuotedRepost } from "@/lib/feed-quotes";
 import { fetchPlainReposts } from "@/lib/feed-reposts";
+import { fetchViewerMineState } from "@/lib/feed-engagement";
 import { encodeCursor } from "@/lib/feed-cursor";
 import { isPro } from "@/lib/pro";
 import RightRail, { RightRailFallback } from "./RightRail";
@@ -146,11 +147,11 @@ async function LatestTab({ viewerId }: { viewerId: string | null }) {
       .order("created_at", { ascending: false })
       .order("id", { ascending: false })
       .limit(PAGE)
-      .returns<FeedPost[]>(),
+      .returns<PostRow[]>(),
     viewerId ? supabase.rpc("get_blocked_ids") : Promise.resolve({ data: [] as string[] }),
   ]);
   const blocked = new Set(blockedIds ?? []);
-  const filtered = (data ?? []).filter((p) => !blocked.has(p.user_id));
+  const postRows = (data ?? []).filter((p) => !blocked.has(p.user_id));
 
   const [rawQuotes, rawReposts] = await Promise.all([
     fetchQuotedReposts(supabase, { limit: PAGE, blockedIds: blocked }),
@@ -161,13 +162,25 @@ async function LatestTab({ viewerId }: { viewerId: string | null }) {
   // surfaced by any of the three sources (was 3 separate attachSignedMedia
   // calls -- one inline here, one inside fetchQuotedReposts, one inside
   // fetchPlainReposts).
-  const allForSigning = [...filtered, ...rawQuotes.map((q) => q.original), ...rawReposts.map((r) => r.original)];
+  const allForSigning = [...postRows, ...rawQuotes.map((q) => q.post), ...rawReposts.map((r) => r.post)];
   const signedById = new Map(
     (allForSigning.length ? await attachSignedMedia(supabase, allForSigning) : []).map((p) => [p.id, p]),
   );
-  const posts = filtered.map((p) => signedById.get(p.id) ?? p);
-  const quotes = rawQuotes.map((q) => ({ ...q, original: signedById.get(q.original.id) ?? q.original }));
-  const reposts = rawReposts.map((r) => ({ ...r, original: signedById.get(r.original.id) ?? r.original }));
+
+  const postIds = [...signedById.keys()];
+  const repostIds = rawQuotes.map((q) => q.id);
+  const mine = await fetchViewerMineState(supabase, viewerId, postIds, repostIds);
+  const engagedById = new Map(withEngagement([...signedById.values()], mine).map((p) => [p.id, p]));
+
+  const posts = postRows.map((r) => engagedById.get(r.id)!);
+  const quotes = rawQuotes.map((r) => toQuotedRepost(r, engagedById.get(r.post.id)!, mine));
+  const reposts = rawReposts.map((r) => ({
+    id: r.id,
+    created_at: r.created_at,
+    reposter_id: r.user_id,
+    reposter: r.reposter,
+    original: engagedById.get(r.post.id)!,
+  }));
 
   const timeline =
     posts.length || quotes.length || reposts.length ? mergeFeedTimeline(posts, quotes, reposts).slice(0, PAGE) : [];
@@ -230,21 +243,33 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
           .order("created_at", { ascending: false })
           .order("id", { ascending: false })
           .limit(PAGE)
-          .returns<FeedPost[]>()
-      : Promise.resolve({ data: [] as FeedPost[] }),
+          .returns<PostRow[]>()
+      : Promise.resolve({ data: [] as PostRow[] }),
     fetchQuotedReposts(supabase, { userIds: quoteAuthorIds, limit: PAGE, blockedIds: blocked }),
     fetchPlainReposts(supabase, { userIds: quoteAuthorIds, limit: PAGE, blockedIds: blocked }),
   ]);
 
   // Shared signing batch (see LatestTab above for why).
-  const filtered = followFeed ?? [];
-  const allForSigning = [...filtered, ...rawQuotes.map((q) => q.original), ...rawReposts.map((r) => r.original)];
+  const postRows = followFeed ?? [];
+  const allForSigning = [...postRows, ...rawQuotes.map((q) => q.post), ...rawReposts.map((r) => r.post)];
   const signedById = new Map(
     (allForSigning.length ? await attachSignedMedia(supabase, allForSigning) : []).map((p) => [p.id, p]),
   );
-  const feedPosts = filtered.map((p) => signedById.get(p.id) ?? p);
-  const quotes = rawQuotes.map((q) => ({ ...q, original: signedById.get(q.original.id) ?? q.original }));
-  const reposts = rawReposts.map((r) => ({ ...r, original: signedById.get(r.original.id) ?? r.original }));
+
+  const postIds = [...signedById.keys()];
+  const repostIds = rawQuotes.map((q) => q.id);
+  const mine = await fetchViewerMineState(supabase, viewerId, postIds, repostIds);
+  const engagedById = new Map(withEngagement([...signedById.values()], mine).map((p) => [p.id, p]));
+
+  const feedPosts = postRows.map((r) => engagedById.get(r.id)!);
+  const quotes = rawQuotes.map((r) => toQuotedRepost(r, engagedById.get(r.post.id)!, mine));
+  const reposts = rawReposts.map((r) => ({
+    id: r.id,
+    created_at: r.created_at,
+    reposter_id: r.user_id,
+    reposter: r.reposter,
+    original: engagedById.get(r.post.id)!,
+  }));
   const timeline =
     feedPosts.length || quotes.length || reposts.length ? mergeFeedTimeline(feedPosts, quotes, reposts).slice(0, PAGE) : [];
 

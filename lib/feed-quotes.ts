@@ -1,12 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { POST_SELECT, type FeedPost } from "@/components/feed/PostCard";
+import { POST_SELECT, withEngagement, type FeedPost, type PostRow } from "@/components/feed/PostCard";
 import type { QuotedRepost } from "@/components/feed/QuotedRepostCard";
 import { attachSignedMedia } from "@/lib/media";
+import { fetchViewerMineState, type ViewerMineState } from "@/lib/feed-engagement";
 import type { FeedCursor } from "@/lib/feed-cursor";
 import type { Database } from "@/types/database.types";
 
-const QUOTE_ENGAGEMENT =
-  "reactions(user_id, type), bookmarks(user_id), comments(count)";
+const QUOTE_ENGAGEMENT = "reactions(count), comments(count)";
 
 export const REPOST_QUOTE_SELECT = `id, quote_text, created_at, user_id, ${QUOTE_ENGAGEMENT}, reposter:profiles!reposts_user_id_fkey(username, display_name, avatar_url, is_pro, is_founder, is_campus_founder, verified_student), post:posts(${POST_SELECT})`;
 
@@ -15,25 +15,48 @@ type QuoteRow = {
   quote_text: string | null;
   created_at: string;
   user_id: string;
-  reactions: { user_id: string; type: string }[];
-  bookmarks: { user_id: string }[];
+  reactions: { count: number }[];
   comments: { count: number }[];
   reposter: QuotedRepost["reposter"] | null;
-  post: FeedPost | null;
+  post: PostRow | null;
 };
 
-function mapQuoteRow(r: QuoteRow, mediaByPostId: Map<string, FeedPost>): QuotedRepost | null {
-  if (!r.post || !r.quote_text || !r.reposter) return null;
+// Everything needed to build a QuotedRepost EXCEPT the fully-hydrated
+// `original` (signed + engaged) -- the caller supplies that once it has run
+// the shared signing + mine-state batches across posts/quotes/reposts together.
+export type RawQuote = {
+  id: string;
+  quote_text: string;
+  created_at: string;
+  user_id: string;
+  reactions: { count: number }[];
+  comments: { count: number }[];
+  reposter: QuotedRepost["reposter"];
+  post: PostRow;
+};
+
+// toQuotedRepost only ever reads the engagement/identity fields, never
+// `post` (the caller already resolved `original` separately) -- accepting
+// this narrower shape lets callers that never had a `post` field to begin
+// with (e.g. saved/page.tsx's synthesized bookmark rows) pass their row
+// straight through without a placeholder.
+export type QuoteEngagementInput = Pick<
+  RawQuote,
+  "id" | "quote_text" | "created_at" | "user_id" | "reactions" | "comments" | "reposter"
+>;
+
+export function toQuotedRepost(row: QuoteEngagementInput, original: FeedPost, mine: ViewerMineState): QuotedRepost {
   return {
-    id: r.id,
-    quote_text: r.quote_text,
-    created_at: r.created_at,
-    reposter_id: r.user_id,
-    reposter: r.reposter,
-    original: mediaByPostId.get(r.post.id) ?? r.post,
-    reactions: r.reactions ?? [],
-    bookmarks: r.bookmarks ?? [],
-    comments: r.comments ?? [],
+    id: row.id,
+    quote_text: row.quote_text,
+    created_at: row.created_at,
+    reposter_id: row.user_id,
+    reposter: row.reposter,
+    original,
+    samehere_count: row.reactions?.[0]?.count ?? 0,
+    comment_count: row.comments?.[0]?.count ?? 0,
+    mine_samehere: mine.samehere.has(row.id),
+    mine_bookmark: mine.bookmark.has(row.id),
   };
 }
 
@@ -45,7 +68,7 @@ export async function fetchQuotedReposts(
     cursor?: FeedCursor;
     blockedIds?: Set<string>;
   },
-): Promise<QuotedRepost[]> {
+): Promise<RawQuote[]> {
   let query = supabase
     .from("reposts")
     .select(REPOST_QUOTE_SELECT)
@@ -68,26 +91,19 @@ export async function fetchQuotedReposts(
   }
 
   const rows = (data ?? []) as QuoteRow[];
-  const visible = rows.filter(
-    (r) =>
-      r.post &&
-      r.quote_text &&
-      r.reposter &&
-      !(opts.blockedIds?.has(r.user_id) ?? false),
+  return rows.filter(
+    (r): r is RawQuote =>
+      !!r.post && !!r.quote_text && !!r.reposter && !(opts.blockedIds?.has(r.user_id) ?? false),
   );
-
-  // Media signing moved to the caller (one shared batch across posts +
-  // quotes + reposts -- see app/(app)/feed/page.tsx's LatestTab). `original`
-  // here is UNSIGNED (media entries lack a real `url`) until the caller
-  // fixes it up.
-  return visible
-    .map((r) => mapQuoteRow(r, new Map()))
-    .filter((q): q is QuotedRepost => q !== null);
 }
 
+// Single-item fetch for /quote/[id] -- signs + resolves engagement for just
+// this one repost id (a batch of 1 is still correct, just not worth
+// generalizing into the shared multi-item path above).
 export async function fetchQuotedRepostById(
   supabase: SupabaseClient<Database>,
   id: string,
+  viewerId: string | null,
 ): Promise<QuotedRepost | null> {
   const { data, error } = await supabase
     .from("reposts")
@@ -97,10 +113,23 @@ export async function fetchQuotedRepostById(
     .maybeSingle();
 
   if (error || !data) return null;
-
   const row = data as QuoteRow;
   if (!row.post || !row.quote_text || !row.reposter) return null;
 
-  const [original] = await attachSignedMedia(supabase, [row.post]);
-  return mapQuoteRow({ ...row, post: original }, new Map([[original.id, original]]));
+  const [signedOriginal] = await attachSignedMedia(supabase, [row.post]);
+  const mine = await fetchViewerMineState(supabase, viewerId, [signedOriginal.id], [row.id]);
+  const [original] = withEngagement([signedOriginal], mine);
+  return toQuotedRepost(
+    {
+      id: row.id,
+      quote_text: row.quote_text,
+      created_at: row.created_at,
+      user_id: row.user_id,
+      reactions: row.reactions,
+      comments: row.comments,
+      reposter: row.reposter,
+    },
+    original,
+    mine,
+  );
 }

@@ -27,9 +27,10 @@ export type QuotedRepost = {
     verified_student: boolean;
   };
   original: FeedPost;
-  reactions: { user_id: string; type: string }[];
-  bookmarks: { user_id: string }[];
-  comments: { count: number }[];
+  samehere_count: number;
+  comment_count: number;
+  mine_samehere: boolean;
+  mine_bookmark: boolean;
 };
 
 export default function QuotedRepostCard({
@@ -45,7 +46,6 @@ export default function QuotedRepostCard({
   const name = r.display_name ?? r.username;
   const detail = variant === "detail";
   const linked = !detail;
-  const reactions = item.reactions ?? [];
   const original = item.original;
   const authorPrivate = !!original.author?.is_private;
 
@@ -116,12 +116,12 @@ export default function QuotedRepostCard({
             post={original}
             viewerId={viewerId}
             authorPrivate={authorPrivate}
-            samehere={reactions.filter((x) => x.type === "samehere").length}
-            repost={original.reposts?.length ?? 0}
-            commentCount={item.comments?.[0]?.count ?? 0}
-            mineSamehere={!!viewerId && reactions.some((x) => x.type === "samehere" && x.user_id === viewerId)}
-            mineRepost={!!viewerId && (original.reposts ?? []).some((x) => x.user_id === viewerId)}
-            mineBookmark={!!viewerId && (item.bookmarks ?? []).some((x) => x.user_id === viewerId)}
+            samehere={item.samehere_count}
+            repost={original.repost_count}
+            commentCount={item.comment_count}
+            mineSamehere={item.mine_samehere}
+            mineRepost={original.mine_repost}
+            mineBookmark={item.mine_bookmark}
             hideComments={detail}
           />
         </div>

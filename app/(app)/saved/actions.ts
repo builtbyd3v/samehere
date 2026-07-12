@@ -1,8 +1,9 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { POST_SELECT, PAGE, type FeedPost } from "@/components/feed/PostCard";
+import { POST_SELECT, PAGE, withEngagement, type FeedPost, type PostRow } from "@/components/feed/PostCard";
 import { attachSignedMedia } from "@/lib/media";
+import { fetchViewerMineState } from "@/lib/feed-engagement";
 
 // Next page for "Load more" on /saved: bookmarks strictly older than the
 // cursor. Cursor is the BOOKMARK's created_at (save time — the order this
@@ -24,7 +25,7 @@ export async function loadMoreSaved(cursor: string): Promise<{ posts: FeedPost[]
       .lt("created_at", cursor)
       .order("created_at", { ascending: false })
       .limit(PAGE)
-      .returns<{ created_at: string; post: FeedPost | null }[]>(),
+      .returns<{ created_at: string; post: PostRow | null }[]>(),
     supabase.rpc("get_blocked_ids"),
   ]);
 
@@ -36,8 +37,10 @@ export async function loadMoreSaved(cursor: string): Promise<{ posts: FeedPost[]
   // so also drop posts whose author is blocked either direction. nextCursor
   // stays on rawRows (the unfiltered fetch) so a fully-filtered tail doesn't
   // skip older bookmarks.
-  const rawPosts = rawRows.map((r) => r.post).filter((p): p is FeedPost => !!p && !blocked.has(p.user_id));
-  const posts = await attachSignedMedia(supabase, rawPosts);
+  const rawPosts = rawRows.map((r) => r.post).filter((p): p is PostRow => !!p && !blocked.has(p.user_id));
+  const signed = await attachSignedMedia(supabase, rawPosts);
+  const mine = await fetchViewerMineState(supabase, user.id, signed.map((p) => p.id), []);
+  const posts = withEngagement(signed, mine);
   const nextCursor = rawRows.length ? rawRows[rawRows.length - 1].created_at : null;
   return { posts, nextCursor };
 }

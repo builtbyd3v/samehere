@@ -2,10 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { POST_SELECT, PAGE, type FeedPost } from "@/components/feed/PostCard";
+import { POST_SELECT, PAGE, withEngagement, type PostRow } from "@/components/feed/PostCard";
 import { attachSignedMedia, verifyMediaLimits } from "@/lib/media";
-import { fetchQuotedReposts } from "@/lib/feed-quotes";
+import { fetchQuotedReposts, toQuotedRepost } from "@/lib/feed-quotes";
 import { fetchPlainReposts } from "@/lib/feed-reposts";
+import { fetchViewerMineState } from "@/lib/feed-engagement";
 import { mergeFeedTimeline, itemId, type FeedTimelineItem } from "@/lib/feed-timeline";
 import { decodeCursor, encodeCursor } from "@/lib/feed-cursor";
 import { aiEnabled, generateText, modelForTier, type AiResult } from "@/lib/ai";
@@ -32,6 +33,11 @@ export async function loadMorePosts(
   // filter unvalidated -- stop pagination rather than guess.
   if (!decoded) return { items: [], nextCursor: null };
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const viewerId = user?.id ?? null;
+
   // ponytail: app-side filter post-fetch, not RLS on posts — mirrors the first page in feed/page.tsx.
   let query = supabase
     .from("posts")
@@ -44,24 +50,36 @@ export async function loadMorePosts(
   );
 
   const [{ data }, { data: blockedIds }] = await Promise.all([
-    query.returns<FeedPost[]>(),
+    query.returns<PostRow[]>(),
     supabase.rpc("get_blocked_ids"),
   ]);
   const blocked = new Set(blockedIds ?? []);
-  const filtered = (data ?? []).filter((p) => !blocked.has(p.user_id));
+  const postRows = (data ?? []).filter((p) => !blocked.has(p.user_id));
 
   const [rawQuotes, rawReposts] = await Promise.all([
     fetchQuotedReposts(supabase, { limit: PAGE, cursor: decoded, blockedIds: blocked }),
     fetchPlainReposts(supabase, { limit: PAGE, cursor: decoded, blockedIds: blocked }),
   ]);
 
-  const allForSigning = [...filtered, ...rawQuotes.map((q) => q.original), ...rawReposts.map((r) => r.original)];
+  const allForSigning = [...postRows, ...rawQuotes.map((q) => q.post), ...rawReposts.map((r) => r.post)];
   const signedById = new Map(
     (allForSigning.length ? await attachSignedMedia(supabase, allForSigning) : []).map((p) => [p.id, p]),
   );
-  const posts = filtered.map((p) => signedById.get(p.id) ?? p);
-  const quotes = rawQuotes.map((q) => ({ ...q, original: signedById.get(q.original.id) ?? q.original }));
-  const reposts = rawReposts.map((r) => ({ ...r, original: signedById.get(r.original.id) ?? r.original }));
+
+  const postIds = [...signedById.keys()];
+  const repostIds = rawQuotes.map((q) => q.id);
+  const mine = await fetchViewerMineState(supabase, viewerId, postIds, repostIds);
+  const engagedById = new Map(withEngagement([...signedById.values()], mine).map((p) => [p.id, p]));
+
+  const posts = postRows.map((r) => engagedById.get(r.id)!);
+  const quotes = rawQuotes.map((r) => toQuotedRepost(r, engagedById.get(r.post.id)!, mine));
+  const reposts = rawReposts.map((r) => ({
+    id: r.id,
+    created_at: r.created_at,
+    reposter_id: r.user_id,
+    reposter: r.reposter,
+    original: engagedById.get(r.post.id)!,
+  }));
 
   const items = mergeFeedTimeline(posts, quotes, reposts).slice(0, PAGE);
   const last = items[items.length - 1];

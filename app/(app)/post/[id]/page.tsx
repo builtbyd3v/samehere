@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient as createAnonClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
-import PostCard, { POST_SELECT, type FeedPost } from "@/components/feed/PostCard";
+import PostCard, { POST_SELECT, withEngagement, type PostRow } from "@/components/feed/PostCard";
 import CommentComposer from "@/components/feed/CommentComposer";
 import DeleteCommentButton from "@/components/feed/DeleteCommentButton";
 import UserBadges from "@/components/profile/UserBadges";
@@ -13,6 +13,7 @@ import ProfileHoverLink from "@/components/profile/ProfileHoverLink";
 import LocalTime from "@/components/ui/LocalTime";
 import { IconChevronLeft, IconSame, IconRepost } from "@/components/icons";
 import { attachSignedMedia } from "@/lib/media";
+import { fetchViewerMineState } from "@/lib/feed-engagement";
 
 type Comment = {
   id: string;
@@ -202,11 +203,12 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
       .order("created_at", { ascending: true })
       .returns<Comment[]>(),
   ]);
-  const raw = data as FeedPost | null;
+  const raw = data as PostRow | null;
   if (!raw) notFound();
-  const [post] = await attachSignedMedia(supabase, [raw]);
-
+  const [signed] = await attachSignedMedia(supabase, [raw]);
   const viewerId = user?.id ?? null;
+  const mine = await fetchViewerMineState(supabase, viewerId, [signed.id], []);
+  const [post] = withEngagement([signed], mine);
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8">

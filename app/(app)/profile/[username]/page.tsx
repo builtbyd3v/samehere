@@ -8,15 +8,16 @@ import { createClient } from "@/lib/supabase/server";
 import type { FollowState } from "@/components/profile/FollowButton";
 import ProfileActions from "@/components/profile/ProfileActions";
 import BlockButton from "@/components/profile/BlockButton";
-import { POST_SELECT, type FeedPost } from "@/components/feed/PostCard";
+import { POST_SELECT, withEngagement, type PostRow } from "@/components/feed/PostCard";
 import FeedTimeline from "@/components/feed/FeedTimeline";
 import ProfileMatchPrompt from "@/components/profile/ProfileMatchPrompt";
 import ProfileActivitySection from "@/components/profile/ProfileActivitySection";
 import ProfileViewersSection from "@/components/profile/ProfileViewersSection";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { attachSignedMedia } from "@/lib/media";
-import { fetchQuotedReposts } from "@/lib/feed-quotes";
+import { fetchQuotedReposts, toQuotedRepost } from "@/lib/feed-quotes";
 import { fetchPlainReposts } from "@/lib/feed-reposts";
+import { fetchViewerMineState } from "@/lib/feed-engagement";
 import { mergeFeedTimeline } from "@/lib/feed-timeline";
 import UserBadges from "@/components/profile/UserBadges";
 import AvatarImage from "@/components/ui/AvatarImage";
@@ -313,7 +314,7 @@ export default async function ProfilePage({
       .eq("user_id", profile.id)
       .order("created_at", { ascending: false })
       .limit(20)
-      .returns<FeedPost[]>(),
+      .returns<PostRow[]>(),
     fetchQuotedReposts(supabase, { userIds: [profile.id], limit: 20 }),
     fetchPlainReposts(supabase, { userIds: [profile.id], limit: 20 }),
     user && !isOwner ? supabase.rpc("get_blocked_ids") : Promise.resolve({ data: [] as string[] }),
@@ -329,14 +330,26 @@ export default async function ProfilePage({
   // Shared signing batch: ONE Storage round trip for every original post
   // surfaced by posts + quotes + reposts (was 3 separate attachSignedMedia
   // calls -- see plan 010 Phase 1).
-  const rawPosts = postsRes.data ?? [];
-  const allForSigning = [...rawPosts, ...quotesRes.map((q) => q.original), ...repostsRes.map((r) => r.original)];
+  const postRows = postsRes.data ?? [];
+  const allForSigning = [...postRows, ...quotesRes.map((q) => q.post), ...repostsRes.map((r) => r.post)];
   const signedById = new Map(
     (allForSigning.length ? await attachSignedMedia(supabase, allForSigning) : []).map((p) => [p.id, p]),
   );
-  const posts = rawPosts.map((p) => signedById.get(p.id) ?? p);
-  const quotes = quotesRes.map((q) => ({ ...q, original: signedById.get(q.original.id) ?? q.original }));
-  const reposts = repostsRes.map((r) => ({ ...r, original: signedById.get(r.original.id) ?? r.original }));
+
+  const postIds = [...signedById.keys()];
+  const repostIds = quotesRes.map((q) => q.id);
+  const mine = await fetchViewerMineState(supabase, viewerId, postIds, repostIds);
+  const engagedById = new Map(withEngagement([...signedById.values()], mine).map((p) => [p.id, p]));
+
+  const posts = postRows.map((r) => engagedById.get(r.id)!);
+  const quotes = quotesRes.map((r) => toQuotedRepost(r, engagedById.get(r.post.id)!, mine));
+  const reposts = repostsRes.map((r) => ({
+    id: r.id,
+    created_at: r.created_at,
+    reposter_id: r.user_id,
+    reposter: r.reposter,
+    original: engagedById.get(r.post.id)!,
+  }));
   const isBlocked = !!(blockedIdsRes.data ?? []).includes(profile.id);
   const amIBlocking = !!myBlockRes.data;
   const profileIsPro = isPro(profile);

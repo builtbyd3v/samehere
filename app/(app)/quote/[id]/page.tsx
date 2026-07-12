@@ -203,7 +203,7 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
   if (!user) return <PublicQuoteView id={id} />;
 
   const [quote, { data: comments }] = await Promise.all([
-    fetchQuotedRepostById(supabase, id),
+    fetchQuotedRepostById(supabase, id, user?.id ?? null),
     supabase
       .from("comments")
       .select("id, content, created_at, user_id, author:profiles!comments_user_id_fkey(username, display_name, avatar_url, is_pro, is_founder, is_campus_founder, verified_student)")

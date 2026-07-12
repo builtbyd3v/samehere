@@ -9,34 +9,74 @@ import ProfileHoverLink from "@/components/profile/ProfileHoverLink";
 import PostBodyLink from "./PostBodyLink";
 import LocalTime from "@/components/ui/LocalTime";
 import type { PostMedia } from "@/lib/media";
+import type { ViewerMineState } from "@/lib/feed-engagement";
 
 export const POST_SELECT =
-  "id, content, created_at, user_id, media, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, is_private, is_pro, is_founder, is_campus_founder, verified_student, profile_school(school)), reactions(user_id, type), reposts(user_id), bookmarks(user_id), comments(count)";
+  "id, content, created_at, user_id, media, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, is_private, is_pro, is_founder, is_campus_founder, verified_student, profile_school(school)), reactions(count), reposts(count), comments(count)";
 
 export const PAGE = 20;
 
+type Author = {
+  username: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  is_private: boolean;
+  is_pro: boolean;
+  is_founder: boolean;
+  is_campus_founder: boolean;
+  verified_student: boolean;
+  profile_school: { school: string | null } | null;
+} | null;
+
+// Raw shape straight off `.select(POST_SELECT)`: media not yet signed
+// (see lib/media.ts's attachSignedMedia), engagement not yet resolved to
+// this viewer's mine-flags (see lib/feed-engagement.ts's withEngagement).
+export type PostRow = {
+  id: string;
+  content: string;
+  created_at: string;
+  user_id: string;
+  media: PostMedia[];
+  author: Author;
+  reactions: { count: number }[];
+  reposts: { count: number }[];
+  comments: { count: number }[];
+};
+
+// Final shape every rendering component consumes: media signed, engagement
+// flattened to public counts + this viewer's private mine-flags. Produced
+// by withEngagement() below, called AFTER attachSignedMedia.
 export type FeedPost = {
   id: string;
   content: string;
   created_at: string;
   user_id: string;
   media: PostMedia[];
-  author: {
-    username: string;
-    display_name: string | null;
-    avatar_url: string | null;
-    is_private: boolean;
-    is_pro: boolean;
-    is_founder: boolean;
-    is_campus_founder: boolean;
-    verified_student: boolean;
-    profile_school: { school: string | null } | null;
-  } | null;
-  reactions: { user_id: string; type: string }[];
-  reposts: { user_id: string }[];
-  bookmarks: { user_id: string }[];
-  comments: { count: number }[];
+  author: Author;
+  samehere_count: number;
+  repost_count: number;
+  comment_count: number;
+  mine_samehere: boolean;
+  mine_repost: boolean;
+  mine_bookmark: boolean;
 };
+
+export function withEngagement(rows: PostRow[], mine: ViewerMineState): FeedPost[] {
+  return rows.map((r) => ({
+    id: r.id,
+    content: r.content,
+    created_at: r.created_at,
+    user_id: r.user_id,
+    media: r.media,
+    author: r.author,
+    samehere_count: r.reactions?.[0]?.count ?? 0,
+    repost_count: r.reposts?.[0]?.count ?? 0,
+    comment_count: r.comments?.[0]?.count ?? 0,
+    mine_samehere: mine.samehere.has(r.id),
+    mine_repost: mine.repost.has(r.id),
+    mine_bookmark: mine.bookmark.has(r.id),
+  }));
+}
 
 function Avatar({
   author,
@@ -93,7 +133,6 @@ export default function PostCard({
   const a = post.author;
   const name = a?.display_name ?? a?.username ?? "Unknown";
   const school = a?.profile_school?.school ?? null;
-  const r = post.reactions ?? [];
   const embedded = variant === "embedded";
   const detail = variant === "detail";
   const linked = !embedded && !detail;
@@ -166,12 +205,12 @@ export default function PostCard({
           post={post}
           viewerId={viewerId}
           authorPrivate={!!a?.is_private}
-          samehere={r.filter((x) => x.type === "samehere").length}
-          repost={post.reposts?.length ?? 0}
-          commentCount={post.comments?.[0]?.count ?? 0}
-          mineSamehere={!!viewerId && r.some((x) => x.type === "samehere" && x.user_id === viewerId)}
-          mineRepost={!!viewerId && (post.reposts ?? []).some((x) => x.user_id === viewerId)}
-          mineBookmark={(post.bookmarks ?? []).length > 0}
+          samehere={post.samehere_count}
+          repost={post.repost_count}
+          commentCount={post.comment_count}
+          mineSamehere={post.mine_samehere}
+          mineRepost={post.mine_repost}
+          mineBookmark={post.mine_bookmark}
           hideComments={detail}
         />
       )}

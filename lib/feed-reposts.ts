@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { POST_SELECT, type FeedPost } from "@/components/feed/PostCard";
+import { POST_SELECT, type FeedPost, type PostRow } from "@/components/feed/PostCard";
 import type { FeedCursor } from "@/lib/feed-cursor";
 import type { Database } from "@/types/database.types";
 
@@ -21,18 +21,26 @@ export type PlainRepost = {
 
 const PLAIN_REPOST_SELECT = `id, created_at, user_id, reposter:profiles!reposts_user_id_fkey(username, display_name, avatar_url, is_pro, is_founder), post:posts(${POST_SELECT})`;
 
+export type RawRepost = {
+  id: string;
+  created_at: string;
+  user_id: string;
+  reposter: PlainRepost["reposter"];
+  post: PostRow;
+};
+
 type RepostRow = {
   id: string;
   created_at: string;
   user_id: string;
   reposter: PlainRepost["reposter"] | null;
-  post: FeedPost | null;
+  post: PostRow | null;
 };
 
 export async function fetchPlainReposts(
   supabase: SupabaseClient<Database>,
   opts: { userIds?: string[]; limit?: number; cursor?: FeedCursor; blockedIds?: Set<string> },
-): Promise<PlainRepost[]> {
+): Promise<RawRepost[]> {
   // userIds omitted = global (e.g. Latest tab); an explicit empty array means
   // "no one to fetch for" (mirrors the old required-array behavior).
   if (opts.userIds && opts.userIds.length === 0) return [];
@@ -62,17 +70,7 @@ export async function fetchPlainReposts(
   // longer readable (deleted, or author went private) — skip those. reposts
   // RLS already mirrors block state (20260711110000), so blockedIds here is
   // belt-and-suspenders app-side filtering, matching fetchQuotedReposts.
-  const rows = ((data ?? []) as unknown as RepostRow[]).filter(
-    (r) => r.post && r.reposter && !(opts.blockedIds?.has(r.user_id) ?? false),
+  return ((data ?? []) as unknown as RepostRow[]).filter(
+    (r): r is RawRepost => !!r.post && !!r.reposter && !(opts.blockedIds?.has(r.user_id) ?? false),
   );
-
-  // Media signing moved to the caller (one shared batch across posts +
-  // quotes + reposts). `original` here is UNSIGNED until the caller fixes it up.
-  return rows.map((r) => ({
-    id: r.id,
-    created_at: r.created_at,
-    reposter_id: r.user_id,
-    reposter: r.reposter!,
-    original: r.post!,
-  }));
 }
