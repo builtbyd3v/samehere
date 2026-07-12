@@ -500,3 +500,20 @@ begin
       execute function public.rls_auto_enable();
   end if;
 end $$;
+
+-- ---------------------------------------------------------------------------
+-- get_profile_counts: dashboard-era definer. No tracked migration creates it,
+-- but 20260708004649_revoke_anon_execute_rpc_backstop.sql (and the explicit
+-- sibling) revoke EXECUTE on it, so a fresh replay dies without it. Shape
+-- captured from production (pg_get_functiondef, 2026-07-12); nothing later
+-- redefines it. create-or-replace so re-applying to the live database is a no-op.
+-- ---------------------------------------------------------------------------
+create or replace function public.get_profile_counts(p_profile_id uuid)
+returns table(posts bigint, followers bigint, following bigint)
+language sql security definer set search_path = '' as $$
+  select
+    (select count(*) from public.posts   where user_id = p_profile_id),
+    (select count(*) from public.follows where following_id = p_profile_id and status = 'accepted'),
+    (select count(*) from public.follows where follower_id  = p_profile_id and status = 'accepted')
+  where auth.uid() is not null;
+$$;
