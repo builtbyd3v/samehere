@@ -26,9 +26,15 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
+  const hasAuthCookie = request.cookies
+    .getAll()
+    .some((c) => c.name.startsWith('sb-') && c.name.includes('-auth-token'))
+
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = hasAuthCookie
+    ? await supabase.auth.getUser()
+    : { data: { user: null } }
 
   const path = request.nextUrl.pathname
   // Metadata image routes (opengraph-image, twitter-image, icon, apple-icon) must be

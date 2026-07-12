@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { getViewer, getViewerProfile, getViewerProfileCounts } from "@/lib/viewer";
 import { POST_SELECT, PAGE, type FeedPost } from "@/components/feed/PostCard";
 import FeedTabs from "@/components/feed/FeedTabs";
 import FeedTimeline from "@/components/feed/FeedTimeline";
@@ -16,6 +17,7 @@ import ComposerToggle from "./ComposerToggle";
 import LeftRail, { LeftRailFallback } from "./LeftRail";
 import OnboardingChecklist from "@/components/feed/OnboardingChecklist";
 import NewPostsPill from "./NewPostsPill";
+import { Skeleton, PostCardSkeleton } from "@/components/ui/Skeleton";
 
 // Desktop feed redesign, now the live /feed. The app shell (app/(app)/layout.tsx)
 // supplies the persistent left nav; this page is a two-column layout — the
@@ -34,50 +36,23 @@ export default async function FeedPage({
 }) {
   const params = await searchParams;
   const tab = params.tab === "following" ? "following" : "latest";
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user } = await getViewer();
   const viewerId = user?.id ?? null;
-
-  const { data: composerProfile } = user
-    ? await supabase.from("profiles").select("avatar_url, bio, is_pro, pro_until, verified_student").eq("id", user.id).single()
-    : { data: null };
-  const composerPro = isPro(composerProfile ?? { is_pro: false, pro_until: null });
-  const [onboardingCounts, onboardingClubs] = user
-    ? await Promise.all([
-        supabase.rpc("get_profile_counts", { p_profile_id: user.id }),
-        supabase.from("club_members").select("club_id", { count: "exact", head: true }).eq("user_id", user.id),
-      ])
-    : [{ data: null }, { count: null }];
 
   return (
     <main data-feed-page className="page-enter grid grid-cols-1 justify-center gap-7 py-6 lg:grid-cols-[minmax(0,600px)_340px] lg:py-8">
       <div className="min-w-0">
-        <div className="sticky top-14 z-30 mb-4 -mt-2 border-b border-[var(--border)] bg-[var(--canvas)]/95 pt-2 pb-3 backdrop-blur">
-          <h1 className="sr-only">Feed</h1>
-          <ComposerToggle isPro={composerPro} avatarUrl={composerProfile?.avatar_url ?? null} />
-          <div className="mt-3">
-            <FeedTabs tab={tab} basePath="/feed" />
-          </div>
-        </div>
+        <Suspense fallback={<FeedHeaderFallback tab={tab} />}>
+          <FeedHeader tab={tab} userId={user?.id ?? null} />
+        </Suspense>
 
-        {user && (
-          <OnboardingChecklist
-            avatarUrl={composerProfile?.avatar_url ?? null}
-            bio={composerProfile?.bio ?? null}
-            postCount={Number(onboardingCounts.data?.[0]?.posts ?? 0)}
-            followingCount={Number(onboardingCounts.data?.[0]?.following ?? 0)}
-            verifiedStudent={!!composerProfile?.verified_student}
-            inClub={(onboardingClubs.count ?? 0) > 0}
-          />
-        )}
-
-        {tab === "latest" ? (
-          <LatestTab viewerId={viewerId} />
-        ) : (
-          <FollowingTab userId={user?.id ?? null} viewerId={viewerId} />
-        )}
+        <Suspense fallback={<FeedTimelineFallback />}>
+          {tab === "latest" ? (
+            <LatestTab viewerId={viewerId} />
+          ) : (
+            <FollowingTab userId={user?.id ?? null} viewerId={viewerId} />
+          )}
+        </Suspense>
       </div>
 
       {/* Right rail — desktop only; the feed reads full-width on mobile. */}
@@ -92,6 +67,70 @@ export default async function FeedPage({
         </div>
       </aside>
     </main>
+  );
+}
+
+// Composer trigger + tabs + onboarding checklist. Suspense-wrapped so its own
+// profile/counts/clubs fetch runs independently of (not before) the timeline
+// below — same reasoning as LeftRail/RightRail's own boundaries.
+async function FeedHeader({ tab, userId }: { tab: "latest" | "following"; userId: string | null }) {
+  const composerProfile = userId ? await getViewerProfile() : null;
+  const composerPro = isPro(composerProfile ?? { is_pro: false, pro_until: null });
+
+  let counts: Awaited<ReturnType<typeof getViewerProfileCounts>> = null;
+  let inClub = false;
+  if (userId) {
+    const { supabase } = await getViewer();
+    const [countsResult, clubsResult] = await Promise.all([
+      getViewerProfileCounts(),
+      supabase.from("club_members").select("club_id", { count: "exact", head: true }).eq("user_id", userId),
+    ]);
+    counts = countsResult;
+    inClub = (clubsResult.count ?? 0) > 0;
+  }
+
+  return (
+    <>
+      <div className="sticky top-14 z-30 mb-4 -mt-2 border-b border-[var(--border)] bg-[var(--canvas)]/95 pt-2 pb-3 backdrop-blur">
+        <h1 className="sr-only">Feed</h1>
+        <ComposerToggle isPro={composerPro} avatarUrl={composerProfile?.avatar_url ?? null} />
+        <div className="mt-3">
+          <FeedTabs tab={tab} basePath="/feed" />
+        </div>
+      </div>
+      {userId && (
+        <OnboardingChecklist
+          avatarUrl={composerProfile?.avatar_url ?? null}
+          bio={composerProfile?.bio ?? null}
+          postCount={counts?.posts ?? 0}
+          followingCount={counts?.following ?? 0}
+          verifiedStudent={!!composerProfile?.verified_student}
+          inClub={inClub}
+        />
+      )}
+    </>
+  );
+}
+
+function FeedHeaderFallback({ tab }: { tab: "latest" | "following" }) {
+  return (
+    <div className="sticky top-14 z-30 mb-4 -mt-2 border-b border-[var(--border)] bg-[var(--canvas)]/95 pt-2 pb-3 backdrop-blur">
+      <h1 className="sr-only">Feed</h1>
+      <Skeleton className="h-[68px] w-full rounded-2xl" />
+      <div className="mt-3">
+        <FeedTabs tab={tab} basePath="/feed" />
+      </div>
+    </div>
+  );
+}
+
+function FeedTimelineFallback() {
+  return (
+    <div className="flex flex-col gap-3">
+      <PostCardSkeleton />
+      <PostCardSkeleton />
+      <PostCardSkeleton />
+    </div>
   );
 }
 

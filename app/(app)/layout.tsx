@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { createClient } from "@/lib/supabase/server";
+import { getViewer, getViewerProfile } from "@/lib/viewer";
 import Navbar from "@/components/layout/Navbar";
 import LeftNav from "@/components/layout/LeftNav";
 import LeftNavUnread from "@/components/layout/LeftNavUnread";
@@ -24,14 +24,8 @@ async function TabTitleUnread() {
 // (desktop) / bottom bar (mobile), and the centered content area. The proxy
 // already gates these routes; this just needs the username for the profile link.
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const { data: profile } = user
-    ? await supabase.from("profiles").select("username, avatar_url, is_pro, pro_until").eq("id", user.id).single()
-    : { data: null };
+  const { supabase, user } = await getViewer();
+  const profile = await getViewerProfile();
 
   // is_admin is a privileged column (revoked from the authenticated role); read
   // it through the own-status definer instead, same as app/(app)/admin/page.tsx.

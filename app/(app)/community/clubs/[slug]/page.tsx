@@ -45,16 +45,15 @@ const ANNOUNCEMENT_SELECT =
 export default async function ClubPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const [{ data: { user } }, { data: club }] = await Promise.all([
+    supabase.auth.getUser(),
+    supabase
+      .from("clubs")
+      .select("id, slug, name, purpose, tags, is_open, created_by, avatar_url, is_verified")
+      .eq("slug", slug)
+      .maybeSingle(),
+  ]);
   if (!user) return null; // proxy already gates this route
-
-  const { data: club } = await supabase
-    .from("clubs")
-    .select("id, slug, name, purpose, tags, is_open, created_by, avatar_url, is_verified")
-    .eq("slug", slug)
-    .maybeSingle();
   if (!club) notFound();
 
   const [{ data: membership }, { data: acceptedRaw }] = await Promise.all([

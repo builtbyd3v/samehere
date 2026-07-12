@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { createClient } from "@/lib/supabase/server";
+import { getViewer, getViewerProfile } from "@/lib/viewer";
 import { getCachedLeaderboard } from "@/lib/leaderboard";
 import AvatarImage from "@/components/ui/AvatarImage";
 import SuggestedFollows, { SuggestedFollowsFallback, type SuggestedProfile } from "@/components/feed/SuggestedFollows";
@@ -27,19 +27,12 @@ function Initials({ name, className }: { name: string; className: string }) {
 // here, this is the fallback card), leaderboard (getCachedLeaderboard), and
 // the viewer's clubs.
 export default async function RightRail() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getViewer();
   if (!user) return null; // proxy already gates this route
 
-  const [{ data: profile }, leaderboard, { data: myFollows }] =
+  const [profile, leaderboard, { data: myFollows }] =
     await Promise.all([
-      supabase
-        .from("profiles")
-        .select("username, display_name, avatar_url, is_pro, verified_student, is_founder, is_campus_founder, profile_school(school), year, major, goals, bio, pro_until")
-        .eq("id", user.id)
-        .single(),
+      getViewerProfile(),
       getCachedLeaderboard(supabase),
       supabase.from("follows").select("following_id").eq("follower_id", user.id),
     ]);

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { getViewer, getViewerProfile, getViewerProfileCounts } from "@/lib/viewer";
 import AvatarImage from "@/components/ui/AvatarImage";
 import UserBadges from "@/components/profile/UserBadges";
 import ContributionHeatmap, { type HeatmapDay } from "@/components/profile/ContributionHeatmap";
@@ -14,20 +14,13 @@ function Initials({ name, className }: { name: string; className: string }) {
 }
 
 export default async function LeftRail() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getViewer();
   if (!user) return null; // proxy already gates this route
 
-  const [{ data: profile }, { data: heatmapRaw }, { data: countsData }] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("username, display_name, avatar_url, is_pro, verified_student, is_founder, is_campus_founder, profile_school(school)")
-      .eq("id", user.id)
-      .single(),
+  const [profile, { data: heatmapRaw }, countsData] = await Promise.all([
+    getViewerProfile(),
     supabase.rpc("get_heatmap", { p_profile_id: user.id }),
-    supabase.rpc("get_profile_counts", { p_profile_id: user.id }),
+    getViewerProfileCounts(),
   ]);
 
   const heatmap: HeatmapDay[] = (heatmapRaw ?? []).map((d) => ({
@@ -36,7 +29,7 @@ export default async function LeftRail() {
     breakdown: (d.breakdown as Record<string, number> | null) ?? {},
   }));
 
-  const counts = countsData?.[0] ?? { posts: 0, followers: 0, following: 0 };
+  const counts = countsData ?? { posts: 0, followers: 0, following: 0 };
 
   const name = profile?.display_name ?? profile?.username ?? "You";
   const school = profile?.profile_school?.school ?? null;

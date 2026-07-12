@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 export async function markNotificationsRead() {
   const supabase = await createClient();
   await supabase.rpc("mark_all_notifications_read");
-  revalidatePath("/", "layout");
+  revalidatePath("/feed");
 }
 
 export async function getNotificationUnreadCount(): Promise<number> {

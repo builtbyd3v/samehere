@@ -255,6 +255,6 @@ export async function markDmRead(conversationId: string) {
   if (!user) return;
 
   await supabase.rpc("mark_dm_read", { p_conversation_id: conversationId });
-  revalidatePath("/", "layout");
+  revalidatePath("/feed");
   revalidatePath("/messages");
 }
