@@ -28,10 +28,13 @@ export function modelForTier(isPro: boolean): string | undefined {
 // MUST have a non-AI fallback. Output is untrusted: callers render it as plain
 // text, never dangerouslySetInnerHTML. `opts.model` overrides the default model
 // (see modelForTier); `opts.maxTokens` caps output length.
+// Optional temperature is forwarded when set (omit → provider default). Minimal
+// B1-compatible plumbing so Workstream C can pass temperature without owning
+// the full B prompt overhaul; merge with 029-B may double-apply the same change.
 export async function generateText(
   system: string,
   prompt: string,
-  opts?: { model?: string; maxTokens?: number },
+  opts?: { model?: string; maxTokens?: number; temperature?: number },
 ): Promise<string | null> {
   const useModel = opts?.model ?? model;
   if (!client || !useModel) return null;
@@ -39,6 +42,7 @@ export async function generateText(
     const res = await client.chat.completions.create({
       model: useModel,
       max_completion_tokens: opts?.maxTokens ?? 80,
+      ...(opts?.temperature !== undefined ? { temperature: opts.temperature } : {}),
       messages: [
         { role: "system", content: system },
         { role: "user", content: prompt },

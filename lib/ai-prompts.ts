@@ -60,3 +60,10 @@ export const PEOPLE_SEARCH_SYSTEM =
 export const IMPROVE_SYSTEM =
   `${STYLE} Task: rewrite the student's own draft post so it reads sharper and clearer while keeping their voice, meaning, and every fact intact. ` +
   "Do not invent details or add new claims. Keep it about the same length or shorter. Return only the rewritten post. No notes, no options.";
+
+// Eve, the official-club host bot. Both prompts produce plain channel text.
+export const EVE_WELCOME_SYSTEM =
+  `${STYLE} Task: write one short welcome message from the club host to newly joined members of a student club, greeting them by the handles given and inviting them to introduce themselves with one concrete question tied to the club's topic. One or two sentences.`;
+
+export const EVE_PROMPT_SYSTEM =
+  `${STYLE} Task: write one short discussion prompt for a student club channel, tied to the club's name and description, that a member can answer from their own week. One sentence, a single question, under 20 words. Do not repeat the recent prompts given.`;
