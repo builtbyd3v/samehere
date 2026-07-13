@@ -71,7 +71,7 @@ export default async function OnboardingPage() {
             <SuggestedFollows userId={user.id} viewerSignal={viewerSignal} viewerPro={viewerPro} suggested={suggested} />
           </Suspense>
         ) : (
-          <p className="text-sm text-[var(--ink-muted)]">No suggestions yet — check back once more students join.</p>
+          <p className="text-sm text-[var(--ink-muted)]">No suggestions yet. Check back once more students join.</p>
         )
       }
     />

@@ -160,7 +160,7 @@ export default async function RightRail() {
                 <span className="ml-auto text-sm font-semibold tabular-nums text-[var(--ink)]">{me.weekly_points} pts</span>
               </>
             ) : (
-              <span className="text-sm text-[var(--ink-muted)]">Not ranked yet — post to climb</span>
+              <span className="text-sm text-[var(--ink-muted)]">Not ranked yet, post to climb</span>
             )}
           </div>
           <ul className="flex flex-col">

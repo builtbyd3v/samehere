@@ -240,7 +240,7 @@ export default function OnboardingWizard({
         {step === 3 && (
           <form onSubmit={onSubmitPost}>
             <h2 className="mb-1 text-lg font-semibold">Post something real</h2>
-            <p className="mb-4 text-sm text-[var(--ink-muted)]">Optional — what are you building or figuring out?</p>
+            <p className="mb-4 text-sm text-[var(--ink-muted)]">Optional: what are you building or figuring out?</p>
             {postError && <p role="alert" className="mb-3 text-sm text-[var(--danger)]">{postError}</p>}
             <textarea
               value={postContent}

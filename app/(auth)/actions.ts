@@ -62,7 +62,7 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
     // duplicate email and rate limits come back with their own codes/status.
     const code = error.code ?? "";
     if (code.includes("rate_limit") || error.status === 429)
-      return { error: "Too many attempts — wait a minute and try again." };
+      return { error: "Too many attempts. Wait a minute and try again." };
     if (code === "user_already_exists" || code === "email_exists")
       return { error: "An account with that email already exists. Log in or reset your password." };
     if (error.status === 500 || /database error/i.test(error.message))

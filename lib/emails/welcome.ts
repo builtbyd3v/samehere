@@ -12,8 +12,8 @@ export function welcomeEmail(): { subject: string; text: string; html: string } 
   const subject = "welcome to samehere";
 
   const text =
-    "hey — you're in. samehere is small right now, on purpose: every person here was invited. " +
-    "three things worth doing first: finish your profile, post something real, and join a club at https://samehere.dev/community. — Dev";
+    "hey, you're in. samehere is small right now, on purpose: every person here was invited. " +
+    "three things worth doing first: finish your profile, post something real, and join a club at https://samehere.dev/community.\n\nDev";
 
   const html = `
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${CREAM};padding:32px 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
@@ -28,11 +28,11 @@ export function welcomeEmail(): { subject: string; text: string; html: string } 
         <tr>
           <td style="padding:8px 32px 0;">
             <h1 style="margin:0 0 12px;font-size:22px;line-height:1.3;letter-spacing:-0.02em;color:${INK};">
-              hey — you're in.
+              hey, you're in.
             </h1>
             <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:${INK_MUTED};">
               samehere is small right now, on purpose: every person here was invited.
-              three things worth doing first —
+              three things worth doing first:
             </p>
             <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
               <tr>
@@ -68,7 +68,7 @@ export function welcomeEmail(): { subject: string; text: string; html: string } 
         </tr>
         <tr>
           <td style="padding:16px 32px 28px;border-top:1px solid ${BORDER};">
-            <p style="margin:0;font-size:13px;line-height:1.6;color:${INK_MUTED};">— Dev</p>
+            <p style="margin:0;font-size:13px;line-height:1.6;color:${INK_MUTED};">Dev</p>
           </td>
         </tr>
       </table>

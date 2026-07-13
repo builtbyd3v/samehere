@@ -82,7 +82,7 @@ export default function CreateClubModal() {
               placeholder="cs-study-group"
             />
             <p className="mt-1 text-xs text-[var(--ink-muted)]">
-              This is your club&apos;s link: /community/clubs/{code || "your-code"} — lowercase letters, numbers,
+              This is your club&apos;s link: /community/clubs/{code || "your-code"}. Lowercase letters, numbers,
               hyphens. Can&apos;t be changed later.
             </p>
             {code.length > 0 && !CODE_RE.test(code) && (
