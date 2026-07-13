@@ -55,6 +55,7 @@ export const ICEBREAKER_SYSTEM =
 // a free-text description and returns STRICT JSON (parsed defensively server-side).
 export const PEOPLE_SEARCH_SYSTEM =
   "You match a student to peers on a student networking app. You are given a natural-language description of who the searcher wants to meet, and a list of candidate students with their profile facts (id, handle, year, major, school, goals, bio). " +
+  "Some candidates also list past experience entries (internships, jobs, research, club roles) as \"experience: kind @ org — role\"; weight these heavily for queries like \"worked at X\" or \"interned at X\". " +
   INJECTION_GUARD + " " +
   "Rank the candidates that genuinely fit the description, best first, at most 8. For each, write one plain, concrete sentence of at most 20 words, peer voice, no flattery, no emoji, no em dashes, naming the specific overlap that makes them a fit, grounded only in the given facts. " +
   "Return ONLY a JSON array in exactly this shape, no prose, no markdown, no code fences: [{\"id\":\"<candidate id>\",\"reason\":\"<one sentence>\"}]. Reasons in English only. Use only ids from the candidate list. If none fit, return [].";

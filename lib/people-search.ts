@@ -47,6 +47,8 @@ type Candidate = {
   profile_school: { school: string | null } | null;
 };
 
+type ExpRow = { user_id: string; kind: string; org: string; role: string; term: string | null };
+
 const AI_SEARCH_POOL = 40;
 const CAND_SELECT =
   "id, username, display_name, avatar_url, is_pro, is_founder, is_campus_founder, verified_student, year, major, goals, bio, profile_school(school)";
@@ -68,13 +70,17 @@ function toResult(c: Candidate): PeopleSearchResult {
 // id stays outside the delimiter (uuid, not user-authored). Everything else
 // here is free text the candidate wrote — bundled into one untrusted block
 // so it can never be read as instructions (see lib/ai-prompts.ts).
-function compactCandidate(c: Candidate): string {
+function compactCandidate(c: Candidate, exp: ExpRow[]): string {
   const data = [
     `@${c.username}${c.display_name ? ` (${c.display_name})` : ""}`,
     [c.year, c.major].filter(Boolean).join(" "),
     c.profile_school?.school ? `school: ${c.profile_school.school}` : "",
     c.goals ? `goals: ${c.goals.slice(0, 120)}` : "",
     c.bio ? `bio: ${c.bio.slice(0, 120)}` : "",
+    ...exp.map(
+      (e) =>
+        `experience: ${e.kind.slice(0, 80)} @ ${e.org.slice(0, 80)} — ${e.role.slice(0, 80)}${e.term ? ` (${e.term.slice(0, 80)})` : ""}`,
+    ),
   ]
     .filter(Boolean)
     .join(" | ");
@@ -147,12 +153,32 @@ export async function peopleSearchCore(
     ])
     .join(",");
 
-  const [{ data: matched }, { data: blockedIds }] = await Promise.all([
+  const expOrFilter = tokens.flatMap((t) => [`org.ilike.%${t}%`, `role.ilike.%${t}%`]).join(",");
+
+  const [{ data: matched }, { data: blockedIds }, { data: expMatches }] = await Promise.all([
     supabase.from("profiles").select(CAND_SELECT).or(orFilter).neq("id", user.id).limit(AI_SEARCH_POOL).returns<Candidate[]>(),
     supabase.rpc("get_blocked_ids"),
+    expOrFilter
+      ? supabase.from("experiences").select("user_id, org, role").or(expOrFilter).limit(AI_SEARCH_POOL)
+      : Promise.resolve({ data: [] as { user_id: string }[] }),
   ]);
   const blocked = new Set(blockedIds ?? []);
   const candidates = (matched ?? []).filter((c) => !blocked.has(c.id));
+
+  // Experience org/role match → pull those profiles into the pool too (e.g. "interned at Stripe").
+  const expUserIds = [...new Set((expMatches ?? []).map((e) => e.user_id))].filter(
+    (id) => id !== user.id && !blocked.has(id) && !candidates.some((c) => c.id === id),
+  );
+  if (expUserIds.length && candidates.length < AI_SEARCH_POOL) {
+    const { data: expProfiles } = await supabase
+      .from("profiles")
+      .select(CAND_SELECT)
+      .in("id", expUserIds.slice(0, AI_SEARCH_POOL - candidates.length))
+      .returns<Candidate[]>();
+    for (const p of expProfiles ?? []) {
+      if (!blocked.has(p.id)) candidates.push(p);
+    }
+  }
 
   // Thin pool → top up with recent students so the model still has options.
   if (candidates.length < 5) {
@@ -181,7 +207,20 @@ export async function peopleSearchCore(
   // Free user out of their 1/day → upsell; Pro cap is 150/day.
   if (!allowed) return pro ? { results: candidates.slice(0, 8).map(toResult) } : { overCap: true };
 
-  const list = candidates.map(compactCandidate).join("\n");
+  const { data: candExp } = await supabase
+    .from("experiences")
+    .select("user_id, kind, org, role, term")
+    .in("user_id", candidates.map((c) => c.id))
+    .order("created_at", { ascending: false })
+    .returns<ExpRow[]>();
+  const expByUser = new Map<string, ExpRow[]>();
+  for (const e of candExp ?? []) {
+    const arr = expByUser.get(e.user_id) ?? [];
+    if (arr.length < 3) arr.push(e);
+    expByUser.set(e.user_id, arr);
+  }
+
+  const list = candidates.map((c) => compactCandidate(c, expByUser.get(c.id) ?? [])).join("\n");
   const raw = await generateText(
     PEOPLE_SEARCH_SYSTEM,
     `Looking for: ${untrusted(safe)}\n\nCandidates:\n${list}`,
