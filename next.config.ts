@@ -30,6 +30,12 @@ const csp = [
   `base-uri 'self'`,
   `form-action 'self'`,
   `object-src 'none'`,
+  // Report-Only collector (Plan 040) — no data existed to justify enforcing
+  // before this. `report-uri` (legacy, broad browser support) and
+  // `report-to` (Reporting API, needs the Reporting-Endpoints header below)
+  // both point at the same in-app route; harmless to ship both.
+  `report-uri /api/csp-report`,
+  `report-to csp-endpoint`,
 ].join("; ");
 
 const nextConfig: NextConfig = {
@@ -89,6 +95,10 @@ const nextConfig: NextConfig = {
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          {
+            key: "Reporting-Endpoints",
+            value: `csp-endpoint="/api/csp-report"`,
+          },
           { key: "Content-Security-Policy-Report-Only", value: csp },
         ],
       },
