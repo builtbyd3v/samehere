@@ -148,17 +148,17 @@ export default async function JobsPage({
   }
 
   // Cached fit results (from a prior "Find my matches" run) render on load,
-  // no AI call. Joined listing data is re-selected fresh so a listing that
-  // went inactive since the last rank still shows current info (or drops
-  // if the join fails).
+  // no AI call. Joined listing data is re-selected fresh; inactive listings
+  // are excluded here (job_fit rows persist until the user re-ranks).
   let initialResults: JobFitResult[] = [];
   if (user) {
     const { data: fits } = await supabase
       .from("job_fit")
       .select(
-        "listing_id, reason, listing:job_listings(id, org, title, kind, locations, term, url, posted_at, category, sponsorship, company_slug, degrees, description)"
+        "listing_id, reason, listing:job_listings!inner(id, org, title, kind, locations, term, url, posted_at, category, sponsorship, company_slug, degrees, description)"
       )
       .eq("user_id", user.id)
+      .eq("listing.active", true)
       .order("created_at", { ascending: false })
       .returns<{ listing_id: string; reason: string; listing: ListingRow | null }[]>();
     initialResults = (fits ?? [])

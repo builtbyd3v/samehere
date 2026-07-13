@@ -108,7 +108,7 @@ export default function FilterForm({
           options={[
             { value: "", label: "All kinds" },
             { value: "internship", label: "Internship" },
-            { value: "new_grad", label: "New grad" },
+            // new_grad returns once a new-grad ingest source exists (kind enum kept in DB)
           ]}
         />
         <Select
