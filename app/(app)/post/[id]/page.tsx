@@ -5,8 +5,7 @@ import { cookies } from "next/headers";
 import { createClient as createAnonClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import PostCard, { POST_SELECT, withEngagement, type PostRow } from "@/components/feed/PostCard";
-import CommentComposer from "@/components/feed/CommentComposer";
-import DeleteCommentButton from "@/components/feed/DeleteCommentButton";
+import CommentThread from "@/components/feed/CommentThread";
 import UserBadges from "@/components/profile/UserBadges";
 import AvatarImage from "@/components/ui/AvatarImage";
 import MentionText from "@/components/ui/MentionText";
@@ -15,14 +14,8 @@ import LocalTime from "@/components/ui/LocalTime";
 import { IconChevronLeft, IconSame, IconRepost } from "@/components/icons";
 import { attachSignedMedia } from "@/lib/media";
 import { fetchViewerMineState } from "@/lib/feed-engagement";
-
-type Comment = {
-  id: string;
-  content: string;
-  created_at: string;
-  user_id: string;
-  author: { username: string; display_name: string | null; avatar_url: string | null; is_pro: boolean; is_founder: boolean; is_campus_founder: boolean; verified_student: boolean } | null;
-};
+import { getViewerProfile } from "@/lib/viewer";
+import type { Comment, CommentAuthor } from "@/components/feed/comment-types";
 
 // noindex/nofollow, not disabled — link-preview crawlers (Twitterbot, Slackbot,
 // etc.) fetch and parse <head> directly, bypassing robots, so unfurls still
@@ -222,6 +215,23 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
   const mine = await fetchViewerMineState(supabase, viewerId, [signed.id], []);
   const [post] = withEngagement([signed], mine);
 
+  // Own profile, for the optimistic comment row's avatar/name/badges (the
+  // real row won't have these until the server round-trip resolves).
+  // request-scoped cache() in lib/viewer.ts — free if layout.tsx already
+  // fetched it this render.
+  const vp = await getViewerProfile();
+  const viewerAuthor: CommentAuthor | null = vp
+    ? {
+        username: vp.username,
+        display_name: vp.display_name,
+        avatar_url: vp.avatar_url,
+        is_pro: vp.is_pro ?? false,
+        is_founder: vp.is_founder ?? false,
+        is_campus_founder: vp.is_campus_founder ?? false,
+        verified_student: vp.verified_student ?? false,
+      }
+    : null;
+
   return (
     <main className="mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8">
       <Link
@@ -237,63 +247,12 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
       </div>
 
       <section className="card mt-6 p-4 sm:p-5">
-        <h2 className="mb-4 text-sm font-semibold text-[var(--ink)]">
-          {comments && comments.length > 0 ? `${comments.length} comments` : "Comments"}
-        </h2>
-
-        <CommentComposer postId={post.id} />
-
-        <div className="mt-6 space-y-5">
-          {comments?.map((c) => {
-            const cname = c.author?.display_name ?? c.author?.username ?? "Unknown";
-            return (
-              <div key={c.id} className="flex gap-3">
-                {c.author ? (
-                  <ProfileHoverLink
-                    href={`/profile/${c.author.username}`}
-                    username={c.author.username}
-                    className="shrink-0"
-                  >
-                    {c.author.avatar_url ? (
-                      <AvatarImage src={c.author.avatar_url} alt="" className="h-8 w-8 rounded-full border border-[var(--border)] object-cover" pro={c.author.is_pro ?? false} />
-                    ) : (
-                      <div className="grid h-8 w-8 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-xs font-semibold text-[var(--ink-muted)]">
-                        {cname.charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                  </ProfileHoverLink>
-                ) : (
-                  <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-xs font-semibold text-[var(--ink-muted)]">
-                    {cname.charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-x-1.5 text-sm">
-                    {c.author ? (
-                      <ProfileHoverLink
-                        href={`/profile/${c.author.username}`}
-                        username={c.author.username}
-                        className="font-medium hover:underline"
-                      >
-                        {cname}
-                      </ProfileHoverLink>
-                    ) : (
-                      <span className="font-medium">{cname}</span>
-                    )}
-                    {c.author && <UserBadges isPro={c.author.is_pro} isFounder={c.author.is_founder} isCampusFounder={c.author.is_campus_founder} isVerifiedStudent={c.author.verified_student} />}
-                    {c.author && <span className="text-[var(--ink-muted)]">@{c.author.username}</span>}
-                    <div className="ml-auto">
-                      <DeleteCommentButton commentId={c.id} canDelete={viewerId === c.user_id} />
-                    </div>
-                  </div>
-                  <p className="mt-0.5 whitespace-pre-line break-words text-[15px] leading-[1.55]">
-                    <MentionText>{c.content}</MentionText>
-                  </p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <CommentThread
+          postId={post.id}
+          initialComments={comments ?? []}
+          viewerId={viewerId}
+          viewer={viewerAuthor}
+        />
       </section>
     </main>
   );

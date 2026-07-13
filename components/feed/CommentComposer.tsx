@@ -6,12 +6,23 @@ import { useSubmitShortcut } from "@/lib/useSubmitShortcut";
 import { submitShortcutLabel } from "@/lib/keyboard";
 import { TEXT_LIMITS } from "@/lib/utils/validation";
 import MentionTextarea from "@/components/ui/MentionTextarea";
+import type { Comment, CommentAuthor } from "./comment-types";
 
 const POINT_AT = 50; // ponytail: mirrors comments_award_contribution comment threshold
 const AWARD = 3; // ponytail: mirrors comments_award_contribution comment points
 const MAX = TEXT_LIMITS.comment;
 
-export default function CommentComposer({ postId }: { postId?: string }) {
+type Props = {
+  postId?: string;
+  // Below three are optional so this composer still works standalone
+  // (no viewer/callback -> no optimistic row, just the existing wait-for-server
+  // behavior). CommentThread always passes them.
+  viewerId?: string | null;
+  viewer?: CommentAuthor | null;
+  onOptimisticAdd?: (comment: Comment) => void;
+};
+
+export default function CommentComposer({ postId, viewerId, viewer, onOptimisticAdd }: Props) {
   const [state, formAction, pending] = useActionState<CommentState, FormData>(createComment, {});
   const [, startSubmit] = useTransition();
   const ref = useRef<HTMLFormElement>(null);
@@ -19,6 +30,9 @@ export default function CommentComposer({ postId }: { postId?: string }) {
   const [content, setContent] = useState("");
   const [len, setLen] = useState(0);
   const [shortcutLabel, setShortcutLabel] = useState("");
+  // Text that was in flight when we cleared the box optimistically — restored
+  // if the server action comes back with an error.
+  const lastSubmitted = useRef("");
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- navigator-based label deferred to post-hydration to avoid an SSR/client mismatch
@@ -28,16 +42,40 @@ export default function CommentComposer({ postId }: { postId?: string }) {
   useEffect(() => {
     if (state.ok) {
       ref.current?.reset();
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- reacts to useActionState completion (no synchronous onSuccess in React 19's action model); paired with the form.reset() side effect above.
-      setContent("");
-      setLen(0);
     }
-  }, [state.ok]);
+    if (state.error) {
+      // Reacts to useActionState completion (no synchronous onError in React
+      // 19's action model); restores the text an optimistic submit already
+      // cleared.
+      setContent(lastSubmitted.current);
+      setLen(lastSubmitted.current.trim().length);
+    }
+  }, [state]);
 
   const submit = useCallback(() => {
     if (!ref.current || pending || len === 0) return;
-    startSubmit(() => formAction(new FormData(ref.current!)));
-  }, [formAction, pending, len]);
+    const formData = new FormData(ref.current);
+    lastSubmitted.current = content;
+
+    // Clear + render the optimistic row immediately; both must be inside the
+    // same transition as the action call or React rejects the optimistic
+    // update (and it wouldn't revert in sync with the revalidated list).
+    setContent("");
+    setLen(0);
+    startSubmit(() => {
+      if (viewer && viewerId) {
+        onOptimisticAdd?.({
+          id: `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          content,
+          created_at: new Date().toISOString(),
+          user_id: viewerId,
+          author: viewer,
+          pending: true,
+        });
+      }
+      formAction(formData);
+    });
+  }, [content, formAction, len, onOptimisticAdd, pending, viewer, viewerId]);
 
   useSubmitShortcut(textareaRef, submit, !pending && len > 0);
 
@@ -46,7 +84,10 @@ export default function CommentComposer({ postId }: { postId?: string }) {
   return (
     <form
       ref={ref}
-      action={formAction}
+      onSubmit={(e) => {
+        e.preventDefault();
+        submit();
+      }}
       className="rounded-xl border border-[var(--border)] bg-[var(--canvas)] p-4 transition-colors focus-within:border-[var(--border-strong)]"
     >
       <input type="hidden" name="post_id" value={postId ?? ""} />
