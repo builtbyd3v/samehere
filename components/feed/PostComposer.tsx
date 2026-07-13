@@ -83,7 +83,11 @@ export default function PostComposer({
     filesRef.current = files;
   });
 
-  // Reset the form and counter after a successful post.
+  // Reset the form and counter after a successful post. Depend on the `state`
+  // object identity, not `state.ok`: two posts in a row both return { ok: true },
+  // so the boolean never changes on the 2nd — but useActionState stores a fresh
+  // object each time, so the object reference does. Keying on that re-runs the
+  // reset for every successful post instead of only the first.
   useEffect(() => {
     if (state.ok) {
       ref.current?.reset();
@@ -94,7 +98,7 @@ export default function PostComposer({
       setFiles([]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.ok]);
+  }, [state]);
 
   // Revoke object URLs on unmount only.
   useEffect(() => () => filesRef.current.forEach((f) => URL.revokeObjectURL(f.url)), []);

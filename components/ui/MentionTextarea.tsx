@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { getBrowserClient } from "@/lib/supabase/client";
-import { activeMentionAt } from "@/lib/mentions";
+import { activeMentionAt, parseMentions } from "@/lib/mentions";
 import { searchMentionUsers, type MentionSuggestion } from "@/lib/profile-preview";
 import MentionSuggestionList from "@/components/profile/MentionSuggestionList";
 
@@ -34,6 +34,20 @@ export default function MentionTextarea({
   const [range, setRange] = useState<{ start: number; end: number } | null>(null);
   const [highlight, setHighlight] = useState(0);
   const debounceRef = useRef<number | undefined>(undefined);
+  // Mirror div painted behind the textarea. A native <textarea> can't color
+  // substrings, so the textarea text goes transparent (caret stays ink) and
+  // this backdrop renders the same text with @mentions in blue. It reuses the
+  // textarea's className so font metrics/padding line up exactly.
+  const backdropRef = useRef<HTMLDivElement>(null);
+
+  function syncScroll() {
+    const el = textareaRef.current;
+    const bd = backdropRef.current;
+    if (el && bd) {
+      bd.scrollTop = el.scrollTop;
+      bd.scrollLeft = el.scrollLeft;
+    }
+  }
 
   useEffect(() => {
     const el = textareaRef.current;
@@ -99,6 +113,23 @@ export default function MentionTextarea({
 
   return (
     <div className="relative">
+      <div
+        ref={backdropRef}
+        aria-hidden="true"
+        className={`${className ?? ""} pointer-events-none absolute inset-0 overflow-hidden whitespace-pre-wrap break-words text-[var(--ink)]`}
+      >
+        {parseMentions(value).map((part, i) =>
+          part.type === "mention" ? (
+            <span key={i} className="text-[var(--blue)]">
+              @{part.username}
+            </span>
+          ) : (
+            <span key={i}>{part.value}</span>
+          ),
+        )}
+        {/* trailing zero-width char so a final newline still renders a line */}
+        {"​"}
+      </div>
       <textarea
         ref={textareaRef}
         name={name}
@@ -107,11 +138,14 @@ export default function MentionTextarea({
         maxLength={maxLength}
         value={value}
         placeholder={placeholder}
-        className={className}
+        className={`relative ${className ?? ""}`}
+        style={{ color: "transparent", caretColor: "var(--ink)" }}
         onChange={(e) => {
           onChange(e.target.value);
           requestAnimationFrame(syncMention);
+          syncScroll();
         }}
+        onScroll={syncScroll}
         onClick={syncMention}
         onKeyUp={syncMention}
         onKeyDown={onKeyDown}
