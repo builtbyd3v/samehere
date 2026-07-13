@@ -192,7 +192,7 @@ export default function ChannelBar({
           <button
             type="submit"
             disabled={creating}
-            className="btn-inset self-start rounded-md bg-[var(--ink)] px-3 py-1.5 text-sm font-medium text-[var(--canvas)] disabled:opacity-50"
+            className="btn-primary self-start px-3 py-1.5 text-sm"
           >
             {creating ? "Creating…" : "Create"}
           </button>

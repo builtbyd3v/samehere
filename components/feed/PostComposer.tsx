@@ -337,7 +337,7 @@ export default function PostComposer({
             type="button"
             onClick={onNudge}
             disabled={nudging}
-            className="rounded-full bg-[var(--blue-glow)] px-2.5 py-1 text-xs font-medium text-[var(--blue)] transition hover:brightness-105 disabled:opacity-50"
+            className="btn-accent text-xs px-2.5 py-1"
           >
             {nudging ? "Thinking…" : "Need an idea?"}
           </button>
@@ -355,7 +355,7 @@ export default function PostComposer({
                 type="button"
                 onClick={onImprove}
                 disabled={improving || len === 0}
-                className="rounded-full bg-[var(--blue-glow)] px-2.5 py-1 text-xs font-medium text-[var(--blue)] transition hover:brightness-105 disabled:opacity-50"
+                className="btn-accent text-xs px-2.5 py-1"
               >
                 {improving ? "Improving…" : "✦ Improve"}
               </button>

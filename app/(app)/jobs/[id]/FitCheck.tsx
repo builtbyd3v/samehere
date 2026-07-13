@@ -75,7 +75,7 @@ export default function FitCheck({
         <button
           type="button"
           onClick={run}
-          className="inline-flex items-center gap-1 rounded-full bg-[var(--blue-glow)] px-3 py-1.5 text-sm font-medium text-[var(--blue)] transition hover:opacity-80"
+          className="btn-accent"
         >
           <svg aria-hidden viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
             <path d="M12 2l2.2 6.8L21 11l-6.8 2.2L12 20l-2.2-6.8L3 11l6.8-2.2Z" />

@@ -9,7 +9,7 @@ import { ReportForm } from "@/components/feed/ReportForm";
 import { menuItemClass } from "@/lib/ui/menu-styles";
 
 const btn =
-  "inline-flex flex-1 items-center justify-center rounded-full px-4 py-2 text-sm font-medium transition active:scale-[0.98] active:opacity-80 disabled:opacity-50 disabled:active:scale-100";
+  "btn-ghost inline-flex flex-1 items-center justify-center rounded-full px-4 py-2 transition";
 
 export default function ProfileActions({
   username,
@@ -47,7 +47,7 @@ export default function ProfileActions({
         <form action={startDmWithUsername.bind(null, username)} className="flex flex-1">
           <button
             type="submit"
-            className={`${btn} w-full border border-[var(--border-strong)] text-[var(--ink)] hover:bg-[var(--featured-surface)]`}
+            className={`${btn} w-full`}
           >
             Message
           </button>

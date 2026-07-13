@@ -58,7 +58,7 @@ export default function RoleControls({
         type="button"
         onClick={save}
         disabled={pending}
-        className="rounded-md border border-[var(--border-strong)] px-2 py-1 text-xs font-medium transition hover:bg-[var(--featured-surface)] disabled:opacity-50"
+        className="btn-ghost px-2 py-1 text-xs"
       >
         {pending ? "…" : "Save"}
       </button>

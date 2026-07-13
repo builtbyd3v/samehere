@@ -4,8 +4,8 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { hidePost, unhidePost, resolveReport, suspendUser, unsuspendUser } from "./actions";
 
-const btn =
-  "rounded-full border border-[var(--border-strong)] px-3 py-1 text-xs font-medium text-[var(--ink)] transition hover:bg-[var(--featured-surface)] disabled:opacity-50";
+const btnGhost = "btn-ghost !rounded-full !px-3 !py-1 !text-xs";
+const btnDanger = "btn-danger !rounded-full !px-3 !py-1 !text-xs";
 
 export default function ReportActions({
   reportId,
@@ -38,25 +38,25 @@ export default function ReportActions({
     <div className="flex flex-wrap gap-2">
       {postId &&
         (postHidden ? (
-          <button type="button" disabled={pending} className={btn} onClick={run(() => unhidePost(postId))}>
+          <button type="button" disabled={pending} className={btnGhost} onClick={run(() => unhidePost(postId))}>
             Unhide post
           </button>
         ) : (
-          <button type="button" disabled={pending} className={btn} onClick={run(() => hidePost(postId))}>
+          <button type="button" disabled={pending} className={btnDanger} onClick={run(() => hidePost(postId))}>
             Hide post
           </button>
         ))}
       {authorId &&
         (authorSuspended ? (
-          <button type="button" disabled={pending} className={btn} onClick={run(() => unsuspendUser(authorId))}>
+          <button type="button" disabled={pending} className={btnGhost} onClick={run(() => unsuspendUser(authorId))}>
             Unsuspend author
           </button>
         ) : (
-          <button type="button" disabled={pending} className={btn} onClick={run(() => suspendUser(authorId))}>
+          <button type="button" disabled={pending} className={btnDanger} onClick={run(() => suspendUser(authorId))}>
             Suspend author
           </button>
         ))}
-      <button type="button" disabled={pending} className={btn} onClick={run(() => resolveReport(reportId))}>
+      <button type="button" disabled={pending} className={btnGhost} onClick={run(() => resolveReport(reportId))}>
         Dismiss report
       </button>
     </div>

@@ -142,7 +142,7 @@ export default function ProfileViewers({
         </ul>
         <Link
           href="/pro"
-          className="btn-inset mt-4 flex w-full items-center justify-center gap-1.5 rounded-md bg-[var(--ink)] px-4 py-2.5 text-sm font-medium text-[var(--canvas)] transition active:scale-[0.98] active:opacity-80"
+          className="btn-primary mt-4 flex w-full items-center justify-center !py-2.5 transition"
         >
           <IconBolt className="h-4 w-4" />
           See who viewed you · Pro

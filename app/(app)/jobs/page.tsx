@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getViewer } from "@/lib/viewer";
 import { isPro } from "@/lib/pro";
 import EmptyState from "@/components/ui/EmptyState";
-import { IconBriefcase } from "@/components/icons";
+import { IconBriefcase, IconGraduationCap, IconPin } from "@/components/icons";
 import { TEXT_LIMITS } from "@/lib/utils/validation";
 import MatchesSection from "./MatchesSection";
 import FilterForm from "./FilterForm";
@@ -221,79 +221,105 @@ export default async function JobsPage({
         ) : (
           listings.map((l, i) => {
             const studentCount = countByOrg.get(l.org) ?? 0;
+            const location = l.locations ? l.locations.slice(0, 60) : null;
+            const kindLabel = l.kind === "internship" ? "Internship" : "New grad";
+            const degrees = l.degrees && l.degrees !== "N/A" ? l.degrees : null;
+            const chips = [l.category, l.term, l.sponsorship]
+              .filter((c): c is string => !!c && c !== "N/A" && c !== "Other")
+              .map((c) => c.slice(0, 30))
+              .filter((c, idx, a) => a.indexOf(c) === idx);
             return (
               <div
                 key={l.id}
                 className="cascade-up relative rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] p-5 shadow-paper transition hover:-translate-y-[1px] hover:border-[var(--border-strong)]"
                 style={{ "--delay": `${Math.min(i, 10) * 60}ms` } as React.CSSProperties}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex min-w-0 flex-1 gap-3">
-                    <CompanyLogo org={l.org} logoUrl={l.company_slug ? logoBySlug.get(l.company_slug) : null} />
-                    <div className="min-w-0">
-                      {/* Stretched link: makes the whole card click through to the detail
-                          page while Apply/PitchButton/students-chip stay independently
-                          clickable via relative z-10. */}
+                {/* Stretched link (on the title): whole card clicks through to the
+                    detail page while Apply/PitchButton/students-chip stay clickable
+                    via relative z-10. */}
+                <div className="flex items-start gap-3">
+                  <CompanyLogo org={l.org} logoUrl={l.company_slug ? logoBySlug.get(l.company_slug) : null} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                       <Link
                         href={`/jobs/${l.id}`}
-                        className='text-[15px] font-semibold text-[var(--ink)] after:absolute after:inset-0 after:content-[""]'
+                        className='text-[15px] font-semibold leading-tight text-[var(--ink)] after:absolute after:inset-0 after:content-[""]'
                       >
                         {l.title}
                       </Link>
                       {isNew(l.posted_at) && (
-                        <span className="ml-2 inline-block rounded-full bg-[var(--blue-glow)] px-1.5 py-0.5 align-middle text-[10px] font-semibold uppercase text-[var(--blue)]">
+                        <span className="rounded-full bg-[var(--blue-glow)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--blue)]">
                           New
                         </span>
                       )}
-                      <p className="mt-0.5 text-sm text-[var(--ink-muted)]">
-                        {l.org}
-                        {l.locations ? ` · ${l.locations}` : ""}
-                        {l.term && l.term !== "N/A" ? ` · ${l.term}` : ""}
-                      </p>
-                      <p className="mt-1 text-xs text-[var(--ink-faint)]">
-                        {l.kind === "internship" ? "Internship" : "New grad"}
-                        {l.posted_at ? ` · posted ${relAge(l.posted_at)}` : ""}
-                      </p>
-                      {(() => {
-                        const rowChips = [l.category, l.sponsorship]
-                          .filter((c): c is string => !!c && c !== "Other" && c !== "N/A")
-                          .map((c) => c.slice(0, 30))
-                          .filter((c, idx, a) => a.indexOf(c) === idx);
-                        return rowChips.length > 0 ? (
-                          <div className="mt-1.5 flex flex-wrap gap-1.5">
-                            {rowChips.map((c) => (
-                              <span
-                                key={c}
-                                className="rounded-full bg-[var(--featured-surface)] px-2 py-0.5 text-[11px] text-[var(--ink-muted)]"
-                              >
-                                {c}
-                              </span>
-                            ))}
-                          </div>
-                        ) : null;
-                      })()}
                     </div>
-                  </div>
-                  <div className="relative z-10 flex shrink-0 flex-col items-end gap-1.5">
-                    <a
-                      href={l.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="rounded-md border border-[var(--border-strong)] px-3 py-1.5 text-sm font-medium transition hover:bg-[var(--featured-surface)] active:opacity-80"
-                    >
-                      Apply
-                    </a>
-                    {user && <PitchButton listingId={l.id} pro={pro} />}
+                    <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-sm text-[var(--ink-muted)]">
+                      <span className="font-medium text-[var(--ink)]">{l.org}</span>
+                      {location && (
+                        <>
+                          <span aria-hidden className="text-[var(--ink-faint)]">
+                            ·
+                          </span>
+                          <span className="inline-flex items-center gap-1">
+                            <IconPin className="h-3.5 w-3.5 text-[var(--ink-faint)]" />
+                            {location}
+                          </span>
+                        </>
+                      )}
+                    </p>
+                    <p className="mt-0.5 text-xs text-[var(--ink-faint)]">
+                      {kindLabel}
+                      {l.posted_at ? ` · posted ${relAge(l.posted_at)}` : ""}
+                    </p>
                   </div>
                 </div>
+
+                {(chips.length > 0 || degrees) && (
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {chips.map((c) => (
+                      <span
+                        key={c}
+                        className="inline-flex items-center rounded-full bg-[var(--featured-surface)] px-2.5 py-1 text-[12px] text-[var(--ink-muted)]"
+                      >
+                        {c}
+                      </span>
+                    ))}
+                    {degrees && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[var(--featured-surface)] px-2.5 py-1 text-[12px] text-[var(--ink-muted)]">
+                        <IconGraduationCap className="h-3.5 w-3.5 text-[var(--ink-faint)]" />
+                        {degrees}
+                      </span>
+                    )}
+                  </div>
+                )}
+
                 {studentCount > 0 && (
                   <Link
                     href={`/search?q=${encodeURIComponent(l.org)}`}
-                    className="relative z-10 mt-4 inline-block rounded-full bg-[var(--blue-glow)] px-2.5 py-1 text-xs font-medium text-[var(--blue)] transition hover:opacity-80"
+                    className="relative z-10 mt-3 inline-flex items-center gap-1 rounded-full bg-[var(--blue-glow)] px-2.5 py-1 text-xs font-medium text-[var(--blue)] transition hover:opacity-80"
                   >
                     {studentCount} student{studentCount === 1 ? "" : "s"} with a path here
                   </Link>
                 )}
+
+                <div className="relative z-10 mt-4 flex flex-wrap items-center gap-2 border-t border-[var(--border)] pt-4">
+                  <a href={l.url} target="_blank" rel="noopener noreferrer" className="btn-primary">
+                    Apply
+                    <svg
+                      viewBox="0 0 16 16"
+                      className="h-3.5 w-3.5"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.75"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M5.5 3.5h7v7M12.5 3.5 4 12" />
+                    </svg>
+                  </a>
+                  {user && <PitchButton listingId={l.id} pro={pro} block />}
+                </div>
               </div>
             );
           })

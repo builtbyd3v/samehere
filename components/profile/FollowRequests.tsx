@@ -62,11 +62,11 @@ export default function FollowRequests({ requests }: { requests: FollowRequest[]
                 </div>
               </div>
               <button type="button" onClick={() => act(r.follower_id, true)} disabled={busy === r.follower_id}
-                className="btn-inset shrink-0 rounded-md bg-[var(--ink)] px-3 py-1.5 text-sm font-medium text-[var(--canvas)] transition active:scale-[0.98] active:opacity-80 disabled:opacity-50 disabled:active:scale-100">
+                className="btn-primary shrink-0 !px-3 !py-1.5 transition">
                 {busy === r.follower_id ? "…" : "Accept"}
               </button>
               <button type="button" onClick={() => act(r.follower_id, false)} disabled={busy === r.follower_id}
-                className="shrink-0 rounded-md border border-[var(--border-strong)] px-3 py-1.5 text-sm font-medium transition hover:bg-[var(--featured-surface)] active:scale-[0.98] active:opacity-80 disabled:opacity-50 disabled:active:scale-100">
+                className="btn-ghost shrink-0 !px-3 !py-1.5 transition">
                 Reject
               </button>
             </div>

@@ -131,7 +131,7 @@ export default function MemberRow({
             type="button"
             onClick={() => act(true)}
             disabled={busy}
-            className="btn-inset rounded-md bg-[var(--ink)] px-3 py-1.5 text-sm font-medium text-[var(--canvas)] transition active:scale-[0.98] active:opacity-80 disabled:opacity-50"
+            className="btn-primary px-3 py-1.5 text-sm"
           >
             {busy ? "…" : "Approve"}
           </button>
@@ -139,7 +139,7 @@ export default function MemberRow({
             type="button"
             onClick={() => act(false)}
             disabled={busy}
-            className="rounded-md border border-[var(--border-strong)] px-3 py-1.5 text-sm font-medium transition hover:bg-[var(--featured-surface)] active:scale-[0.98] active:opacity-80 disabled:opacity-50"
+            className="btn-ghost px-3 py-1.5 text-sm"
           >
             Reject
           </button>

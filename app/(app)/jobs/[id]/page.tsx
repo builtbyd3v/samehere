@@ -5,6 +5,7 @@ import { isPro } from "@/lib/pro";
 import PitchButton from "../PitchButton";
 import FitCheck from "./FitCheck";
 import { relAge, isNew } from "../format";
+import { IconGraduationCap, IconPin } from "@/components/icons";
 
 type ListingRow = {
   id: string;
@@ -34,7 +35,7 @@ function CompanyLogo({
   logoUrl: string | null | undefined;
   size: "sm" | "lg";
 }) {
-  const box = size === "lg" ? "h-16 w-16 rounded-lg p-1.5" : "h-5 w-5 rounded p-0.5";
+  const box = size === "lg" ? "h-14 w-14 rounded-xl p-2 shadow-sm" : "h-5 w-5 rounded p-0.5";
   if (logoUrl) {
     return (
       <img
@@ -115,15 +116,11 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
     studentCount = new Set((expRows ?? []).map((e) => e.user_id)).size;
   }
 
-  const chips = [
-    listing.kind === "internship" ? "Internship" : "New grad",
-    listing.category === "Other" ? null : listing.category,
-    listing.term,
-    listing.locations ? listing.locations.slice(0, 80) : null,
-    listing.sponsorship,
-    listing.degrees,
-  ]
-    .filter((c): c is string => !!c && c !== "N/A")
+  const location = listing.locations ? listing.locations.slice(0, 80) : null;
+  const kindLabel = listing.kind === "internship" ? "Internship" : "New grad";
+  const degrees = listing.degrees && listing.degrees !== "N/A" ? listing.degrees : null;
+  const chips = [listing.category, listing.term, listing.sponsorship]
+    .filter((c): c is string => !!c && c !== "N/A" && c !== "Other")
     .filter((c, i, a) => a.indexOf(c) === i);
 
   const desc = listing.description;
@@ -142,60 +139,82 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
         <div className="flex items-start gap-4">
           <CompanyLogo org={listing.org} logoUrl={company?.logo_url} size="lg" />
           <div className="min-w-0 flex-1">
-            <h1 className="text-[26px] font-semibold leading-tight tracking-[-0.025em] text-[var(--ink)]">
-              {listing.title}
-            </h1>
-            <p className="mt-1 text-sm text-[var(--ink-muted)]">{listing.org}</p>
-          </div>
-          {listing.posted_at && (
-            <div className="flex shrink-0 flex-col items-end gap-1">
-              {isNew(listing.posted_at) && (
-                <span className="rounded-full bg-[var(--blue-glow)] px-1.5 py-0.5 text-[10px] font-semibold uppercase text-[var(--blue)]">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <h1 className="text-[22px] font-semibold leading-[1.15] tracking-[-0.025em] text-[var(--ink)] sm:text-[26px]">
+                {listing.title}
+              </h1>
+              {listing.posted_at && isNew(listing.posted_at) && (
+                <span className="rounded-full bg-[var(--blue-glow)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--blue)]">
                   New
                 </span>
               )}
-              <span className="text-xs text-[var(--ink-faint)]">posted {relAge(listing.posted_at)}</span>
             </div>
-          )}
+            <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-sm text-[var(--ink-muted)]">
+              <span className="font-medium text-[var(--ink)]">{listing.org}</span>
+              {location && (
+                <>
+                  <span aria-hidden className="text-[var(--ink-faint)]">
+                    ·
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <IconPin className="h-3.5 w-3.5 text-[var(--ink-faint)]" />
+                    {location}
+                  </span>
+                </>
+              )}
+            </p>
+            {listing.posted_at && (
+              <p className="mt-1 text-xs text-[var(--ink-faint)]">posted {relAge(listing.posted_at)}</p>
+            )}
+          </div>
         </div>
 
-        {chips.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            {chips.map((c, i) => (
-              <span
-                key={i}
-                className="rounded-full bg-[var(--featured-surface)] px-2 py-0.5 text-[11px] text-[var(--ink-muted)]"
-              >
-                {c}
-              </span>
-            ))}
-          </div>
-        )}
+        <div className="mt-4 flex flex-wrap gap-1.5">
+          <span className="inline-flex items-center rounded-full bg-[var(--ink)] px-2.5 py-1 text-[12px] font-medium text-[var(--canvas)]">
+            {kindLabel}
+          </span>
+          {chips.map((c, i) => (
+            <span
+              key={i}
+              className="inline-flex items-center rounded-full bg-[var(--featured-surface)] px-2.5 py-1 text-[12px] text-[var(--ink-muted)]"
+            >
+              {c}
+            </span>
+          ))}
+          {degrees && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--featured-surface)] px-2.5 py-1 text-[12px] text-[var(--ink-muted)]">
+              <IconGraduationCap className="h-3.5 w-3.5 text-[var(--ink-faint)]" />
+              {degrees}
+            </span>
+          )}
+        </div>
 
         {studentCount > 0 && (
           <Link
             href={`/search?q=${encodeURIComponent(listing.org)}`}
-            className="mt-3 inline-block rounded-full bg-[var(--blue-glow)] px-2.5 py-1 text-xs font-medium text-[var(--blue)] transition hover:opacity-80"
+            className="mt-3 inline-flex items-center gap-1 rounded-full bg-[var(--blue-glow)] px-2.5 py-1 text-xs font-medium text-[var(--blue)] transition hover:opacity-80"
           >
             {studentCount} student{studentCount === 1 ? "" : "s"} with a path here
           </Link>
         )}
 
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-[var(--border)] pt-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <a href={listing.url} target="_blank" rel="noopener noreferrer" className="btn-primary">
-              Apply
-            </a>
-            {user && <PitchButton listingId={listing.id} pro={pro} />}
-          </div>
-          <a
-            href={listing.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-[var(--ink-muted)] underline transition hover:text-[var(--ink)]"
-          >
-            Read the full posting
+        <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-[var(--border)] pt-4">
+          <a href={listing.url} target="_blank" rel="noopener noreferrer" className="btn-primary">
+            Apply
+            <svg
+              viewBox="0 0 16 16"
+              className="h-3.5 w-3.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.75"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M5.5 3.5h7v7M12.5 3.5 4 12" />
+            </svg>
           </a>
+          {user && <PitchButton listingId={listing.id} pro={pro} block />}
         </div>
         {desc === "" && (
           <p className="mt-3 text-sm text-[var(--ink-faint)]">

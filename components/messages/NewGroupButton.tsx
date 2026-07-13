@@ -143,7 +143,7 @@ export default function NewGroupButton() {
         type="button"
         onClick={submit}
         disabled={pending}
-        className="btn-inset mt-2 w-full rounded-full bg-[var(--ink)] px-4 py-2 text-sm font-medium text-[var(--canvas)] disabled:opacity-50"
+        className="btn-primary mt-2 w-full rounded-full"
       >
         {pending ? "Creating…" : `Create group${selected.size ? ` (${selected.size + 1})` : ""}`}
       </button>

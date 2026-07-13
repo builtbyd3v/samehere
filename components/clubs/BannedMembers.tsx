@@ -77,7 +77,7 @@ export default function BannedMembers({ clubId }: { clubId: string }) {
                 type="button"
                 onClick={() => unban(b.user_id)}
                 disabled={pending}
-                className="shrink-0 rounded-md border border-[var(--border-strong)] px-3 py-1.5 text-sm font-medium transition hover:bg-[var(--featured-surface)] active:scale-[0.98] active:opacity-80 disabled:opacity-50"
+                className="btn-ghost shrink-0 px-3 py-1.5 text-sm"
               >
                 Unban
               </button>

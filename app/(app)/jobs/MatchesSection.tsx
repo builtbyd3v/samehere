@@ -116,7 +116,7 @@ export default function MatchesSection({
                   href={r.listing.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="shrink-0 self-start rounded-md border border-[var(--border-strong)] px-3 py-1.5 text-sm font-medium transition hover:bg-[var(--featured-surface)] active:opacity-80"
+                  className="btn-primary shrink-0 self-start"
                 >
                   Apply
                 </a>

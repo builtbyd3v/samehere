@@ -193,7 +193,7 @@ export default async function ClubPage({ params }: { params: Promise<{ slug: str
           />
           <button
             type="submit"
-            className="btn-inset self-start rounded-md bg-[var(--ink)] px-3 py-1.5 text-sm font-medium text-[var(--canvas)]"
+            className="btn-primary self-start px-3 py-1.5 text-sm"
           >
             Post
           </button>

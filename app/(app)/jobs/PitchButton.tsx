@@ -2,14 +2,24 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { IconBolt } from "@/components/icons";
 import { tailorPitch } from "./actions";
 
 // Per-listing tailored pitch (Pro). Free users see the Pro badge and an
 // upsell link instead of a working button -- mirrors the improvePost
 // lock pattern in feed/actions.ts.
-export default function PitchButton({ listingId, pro }: { listingId: string; pro: boolean }) {
+// block: expanded pitch spans full width (detail page); off = compact
+// max-w-xs panel for the tight jobs-board row.
+export default function PitchButton({
+  listingId,
+  pro,
+  block = false,
+}: {
+  listingId: string;
+  pro: boolean;
+  block?: boolean;
+}) {
   const [text, setText] = useState<string | null>(null);
   const [error, setError] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -20,7 +30,7 @@ export default function PitchButton({ listingId, pro }: { listingId: string; pro
     return (
       <Link
         href="/pro"
-        className="flex items-center gap-1 rounded-full bg-[var(--blue-glow)] px-3 py-1.5 text-sm font-medium text-[var(--blue)] transition hover:opacity-80"
+        className="btn-accent"
       >
         <IconBolt className="h-3.5 w-3.5" />
         Tailor my pitch
@@ -45,35 +55,66 @@ export default function PitchButton({ listingId, pro }: { listingId: string; pro
   }
 
   return (
-    <div className="w-full max-w-xs text-right">
-      {text === null && (
+    <div className={text === null ? "" : block ? "w-full" : "max-w-xs"}>
+      {text === null ? (
         <button
           type="button"
           onClick={run}
           disabled={pending}
-          className="inline-flex items-center gap-1 rounded-full bg-[var(--blue-glow)] px-3 py-1.5 text-sm font-medium text-[var(--blue)] transition hover:opacity-80 disabled:opacity-60"
+          className="btn-accent"
         >
           <IconBolt className="h-3.5 w-3.5" />
           {pending ? "Tailoring…" : "Tailor my pitch"}
         </button>
+      ) : (
+        <motion.div
+          className="w-full overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--canvas)] p-4 text-left"
+          initial={reduce ? undefined : { opacity: 0, y: 8 }}
+          animate={reduce ? undefined : { opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--ink-muted)]">
+              <IconBolt className="h-3.5 w-3.5 text-[var(--blue)]" />
+              Your tailored pitch
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={run}
+                disabled={pending}
+                className="rounded-md px-2 py-1 text-xs font-medium text-[var(--ink-muted)] transition hover:bg-[var(--featured-surface)] hover:text-[var(--ink)] disabled:opacity-60"
+              >
+                {pending ? "Regenerating…" : "Regenerate"}
+              </button>
+              <button
+                type="button"
+                onClick={copy}
+                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-[var(--blue)] transition hover:bg-[var(--blue-glow)]"
+              >
+                {copied ? "Copied" : "Copy"}
+              </button>
+            </div>
+          </div>
+          {/* Model output rendered as plain text only -- never dangerouslySetInnerHTML.
+              Leading "- " lines become real bullets; blank lines become gaps. */}
+          <div className="max-w-[64ch] space-y-1.5 text-[13.5px] leading-relaxed text-[var(--ink)]">
+            {text.split("\n").map((line, i) => {
+              const t = line.trim();
+              if (!t) return <div key={i} className="h-1.5" aria-hidden />;
+              if (/^[-•]\s*/.test(t)) {
+                return (
+                  <div key={i} className="flex gap-2">
+                    <span className="select-none text-[var(--ink-faint)]">•</span>
+                    <span>{t.replace(/^[-•]\s*/, "")}</span>
+                  </div>
+                );
+              }
+              return <p key={i}>{t}</p>;
+            })}
+          </div>
+        </motion.div>
       )}
-      <AnimatePresence>
-        {text !== null && (
-          <motion.div
-            className="mt-2 overflow-hidden rounded-md border border-[var(--border)] bg-[var(--canvas)] p-3 text-left text-sm"
-            initial={reduce ? undefined : { opacity: 0, y: 8 }}
-            animate={reduce ? undefined : { opacity: 1, y: 0 }}
-            exit={reduce ? undefined : { opacity: 0, y: 8 }}
-            transition={{ duration: 0.3 }}
-          >
-            {/* Model output rendered as plain text only -- never dangerouslySetInnerHTML. */}
-            <p className="whitespace-pre-wrap text-[var(--ink)]">{text}</p>
-            <button type="button" onClick={copy} className="mt-2 text-xs font-medium text-[var(--blue)] underline">
-              {copied ? "Copied" : "Copy"}
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
       {error && <p className="mt-1 text-xs text-[var(--danger)]">Couldn&apos;t generate a pitch. Try again.</p>}
     </div>
   );

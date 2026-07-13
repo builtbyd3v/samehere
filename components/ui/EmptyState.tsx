@@ -21,10 +21,7 @@ export default function EmptyState({
       <p className="mt-4 font-medium text-[var(--ink)]">{title}</p>
       {description && <p className="mt-1.5 text-sm text-[var(--ink-muted)]">{description}</p>}
       {action && (
-        <Link
-          href={action.href}
-          className="mt-5 inline-block rounded-md border border-[var(--border-strong)] px-4 py-1.5 text-sm font-medium transition hover:bg-[var(--featured-surface)] active:opacity-80"
-        >
+        <Link href={action.href} className="btn-ghost mt-5 inline-flex">
           {action.label}
         </Link>
       )}

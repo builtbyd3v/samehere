@@ -258,7 +258,7 @@ export default function OnboardingWizard({
             <p className="mb-4 text-sm text-[var(--ink-muted)]">People with a similar school, year, or major.</p>
             {followStep}
             <div className="mt-6 flex items-center justify-between">
-              <button type="button" onClick={() => setStep(1)} className="text-sm text-[var(--ink-muted)] underline">
+              <button type="button" onClick={() => setStep(1)} className="btn-ghost">
                 Back
               </button>
               <button type="button" onClick={() => setStep(3)} className="btn-primary !py-2.5">
