@@ -69,8 +69,13 @@ function toResult(c: Candidate): PeopleSearchResult {
 
 // id stays outside the delimiter (uuid, not user-authored). Everything else
 // here is free text the candidate wrote — bundled into one untrusted block
-// so it can never be read as instructions (see lib/ai-prompts.ts).
-function compactCandidate(c: Candidate, exp: ExpRow[]): string {
+// so it can never be read as instructions (see lib/ai-prompts.ts). Flags are
+// server-derived booleans, never user text, so they sit outside the untrusted
+// block too (like id=) -- otherwise a bio containing the literal string
+// "flags=verified-student" could impersonate a trust signal.
+// Exported for unit testing only (see people-search.test.ts) — not otherwise
+// used outside this module.
+export function compactCandidate(c: Candidate, exp: ExpRow[]): string {
   const data = [
     `@${c.username}${c.display_name ? ` (${c.display_name})` : ""}`,
     [c.year, c.major].filter(Boolean).join(" "),
@@ -84,7 +89,14 @@ function compactCandidate(c: Candidate, exp: ExpRow[]): string {
   ]
     .filter(Boolean)
     .join(" | ");
-  return `id=${c.id} ${untrusted(data)}`;
+  const flags = [
+    c.verified_student ? "verified-student" : "",
+    c.is_founder ? "founder" : "",
+    c.is_campus_founder ? "campus-founder" : "",
+  ]
+    .filter(Boolean)
+    .join(",");
+  return `id=${c.id}${flags ? ` flags=${flags}` : ""} ${untrusted(data)}`;
 }
 
 // Parse the model's JSON array defensively. Any deviation → empty (caller falls
@@ -121,6 +133,10 @@ export type PeopleSearchOpts = {
   // Server-initiated call (never a client-passed param) — skip use_ai_quota
   // entirely instead of spending the user's daily cap.
   skipQuota?: boolean;
+  // Opt-in filter: restrict the candidate pool to verified_student = true,
+  // applied pre-model to both the profiles prefilter and the experiences-path
+  // candidates (whichever pool a candidate entered through).
+  verifiedOnly?: boolean;
 };
 
 export async function peopleSearchCore(
@@ -155,8 +171,13 @@ export async function peopleSearchCore(
 
   const expOrFilter = tokens.flatMap((t) => [`org.ilike.%${t}%`, `role.ilike.%${t}%`]).join(",");
 
+  const verifiedOnly = Boolean(opts.verifiedOnly);
   const [{ data: matched }, { data: blockedIds }, { data: expMatches }] = await Promise.all([
-    supabase.from("profiles").select(CAND_SELECT).or(orFilter).neq("id", user.id).limit(AI_SEARCH_POOL).returns<Candidate[]>(),
+    (() => {
+      let q = supabase.from("profiles").select(CAND_SELECT).or(orFilter).neq("id", user.id).limit(AI_SEARCH_POOL);
+      if (verifiedOnly) q = q.eq("verified_student", true);
+      return q.returns<Candidate[]>();
+    })(),
     supabase.rpc("get_blocked_ids"),
     expOrFilter
       ? supabase.from("experiences").select("user_id, org, role").or(expOrFilter).limit(AI_SEARCH_POOL)
@@ -170,11 +191,12 @@ export async function peopleSearchCore(
     (id) => id !== user.id && !blocked.has(id) && !candidates.some((c) => c.id === id),
   );
   if (expUserIds.length && candidates.length < AI_SEARCH_POOL) {
-    const { data: expProfiles } = await supabase
+    let expQ = supabase
       .from("profiles")
       .select(CAND_SELECT)
-      .in("id", expUserIds.slice(0, AI_SEARCH_POOL - candidates.length))
-      .returns<Candidate[]>();
+      .in("id", expUserIds.slice(0, AI_SEARCH_POOL - candidates.length));
+    if (verifiedOnly) expQ = expQ.eq("verified_student", true);
+    const { data: expProfiles } = await expQ.returns<Candidate[]>();
     for (const p of expProfiles ?? []) {
       if (!blocked.has(p.id)) candidates.push(p);
     }
@@ -182,13 +204,14 @@ export async function peopleSearchCore(
 
   // Thin pool → top up with recent students so the model still has options.
   if (candidates.length < 5) {
-    const { data: recent } = await supabase
+    let recentQ = supabase
       .from("profiles")
       .select(CAND_SELECT)
       .neq("id", user.id)
       .order("created_at", { ascending: false })
-      .limit(AI_SEARCH_POOL)
-      .returns<Candidate[]>();
+      .limit(AI_SEARCH_POOL);
+    if (verifiedOnly) recentQ = recentQ.eq("verified_student", true);
+    const { data: recent } = await recentQ.returns<Candidate[]>();
     const seen = new Set(candidates.map((c) => c.id));
     for (const r of recent ?? []) {
       if (candidates.length >= AI_SEARCH_POOL) break;

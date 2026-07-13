@@ -303,13 +303,15 @@ export async function deletePost(postId: string): Promise<void> {
 // lib/people-search.ts so onboarding's seeded first-match step can reuse it
 // server-side without spending the caller's quota.
 // ponytail: ilike prefilter + LLM rerank; add pgvector only if it beats this.
-export async function peopleSearch(query: string): Promise<PeopleSearchState> {
+export async function peopleSearch(query: string, verifiedOnly?: boolean): Promise<PeopleSearchState> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "You must be logged in." };
-  return peopleSearchCore(supabase, user, query);
+  // Server action args are untrusted client input -- coerce to a real boolean
+  // rather than trusting whatever shape arrives.
+  return peopleSearchCore(supabase, user, query, { verifiedOnly: Boolean(verifiedOnly) });
 }
 
 // Count posts newer than a timestamp, for the feed's "N new posts" pill. Capped
