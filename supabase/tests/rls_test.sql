@@ -1871,6 +1871,187 @@ exception when others then
 end $$;
 reset role;
 
+-- ============ EXPERIENCES — 20260719120000_experiences.sql ============
+-- Owner ALL (insert/select/update/delete), any signed-in user can SELECT
+-- (mirrors bio visibility), anon fully denied, 11th row/user hits the cap
+-- trigger.
+
+-- setup: A creates one experience, kept as tests_fixture 'exp_a' for the
+-- ownership/cross-user assertions below.
+select tests.as_user(id) from tests_fixture where key = 'a';
+do $$
+declare
+  v_id uuid;
+begin
+  insert into public.experiences (user_id, kind, org, role, term, note)
+  values ((select id from tests_fixture where key = 'a'), 'internship', 'Acme Corp', 'SWE Intern', 'Summer 2025', 'built things')
+  returning id into v_id;
+  insert into tests_fixture (key, id) values ('exp_a', v_id);
+  insert into tests_results values ('EXPERIENCES_owner_insert', true, 'ok');
+exception when others then
+  insert into tests_results values ('EXPERIENCES_owner_insert', false, sqlerrm);
+end $$;
+reset role;
+
+-- EXPERIENCES_owner_select — A can select the row she just inserted.
+select tests.as_user(id) from tests_fixture where key = 'a';
+do $$
+begin
+  if not exists (
+    select 1 from public.experiences
+    where id = (select id from tests_fixture where key = 'exp_a')
+  ) then
+    raise exception 'EXPERIENCES_owner_select REGRESSION: owner cannot select her own experience row';
+  end if;
+  insert into tests_results values ('EXPERIENCES_owner_select', true, 'ok');
+exception when others then
+  insert into tests_results values ('EXPERIENCES_owner_select', false, sqlerrm);
+end $$;
+reset role;
+
+-- EXPERIENCES_owner_update — A can update her own row.
+select tests.as_user(id) from tests_fixture where key = 'a';
+do $$
+declare
+  v_updated int;
+begin
+  update public.experiences set note = 'updated by owner'
+   where id = (select id from tests_fixture where key = 'exp_a');
+  get diagnostics v_updated = row_count;
+  if v_updated <> 1 then
+    raise exception 'EXPERIENCES_owner_update REGRESSION: owner update affected % rows, expected 1', v_updated;
+  end if;
+  insert into tests_results values ('EXPERIENCES_owner_update', true, 'ok');
+exception when others then
+  insert into tests_results values ('EXPERIENCES_owner_update', false, sqlerrm);
+end $$;
+reset role;
+
+-- EXPERIENCES_b_select_a — B (not the owner) CAN select A's row: SELECT is
+-- open to any authenticated user, mirroring bio visibility.
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+begin
+  if not exists (
+    select 1 from public.experiences
+    where id = (select id from tests_fixture where key = 'exp_a')
+  ) then
+    raise exception 'EXPERIENCES_b_select_a REGRESSION: authenticated non-owner B cannot select A''s experience row';
+  end if;
+  insert into tests_results values ('EXPERIENCES_b_select_a', true, 'ok');
+exception when others then
+  insert into tests_results values ('EXPERIENCES_b_select_a', false, sqlerrm);
+end $$;
+reset role;
+
+-- EXPERIENCES_b_update_denied — B cannot update A's row.
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+declare
+  v_updated int;
+begin
+  update public.experiences set note = 'hacked by B'
+   where id = (select id from tests_fixture where key = 'exp_a');
+  get diagnostics v_updated = row_count;
+  if v_updated <> 0 then
+    raise exception 'EXPERIENCES_b_update_denied REGRESSION: non-owner B updated % of A''s experience row(s)', v_updated;
+  end if;
+  insert into tests_results values ('EXPERIENCES_b_update_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('EXPERIENCES_b_update_denied', false, sqlerrm);
+end $$;
+reset role;
+
+-- EXPERIENCES_b_delete_denied — B cannot delete A's row.
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+declare
+  v_deleted int;
+begin
+  delete from public.experiences
+   where id = (select id from tests_fixture where key = 'exp_a');
+  get diagnostics v_deleted = row_count;
+  if v_deleted <> 0 then
+    raise exception 'EXPERIENCES_b_delete_denied REGRESSION: non-owner B deleted % of A''s experience row(s)', v_deleted;
+  end if;
+  insert into tests_results values ('EXPERIENCES_b_delete_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('EXPERIENCES_b_delete_denied', false, sqlerrm);
+end $$;
+reset role;
+
+-- EXPERIENCES_anon_select_denied — anon (logged-out) gets 42501, no RLS row leak.
+select tests.as_anon();
+do $$
+declare
+  v_state text;
+  v_raised boolean;
+begin
+  begin
+    perform 1 from public.experiences limit 1;
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state <> '42501' then
+    raise exception 'EXPERIENCES_anon_select_denied REGRESSION: anon selecting public.experiences did not fail with 42501 (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+  insert into tests_results values ('EXPERIENCES_anon_select_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('EXPERIENCES_anon_select_denied', false, sqlerrm);
+end $$;
+reset role;
+
+-- EXPERIENCES_owner_delete — A can delete her own row (frees a slot for the
+-- cap test below to run cleanly against B instead).
+select tests.as_user(id) from tests_fixture where key = 'a';
+do $$
+declare
+  v_deleted int;
+begin
+  delete from public.experiences
+   where id = (select id from tests_fixture where key = 'exp_a');
+  get diagnostics v_deleted = row_count;
+  if v_deleted <> 1 then
+    raise exception 'EXPERIENCES_owner_delete REGRESSION: owner delete affected % rows, expected 1', v_deleted;
+  end if;
+  insert into tests_results values ('EXPERIENCES_owner_delete', true, 'ok');
+exception when others then
+  insert into tests_results values ('EXPERIENCES_owner_delete', false, sqlerrm);
+end $$;
+reset role;
+
+-- EXPERIENCES_cap — the 11th experience row for the same user is rejected by
+-- experiences_cap_trg (20260719120000_experiences.sql).
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+declare
+  v_b uuid := (select id from tests_fixture where key = 'b');
+  i int;
+  v_raised boolean := false;
+begin
+  for i in 1..10 loop
+    insert into public.experiences (user_id, kind, org, role)
+    values (v_b, 'job', 'Org ' || i, 'Role ' || i);
+  end loop;
+
+  begin
+    insert into public.experiences (user_id, kind, org, role)
+    values (v_b, 'job', 'Org 11', 'Role 11');
+  exception when others then
+    v_raised := true;
+  end;
+
+  if not v_raised then
+    raise exception 'EXPERIENCES_cap REGRESSION: an 11th experience row for the same user was accepted — cap trigger did not fire';
+  end if;
+  insert into tests_results values ('EXPERIENCES_cap', true, 'ok');
+exception when others then
+  insert into tests_results values ('EXPERIENCES_cap', false, sqlerrm);
+end $$;
+reset role;
+
 -- ============ report ============
 -- Print the PASS/FAIL table FIRST so the operator sees exactly which assertions
 -- failed, then raise so psql exits non-zero and the harness actually gates.
@@ -1888,7 +2069,7 @@ declare v_failed int;
 begin
   select count(*) into v_failed from tests_results where not passed;
   if v_failed > 0 then
-    raise exception '% assertion(s) failed — see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, CLUBS_V2_1, CLUBS_V2_2, CLUBS_V2_3, CLUBS_V2_7a, CLUBS_V2_4, CLUBS_V2_7b, CLUBS_V2_5_officer_denied, CLUBS_V2_5_owner_allowed, CLUBS_V2_6_outsider, CLUBS_V2_6_pending, CLUBS_V2_8, CLUBS_V2_9, H1_suggested_profiles, CLUBS_V2_12_outsider, CLUBS_V2_12_anon, SIGNUP_RL_anon_execute, SIGNUP_RL_no_table_access_anon, SIGNUP_RL_no_table_access_authenticated.', v_failed;
+    raise exception '% assertion(s) failed — see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, CLUBS_V2_1, CLUBS_V2_2, CLUBS_V2_3, CLUBS_V2_7a, CLUBS_V2_4, CLUBS_V2_7b, CLUBS_V2_5_officer_denied, CLUBS_V2_5_owner_allowed, CLUBS_V2_6_outsider, CLUBS_V2_6_pending, CLUBS_V2_8, CLUBS_V2_9, H1_suggested_profiles, CLUBS_V2_12_outsider, CLUBS_V2_12_anon, SIGNUP_RL_anon_execute, SIGNUP_RL_no_table_access_anon, SIGNUP_RL_no_table_access_authenticated, EXPERIENCES_owner_insert, EXPERIENCES_owner_select, EXPERIENCES_owner_update, EXPERIENCES_b_select_a, EXPERIENCES_b_update_denied, EXPERIENCES_b_delete_denied, EXPERIENCES_anon_select_denied, EXPERIENCES_owner_delete, EXPERIENCES_cap.', v_failed;
 
   end if;
 end $$;

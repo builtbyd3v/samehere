@@ -626,6 +626,47 @@ export type Database = {
           },
         ]
       }
+      experiences: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          note: string | null
+          org: string
+          role: string
+          term: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          note?: string | null
+          org: string
+          role: string
+          term?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          note?: string | null
+          org?: string
+          role?: string
+          term?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "experiences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feedback: {
         Row: {
           category: string | null
