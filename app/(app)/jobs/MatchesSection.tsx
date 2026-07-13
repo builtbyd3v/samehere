@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { motion, useReducedMotion } from "motion/react";
+import posthog from "posthog-js";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { rankJobs, type JobFitResult, type RankJobsState } from "./actions";
 
@@ -40,6 +41,10 @@ export default function MatchesSection({
       const next = await rankJobs();
       setState(next);
       setHasRun(true);
+      posthog.capture("job_fit_ranked", {
+        outcome: next.overCap ? "over_cap" : next.error ? "error" : "results",
+        result_count: next.results?.length ?? 0,
+      });
     });
   }
 

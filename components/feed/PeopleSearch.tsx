@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition, type ReactNode } from "react";
 import Link from "next/link";
+import posthog from "posthog-js";
 import { peopleSearch } from "@/app/(app)/feed/actions";
 import type { PeopleSearchState } from "@/lib/people-search";
 import FollowButton from "@/components/profile/FollowButton";
@@ -45,7 +46,13 @@ export default function PeopleSearch({
     const query = q.trim();
     if (!query) return;
     startTransition(async () => {
-      setState(await peopleSearch(query, verifiedOnly));
+      const result = await peopleSearch(query, verifiedOnly);
+      setState(result);
+      posthog.capture("people_search_run", {
+        outcome: result.overCap ? "over_cap" : result.error ? "error" : result.results?.length ? "results" : "empty",
+        result_count: result.results?.length ?? 0,
+        verified_only: verifiedOnly,
+      });
     });
   }
 
@@ -54,7 +61,15 @@ export default function PeopleSearch({
   // Verified-only always starts off, so this passes the initial (false) state.
   useEffect(() => {
     if (initialSmart && initialQuery.trim()) {
-      startTransition(async () => setState(await peopleSearch(initialQuery.trim(), verifiedOnly)));
+      startTransition(async () => {
+        const result = await peopleSearch(initialQuery.trim(), verifiedOnly);
+        setState(result);
+        posthog.capture("people_search_run", {
+          outcome: result.overCap ? "over_cap" : result.error ? "error" : result.results?.length ? "results" : "empty",
+          result_count: result.results?.length ?? 0,
+          verified_only: verifiedOnly,
+        });
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
