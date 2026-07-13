@@ -30,9 +30,11 @@ export default function Founders({ spotsLeft }: { spotsLeft?: number }) {
   return (
     <section id="founders" className="scroll-mt-[5.5rem] mx-auto max-w-[1200px] px-5 py-24">
       <Reveal>
-        <h2 className={`text-balance ${landingH2}`}>Be a founder.</h2>
+        <h2 className={`text-balance ${landingH2}`}>
+          Badges worth <span className="font-display italic text-[var(--blue)]">earning</span>.
+        </h2>
         <p className="mt-4 max-w-[52ch] text-base leading-relaxed text-[var(--ink-muted)]">
-          Two permanent badges for the students who build samehere. Both are free, on any plan.
+          Founder is for the first 100 and closes forever. Social Butterfly is always there to earn. Both free, on any plan.
         </p>
       </Reveal>
 

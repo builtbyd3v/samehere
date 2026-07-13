@@ -6,7 +6,7 @@ import { IconBolt } from "@/components/icons";
 import { landingCard, landingH2 } from "@/lib/landing/styles";
 import { signupCta } from "./cta";
 
-const HEADLINE = ["Free", "for", "every", "student."] as const;
+const HEADLINE = ["Free", "for", "everyone."] as const;
 const FREE_FEATURES = [
   "Optional .edu verification badge",
   "Profiles, feed, and reactions",
