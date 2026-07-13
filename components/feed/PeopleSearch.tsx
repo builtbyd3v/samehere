@@ -36,6 +36,7 @@ export default function PeopleSearch({
 }) {
   const [smart, setSmart] = useState(initialSmart);
   const [q, setQ] = useState(initialQuery);
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [state, setState] = useState<PeopleSearchState>({});
   const [pending, startTransition] = useTransition();
 
@@ -44,15 +45,16 @@ export default function PeopleSearch({
     const query = q.trim();
     if (!query) return;
     startTransition(async () => {
-      setState(await peopleSearch(query));
+      setState(await peopleSearch(query, verifiedOnly));
     });
   }
 
   // Arrived already in Smart mode with a query (nav/page search picked "✦ Smart")
   // → run the AI search once on mount so the user doesn't have to search again.
+  // Verified-only always starts off, so this passes the initial (false) state.
   useEffect(() => {
     if (initialSmart && initialQuery.trim()) {
-      startTransition(async () => setState(await peopleSearch(initialQuery.trim())));
+      startTransition(async () => setState(await peopleSearch(initialQuery.trim(), verifiedOnly)));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -82,9 +84,26 @@ export default function PeopleSearch({
               {pending ? "…" : "Search"}
             </button>
           </form>
-          <p className="mt-1.5 text-xs text-[var(--ink-faint)]">
-            AI finds students that fit your description.{isPro ? " 150 a day on Pro." : " Free searches: 5 a day."}
-          </p>
+          <div className="mt-1.5 flex items-center justify-between gap-2">
+            <p className="text-xs text-[var(--ink-faint)]">
+              AI finds students that fit your description.{isPro ? " 150 a day on Pro." : " Free searches: 5 a day."}
+            </p>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={verifiedOnly}
+              onClick={() => setVerifiedOnly((v) => !v)}
+              title="Only show school-confirmed students"
+              className="shrink-0 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs font-medium transition"
+              style={
+                verifiedOnly
+                  ? { backgroundColor: "var(--blue)", color: "#fff", borderColor: "transparent" }
+                  : { backgroundColor: "transparent", color: "var(--ink-muted)", borderColor: "var(--border)" }
+              }
+            >
+              Verified only{verifiedOnly ? " · on" : ""}
+            </button>
+          </div>
 
           {state.error && <p className="mt-2 text-sm text-[var(--danger)]">{state.error}</p>}
 
