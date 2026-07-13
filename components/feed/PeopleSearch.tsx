@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition, type ReactNode } from "react";
 import Link from "next/link";
 import { peopleSearch } from "@/app/(app)/feed/actions";
 import type { PeopleSearchState } from "@/lib/people-search";
+import FollowButton from "@/components/profile/FollowButton";
 import UserBadges from "@/components/profile/UserBadges";
 import AvatarImage from "@/components/ui/AvatarImage";
 import { TEXT_LIMITS } from "@/lib/utils/validation";
@@ -108,10 +109,10 @@ export default function PeopleSearch({
                 {state.results.map((p) => {
                   const name = p.display_name ?? p.username;
                   return (
-                    <li key={p.id}>
+                    <li key={p.id} className="card card-hover flex items-center gap-2.5 px-3 py-2.5">
                       <Link
                         href={`/profile/${p.username}`}
-                        className="card card-hover flex items-center gap-2.5 px-3 py-2.5 active:scale-[0.99]"
+                        className="flex min-w-0 flex-1 items-center gap-2.5 active:scale-[0.99]"
                       >
                         {p.avatar_url ? (
                           <AvatarImage
@@ -134,6 +135,7 @@ export default function PeopleSearch({
                           {p.reason && <p className="mt-0.5 text-xs text-[var(--ink-muted)]">{p.reason}</p>}
                         </div>
                       </Link>
+                      <FollowButton targetId={p.id} initial="none" />
                     </li>
                   );
                 })}

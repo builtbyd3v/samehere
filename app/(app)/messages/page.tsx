@@ -6,12 +6,37 @@ import NewMessageFinder from "@/components/messages/NewMessageFinder";
 import NewGroupButton from "@/components/messages/NewGroupButton";
 import type { DmInboxRow, GroupInboxRow, InboxThread } from "@/lib/messages";
 
-export default async function MessagesPage() {
+export default async function MessagesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ to?: string }>;
+}) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+
+  // ?to=<username> deep link (jobs peers panel, weekly-matches email "Say
+  // hi" CTA) -- resolve to a DM and redirect straight into it. Mirrors
+  // startDmWithUsername's exact RPC args/redirect target
+  // (app/(app)/messages/actions.ts) so both entry points land the same way.
+  // Unresolvable/self username falls through to the normal inbox render.
+  const { to } = await searchParams;
+  if (to && to.trim()) {
+    const { data: targetProfile } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("username", to.trim())
+      .maybeSingle();
+
+    if (targetProfile && targetProfile.id !== user.id) {
+      const { data: conversationId, error } = await supabase.rpc("get_or_create_dm", {
+        p_recipient: targetProfile.id,
+      });
+      if (!error && conversationId) redirect(`/messages/${conversationId}`);
+    }
+  }
 
   const [{ data: dmThreads }, { data: groupThreads }] = await Promise.all([
     supabase.rpc("list_dm_inbox"),
