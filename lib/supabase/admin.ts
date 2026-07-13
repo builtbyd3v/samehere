@@ -1,7 +1,7 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 
-// service_role client — bypasses RLS. THREE sanctioned uses, none of which
+// service_role client — bypasses RLS. FOUR sanctioned uses, none of which
 // write a value the caller can steer:
 //   1. Stripe webhook (app/api/stripe/webhook/route.ts) — is_pro/pro_until/
 //      stripe_customer_id, pinned against the session client by guard_profile_privileged.
@@ -10,6 +10,9 @@ import type { Database } from "@/types/database.types";
 //   3. Unsubscribe (app/api/email/unsubscribe/route.ts) — single hardcoded
 //      boolean write (email_digest_opt_out) to the row an HMAC-verified token
 //      names; no session exists (one-click link from an email).
+//   4. Cron jobs-ingest (app/api/cron/jobs-ingest/route.ts) — upserts
+//      job_listings from a fixed external source, no session exists (Vercel
+//      Cron caller); writes system data, zero user-controllable row targeting.
 // (A second use, the weekly-prompt cache, and a fourth, push notification
 // send, were removed with those features.)
 // Do NOT add a use that writes user-controllable data or targets a user-chosen
