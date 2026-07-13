@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { IconBell, IconMail, IconCommunity, IconBookmark, IconBolt } from "@/components/icons";
+import { IconBell, IconMail, IconCommunity, IconBookmark, IconBolt, IconBriefcase } from "@/components/icons";
 
 export default function LeftNav({
   username,
@@ -31,6 +31,7 @@ export default function LeftNav({
     { label: "Notifications", href: "/notifications", icon: <IconBell />, badge: notifUnread },
     { label: "Messages", href: "/messages", icon: <IconMail />, badge: dmUnread },
     { label: "Community", href: "/community", icon: <IconCommunity /> },
+    { label: "Jobs", href: "/jobs", icon: <IconBriefcase /> },
     { label: "Saved", href: "/saved", icon: <IconBookmark /> },
     {
       label: "Profile",

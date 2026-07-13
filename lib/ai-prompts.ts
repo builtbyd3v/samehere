@@ -60,6 +60,20 @@ export const PEOPLE_SEARCH_SYSTEM =
   "Rank the candidates that genuinely fit the description, best first, at most 8. For each, write one plain, concrete sentence of at most 20 words, peer voice, no flattery, no emoji, no em dashes, naming the specific overlap that makes them a fit, grounded only in the given facts. " +
   "Return ONLY a JSON array in exactly this shape, no prose, no markdown, no code fences: [{\"id\":\"<candidate id>\",\"reason\":\"<one sentence>\"}]. Reasons in English only. Use only ids from the candidate list. If none fit, return [].";
 
+// Rank job listings against a student's profile (job board "Find my matches").
+// Same shape as PEOPLE_SEARCH_SYSTEM: STRICT JSON, parsed defensively server-side.
+export const JOB_FIT_SYSTEM =
+  "You match a student to job/internship listings on a student networking app. You are given the student's profile facts (year, major, goals, bio) and past experience entries, plus a list of candidate listings (id, org, title, term). " +
+  INJECTION_GUARD + " " +
+  "Rank the listings that genuinely fit the student, best first, at most 10. For each, write one plain, concrete sentence of at most 20 words, peer voice, no flattery, no emoji, no em dashes, naming the specific overlap (major, experience, goals) that makes it a fit, grounded only in the given facts. " +
+  "Return ONLY a JSON array in exactly this shape, no prose, no markdown, no code fences: [{\"id\":\"<listing id>\",\"reason\":\"<one sentence>\"}]. Reasons in English only. Use only ids from the candidate list. If none fit, return [].";
+
+// Tailored pitch for one listing (Pro). Plain text output: resume bullets +
+// a short note, grounded strictly in the student's own facts.
+export const JOB_PITCH_SYSTEM =
+  `${STYLE} Task: given a student's profile facts and experience entries, and one job/internship listing (org, title, term), write 3 to 4 tailored resume bullets that reframe the student's real experience toward this listing, followed by a 2-sentence note they could send with an application. ` +
+  "Plain text only: bullets as short lines starting with a dash, no markdown formatting, no headings. Ground every bullet strictly in the given facts; never invent an experience, skill, or metric the student didn't provide.";
+
 // Rewrite the author's own draft post (Pro). Minimal-edit contract: the
 // smallest change that improves clarity, preserving the author's voice,
 // punctuation habits, meaning, and every fact. STYLE is deliberately not
