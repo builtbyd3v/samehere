@@ -2,6 +2,7 @@
 
 import { useActionState, useState, useTransition, type ReactNode } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
+import posthog from "posthog-js";
 import { uploadAvatar, type AvatarState, type EditState } from "@/app/(app)/profile/edit/actions";
 import { createPost, type ComposerState } from "@/app/(app)/feed/actions";
 import { saveOnboardingBasics, finishOnboarding, getOnboardingMatches, addOnboardingExperience, type OnboardingMatch, type ExperienceState } from "@/app/(app)/onboarding/actions";
@@ -113,6 +114,7 @@ export default function OnboardingWizard({
         return;
       }
       setMatches(results);
+      posthog.capture("onboarding_matches_shown", { match_count: results.length });
     });
   }
 

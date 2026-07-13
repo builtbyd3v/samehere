@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { motion, useReducedMotion } from "motion/react";
+import posthog from "posthog-js";
 import { IconBolt } from "@/components/icons";
 import { tailorPitch } from "./actions";
 
@@ -44,6 +45,7 @@ export default function PitchButton({
       const res = await tailorPitch(listingId);
       if ("text" in res) setText(res.text);
       else setError(true);
+      posthog.capture("job_pitch_generated", { outcome: "text" in res ? "success" : "locked" in res ? "locked" : "error" });
     });
   }
 
