@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { type FeedPost, PAGE } from "./PostCard";
 import FeedTimeline from "./FeedTimeline";
+import { PostCardSkeleton } from "@/components/ui/Skeleton";
 import type { FeedTimelineItem } from "@/lib/feed-timeline";
 import { loadMorePosts } from "@/app/(app)/feed/actions";
 
@@ -76,6 +77,12 @@ export default function FeedLoadMore({
       {more && (
         <>
           <div ref={sentinelRef} aria-hidden />
+          {loading && (
+            <div className="flex flex-col gap-3">
+              <PostCardSkeleton />
+              <PostCardSkeleton />
+            </div>
+          )}
           <button type="button" onClick={onMore} disabled={loading} className="btn-ghost mx-auto mt-3">
             {loading ? "Loading…" : "Load more"}
           </button>

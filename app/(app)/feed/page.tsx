@@ -281,7 +281,7 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
       ) : (
         <EmptyState
           title="Your feed is empty"
-          description="Follow students to see their posts here. Suggested peers are in the sidebar."
+          description="Follow students to see their posts here."
           action={{ label: "Find people", href: "/community" }}
         />
       )}
