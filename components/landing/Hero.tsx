@@ -50,7 +50,7 @@ export default function Hero() {
           className="cascade-up mt-5 max-w-[52ch] text-base leading-relaxed text-[var(--ink-muted)] md:text-lg"
           style={{ ["--delay" as string]: "0.42s" }}
         >
-          One AI-native network for students. Post what&apos;s real, find who gets it, land the internship.
+          One AI-native network for students. Post what&apos;s real, find who gets it, land what&apos;s next.
         </p>
 
         <div className="cascade-up mt-8 w-full" style={{ ["--delay" as string]: "0.55s" }}>

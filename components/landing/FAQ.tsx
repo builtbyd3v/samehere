@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { motion, useReducedMotion } from "motion/react";
 import Reveal from "./Reveal";
 import { landingH2 } from "@/lib/landing/styles";
 
@@ -13,14 +14,23 @@ const FAQ_ITEMS = [
 ] as const;
 
 export default function FAQ() {
+  const reduce = useReducedMotion();
+
   return (
-    <section id="faq" className="scroll-mt-[5.5rem] mx-auto max-w-3xl px-5 py-20">
+    <section id="faq" className="scroll-mt-[5.5rem] mx-auto max-w-3xl px-5 py-24">
       <Reveal>
         <h2 className={landingH2}>Questions.</h2>
       </Reveal>
-      <Reveal className="mt-8 divide-y divide-[var(--border)] rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] px-6 shadow-paper sm:px-8" delay={0.08}>
-        {FAQ_ITEMS.map(([q, a]) => (
-          <details key={q} className="group py-5">
+      <div className="mt-8 divide-y divide-[var(--border)] rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] px-6 shadow-paper sm:px-8">
+        {FAQ_ITEMS.map(([q, a], i) => (
+          <motion.details
+            key={q}
+            className="group py-5"
+            initial={reduce ? undefined : { opacity: 0, y: 16 }}
+            whileInView={reduce ? undefined : { opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-10%" }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: i * 0.06 }}
+          >
             <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-medium">
               {q}
               <span className="text-xl leading-none text-[var(--ink-faint)] transition group-open:rotate-45">
@@ -38,9 +48,9 @@ export default function FAQ() {
                 </>
               )}
             </p>
-          </details>
+          </motion.details>
         ))}
-      </Reveal>
+      </div>
     </section>
   );
 }

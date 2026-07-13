@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import Reveal from "./Reveal";
+import { motion, useReducedMotion } from "motion/react";
 import { IconBolt } from "@/components/icons";
 import { landingCard, landingH2 } from "@/lib/landing/styles";
 import { signupCta } from "./cta";
+
+const HEADLINE = ["Free", "for", "every", "student."] as const;
 const FREE_FEATURES = [
   "Optional .edu verification badge",
   "Profiles, feed, and reactions",
@@ -29,17 +31,46 @@ const PRO_COMING_SOON: string[] = [];
 const card = `flex h-full flex-col card-hover ${landingCard}`;
 
 export default function Pricing() {
+  const reduce = useReducedMotion();
+
   return (
-    <section id="pricing" className="scroll-mt-[5.5rem] mx-auto max-w-[1200px] px-5 py-20">
-      <Reveal>
-        <h2 className={`text-balance ${landingH2}`}>Free for every student.</h2>
-        <p className="mt-4 max-w-[48ch] text-base leading-relaxed text-[var(--ink-muted)]">
-          Posting, following, and private accounts are never paywalled. Pro is optional.
-        </p>
-      </Reveal>
+    <section id="pricing" className="scroll-mt-[5.5rem] mx-auto max-w-[1200px] px-5 py-24">
+      <h2 className={`text-balance ${landingH2}`}>
+        {HEADLINE.map((w, i) => (
+          <motion.span
+            key={w}
+            className="mr-[0.22em] inline-block"
+            initial={reduce ? undefined : { opacity: 0, y: 16 }}
+            whileInView={reduce ? undefined : { opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-10%" }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: i * 0.06 }}
+          >
+            {i === HEADLINE.length - 1 ? (
+              <span className="font-display italic text-[var(--blue)]">{w}</span>
+            ) : (
+              w
+            )}
+          </motion.span>
+        ))}
+      </h2>
+      <motion.p
+        className="mt-4 max-w-[48ch] text-base leading-relaxed text-[var(--ink-muted)]"
+        initial={reduce ? undefined : { opacity: 0, y: 16 }}
+        whileInView={reduce ? undefined : { opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-10%" }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: 0.3 }}
+      >
+        Posting, following, and private accounts are never paywalled. Pro is optional.
+      </motion.p>
 
       <div className="mt-10 grid gap-4 md:grid-cols-2 md:items-stretch">
-        <Reveal className="h-full">
+        <motion.div
+          className="h-full"
+          initial={reduce ? undefined : { opacity: 0, y: 24, scale: 0.97 }}
+          whileInView={reduce ? undefined : { opacity: 1, y: 0, scale: 1 }}
+          viewport={{ once: true, margin: "-10%" }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        >
           <div className={card}>
             <p className="text-sm text-[var(--ink-muted)]">Free</p>
             <p className="mt-2 text-[48px] font-semibold leading-none tracking-[-0.03em]">$0</p>
@@ -58,9 +89,15 @@ export default function Pricing() {
               </Link>
             </div>
           </div>
-        </Reveal>
+        </motion.div>
 
-        <Reveal className="h-full" delay={0.08}>
+        <motion.div
+          className="h-full"
+          initial={reduce ? undefined : { opacity: 0, y: 24, scale: 0.97 }}
+          whileInView={reduce ? undefined : { opacity: 1, y: 0, scale: 1 }}
+          viewport={{ once: true, margin: "-10%" }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
+        >
           <div
             className={`${card} relative overflow-hidden border-[var(--blue)]/45 ring-1 ring-[var(--blue)]/25 [&>:not([aria-hidden])]:relative`}
           >
@@ -75,9 +112,15 @@ export default function Pricing() {
                 <IconBolt className="h-4 w-4 text-[var(--blue)]" />
                 Pro
               </span>
-              <span className="rounded-full bg-[var(--blue)] px-2.5 py-0.5 text-xs font-medium text-white">
+              <motion.span
+                className="rounded-full bg-[var(--blue)] px-2.5 py-0.5 text-xs font-medium text-white"
+                initial={reduce ? undefined : { opacity: 0, scale: 0.6 }}
+                whileInView={reduce ? undefined : { opacity: 1, scale: 1 }}
+                viewport={{ once: true, margin: "-10%" }}
+                transition={reduce ? undefined : { type: "spring", stiffness: 100, damping: 20, delay: 0.4 }}
+              >
                 Most popular
-              </span>
+              </motion.span>
             </div>
             <p className="mt-2 text-[48px] font-semibold leading-none tracking-[-0.03em]">$4.99<span className="text-lg font-normal text-[var(--ink-muted)]">/mo</span></p>
             <p className="mt-1 text-sm text-[var(--ink-muted)]">or $12.99/semester</p>
@@ -107,7 +150,7 @@ export default function Pricing() {
               </Link>
             </div>
           </div>
-        </Reveal>
+        </motion.div>
       </div>
     </section>
   );

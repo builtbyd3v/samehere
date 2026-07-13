@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { motion, useReducedMotion } from "motion/react";
 import Reveal, { Stagger, RevealItem } from "./Reveal";
 import { IconButterfly, IconCrown } from "@/components/icons";
 import { landingH2 } from "@/lib/landing/styles";
@@ -24,8 +25,10 @@ function BadgePreview({ children }: { children: React.ReactNode }) {
 }
 
 export default function Founders({ spotsLeft }: { spotsLeft?: number }) {
+  const reduce = useReducedMotion();
+
   return (
-    <section id="founders" className="scroll-mt-[5.5rem] mx-auto max-w-[1200px] px-5 py-20">
+    <section id="founders" className="scroll-mt-[5.5rem] mx-auto max-w-[1200px] px-5 py-24">
       <Reveal>
         <h2 className={`text-balance ${landingH2}`}>Be a founder.</h2>
         <p className="mt-4 max-w-[52ch] text-base leading-relaxed text-[var(--ink-muted)]">
@@ -49,7 +52,15 @@ export default function Founders({ spotsLeft }: { spotsLeft?: number }) {
 
             {spotsLeft != null && spotsLeft > 0 ? (
               <p className="mt-5 text-sm">
-                <span className="font-semibold text-[var(--founder)]">{spotsLeft}</span>
+                <motion.span
+                  className="inline-block font-semibold text-[var(--founder)]"
+                  initial={reduce ? undefined : { opacity: 0, scale: 0.6 }}
+                  whileInView={reduce ? undefined : { opacity: 1, scale: 1 }}
+                  viewport={{ once: true, margin: "-10%" }}
+                  transition={reduce ? undefined : { type: "spring", stiffness: 100, damping: 20, delay: 0.3 }}
+                >
+                  {spotsLeft}
+                </motion.span>
                 <span className="text-[var(--ink-muted)]"> of 100 founding spots left</span>
               </p>
             ) : spotsLeft === 0 ? (
