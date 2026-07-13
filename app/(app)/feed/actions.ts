@@ -14,9 +14,7 @@ import { COMPOSER_SYSTEM, IMPROVE_SYSTEM, untrusted } from "@/lib/ai-prompts";
 import { getPostHogServerClient } from "@/lib/posthog-server";
 import { isPro } from "@/lib/pro";
 import { TEXT_LIMITS, textLimitError } from "@/lib/utils/validation";
-import { peopleSearchCore, type PeopleSearchResult, type PeopleSearchState } from "@/lib/people-search";
-
-export type { PeopleSearchResult, PeopleSearchState };
+import { peopleSearchCore, type PeopleSearchState } from "@/lib/people-search";
 
 export type ComposerState = { error?: string; ok?: boolean };
 

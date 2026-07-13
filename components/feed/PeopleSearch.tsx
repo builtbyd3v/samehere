@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useTransition, type ReactNode } from "react";
 import Link from "next/link";
-import { peopleSearch, type PeopleSearchState } from "@/app/(app)/feed/actions";
+import { peopleSearch } from "@/app/(app)/feed/actions";
+import type { PeopleSearchState } from "@/lib/people-search";
 import UserBadges from "@/components/profile/UserBadges";
 import AvatarImage from "@/components/ui/AvatarImage";
 import { TEXT_LIMITS } from "@/lib/utils/validation";
