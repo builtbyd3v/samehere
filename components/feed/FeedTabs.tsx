@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 const pill =
-  "rounded-full px-4 py-1.5 text-sm font-medium transition active:scale-[0.97]";
+  "rounded-full px-4 py-1.5 text-sm font-medium transition-colors duration-200 active:scale-[0.97]";
 
 export default function FeedTabs({
   tab,
@@ -22,7 +22,7 @@ export default function FeedTabs({
         aria-selected={tab === "latest"}
         className={
           tab === "latest"
-            ? `${pill} bg-[color-mix(in_srgb,var(--blue)_12%,transparent)] text-[var(--blue)]`
+            ? `${pill} bg-[var(--blue-glow)] text-[var(--blue)]`
             : `${pill} text-[var(--ink-muted)] hover:text-[var(--ink)]`
         }
       >
@@ -34,7 +34,7 @@ export default function FeedTabs({
         aria-selected={tab === "following"}
         className={
           tab === "following"
-            ? `${pill} bg-[color-mix(in_srgb,var(--blue)_12%,transparent)] text-[var(--blue)]`
+            ? `${pill} bg-[var(--blue-glow)] text-[var(--blue)]`
             : `${pill} text-[var(--ink-muted)] hover:text-[var(--ink)]`
         }
       >

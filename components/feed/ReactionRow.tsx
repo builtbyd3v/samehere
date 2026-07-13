@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { motion, useReducedMotion } from "motion/react";
 import { getBrowserClient } from "@/lib/supabase/client";
 import { IconSame, IconComment, IconRepost, IconBookmark } from "@/components/icons";
 import Menu from "@/components/ui/Menu";
@@ -24,7 +25,7 @@ type Props = {
 };
 
 export const action =
-  "inline-flex min-h-9 items-center gap-1.5 rounded-full px-2.5 text-[13px] font-medium transition hover:bg-[var(--featured-surface)] disabled:opacity-40";
+  "inline-flex min-h-9 items-center gap-1.5 rounded-full px-2.5 text-[13px] font-medium transition duration-150 hover:bg-[var(--featured-surface)] active:translate-y-[1px] disabled:opacity-40 disabled:active:translate-y-0";
 
 const inactive = "text-[var(--ink-muted)] hover:bg-[var(--featured-surface)] hover:text-[var(--ink)]";
 
@@ -71,6 +72,8 @@ export default function ReactionRow(props: Props) {
   const targetId = quoteId ?? postId;
   const commentsHref = quoteId ? `/quote/${quoteId}` : `/post/${postId}`;
   const [repostMenu, setRepostMenu] = useState(false);
+  const [pop, setPop] = useState(false);
+  const reduceMotion = useReducedMotion();
   const [s, setS] = useState({
     samehere: props.samehere,
     repost: props.repost,
@@ -84,6 +87,11 @@ export default function ReactionRow(props: Props) {
     const mine = s.mineSamehere;
     const d = mine ? -1 : 1;
     setS((p) => ({ ...p, mineSamehere: !mine, samehere: p.samehere + d }));
+    if (!mine && !reduceMotion) {
+      // Activating (not undoing): fire the signature spring micro-burst.
+      setPop(true);
+      setTimeout(() => setPop(false), 260);
+    }
     const { error } = mine
       ? await supabase.from("reactions").delete().eq(targetCol, targetId).eq("user_id", viewerId).eq("type", type)
       : await supabase.from("reactions").insert(
@@ -130,7 +138,13 @@ export default function ReactionRow(props: Props) {
           aria-label={s.mineSamehere ? "SameHere added" : "SameHere"}
           className={`${action} ${sameColor(s.mineSamehere)}`}
         >
-          <IconSame on={s.mineSamehere} />
+          <motion.span
+            className="inline-flex"
+            animate={{ scale: pop ? 1.25 : 1 }}
+            transition={{ type: "spring", stiffness: 100, damping: 20 }}
+          >
+            <IconSame on={s.mineSamehere} />
+          </motion.span>
           {s.samehere > 0 && (
             <span className="same-tick inline-block tabular-nums" key={s.samehere}>
               {s.samehere}

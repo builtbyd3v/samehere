@@ -63,8 +63,8 @@ type ExperienceRow = {
   note: string | null;
 };
 
-function Stat({ value, label, accent }: { value: number; label: string; accent?: boolean }) {
-  return (
+function Stat({ value, label, accent, href }: { value: number; label: string; accent?: boolean; href?: string }) {
+  const content = (
     <span className="text-[15px]">
       <b
         className={`font-semibold tracking-[-0.01em] ${accent ? "" : "text-[var(--ink)]"}`}
@@ -74,6 +74,13 @@ function Stat({ value, label, accent }: { value: number; label: string; accent?:
       </b>{" "}
       <span className="text-[var(--ink-muted)]">{label}</span>
     </span>
+  );
+  return href ? (
+    <Link href={href} className="hover:underline">
+      {content}
+    </Link>
+  ) : (
+    content
   );
 }
 
@@ -187,8 +194,8 @@ async function PublicProfileView({ username }: { username: string }) {
 
             <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1">
               <Stat value={Number(c.posts)} label="posts" />
-              <Stat value={Number(c.followers)} label="followers" />
-              <Stat value={Number(c.following)} label="following" />
+              <Stat value={Number(c.followers)} label="followers" href={`/profile/${profile.username}/followers`} />
+              <Stat value={Number(c.following)} label="following" href={`/profile/${profile.username}/following`} />
             </div>
           </div>
 
@@ -525,8 +532,8 @@ export default async function ProfilePage({
 
             <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1">
               <Stat value={Number(counts.posts)} label="posts" accent={!!theme} />
-              <Stat value={Number(counts.followers)} label="followers" accent={!!theme} />
-              <Stat value={Number(counts.following)} label="following" accent={!!theme} />
+              <Stat value={Number(counts.followers)} label="followers" accent={!!theme} href={`/profile/${profile.username}/followers`} />
+              <Stat value={Number(counts.following)} label="following" accent={!!theme} href={`/profile/${profile.username}/following`} />
             </div>
           </div>
 

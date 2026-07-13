@@ -109,14 +109,14 @@ function Avatar({
 
 function PostBody({ content, linked, postId }: { content: string; linked: boolean; postId: string }) {
   const inner = (
-    <span className={`max-w-[65ch] whitespace-pre-line break-words text-[16px] leading-[1.55] text-[var(--ink)] ${linked ? "" : "block"}`}>
+    <span className={`max-w-[65ch] whitespace-pre-line break-words text-[16.5px] leading-[1.5] text-[var(--ink)] ${linked ? "" : "block"}`}>
       <MentionText>{content}</MentionText>
     </span>
   );
   if (linked) {
     return <PostBodyLink postId={postId}>{inner}</PostBodyLink>;
   }
-  return <div className="mt-3">{inner}</div>;
+  return <div className="mt-2.5">{inner}</div>;
 }
 
 export default function PostCard({
@@ -166,12 +166,12 @@ export default function PostCard({
                   )}
                   {a && <UserBadges isPro={a.is_pro} isFounder={a.is_founder} isCampusFounder={a.is_campus_founder} isVerifiedStudent={a.verified_student} />}
                 </div>
-                <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">
+                <p className="mt-0.5 text-[12.5px] text-[var(--ink-faint)]">
                   {a && <span>@{a.username}</span>}
                   {school && <span>{a ? ", " : ""}{school}</span>}
                   {(a || school) && <span className="mx-1 text-[var(--ink-faint)]">·</span>}
                   {linked ? (
-                    <Link href={`/post/${post.id}`} className="hover:text-[var(--ink)] hover:underline">
+                    <Link href={`/post/${post.id}`} className="hover:text-[var(--ink-muted)] hover:underline">
                       <LocalTime iso={post.created_at} variant="ago" />
                     </Link>
                   ) : (
@@ -219,7 +219,7 @@ export default function PostCard({
 
   if (embedded && embeddedLinked) {
     return (
-      <PostBodyLink postId={post.id} className="block cursor-pointer hover:opacity-95">
+      <PostBodyLink postId={post.id} className="block cursor-pointer transition-transform duration-150 hover:opacity-95 active:translate-y-[1px]">
         {body}
       </PostBodyLink>
     );

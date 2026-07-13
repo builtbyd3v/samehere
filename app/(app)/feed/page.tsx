@@ -42,7 +42,7 @@ export default async function FeedPage({
   const viewerId = user?.id ?? null;
 
   return (
-    <main data-feed-page className="page-enter grid grid-cols-1 justify-center gap-7 py-6 lg:grid-cols-[minmax(0,600px)_340px] lg:py-8">
+    <main data-feed-page className="page-enter grid grid-cols-1 justify-center gap-7 py-6 lg:py-8 xl:grid-cols-[minmax(0,600px)_340px]">
       <div className="min-w-0">
         <Suspense fallback={<FeedHeaderFallback tab={tab} />}>
           <FeedHeader tab={tab} userId={user?.id ?? null} />
@@ -57,8 +57,8 @@ export default async function FeedPage({
         </Suspense>
       </div>
 
-      {/* Right rail — desktop only; the feed reads full-width on mobile. */}
-      <aside className="hidden lg:block">
+      {/* Right rail — wide desktop only; the feed reads full-width below xl. */}
+      <aside className="hidden xl:block">
         <div className="sticky top-20 flex flex-col gap-4">
           <Suspense fallback={<LeftRailFallback />}>
             <LeftRail />

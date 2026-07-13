@@ -22,7 +22,7 @@ export default function LeftNav({
       label: "Home",
       href: "/feed",
       icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
           <path d="M3 10.5 12 3l9 7.5" />
           <path d="M5 9.5V21h14V9.5" />
         </svg>
@@ -37,7 +37,7 @@ export default function LeftNav({
       label: "Profile",
       href: username ? `/profile/${username}` : "#",
       icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
           <circle cx="12" cy="8" r="4" />
           <path d="M4 21a8 8 0 0 1 16 0" />
         </svg>
@@ -47,7 +47,7 @@ export default function LeftNav({
   ];
 
   return (
-    <nav className="card p-2">
+    <nav className="flex flex-col gap-1">
       {items.map((item) => {
         const active =
           item.href === "#"
@@ -61,7 +61,7 @@ export default function LeftNav({
           <Link
             key={item.label}
             href={item.href}
-            className={`flex items-center gap-3.5 rounded-full px-3 py-2.5 text-[15px] font-medium transition hover:bg-[var(--featured-surface)] ${active ? "text-[var(--blue)] font-semibold" : "text-[var(--ink)]"}`}
+            className={`relative flex items-center gap-3.5 rounded-full px-4 py-2.5 text-[15px] font-medium transition-colors duration-200 ease-out hover:bg-[var(--featured-surface)] ${active ? "bg-[var(--blue-glow)] font-semibold text-[var(--blue)]" : "text-[var(--ink)]"}`}
           >
             <span className={`grid h-6 w-6 shrink-0 place-items-center ${active ? "text-[var(--blue)]" : "text-[var(--ink-muted)]"}`}>
               {item.icon}

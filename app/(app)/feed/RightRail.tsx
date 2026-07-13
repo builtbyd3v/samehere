@@ -91,12 +91,16 @@ export default async function RightRail() {
         <section className="card p-5">
           <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">People you should meet</h2>
           <div className="flex flex-col gap-2">
-            {suggested.map((p) => {
+            {suggested.map((p, i) => {
               const nm = p.display_name ?? p.username;
               const line = yearMajorLine(p);
               const why = promptCache.get(p.id) ?? sharedFactLine(viewerSignal, p);
               return (
-                <div key={p.id} className="flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3">
+                <div
+                  key={p.id}
+                  className="cascade-up flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3"
+                  style={{ "--delay": `${i * 80}ms` } as React.CSSProperties}
+                >
                   {p.avatar_url
                     ? <AvatarImage src={p.avatar_url} alt="" className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover" pro={p.is_pro} />
                     : <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-sm font-semibold text-[var(--ink-muted)]">{nm.charAt(0).toUpperCase()}</div>}
@@ -106,7 +110,14 @@ export default async function RightRail() {
                       <UserBadges isPro={p.is_pro} isFounder={p.is_founder} isCampusFounder={p.is_campus_founder} isVerifiedStudent={p.verified_student} />
                     </div>
                     {line && <p className="truncate text-xs text-[var(--ink-muted)]">{line}</p>}
-                    {why && <p className="mt-0.5 truncate text-xs text-[var(--ink-muted)]">{why}</p>}
+                    {why && (
+                      <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-[var(--blue)]">
+                        <svg aria-hidden viewBox="0 0 24 24" width="9" height="9" fill="currentColor" className="shrink-0">
+                          <path d="M12 2l2.2 6.8L21 11l-6.8 2.2L12 20l-2.2-6.8L3 11l6.8-2.2Z" />
+                        </svg>
+                        <span className="truncate">{why}</span>
+                      </p>
+                    )}
                   </div>
                   <FollowButton targetId={p.id} initial="none" />
                 </div>

@@ -539,6 +539,29 @@ summary {
   }
 }
 
+/* ---------------------------------------------------------------------
+ * App shell centering. Every page centers on the viewport via the
+ * symmetric .shell-rspacer that mirrors the 240px left nav. The feed is
+ * the exception: its 600px post column + 340px rail need the spacer's
+ * room (>=1280px), and true centering of the POST COLUMN needs a left
+ * offset instead, because the rail (340+28) outweighs the nav (240+28)
+ * by exactly 100px. Container widens to 1384px on the feed so it all
+ * fits: 24 + 240 + 28 + 100 + 600 + 28 + 340 + 24.
+ * ------------------------------------------------------------------- */
+.app-shell:has([data-feed-page]) {
+  max-width: 1384px;
+}
+@media (min-width: 1280px) {
+  .app-shell:has([data-feed-page]) .shell-rspacer {
+    display: none;
+  }
+}
+@media (min-width: 1384px) {
+  [data-feed-page] {
+    margin-left: 100px;
+  }
+}
+
 /* Component classes below sit in @layer components so a stacked Tailwind
    utility (e.g. `<Skeleton className="rounded-full">`) still wins the cascade. */
 @layer components {

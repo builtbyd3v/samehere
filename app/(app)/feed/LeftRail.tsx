@@ -67,11 +67,11 @@ export default async function LeftRail() {
             <div className="text-base font-semibold tabular-nums text-[var(--ink)]" style={theme ? { color: "var(--profile-accent)" } : undefined}>{counts.posts}</div>
             <div className="text-xs text-[var(--ink-muted)]">Posts</div>
           </Link>
-          <Link href={`/profile/${profile?.username}`} className="transition hover:opacity-80">
+          <Link href={`/profile/${profile?.username}/followers`} className="transition hover:opacity-80">
             <div className="text-base font-semibold tabular-nums text-[var(--ink)]" style={theme ? { color: "var(--profile-accent)" } : undefined}>{counts.followers}</div>
             <div className="text-xs text-[var(--ink-muted)]">Followers</div>
           </Link>
-          <Link href={`/profile/${profile?.username}`} className="transition hover:opacity-80">
+          <Link href={`/profile/${profile?.username}/following`} className="transition hover:opacity-80">
             <div className="text-base font-semibold tabular-nums text-[var(--ink)]" style={theme ? { color: "var(--profile-accent)" } : undefined}>{counts.following}</div>
             <div className="text-xs text-[var(--ink-muted)]">Following</div>
           </Link>

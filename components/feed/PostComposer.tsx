@@ -240,7 +240,7 @@ export default function PostComposer({
     <form
       ref={ref}
       onSubmit={onSubmit}
-      className="rounded-2xl border border-[var(--border)] bg-[var(--surface-card)] p-4 transition-colors focus-within:border-[var(--border-strong)] sm:p-5"
+      className="rounded-2xl border border-[var(--border)] bg-[var(--surface-card)] p-4 transition-[border-color,box-shadow] duration-300 focus-within:border-[var(--border-strong)] focus-within:shadow-[0_0_0_4px_var(--blue-glow)] sm:p-5"
     >
       {hint && (
         <button
@@ -337,7 +337,7 @@ export default function PostComposer({
             type="button"
             onClick={onNudge}
             disabled={nudging}
-            className="text-xs text-[var(--ink-muted)] underline disabled:opacity-50"
+            className="rounded-full bg-[var(--blue-glow)] px-2.5 py-1 text-xs font-medium text-[var(--blue)] transition hover:brightness-105 disabled:opacity-50"
           >
             {nudging ? "Thinking…" : "Need an idea?"}
           </button>
@@ -355,7 +355,7 @@ export default function PostComposer({
                 type="button"
                 onClick={onImprove}
                 disabled={improving || len === 0}
-                className="text-xs font-medium text-[var(--blue)] underline disabled:opacity-50"
+                className="rounded-full bg-[var(--blue-glow)] px-2.5 py-1 text-xs font-medium text-[var(--blue)] transition hover:brightness-105 disabled:opacity-50"
               >
                 {improving ? "Improving…" : "✦ Improve"}
               </button>
@@ -364,7 +364,7 @@ export default function PostComposer({
             <Link
               href="/pro"
               title="Improve is a Pro feature. Upgrade to rewrite your drafts."
-              className="text-xs font-medium text-[var(--ink-muted)] underline"
+              className="rounded-full bg-[var(--featured-surface)] px-2.5 py-1 text-xs font-medium text-[var(--ink-muted)]"
             >
               ✦ Improve <span className="text-[var(--ink-faint)]">(Pro)</span>
             </Link>
