@@ -738,6 +738,123 @@ export type Database = {
           },
         ]
       }
+      job_fit: {
+        Row: {
+          created_at: string
+          listing_id: string
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          listing_id: string
+          reason: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          listing_id?: string
+          reason?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_fit_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "job_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_fit_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_listings: {
+        Row: {
+          active: boolean
+          external_id: string
+          id: string
+          kind: string
+          last_seen_at: string
+          locations: string | null
+          org: string
+          posted_at: string | null
+          source: string
+          term: string | null
+          title: string
+          url: string
+        }
+        Insert: {
+          active?: boolean
+          external_id: string
+          id?: string
+          kind: string
+          last_seen_at?: string
+          locations?: string | null
+          org: string
+          posted_at?: string | null
+          source: string
+          term?: string | null
+          title: string
+          url: string
+        }
+        Update: {
+          active?: boolean
+          external_id?: string
+          id?: string
+          kind?: string
+          last_seen_at?: string
+          locations?: string | null
+          org?: string
+          posted_at?: string | null
+          source?: string
+          term?: string | null
+          title?: string
+          url?: string
+        }
+        Relationships: []
+      }
+      job_pitches: {
+        Row: {
+          created_at: string
+          listing_id: string
+          pitch: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          listing_id: string
+          pitch: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          listing_id?: string
+          pitch?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_pitches_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "job_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_pitches_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string

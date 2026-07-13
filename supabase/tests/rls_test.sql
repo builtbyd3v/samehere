@@ -2052,6 +2052,164 @@ exception when others then
 end $$;
 reset role;
 
+-- ============ JOB_LISTINGS / JOB_FIT / JOB_PITCHES — 20260719130000_job_listings.sql ============
+-- job_listings: authenticated SELECT-only (no insert/update/delete policies
+-- -- ingest cron uses the admin client, bypasses RLS), anon fully denied.
+-- job_fit / job_pitches: owner ALL, no cross-user read (mirrors
+-- ai_connection_prompts). One representative pair is run for job_pitches.
+
+-- fixture: one listing, seeded as the connecting superuser (bypasses RLS).
+do $$
+declare
+  v_listing uuid;
+begin
+  insert into public.job_listings (source, external_id, org, title, kind, url)
+  values ('manual', 'rls-test-1', 'Acme Corp', 'SWE Intern', 'internship', 'https://example.com/job')
+  returning id into v_listing;
+  insert into tests_fixture (key, id) values ('job_listing', v_listing);
+end $$;
+
+-- JOB_LISTINGS_authenticated_select — any signed-in user can select.
+select tests.as_user(id) from tests_fixture where key = 'a';
+do $$
+begin
+  if not exists (
+    select 1 from public.job_listings
+    where id = (select id from tests_fixture where key = 'job_listing')
+  ) then
+    raise exception 'JOB_LISTINGS_authenticated_select REGRESSION: authenticated user cannot select job_listings';
+  end if;
+  insert into tests_results values ('JOB_LISTINGS_authenticated_select', true, 'ok');
+exception when others then
+  insert into tests_results values ('JOB_LISTINGS_authenticated_select', false, sqlerrm);
+end $$;
+reset role;
+
+-- JOB_LISTINGS_authenticated_insert_denied — no insert policy exists; an
+-- authenticated client-side insert must fail with 42501, not silently pass
+-- (ingest is admin-client only).
+select tests.as_user(id) from tests_fixture where key = 'a';
+do $$
+declare
+  v_state text;
+  v_raised boolean;
+begin
+  begin
+    insert into public.job_listings (source, external_id, org, title, kind, url)
+    values ('manual', 'rls-test-client-insert', 'Evil Corp', 'Hacked Role', 'internship', 'https://example.com/evil');
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state <> '42501' then
+    raise exception 'JOB_LISTINGS_authenticated_insert_denied REGRESSION: authenticated client insert into job_listings did not fail with 42501 (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+  insert into tests_results values ('JOB_LISTINGS_authenticated_insert_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('JOB_LISTINGS_authenticated_insert_denied', false, sqlerrm);
+end $$;
+reset role;
+
+-- JOB_LISTINGS_anon_select_denied — anon (logged-out) gets 42501.
+select tests.as_anon();
+do $$
+declare
+  v_state text;
+  v_raised boolean;
+begin
+  begin
+    perform 1 from public.job_listings limit 1;
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state <> '42501' then
+    raise exception 'JOB_LISTINGS_anon_select_denied REGRESSION: anon selecting public.job_listings did not fail with 42501 (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+  insert into tests_results values ('JOB_LISTINGS_anon_select_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('JOB_LISTINGS_anon_select_denied', false, sqlerrm);
+end $$;
+reset role;
+
+-- JOB_FIT_owner_insert_select — A can insert and select her own job_fit row.
+select tests.as_user(id) from tests_fixture where key = 'a';
+do $$
+declare
+  v_a uuid := (select id from tests_fixture where key = 'a');
+  v_listing uuid := (select id from tests_fixture where key = 'job_listing');
+begin
+  insert into public.job_fit (user_id, listing_id, reason)
+  values (v_a, v_listing, 'matches your internship experience');
+
+  if not exists (
+    select 1 from public.job_fit where user_id = v_a and listing_id = v_listing
+  ) then
+    raise exception 'JOB_FIT_owner_insert_select REGRESSION: owner cannot select her own job_fit row';
+  end if;
+  insert into tests_results values ('JOB_FIT_owner_insert_select', true, 'ok');
+exception when others then
+  insert into tests_results values ('JOB_FIT_owner_insert_select', false, sqlerrm);
+end $$;
+reset role;
+
+-- JOB_FIT_b_select_a_denied — B cannot select A's job_fit row.
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+begin
+  if exists (
+    select 1 from public.job_fit
+    where user_id = (select id from tests_fixture where key = 'a')
+      and listing_id = (select id from tests_fixture where key = 'job_listing')
+  ) then
+    raise exception 'JOB_FIT_b_select_a_denied REGRESSION: non-owner B selected A''s job_fit row';
+  end if;
+  insert into tests_results values ('JOB_FIT_b_select_a_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('JOB_FIT_b_select_a_denied', false, sqlerrm);
+end $$;
+reset role;
+
+-- JOB_PITCHES_owner_insert_select / JOB_PITCHES_b_select_a_denied — one
+-- representative pair, same shape as job_fit above.
+select tests.as_user(id) from tests_fixture where key = 'a';
+do $$
+declare
+  v_a uuid := (select id from tests_fixture where key = 'a');
+  v_listing uuid := (select id from tests_fixture where key = 'job_listing');
+begin
+  insert into public.job_pitches (user_id, listing_id, pitch)
+  values (v_a, v_listing, 'Hi, I would love to intern with your team...');
+
+  if not exists (
+    select 1 from public.job_pitches where user_id = v_a and listing_id = v_listing
+  ) then
+    raise exception 'JOB_PITCHES_owner_insert_select REGRESSION: owner cannot select her own job_pitches row';
+  end if;
+  insert into tests_results values ('JOB_PITCHES_owner_insert_select', true, 'ok');
+exception when others then
+  insert into tests_results values ('JOB_PITCHES_owner_insert_select', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+begin
+  if exists (
+    select 1 from public.job_pitches
+    where user_id = (select id from tests_fixture where key = 'a')
+      and listing_id = (select id from tests_fixture where key = 'job_listing')
+  ) then
+    raise exception 'JOB_PITCHES_b_select_a_denied REGRESSION: non-owner B selected A''s job_pitches row';
+  end if;
+  insert into tests_results values ('JOB_PITCHES_b_select_a_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('JOB_PITCHES_b_select_a_denied', false, sqlerrm);
+end $$;
+reset role;
+
 -- ============ report ============
 -- Print the PASS/FAIL table FIRST so the operator sees exactly which assertions
 -- failed, then raise so psql exits non-zero and the harness actually gates.
@@ -2069,7 +2227,7 @@ declare v_failed int;
 begin
   select count(*) into v_failed from tests_results where not passed;
   if v_failed > 0 then
-    raise exception '% assertion(s) failed — see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, CLUBS_V2_1, CLUBS_V2_2, CLUBS_V2_3, CLUBS_V2_7a, CLUBS_V2_4, CLUBS_V2_7b, CLUBS_V2_5_officer_denied, CLUBS_V2_5_owner_allowed, CLUBS_V2_6_outsider, CLUBS_V2_6_pending, CLUBS_V2_8, CLUBS_V2_9, H1_suggested_profiles, CLUBS_V2_12_outsider, CLUBS_V2_12_anon, SIGNUP_RL_anon_execute, SIGNUP_RL_no_table_access_anon, SIGNUP_RL_no_table_access_authenticated, EXPERIENCES_owner_insert, EXPERIENCES_owner_select, EXPERIENCES_owner_update, EXPERIENCES_b_select_a, EXPERIENCES_b_update_denied, EXPERIENCES_b_delete_denied, EXPERIENCES_anon_select_denied, EXPERIENCES_owner_delete, EXPERIENCES_cap.', v_failed;
+    raise exception '% assertion(s) failed — see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, CLUBS_V2_1, CLUBS_V2_2, CLUBS_V2_3, CLUBS_V2_7a, CLUBS_V2_4, CLUBS_V2_7b, CLUBS_V2_5_officer_denied, CLUBS_V2_5_owner_allowed, CLUBS_V2_6_outsider, CLUBS_V2_6_pending, CLUBS_V2_8, CLUBS_V2_9, H1_suggested_profiles, CLUBS_V2_12_outsider, CLUBS_V2_12_anon, SIGNUP_RL_anon_execute, SIGNUP_RL_no_table_access_anon, SIGNUP_RL_no_table_access_authenticated, EXPERIENCES_owner_insert, EXPERIENCES_owner_select, EXPERIENCES_owner_update, EXPERIENCES_b_select_a, EXPERIENCES_b_update_denied, EXPERIENCES_b_delete_denied, EXPERIENCES_anon_select_denied, EXPERIENCES_owner_delete, EXPERIENCES_cap, JOB_LISTINGS_authenticated_select, JOB_LISTINGS_authenticated_insert_denied, JOB_LISTINGS_anon_select_denied, JOB_FIT_owner_insert_select, JOB_FIT_b_select_a_denied, JOB_PITCHES_owner_insert_select, JOB_PITCHES_b_select_a_denied.', v_failed;
 
   end if;
 end $$;
