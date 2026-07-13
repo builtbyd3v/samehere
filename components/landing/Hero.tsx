@@ -5,13 +5,13 @@ import { useReducedMotion } from "motion/react";
 import HeroCluster from "./HeroCluster";
 import { ghostCta, signupCta } from "./cta";
 
-// "only" carries the highlight — Fraunces italic in the SameHere blue.
+// "looking" carries the highlight — Fraunces italic in the SameHere blue.
 const HEADLINE = [
-  { w: "You're", accent: false },
-  { w: "not", accent: false },
-  { w: "the", accent: false },
-  { w: "only", accent: true },
-  { w: "one.", accent: false },
+  { w: "Describe", accent: false },
+  { w: "who", accent: false },
+  { w: "you're", accent: false },
+  { w: "looking", accent: true },
+  { w: "for.", accent: false },
 ] as const;
 
 export default function Hero() {
@@ -49,7 +49,8 @@ export default function Hero() {
             className="fade-rise mx-auto mt-6 max-w-[42ch] text-lg leading-[1.45] text-[var(--ink-muted)] md:text-xl"
             style={{ ["--y" as string]: "20px", ["--delay" as string]: "0.3s" }}
           >
-            Post what&apos;s real. Grow a heatmap. Let AI find your people.
+            Same major, same goals, same boat — our AI reads what you need and
+            finds verified students with real activity to match, not just a profile pic.
           </p>
 
           <div

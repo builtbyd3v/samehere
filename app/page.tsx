@@ -7,13 +7,13 @@ export const dynamic = "force-static";
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: "samehere: the social network built for students",
+  title: "samehere: describe who you're looking for",
   description:
-    "Built for students. Join free, post what's real, react with SameHere, and find people who get it.",
+    "Describe who you're looking for — samehere's AI finds students like you: same major, same goals, same boat. Verified students, real activity, free to join.",
   openGraph: {
     title: "samehere: you're not the only one",
     description:
-      "Built for students. Post what's real and find people who say same here.",
+      "Describe who you're looking for and samehere's AI finds students like you. Verified students, real activity, free to join.",
     type: "website",
     siteName: "samehere",
   },
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "samehere: you're not the only one",
     description:
-      "Built for students. Post what's real and find people who say same here.",
+      "Describe who you're looking for and samehere's AI finds students like you. Verified students, real activity, free to join.",
   },
 };
 
