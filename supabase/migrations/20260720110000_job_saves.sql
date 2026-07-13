@@ -21,3 +21,7 @@ create policy "job_saves owner all" on public.job_saves
 
 revoke all on table public.job_saves from anon;
 grant select, insert, delete on table public.job_saves to authenticated;
+-- Default-privileges trap: schema-level defaults grant ALL (incl. TRUNCATE and
+-- UPDATE) to authenticated on new tables regardless of the grant list above.
+-- Strip everything outside the intended surface explicitly.
+revoke truncate, update, references, trigger on table public.job_saves from authenticated;
