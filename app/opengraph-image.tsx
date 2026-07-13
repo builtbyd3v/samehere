@@ -201,6 +201,8 @@ export default async function OgImage() {
             flexDirection: "column",
             flexGrow: 1,
             background: CARD,
+            backgroundImage:
+              "radial-gradient(ellipse 1000px 500px at 30% -15%, rgba(79, 159, 232, 0.30), transparent 65%)",
             border: `1px solid ${BORDER}`,
             borderRadius: 28,
             padding: 52,
