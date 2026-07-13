@@ -2,7 +2,6 @@
 
 import { useActionState, useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { createComment, type CommentState } from "@/app/(app)/post/[id]/actions";
-import { createQuoteComment } from "@/app/(app)/quote/[id]/actions";
 import { useSubmitShortcut } from "@/lib/useSubmitShortcut";
 import { submitShortcutLabel } from "@/lib/keyboard";
 import { TEXT_LIMITS } from "@/lib/utils/validation";
@@ -12,9 +11,8 @@ const POINT_AT = 50; // ponytail: mirrors comments_award_contribution comment th
 const AWARD = 3; // ponytail: mirrors comments_award_contribution comment points
 const MAX = TEXT_LIMITS.comment;
 
-export default function CommentComposer({ postId, quoteId }: { postId?: string; quoteId?: string }) {
-  const action = quoteId ? createQuoteComment : createComment;
-  const [state, formAction, pending] = useActionState<CommentState, FormData>(action, {});
+export default function CommentComposer({ postId }: { postId?: string }) {
+  const [state, formAction, pending] = useActionState<CommentState, FormData>(createComment, {});
   const [, startSubmit] = useTransition();
   const ref = useRef<HTMLFormElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -51,11 +49,7 @@ export default function CommentComposer({ postId, quoteId }: { postId?: string; 
       action={formAction}
       className="rounded-xl border border-[var(--border)] bg-[var(--canvas)] p-4 transition-colors focus-within:border-[var(--border-strong)]"
     >
-      {quoteId ? (
-        <input type="hidden" name="repost_id" value={quoteId} />
-      ) : (
-        <input type="hidden" name="post_id" value={postId ?? ""} />
-      )}
+      <input type="hidden" name="post_id" value={postId ?? ""} />
       <MentionTextarea
         textareaRef={textareaRef}
         name="content"

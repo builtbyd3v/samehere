@@ -5,7 +5,6 @@ import { useState } from "react";
 import { getBrowserClient } from "@/lib/supabase/client";
 import { IconSame, IconComment, IconRepost, IconBookmark } from "@/components/icons";
 import Menu from "@/components/ui/Menu";
-import QuoteRepostModal from "./QuoteRepostModal";
 import type { FeedPost } from "./PostCard";
 
 type Props = {
@@ -71,7 +70,6 @@ export default function ReactionRow(props: Props) {
   const targetCol = quoteId ? ("repost_id" as const) : ("post_id" as const);
   const targetId = quoteId ?? postId;
   const commentsHref = quoteId ? `/quote/${quoteId}` : `/post/${postId}`;
-  const [quoteOpen, setQuoteOpen] = useState(false);
   const [repostMenu, setRepostMenu] = useState(false);
   const [s, setS] = useState({
     samehere: props.samehere,
@@ -178,16 +176,6 @@ export default function ReactionRow(props: Props) {
           >
             {s.mineRepost ? "Undo repost" : "Repost"}
           </button>
-          <button
-            type="button"
-            onClick={() => {
-              setRepostMenu(false);
-              setQuoteOpen(true);
-            }}
-            className="block w-full px-3 py-2 text-left text-sm transition hover:bg-[var(--featured-surface)] active:scale-[0.98]"
-          >
-            Quote
-          </button>
         </Menu>
 
         <ActionButton
@@ -200,22 +188,6 @@ export default function ReactionRow(props: Props) {
           <IconBookmark on={s.mineBookmark} />
         </ActionButton>
       </div>
-
-      {post && viewerId && (
-        <QuoteRepostModal
-          post={post}
-          viewerId={viewerId}
-          open={quoteOpen}
-          onClose={() => setQuoteOpen(false)}
-          onDone={() =>
-            setS((p) => ({
-              ...p,
-              mineRepost: true,
-              repost: p.mineRepost ? p.repost : p.repost + 1,
-            }))
-          }
-        />
-      )}
     </>
   );
 }
