@@ -2,6 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email";
+import { unreadDigestEmail } from "@/lib/emails/unread-digest";
 import { makeUnsubToken } from "@/lib/email-unsub";
 
 // Worst case: 40 sequential batches of concurrent sendEmail calls, ~1s each ≈ 40s, plus margin.
@@ -49,25 +50,21 @@ export async function GET(request: NextRequest) {
     const slice = batch.slice(i, i + BATCH_SIZE);
     await Promise.all(
       slice.map(async (r) => {
-        const lines: string[] = [];
-        if (r.dm_unread > 0) lines.push(`${r.dm_unread} new message${r.dm_unread === 1 ? "" : "s"}`);
-        if (r.notif_unread > 0) lines.push(`${r.notif_unread} notification${r.notif_unread === 1 ? "" : "s"}`);
-        const total = r.dm_unread + r.notif_unread;
         const token = makeUnsubToken(r.user_id);
-        const text = [
-          ...lines,
-          "",
-          "https://samehere.dev/feed",
-          "",
-          `too many emails? turn this off: https://samehere.dev/api/email/unsubscribe?u=${token}`,
-        ].join("\n");
+        const unsubUrl = `https://samehere.dev/api/email/unsubscribe?u=${token}`;
+        const { subject, text, html } = unreadDigestEmail({
+          dmUnread: r.dm_unread,
+          notifUnread: r.notif_unread,
+          unsubUrl,
+        });
 
         try {
           await sendEmail({
             to: r.email,
             from: "noreply@samehere.dev",
-            subject: `you have ${total} unread on samehere`,
+            subject,
             text,
+            html,
             headers: {
               "List-Unsubscribe": `<https://samehere.dev/api/email/unsubscribe?u=${token}>`,
               "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",

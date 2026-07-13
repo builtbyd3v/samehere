@@ -1,13 +1,8 @@
 // Weekly "3 people to meet" digest — free basic (3, no AI) + Pro enhanced (5,
 // each with an AI "why you match" line). Sent from
-// app/api/cron/weekly-matches/route.ts. Table layout + inline CSS because
-// email clients strip <style> blocks; colors match DESIGN.md's cream/charcoal
-// light theme, same palette as lib/emails/welcome.ts.
-const CREAM = "#f7f4ed";
-const CANVAS = "#ffffff";
-const INK = "#1c1c1c";
-const INK_MUTED = "#5c5a54";
-const BORDER = "#eceae4";
+// app/api/cron/weekly-matches/route.ts. Chrome (canvas, card, two-tone
+// wordmark, footer) comes from lib/emails/layout.ts.
+import { CREAM, CANVAS, INK, INK_MUTED, BORDER, escapeHtml, emailShell, footerRow } from "./layout";
 
 export type MatchCard = {
   username: string;
@@ -18,10 +13,6 @@ export type MatchCard = {
   // shared fact, the AI call was skipped/failed, or the run's AI budget was spent.
   reason: string | null;
 };
-
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
 
 function cardHtml(c: MatchCard): string {
   const name = escapeHtml(c.name);
@@ -82,16 +73,7 @@ export function weeklyMatchesEmail({
     `too many emails? turn this off: ${unsubUrl}`,
   ].join("\n\n");
 
-  const html = `
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${CREAM};padding:32px 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
-  <tr>
-    <td align="center">
-      <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="max-width:480px;width:100%;background:${CANVAS};border:1px solid ${BORDER};border-radius:16px;overflow:hidden;">
-        <tr>
-          <td style="padding:32px 32px 8px;">
-            <p style="margin:0;font-size:15px;font-weight:600;letter-spacing:-0.01em;color:${INK};">samehere</p>
-          </td>
-        </tr>
+  const html = emailShell(`
         <tr>
           <td style="padding:8px 32px 0;">
             <h1 style="margin:0 0 16px;font-size:20px;line-height:1.3;letter-spacing:-0.02em;color:${INK};">
@@ -104,17 +86,9 @@ export function weeklyMatchesEmail({
             ${cards.map(cardHtml).join("")}
           </td>
         </tr>
-        <tr>
-          <td style="padding:16px 32px 28px;border-top:1px solid ${BORDER};">
-            <p style="margin:0;font-size:13px;line-height:1.6;color:${INK_MUTED};">
-              <a href="${escapeHtml(unsubUrl)}" style="color:${INK_MUTED};text-decoration:underline;">too many emails? turn this off</a>
-            </p>
-          </td>
-        </tr>
-      </table>
-    </td>
-  </tr>
-</table>`.trim();
+        ${footerRow(
+          `<p style="margin:0;font-size:13px;line-height:1.6;color:${INK_MUTED};"><a href="${escapeHtml(unsubUrl)}" style="color:${INK_MUTED};text-decoration:underline;">too many emails? turn this off</a></p>`
+        )}`);
 
   return { subject, text, html };
 }
