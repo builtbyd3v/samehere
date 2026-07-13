@@ -10,7 +10,7 @@ import { TEXT_LIMITS } from "@/lib/utils/validation";
 
 // Persistent feed search with two modes: keyword (server-rendered, free,
 // unlimited — passed in as `keyword`) and smart natural-language AI search
-// (metered: 1/day free, Pro unlimited). Smart results render client-side.
+// (metered: 5/day free, Pro 150/day). Smart results render client-side.
 const inputCls =
   "w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[15px] text-[var(--ink)] outline-none transition placeholder:text-[var(--ink-faint)] focus:border-[var(--border-strong)] focus:ring-2 focus:ring-[#3b82f6]/40";
 
