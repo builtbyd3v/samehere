@@ -204,7 +204,7 @@ export async function peopleSearchCore(
   const { data: allowed } = opts.skipQuota
     ? { data: true }
     : await supabase.rpc("use_ai_quota", { p_kind: "people_search" });
-  // Free user out of their 1/day → upsell; Pro cap is 150/day.
+  // Free user out of their 5/day → upsell; Pro cap is 150/day.
   if (!allowed) return pro ? { results: candidates.slice(0, 8).map(toResult) } : { overCap: true };
 
   const { data: candExp } = await supabase

@@ -297,7 +297,7 @@ export async function deletePost(postId: string): Promise<void> {
 }
 
 // Natural-language people search (Pro engine). LLM-reranks a SQL-prefiltered
-// candidate pool — no embeddings. Free users get 1/day; Pro is uncapped. AI
+// candidate pool — no embeddings. Free users get 5/day; Pro 150/day. AI
 // output is untrusted: JSON parsed defensively, ids validated against the pool,
 // reason rendered as plain text by the caller. Core logic lives in
 // lib/people-search.ts so onboarding's seeded first-match step can reuse it
