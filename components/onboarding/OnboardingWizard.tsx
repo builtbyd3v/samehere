@@ -3,9 +3,11 @@
 import { useActionState, useState, useTransition, type ReactNode } from "react";
 import { uploadAvatar, type AvatarState, type EditState } from "@/app/(app)/profile/edit/actions";
 import { createPost, type ComposerState } from "@/app/(app)/feed/actions";
-import { saveOnboardingBasics, finishOnboarding } from "@/app/(app)/onboarding/actions";
+import { saveOnboardingBasics, finishOnboarding, getOnboardingMatches, type OnboardingMatch } from "@/app/(app)/onboarding/actions";
 import AvatarImage from "@/components/ui/AvatarImage";
 import SchoolAutocomplete from "@/components/profile/SchoolAutocomplete";
+import UserBadges from "@/components/profile/UserBadges";
+import FollowButton from "@/components/profile/FollowButton";
 
 export type OnboardingProfile = {
   username: string;
@@ -42,7 +44,7 @@ export default function OnboardingWizard({
   profile: OnboardingProfile;
   followStep: ReactNode;
 }) {
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
 
   // Avatar upload has no redirect in its own action, so it's called directly
   // (same pattern as EditProfileForm) — no wrapper needed.
@@ -83,6 +85,24 @@ export default function OnboardingWizard({
     });
   }
 
+  // Final step: live AI matches seeded from the major/goals just saved in
+  // step 1. No matches (AI off, thin pool, nothing to seed with) → finish
+  // straight away instead of showing an empty step.
+  const [matches, setMatches] = useState<OnboardingMatch[]>([]);
+  const [matchesPending, startMatches] = useTransition();
+
+  function advanceToMatches() {
+    startMatches(async () => {
+      const results = await getOnboardingMatches();
+      if (results.length === 0) {
+        await finishOnboarding();
+        return;
+      }
+      setMatches(results);
+      setStep(4);
+    });
+  }
+
   function onSubmitPost(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const trimmed = postContent.trim();
@@ -93,7 +113,7 @@ export default function OnboardingWizard({
     startPost(async () => {
       const result: ComposerState = await createPost({}, fd);
       if (result.error) setPostError(result.error);
-      else onFinish();
+      else advanceToMatches();
     });
   }
 
@@ -102,7 +122,7 @@ export default function OnboardingWizard({
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-[-0.02em]">Welcome to samehere</h1>
-          <p className="mt-1 text-sm text-[var(--ink-muted)]">Step {step} of 3</p>
+          <p className="mt-1 text-sm text-[var(--ink-muted)]">Step {step} of 4</p>
         </div>
         <button
           type="button"
@@ -217,14 +237,60 @@ export default function OnboardingWizard({
               className="w-full resize-y rounded-lg border border-[var(--border)] bg-transparent p-3 text-[15px] leading-[1.55] text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
             />
             <div className="mt-6 flex items-center justify-between">
-              <button type="button" onClick={onFinish} disabled={finishing} className="text-sm text-[var(--ink-muted)] underline disabled:opacity-50">
+              <button type="button" onClick={advanceToMatches} disabled={finishing || matchesPending} className="text-sm text-[var(--ink-muted)] underline disabled:opacity-50">
                 Skip
               </button>
-              <button type="submit" disabled={postPending || finishing || postContent.trim().length === 0} className="btn-primary !py-2.5">
-                {postPending ? "Posting…" : "Post & finish"}
+              <button type="submit" disabled={postPending || finishing || matchesPending || postContent.trim().length === 0} className="btn-primary !py-2.5">
+                {postPending ? "Posting…" : matchesPending ? "Finding matches…" : "Post & finish"}
               </button>
             </div>
           </form>
+        )}
+
+        {step === 4 && (
+          <div>
+            <h2 className="mb-1 text-lg font-semibold">Your first matches</h2>
+            <p className="mb-4 text-sm text-[var(--ink-muted)]">Students who fit what you&apos;re into, picked for you.</p>
+            <div className="flex flex-col gap-2">
+              {matches.map((m) => {
+                const name = m.display_name ?? m.username;
+                const line = [m.year, m.major].filter(Boolean).join(" · ");
+                return (
+                  <div key={m.id} className="flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3">
+                    {m.avatar_url ? (
+                      <AvatarImage
+                        src={m.avatar_url}
+                        alt=""
+                        className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover"
+                        pro={m.is_pro}
+                      />
+                    ) : (
+                      <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-sm font-semibold text-[var(--ink-muted)]">
+                        {name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1 text-sm">
+                      <div className="flex flex-wrap items-center gap-x-1.5">
+                        <span className="font-medium">{name}</span>
+                        <UserBadges isPro={m.is_pro} isFounder={m.is_founder} isCampusFounder={m.is_campus_founder} isVerifiedStudent={m.verified_student} />
+                      </div>
+                      {line && <p className="text-[var(--ink-muted)]">{line}</p>}
+                      {m.reason && <p className="mt-0.5 text-xs text-[var(--ink-muted)]">{m.reason}</p>}
+                    </div>
+                    <FollowButton targetId={m.id} initial="none" />
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-6 flex items-center justify-between">
+              <button type="button" onClick={onFinish} disabled={finishing} className="text-sm text-[var(--ink-muted)] underline disabled:opacity-50">
+                Skip
+              </button>
+              <button type="button" onClick={onFinish} disabled={finishing} className="btn-primary !py-2.5">
+                {finishing ? "Finishing…" : "Finish"}
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </main>
