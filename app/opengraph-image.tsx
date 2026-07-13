@@ -19,7 +19,7 @@ import { BLUE, BORDER, CANVAS, CARD, FEATURED, INK, INK_FAINT, INK_MUTED, POST }
 
 export const runtime = "nodejs"; // reads the font files off disk
 
-export const alt = "samehere: the social network built for students";
+export const alt = "samehere: Find your people. Find your path.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -28,14 +28,20 @@ export const contentType = "image/png";
 // Resolved with `new URL(..., import.meta.url)`, which Next traces statically;
 // `join(process.cwd(), ...)` is a runtime string and would be missing from the
 // deployed bundle.
+// The headline's accent words ("people.", "path.") borrow the landing hero's
+// Fraunces italic treatment (components/landing/Hero.tsx) — a static italic
+// instance ships here because Satori can misrender a variable-font TTF's
+// italic axis.
 const fonts = async () => {
-  const [regular, semibold] = await Promise.all([
+  const [regular, semibold, frauncesItalic] = await Promise.all([
     readFile(new URL("./fonts/Figtree-Regular.ttf", import.meta.url)),
     readFile(new URL("./fonts/Figtree-SemiBold.ttf", import.meta.url)),
+    readFile(new URL("./fonts/Fraunces-SemiBoldItalic.ttf", import.meta.url)),
   ]);
   return [
     { name: "Figtree", data: regular, weight: 400 as const, style: "normal" as const },
     { name: "Figtree", data: semibold, weight: 600 as const, style: "normal" as const },
+    { name: "Fraunces", data: frauncesItalic, weight: 600 as const, style: "italic" as const },
   ];
 };
 
@@ -64,6 +70,17 @@ function IconComment({ color }: { color: string }) {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" {...strokeProps} stroke={color}>
       <path d="M21 15a2 2 0 0 1-2 2H8l-4 4V5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2Z" />
+    </svg>
+  );
+}
+
+// Four-point sparkle, echoing the AI-search affordance in HeroSearchDemo.
+// Drawn as a path rather than a unicode glyph (✦) — Figtree has no glyph for
+// it in Satori's renderer, which draws a missing-glyph box instead.
+function IconSparkle({ color }: { color: string }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill={color}>
+      <path d="M12 2c0 4.5 1.2 7.5 3 9.3S19.5 12 22 12c-4.5 0-7.5 1.2-9.3 3S12 19.5 12 22c0-4.5-1.2-7.5-3-9.3S4.5 12 2 12c4.5 0 7.5-1.2 9.3-3S12 4.5 12 2Z" />
     </svg>
   );
 }
@@ -193,21 +210,28 @@ export default async function OgImage() {
               <div
                 style={{
                   display: "flex",
+                  alignItems: "center",
+                  gap: 10,
                   alignSelf: "flex-start",
                   fontSize: 17,
                   fontWeight: 600,
                   color: BLUE,
-                  background: "rgba(79, 159, 232, 0.14)",
-                  border: "1px solid rgba(79, 159, 232, 0.30)",
+                  background: FEATURED,
+                  border: `1px solid ${BORDER}`,
                   borderRadius: 999,
-                  padding: "6px 15px",
+                  padding: "8px 18px",
                 }}
               >
-                Verified students
+                <div style={{ display: "flex" }}>
+                  <IconSparkle color={BLUE} />
+                </div>
+                <div style={{ display: "flex" }}>Describe who you&apos;re looking for</div>
               </div>
 
               <div
                 style={{
+                  display: "flex",
+                  flexDirection: "column",
                   marginTop: 26,
                   fontSize: 62,
                   fontWeight: 600,
@@ -216,11 +240,22 @@ export default async function OgImage() {
                   color: INK,
                 }}
               >
-                You&apos;re not the only one.
+                <div style={{ display: "flex" }}>
+                  <div style={{ display: "flex" }}>Find your&nbsp;</div>
+                  <div style={{ display: "flex", fontFamily: "Fraunces", fontStyle: "italic", color: BLUE }}>
+                    people.
+                  </div>
+                </div>
+                <div style={{ display: "flex" }}>
+                  <div style={{ display: "flex" }}>Find your&nbsp;</div>
+                  <div style={{ display: "flex", fontFamily: "Fraunces", fontStyle: "italic", color: BLUE }}>
+                    path.
+                  </div>
+                </div>
               </div>
 
               <div style={{ marginTop: 22, fontSize: 23, lineHeight: 1.4, color: INK_MUTED }}>
-                Post the real stuff. Find the students who get it.
+                One AI-native network for students. Post what&apos;s real, find who gets it.
               </div>
             </div>
 
