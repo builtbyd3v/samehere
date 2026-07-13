@@ -7,6 +7,7 @@ import { TEXT_LIMITS } from "@/lib/utils/validation";
 import MatchesSection from "./MatchesSection";
 import FilterForm from "./FilterForm";
 import PitchButton from "./PitchButton";
+import SaveJobButton from "@/components/jobs/SaveJobButton";
 import type { JobFitResult } from "./actions";
 import { relAge, isNew } from "./format";
 
@@ -66,6 +67,7 @@ export default async function JobsPage({
     category?: string;
     sponsorship?: string;
     sort?: string;
+    saved?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -76,8 +78,22 @@ export default async function JobsPage({
   const category = CATEGORIES.includes(params.category ?? "") ? (params.category as string) : "";
   const sponsorship = SPONSORSHIPS.includes(params.sponsorship ?? "") ? (params.sponsorship as string) : "";
   const sort = params.sort === "oldest" ? "oldest" : "newest";
+  const savedOnly = params.saved === "1";
 
   const { supabase, user } = await getViewer();
+
+  // Saved-listing ids for the viewer: needed both to filter the board (when
+  // savedOnly is on) and to seed every SaveJobButton's initial state (avoids
+  // a per-row query / a save-then-refresh flash of the wrong icon).
+  let savedIds: Set<string> = new Set();
+  if (user) {
+    const { data: saves } = await supabase.from("job_saves").select("listing_id").eq("user_id", user.id);
+    savedIds = new Set((saves ?? []).map((s) => s.listing_id));
+  }
+  // savedOnly with zero saves: skip the query entirely -- .in("id", []) is
+  // invalid PostgREST syntax (empty IN list), and the answer is always "no
+  // rows" anyway.
+  const savedOnlyEmpty = savedOnly && savedIds.size === 0;
 
   let query = supabase
     .from("job_listings")
@@ -89,6 +105,7 @@ export default async function JobsPage({
     .order("posted_at", { ascending: sort === "oldest", nullsFirst: false })
     .order("id", { ascending: false });
 
+  if (savedOnly) query = query.in("id", [...savedIds]);
   if (kind) query = query.eq("kind", kind);
   if (location) {
     // Strip ilike wildcards + PostgREST-significant chars before interpolating.
@@ -113,7 +130,9 @@ export default async function JobsPage({
 
   const from = (page - 1) * PAGE;
   // one extra row -> hasMore; count: "exact" rides on the same query (no second query).
-  const { data, count } = await query.range(from, from + PAGE).returns<ListingRow[]>();
+  const { data, count } = savedOnlyEmpty
+    ? { data: [] as ListingRow[], count: 0 }
+    : await query.range(from, from + PAGE).returns<ListingRow[]>();
   const rows = data ?? [];
   const hasMore = rows.length > PAGE;
   const listings = rows.slice(0, PAGE);
@@ -179,11 +198,12 @@ export default async function JobsPage({
     if (category) sp.set("category", category);
     if (sponsorship) sp.set("sponsorship", sponsorship);
     if (sort !== "newest") sp.set("sort", sort);
+    if (savedOnly) sp.set("saved", "1");
     if (next.page && next.page > 1) sp.set("page", String(next.page));
     const s = sp.toString();
     return s ? `/jobs?${s}` : "/jobs";
   };
-  const anyFilter = !!(q || kind || location || category || sponsorship || sort !== "newest");
+  const anyFilter = !!(q || kind || location || category || sponsorship || sort !== "newest" || savedOnly);
 
   return (
     <main className="page-enter mx-auto max-w-2xl px-4 py-8">
@@ -201,6 +221,8 @@ export default async function JobsPage({
         category={category}
         sponsorship={sponsorship}
         sort={sort}
+        saved={savedOnly}
+        showSaved={!!user}
         categories={CATEGORIES}
         sponsorships={SPONSORSHIPS}
         anyFilter={anyFilter}
@@ -215,8 +237,12 @@ export default async function JobsPage({
       <div className="mt-2 flex flex-col gap-2">
         {listings.length === 0 ? (
           <EmptyState
-            title="No listings yet"
-            description="New internships and new-grad roles land here daily. Check back soon."
+            title={savedOnly ? "No saved listings" : "No listings yet"}
+            description={
+              savedOnly
+                ? "Save a listing from the board to find it here later."
+                : "New internships and new-grad roles land here daily. Check back soon."
+            }
           />
         ) : (
           listings.map((l, i) => {
@@ -318,6 +344,7 @@ export default async function JobsPage({
                       <path d="M5.5 3.5h7v7M12.5 3.5 4 12" />
                     </svg>
                   </a>
+                  {user && <SaveJobButton listingId={l.id} initialSaved={savedIds.has(l.id)} compact />}
                   {user && <PitchButton listingId={l.id} pro={pro} block />}
                 </div>
               </div>

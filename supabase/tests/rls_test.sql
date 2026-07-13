@@ -2210,6 +2210,164 @@ exception when others then
 end $$;
 reset role;
 
+-- ============ JOB_SAVES — 20260720110000_job_saves.sql ============
+-- Owner ALL (insert/select/delete), no cross-user read, anon fully denied.
+-- Same shape/fixture-reuse as job_fit above (same job_listing fixture row).
+
+-- JOB_SAVES_owner_insert_select — A can save a listing and select her own row.
+select tests.as_user(id) from tests_fixture where key = 'a';
+do $$
+declare
+  v_a uuid := (select id from tests_fixture where key = 'a');
+  v_listing uuid := (select id from tests_fixture where key = 'job_listing');
+begin
+  insert into public.job_saves (user_id, listing_id) values (v_a, v_listing);
+
+  if not exists (
+    select 1 from public.job_saves where user_id = v_a and listing_id = v_listing
+  ) then
+    raise exception 'JOB_SAVES_owner_insert_select REGRESSION: owner cannot select her own job_saves row';
+  end if;
+  insert into tests_results values ('JOB_SAVES_owner_insert_select', true, 'ok');
+exception when others then
+  insert into tests_results values ('JOB_SAVES_owner_insert_select', false, sqlerrm);
+end $$;
+reset role;
+
+-- JOB_SAVES_b_select_a_denied — B cannot select A's job_saves row.
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+begin
+  if exists (
+    select 1 from public.job_saves
+    where user_id = (select id from tests_fixture where key = 'a')
+      and listing_id = (select id from tests_fixture where key = 'job_listing')
+  ) then
+    raise exception 'JOB_SAVES_b_select_a_denied REGRESSION: non-owner B selected A''s job_saves row';
+  end if;
+  insert into tests_results values ('JOB_SAVES_b_select_a_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('JOB_SAVES_b_select_a_denied', false, sqlerrm);
+end $$;
+reset role;
+
+-- JOB_SAVES_b_delete_a_denied — B cannot delete A's job_saves row.
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+declare
+  v_deleted int;
+begin
+  delete from public.job_saves
+   where user_id = (select id from tests_fixture where key = 'a')
+     and listing_id = (select id from tests_fixture where key = 'job_listing');
+  get diagnostics v_deleted = row_count;
+  if v_deleted <> 0 then
+    raise exception 'JOB_SAVES_b_delete_a_denied REGRESSION: non-owner B deleted % of A''s job_saves row(s)', v_deleted;
+  end if;
+  insert into tests_results values ('JOB_SAVES_b_delete_a_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('JOB_SAVES_b_delete_a_denied', false, sqlerrm);
+end $$;
+reset role;
+
+-- JOB_SAVES_owner_delete — A can delete (unsave) her own row.
+select tests.as_user(id) from tests_fixture where key = 'a';
+do $$
+declare
+  v_deleted int;
+begin
+  delete from public.job_saves
+   where user_id = (select id from tests_fixture where key = 'a')
+     and listing_id = (select id from tests_fixture where key = 'job_listing');
+  get diagnostics v_deleted = row_count;
+  if v_deleted <> 1 then
+    raise exception 'JOB_SAVES_owner_delete REGRESSION: owner delete affected % rows, expected 1', v_deleted;
+  end if;
+  insert into tests_results values ('JOB_SAVES_owner_delete', true, 'ok');
+exception when others then
+  insert into tests_results values ('JOB_SAVES_owner_delete', false, sqlerrm);
+end $$;
+reset role;
+
+-- JOB_SAVES_anon_select_denied — anon (logged-out) gets 42501, no RLS row leak.
+select tests.as_anon();
+do $$
+declare
+  v_state text;
+  v_raised boolean;
+begin
+  begin
+    perform 1 from public.job_saves limit 1;
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state <> '42501' then
+    raise exception 'JOB_SAVES_anon_select_denied REGRESSION: anon selecting public.job_saves did not fail with 42501 (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+  insert into tests_results values ('JOB_SAVES_anon_select_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('JOB_SAVES_anon_select_denied', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ REFERRAL_JOINED — 20260720120000_referral_joined_notification.sql ============
+-- handle_email_confirmed fires on the auth.users email-confirmation UPDATE,
+-- which the test harness cannot trigger directly (auth.users is GoTrue-owned),
+-- and insert_notification's EXECUTE is revoked from authenticated (trigger-bound
+-- only). So this calls insert_notification as the connecting superuser --
+-- same privilege level the trigger runs at -- to seed the row (mirrors how
+-- other trigger-only effects are seeded/verified elsewhere in this file, e.g.
+-- M8_snapshot), then checks the notification lands for the recipient and
+-- nobody else can read it.
+set local role postgres;
+do $$
+declare
+  v_a uuid := (select id from tests_fixture where key = 'a');
+  v_b uuid := (select id from tests_fixture where key = 'b');
+begin
+  perform public.insert_notification(v_a, v_b, 'referral_joined');
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'a';
+do $$
+declare
+  v_a uuid := (select id from tests_fixture where key = 'a');
+  v_b uuid := (select id from tests_fixture where key = 'b');
+begin
+  if not exists (
+    select 1 from public.notifications
+    where user_id = v_a and actor_id = v_b and type = 'referral_joined'
+  ) then
+    raise exception 'REFERRAL_JOINED_owner_select REGRESSION: recipient cannot select her own referral_joined notification';
+  end if;
+  insert into tests_results values ('REFERRAL_JOINED_owner_select', true, 'ok');
+exception when others then
+  insert into tests_results values ('REFERRAL_JOINED_owner_select', false, sqlerrm);
+end $$;
+reset role;
+
+-- REFERRAL_JOINED_b_select_denied — B (the actor, not the recipient) cannot
+-- read A's notifications row.
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+begin
+  if exists (
+    select 1 from public.notifications
+    where user_id = (select id from tests_fixture where key = 'a')
+      and actor_id = (select id from tests_fixture where key = 'b')
+      and type = 'referral_joined'
+  ) then
+    raise exception 'REFERRAL_JOINED_b_select_denied REGRESSION: non-recipient B selected A''s referral_joined notification';
+  end if;
+  insert into tests_results values ('REFERRAL_JOINED_b_select_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('REFERRAL_JOINED_b_select_denied', false, sqlerrm);
+end $$;
+reset role;
+
 -- ============ report ============
 -- Print the PASS/FAIL table FIRST so the operator sees exactly which assertions
 -- failed, then raise so psql exits non-zero and the harness actually gates.
@@ -2227,7 +2385,7 @@ declare v_failed int;
 begin
   select count(*) into v_failed from tests_results where not passed;
   if v_failed > 0 then
-    raise exception '% assertion(s) failed — see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, CLUBS_V2_1, CLUBS_V2_2, CLUBS_V2_3, CLUBS_V2_7a, CLUBS_V2_4, CLUBS_V2_7b, CLUBS_V2_5_officer_denied, CLUBS_V2_5_owner_allowed, CLUBS_V2_6_outsider, CLUBS_V2_6_pending, CLUBS_V2_8, CLUBS_V2_9, H1_suggested_profiles, CLUBS_V2_12_outsider, CLUBS_V2_12_anon, SIGNUP_RL_anon_execute, SIGNUP_RL_no_table_access_anon, SIGNUP_RL_no_table_access_authenticated, EXPERIENCES_owner_insert, EXPERIENCES_owner_select, EXPERIENCES_owner_update, EXPERIENCES_b_select_a, EXPERIENCES_b_update_denied, EXPERIENCES_b_delete_denied, EXPERIENCES_anon_select_denied, EXPERIENCES_owner_delete, EXPERIENCES_cap, JOB_LISTINGS_authenticated_select, JOB_LISTINGS_authenticated_insert_denied, JOB_LISTINGS_anon_select_denied, JOB_FIT_owner_insert_select, JOB_FIT_b_select_a_denied, JOB_PITCHES_owner_insert_select, JOB_PITCHES_b_select_a_denied.', v_failed;
+    raise exception '% assertion(s) failed — see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, CLUBS_V2_1, CLUBS_V2_2, CLUBS_V2_3, CLUBS_V2_7a, CLUBS_V2_4, CLUBS_V2_7b, CLUBS_V2_5_officer_denied, CLUBS_V2_5_owner_allowed, CLUBS_V2_6_outsider, CLUBS_V2_6_pending, CLUBS_V2_8, CLUBS_V2_9, H1_suggested_profiles, CLUBS_V2_12_outsider, CLUBS_V2_12_anon, SIGNUP_RL_anon_execute, SIGNUP_RL_no_table_access_anon, SIGNUP_RL_no_table_access_authenticated, EXPERIENCES_owner_insert, EXPERIENCES_owner_select, EXPERIENCES_owner_update, EXPERIENCES_b_select_a, EXPERIENCES_b_update_denied, EXPERIENCES_b_delete_denied, EXPERIENCES_anon_select_denied, EXPERIENCES_owner_delete, EXPERIENCES_cap, JOB_LISTINGS_authenticated_select, JOB_LISTINGS_authenticated_insert_denied, JOB_LISTINGS_anon_select_denied, JOB_FIT_owner_insert_select, JOB_FIT_b_select_a_denied, JOB_PITCHES_owner_insert_select, JOB_PITCHES_b_select_a_denied, JOB_SAVES_owner_insert_select, JOB_SAVES_b_select_a_denied, JOB_SAVES_b_delete_a_denied, JOB_SAVES_owner_delete, JOB_SAVES_anon_select_denied, REFERRAL_JOINED_owner_select, REFERRAL_JOINED_b_select_denied.', v_failed;
 
   end if;
 end $$;

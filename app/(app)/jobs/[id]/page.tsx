@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getViewer } from "@/lib/viewer";
 import { isPro } from "@/lib/pro";
 import PitchButton from "../PitchButton";
+import SaveJobButton from "@/components/jobs/SaveJobButton";
 import FitCheck from "./FitCheck";
 import { relAge, isNew } from "../format";
 import { IconGraduationCap, IconPin } from "@/components/icons";
@@ -95,7 +96,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
   const listing = await getListing(id);
   if (!listing || !listing.active) notFound();
 
-  const [{ data: company }, { data: fit }, profile, { data: moreListings }] = await Promise.all([
+  const [{ data: company }, { data: fit }, profile, { data: moreListings }, { data: save }] = await Promise.all([
     listing.company_slug
       ? supabase.from("job_companies").select("name, logo_url, description").eq("slug", listing.company_slug).maybeSingle()
       : Promise.resolve({ data: null }),
@@ -113,8 +114,12 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
       .neq("id", id)
       .order("posted_at", { ascending: false, nullsFirst: false })
       .limit(5),
+    user
+      ? supabase.from("job_saves").select("listing_id").eq("user_id", user.id).eq("listing_id", id).maybeSingle()
+      : Promise.resolve({ data: null }),
   ]);
   const pro = isPro(profile?.data ?? { is_pro: false, pro_until: null });
+  const saved = !!save;
   const more = moreListings ?? [];
 
   // "Students with a path here": real peers, not just a count -- distinct
@@ -250,6 +255,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
               <path d="M5.5 3.5h7v7M12.5 3.5 4 12" />
             </svg>
           </a>
+          {user && <SaveJobButton listingId={listing.id} initialSaved={saved} />}
           {user && <PitchButton listingId={listing.id} pro={pro} block />}
         </div>
         {desc === "" && (

@@ -19,6 +19,8 @@ export default function FilterForm({
   category,
   sponsorship,
   sort,
+  saved,
+  showSaved,
   categories,
   sponsorships,
   anyFilter,
@@ -30,6 +32,8 @@ export default function FilterForm({
   category: string;
   sponsorship: string;
   sort: string;
+  saved: boolean;
+  showSaved: boolean;
   categories: string[];
   sponsorships: string[];
   anyFilter: boolean;
@@ -37,19 +41,29 @@ export default function FilterForm({
 }) {
   const router = useRouter();
 
-  // Dropdown picks navigate immediately (page resets to 1); q/location come
-  // from the current URL values so an unsubmitted text edit doesn't stick.
-  function pick(param: "kind" | "category" | "sponsorship" | "sort", value: string) {
+  // Builds the /jobs?... string from the given field values -- shared by
+  // pick() (dropdowns) and toggleSaved() so both agree on param order/omission.
+  function hrefFor(next: { q: string; location: string; kind: string; category: string; sponsorship: string; sort: string; saved: boolean }) {
     const sp = new URLSearchParams();
-    const next = { q, location, kind, category, sponsorship, sort, [param]: value };
     if (next.q) sp.set("q", next.q);
     if (next.location) sp.set("location", next.location);
     if (next.kind) sp.set("kind", next.kind);
     if (next.category) sp.set("category", next.category);
     if (next.sponsorship) sp.set("sponsorship", next.sponsorship);
     if (next.sort && next.sort !== "newest") sp.set("sort", next.sort);
+    if (next.saved) sp.set("saved", "1");
     const s = sp.toString();
-    router.push(s ? `/jobs?${s}` : "/jobs");
+    return s ? `/jobs?${s}` : "/jobs";
+  }
+
+  // Dropdown picks navigate immediately (page resets to 1); q/location come
+  // from the current URL values so an unsubmitted text edit doesn't stick.
+  function pick(param: "kind" | "category" | "sponsorship" | "sort", value: string) {
+    router.push(hrefFor({ q, location, kind, category, sponsorship, sort, saved, [param]: value }));
+  }
+
+  function toggleSaved() {
+    router.push(hrefFor({ q, location, kind, category, sponsorship, sort, saved: !saved }));
   }
 
   return (
@@ -62,6 +76,7 @@ export default function FilterForm({
       {category && <input type="hidden" name="category" value={category} />}
       {sponsorship && <input type="hidden" name="sponsorship" value={sponsorship} />}
       {sort !== "newest" && <input type="hidden" name="sort" value={sort} />}
+      {saved && <input type="hidden" name="saved" value="1" />}
 
       <div className="grid gap-2 sm:grid-cols-[1.2fr_1fr_auto]">
         <div className="relative">
@@ -133,11 +148,29 @@ export default function FilterForm({
           ]}
         />
       </div>
-      {anyFilter && (
-        <div className="mt-2 flex justify-end">
-          <Link href="/jobs" className="text-xs text-[var(--ink-muted)] underline hover:text-[var(--ink)]">
-            Clear filters
-          </Link>
+      {(showSaved || anyFilter) && (
+        <div className="mt-2 flex items-center justify-between">
+          {showSaved ? (
+            <button
+              type="button"
+              onClick={toggleSaved}
+              aria-pressed={saved}
+              className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${
+                saved
+                  ? "bg-[var(--featured-surface)] text-[var(--blue)]"
+                  : "text-[var(--ink-muted)] hover:bg-[var(--featured-surface)] hover:text-[var(--ink)]"
+              }`}
+            >
+              Saved only
+            </button>
+          ) : (
+            <span />
+          )}
+          {anyFilter && (
+            <Link href="/jobs" className="text-xs text-[var(--ink-muted)] underline hover:text-[var(--ink)]">
+              Clear filters
+            </Link>
+          )}
         </div>
       )}
     </form>

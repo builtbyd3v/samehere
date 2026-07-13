@@ -204,6 +204,26 @@ export async function tailorPitch(listingId: string): Promise<PitchResult> {
   return { text };
 }
 
+// Save/unsave a listing (job_saves is owner-only under RLS -- the auth check
+// here is a defense-in-depth early-out, not the real gate). Mirrors the
+// bookmark toggle in components/feed/ReactionRow.tsx, as a server action per
+// plan (that one uses the browser client directly; this one goes through an
+// action so the /jobs Saved filter's server-rendered page and this toggle
+// share one code path).
+export async function toggleJobSave(listingId: string, save: boolean): Promise<{ error?: true }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: true };
+
+  const { error } = save
+    ? await supabase.from("job_saves").insert({ user_id: user.id, listing_id: listingId })
+    : await supabase.from("job_saves").delete().eq("user_id", user.id).eq("listing_id", listingId);
+  if (error) return { error: true };
+  return {};
+}
+
 export type CheckFitResult = { reason: string } | { overCap: true } | { none: true } | { error: true };
 
 // Single-listing fit check for the job detail page. Cache-first (job_fit),

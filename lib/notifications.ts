@@ -1,6 +1,6 @@
 export type NotificationRow = {
   id: string;
-  type: "follow" | "follow_request" | "comment" | "reaction" | "mention";
+  type: "follow" | "follow_request" | "comment" | "reaction" | "mention" | "referral_joined";
   post_id: string | null;
   // Set when the notification's source is a quote repost (its commentary, or a
   // comment on it). Those live at /quote/[id], not on the root post.
@@ -49,6 +49,8 @@ export function notificationLabel(
       return `${actorName} reacted to your post`;
     case "mention":
       return `${actorName} mentioned you`;
+    case "referral_joined":
+      return `${actorName} joined from your invite`;
   }
 }
 
@@ -58,6 +60,7 @@ export function notificationHref(row: NotificationRow): string {
   // the root post does not. Prefer it when the row names one.
   if (contentType && row.repost_id) return `/quote/${row.repost_id}`;
   if (contentType && row.post_id) return `/post/${row.post_id}`;
+  // referral_joined has no post — always the new arrival's profile.
   return `/profile/${row.actor_username}`;
 }
 

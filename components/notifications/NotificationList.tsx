@@ -35,6 +35,13 @@ function TypeBadge({ type }: { type: NotificationRow["type"] }) {
       </span>
     );
   }
+  if (type === "referral_joined") {
+    return (
+      <span className="grid h-[18px] w-[18px] place-items-center rounded-full border border-[var(--surface-card)] bg-[var(--blue)] text-[var(--canvas)]">
+        <IconUserPlus />
+      </span>
+    );
+  }
   if (type === "mention") {
     return (
       <span className="grid h-[18px] w-[18px] place-items-center rounded-full border border-[var(--surface-card)] bg-[var(--ink)] text-[var(--canvas)] [&_svg]:h-2.5 [&_svg]:w-2.5">
