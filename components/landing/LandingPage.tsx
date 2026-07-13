@@ -1,13 +1,13 @@
 import CanvasGradient from "./CanvasGradient";
 import LandingNav from "./LandingNav";
 import Hero from "./Hero";
-import StatsBar from "./StatsBar";
-import HowItWorks from "./HowItWorks";
-import LandingProfileDemo from "./LandingProfileDemo";
+import ProofWall from "./ProofWall";
+import HeatmapProof from "./HeatmapProof";
+import JobsProof from "./JobsProof";
 import Pricing from "./Pricing";
 import Founders from "./Founders";
 import FAQ from "./FAQ";
-import CtaBand from "./CtaBand";
+import FinaleCta from "./FinaleCta";
 import LandingFooter from "./LandingFooter";
 
 export default function LandingPage({ founderSpotsLeft }: { founderSpotsLeft?: number }) {
@@ -16,13 +16,13 @@ export default function LandingPage({ founderSpotsLeft }: { founderSpotsLeft?: n
       <CanvasGradient />
       <LandingNav />
       <Hero />
-      <StatsBar />
-      <HowItWorks />
-      <LandingProfileDemo />
+      <ProofWall />
+      <HeatmapProof />
+      <JobsProof />
       <Pricing />
       <Founders spotsLeft={founderSpotsLeft} />
       <FAQ />
-      <CtaBand />
+      <FinaleCta />
       <LandingFooter />
     </main>
   );

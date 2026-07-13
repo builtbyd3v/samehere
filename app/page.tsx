@@ -7,9 +7,9 @@ export const dynamic = "force-static";
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: "samehere: describe who you're looking for",
+  title: "samehere: find your people, find your path",
   description:
-    "Describe who you're looking for, and samehere's AI finds students like you: same major, same goals, same boat. Verified students, real activity, free to join.",
+    "One AI-native network for students. Post what's real, find who gets it, and land the internship. Verified students, real activity, free to join.",
   openGraph: {
     title: "samehere: you're not the only one",
     description:

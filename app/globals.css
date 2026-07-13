@@ -19,6 +19,7 @@
   --ink-faint: rgba(28, 28, 28, 0.45);
   --featured-surface: rgba(28, 28, 28, 0.04);
   --blue: #0075de;
+  --blue-2: #2f9bff;
   --founder: #a67c00;
   --campus-founder: #1f8a4d;
   --danger: #c0392b;
@@ -31,11 +32,6 @@
   /* Blue is the SameHere signature (reaction + heatmap) — used for the hero
      highlight word, the same-here indicator, and the CTA glow. */
   --blue-glow: rgba(0, 117, 222, 0.20);
-  /* motion tokens — the existing signature curve, now named */
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1); /* reserved for edge-anchored sheets */
-  --duration-menu: 120ms;
-  --duration-modal: 200ms;
 }
 
 .dark {
@@ -52,6 +48,7 @@
   --ink-faint: rgba(242, 239, 230, 0.40);
   --featured-surface: rgba(247, 244, 237, 0.06);
   --blue: #4f9fe8;
+  --blue-2: #7ec4ff;
   --founder: #ecc94b;
   --campus-founder: #5fce8f;
   --danger: #e88;
@@ -80,6 +77,7 @@
     --ink-faint: rgba(242, 239, 230, 0.40);
     --featured-surface: rgba(247, 244, 237, 0.06);
     --blue: #4f9fe8;
+    --blue-2: #7ec4ff;
     --founder: #ecc94b;
     --campus-founder: #5fce8f;
     --danger: #e88;
@@ -89,16 +87,6 @@
     --blue-glow: rgba(79, 159, 232, 0.18);
   }
 }
-
-/* Always reserve the scrollbar gutter so the centered app shell (and the left
-   nav) don't jump horizontally between a scrolling page (feed) and a short one
-   (e.g. /referrals) as the scrollbar appears/disappears. */
-html { scrollbar-gutter: stable; }
-
-/* Feed page opts out of the shell's right spacer (it has its own right rail), so
-   its feed column can use the full content width. Other pages keep the spacer,
-   which balances the left nav and centers their content in the viewport. */
-body:has([data-feed-page]) .shell-rspacer { display: none; }
 
 /* Interactive affordance — links already default to pointer in most browsers */
 button:not(:disabled),
@@ -137,7 +125,7 @@ summary {
 }
 @media (prefers-reduced-motion: no-preference) {
   .word-rise {
-    animation: word-rise 0.55s var(--ease-out) both;
+    animation: word-rise 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
     animation-delay: var(--delay, 0s);
   }
 }
@@ -152,7 +140,7 @@ summary {
 }
 @media (prefers-reduced-motion: no-preference) {
   .fade-rise {
-    animation: fade-rise 0.6s var(--ease-out) both;
+    animation: fade-rise 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
     animation-delay: var(--delay, 0s);
   }
 }
@@ -191,6 +179,12 @@ summary {
   opacity: 0.7;
   background: radial-gradient(120% 68% at 82% -22%, rgba(120, 170, 255, 0.14) 0%, rgba(120, 170, 255, 0.045) 42%, transparent 72%);
 }
+/* Dark canvas can carry a bigger, bluer wash without washing out text —
+ * amplify size + strength for the premium hero read. */
+.dark .canvas-blob-b {
+  opacity: 0.85;
+  background: radial-gradient(150% 85% at 82% -24%, rgba(79, 159, 232, 0.24) 0%, rgba(79, 159, 232, 0.08) 44%, transparent 78%);
+}
 /* Mobile: the wide radials read washed-out on a narrow viewport (only their pale
  * outer edge shows, and 55px blur over-diffuses). Pull the cores toward the top
  * edge, raise alpha, tighten blur, and hold the mask longer so it reads richer. */
@@ -208,8 +202,8 @@ summary {
   }
 }
 @media (prefers-reduced-motion: no-preference) {
-  .canvas-blob-a { animation: blob-a 20s ease-in-out infinite; }
-  .canvas-blob-b { animation: blob-b 26s ease-in-out infinite; }
+  .canvas-blob-a { animation: blob-a 26s ease-in-out infinite; }
+  .canvas-blob-b { animation: blob-b 34s ease-in-out infinite; }
 }
 @keyframes blob-a {
   0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.85; }
@@ -243,59 +237,27 @@ summary {
     0 2px 6px -2px rgba(0, 0, 0, 0.35);
 }
 
-/* Hero peer-cluster — cards drift on gentle, individually-phased loops (params
-   via --fx/--fy/--fr/--dur/--delay per card) and lift on hover. Depth base z is
-   a var so :hover can raise a card above the inline-set stacking order. */
-@keyframes cluster-float {
-  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
-  50%      { transform: translate3d(var(--fx, 0), var(--fy, -10px), 0) rotate(var(--fr, 0deg)); }
+/* Match-card surface — reused wherever a demo "person card" appears (hero
+ * search results, scene-2 proof wall, scene-4 mini card). Lift on hover. */
+.match-card {
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 220ms ease;
 }
-.cluster-float {
-  animation: cluster-float var(--dur, 9s) ease-in-out var(--delay, 0s) infinite;
-  will-change: transform;
-}
-.cluster-card {
-  transition: transform 220ms var(--ease-out), box-shadow 220ms ease;
-}
-/* Dark canvas is near-black and warm drop-shadows vanish on it — lift the cards
-   with a distinctly brighter surface + visible rim so the pile still reads. */
-.dark .cluster-card {
+.dark .match-card {
   background: #2b2721;
   border-color: rgba(247, 244, 237, 0.18);
 }
-@media (hover: hover) and (pointer: fine) {
-  .cluster-card:hover {
-    transform: translateY(-7px) scale(1.04);
-    box-shadow:
-      0 2px 2px rgba(60, 40, 30, 0.05),
-      0 18px 40px -12px rgba(60, 40, 30, 0.28),
-      0 4px 10px -4px rgba(60, 40, 30, 0.14);
-  }
-  .dark .cluster-card:hover {
-    box-shadow:
-      0 2px 2px rgba(0, 0, 0, 0.30),
-      0 18px 40px -12px rgba(0, 0, 0, 0.55),
-      0 4px 10px -4px rgba(0, 0, 0, 0.40);
-  }
+.match-card:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 2px 2px rgba(60, 40, 30, 0.05),
+    0 18px 40px -12px rgba(60, 40, 30, 0.28),
+    0 4px 10px -4px rgba(60, 40, 30, 0.14);
 }
-.cluster-item:hover { --z: 60; }
-@media (prefers-reduced-motion: reduce) {
-  .cluster-float { animation: none; }
-}
-
-/* Hero scatter-card entrance — base opacity/scale live in inline style, not
- * the keyframe's `from`, so the steady-state look is correct even with no
- * animation running (reduced motion, or CSS/JS unavailable). Only a
- * translateY slide-in layers on top via `transform`. */
-@keyframes cluster-enter {
-  from { transform: translateY(26px) scale(0.9); }
-  to   { transform: none; }
-}
-@media (prefers-reduced-motion: no-preference) {
-  .cluster-enter {
-    animation: cluster-enter 0.6s var(--ease-out) both;
-    animation-delay: calc(0.15s + var(--i, 0) * 0.03s);
-  }
+.dark .match-card:hover {
+  box-shadow:
+    0 2px 2px rgba(0, 0, 0, 0.30),
+    0 18px 40px -12px rgba(0, 0, 0, 0.55),
+    0 4px 10px -4px rgba(0, 0, 0, 0.40);
 }
 
 /* Live SameHere on the hero cards — count tick, icon pop, 3-particle burst.
@@ -305,7 +267,14 @@ summary {
     from { transform: translateY(0.45em); opacity: 0; }
     to   { transform: none; opacity: 1; }
   }
-  .same-tick { animation: same-tick 0.25s var(--ease-out); }
+  .same-tick { animation: same-tick 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
+
+  @keyframes same-pop {
+    0%   { transform: scale(1); }
+    45%  { transform: scale(1.3); }
+    100% { transform: scale(1); }
+  }
+  .same-pop { animation: same-pop 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
 
   @keyframes burst-fly {
     from { transform: translate(0, 0) scale(1); opacity: 1; }
@@ -342,22 +311,172 @@ summary {
    * motion is outside this block, so it stays visible too. */
   .hm-anim .hm-cell { opacity: 0; }
   .hm-run .hm-cell {
-    animation: cell-in 0.55s var(--ease-out) both;
+    animation: cell-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
     animation-delay: calc(var(--i, 0) * 22ms);
   }
 }
 
-/* Chat message entrance — a transition (not a keyframe) via @starting-style,
- * so a burst of realtime inserts can't restart mid-flight; each row just
- * retargets. Applies to both DM (MessageThread) and club (ClubChat) rows. */
+/* ---------------------------------------------------------------------
+ * Hero premium effects (landing hero rebuild). Mouse-follow glow, word
+ * split-reveal, load cascade, premium CTA loop, amplified ambient + grain.
+ * ------------------------------------------------------------------- */
+
+/* Static ambient field centered behind the scene-1 search bar. Present at rest,
+ * breathing slowly. Light mode stays faint; dark mode carries a real blue wash. */
+.hero-ambient {
+  left: 50%;
+  top: 8%;
+  width: min(70vw, 900px);
+  aspect-ratio: 1;
+  border-radius: 9999px;
+  translate: -50% 0;
+  filter: blur(80px);
+  background: radial-gradient(closest-side, rgba(59, 130, 246, 0.12), transparent 72%);
+}
+.dark .hero-ambient {
+  background: radial-gradient(closest-side, rgba(80, 150, 255, 0.24), transparent 74%);
+}
+@keyframes ambient-breathe {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.12); opacity: 0.82; }
+}
 @media (prefers-reduced-motion: no-preference) {
-  .msg-in {
-    transition: opacity 200ms var(--ease-out), translate 200ms var(--ease-out);
-    @starting-style {
-      opacity: 0;
-      translate: 0 6px;
-    }
+  .hero-ambient { animation: ambient-breathe 14s ease-in-out infinite; will-change: transform, opacity; }
+}
+@media (max-width: 767px) {
+  .hero-ambient { width: 130vw; }
+}
+
+/* Scene-1 search demo — glass field, breathing blue ring. Base box-shadow
+ * lives outside the keyframe's `from` so the resting look is correct with no
+ * animation (reduced motion / no JS). */
+.search-glass {
+  background: color-mix(in srgb, var(--surface-raised) 88%, transparent);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--border-strong);
+  box-shadow: 0 0 0 6px var(--blue-glow), 0 20px 50px -20px rgba(0, 117, 222, 0.35);
+}
+@keyframes search-breathe {
+  0%, 100% { box-shadow: 0 0 0 6px var(--blue-glow), 0 20px 50px -20px rgba(0, 117, 222, 0.35); }
+  50%      { box-shadow: 0 0 0 12px var(--blue-glow), 0 24px 60px -18px rgba(0, 117, 222, 0.45); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .search-glass { animation: search-breathe 5s ease-in-out infinite; }
+}
+
+@keyframes caret-blink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0; }
+}
+.type-caret {
+  display: inline-block;
+  width: 2px;
+  margin-left: 2px;
+  background: var(--blue);
+  animation: caret-blink 0.9s step-end infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .type-caret { animation: none; }
+}
+
+/* Finale outline headline — stroke only, transparent fill. WebKit-prefixed
+ * property has no unprefixed equivalent in supported browsers yet. */
+.text-stroke {
+  color: transparent;
+  -webkit-text-stroke: 1.5px var(--ink);
+}
+@media (max-width: 640px) {
+  .text-stroke { -webkit-text-stroke-width: 1px; }
+}
+
+.finale-ambient {
+  left: 50%;
+  top: 50%;
+  width: min(90vw, 1100px);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 9999px;
+  filter: blur(90px);
+  background: radial-gradient(closest-side, var(--blue-glow), transparent 72%);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .finale-ambient { animation: ambient-breathe 12s ease-in-out infinite; will-change: transform, opacity; }
+}
+
+/* Headline word-by-word reveal — parent clips (`.word-wrap`), child slides
+ * up from fully offscreen. Resting transform is `none` outside the
+ * no-preference query, so no-JS/no-animation-support renders in place. */
+.word-wrap {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+}
+@keyframes word-slide {
+  from { transform: translateY(110%); }
+  to   { transform: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .word-slide {
+    display: inline-block;
+    animation: word-slide 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: var(--delay, 0s);
   }
+}
+
+/* Load cascade — subhead/CTA/demo entrance, 0.8s fadeUp, staggered via
+ * --delay in 100ms-ish steps set inline per element. */
+@keyframes cascade-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cascade-up {
+    animation: cascade-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: var(--delay, 0s);
+  }
+}
+
+/* Premium primary CTA — slow gradient drift between two blues + one
+ * restrained light-sweep shimmer loop. Only infinite animations besides
+ * the ambient blobs, per design brief. */
+@keyframes btn-premium-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
+.btn-premium {
+  background-image: linear-gradient(120deg, var(--blue), var(--blue-2));
+  background-size: 200% 200%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .btn-premium { animation: btn-premium-shift 4s ease-in-out infinite; }
+}
+@keyframes btn-premium-sweep {
+  from { transform: translateX(-130%) skewX(-12deg); }
+  to   { transform: translateX(130%) skewX(-12deg); }
+}
+.btn-premium-sweep {
+  position: absolute;
+  inset: -20% -10%;
+  background: linear-gradient(100deg, transparent 42%, rgba(255, 255, 255, 0.3) 50%, transparent 58%);
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .btn-premium-sweep { animation: btn-premium-sweep 3s ease-in-out infinite; }
+}
+
+/* Ultra-subtle grain over the hero — cheap static SVG noise, near-invisible,
+ * kills any banding in the glow/gradient without costing a real texture asset. */
+.hero-grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.025;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+.dark .hero-grain::before {
+  opacity: 0.04;
 }
 
 /* ---------------------------------------------------------------------
@@ -391,43 +510,14 @@ summary {
   to   { opacity: 1; transform: none; }
 }
 
-/* Mobile bottom-sheet entrance — same slot as modal-in, but sheets slide up
- * from the edge they're anchored to instead of scaling in from center. */
-@keyframes sheet-in {
-  from { transform: translateY(100%); }
-  to   { transform: none; }
-}
-
-/* Soft backdrop fade for sheets/modals that want one — opacity only, mounts
- * via @starting-style so no JS state is needed. */
-@media (prefers-reduced-motion: no-preference) {
-  .backdrop-fade {
-    transition: opacity var(--duration-modal) var(--ease-out);
-    @starting-style {
-      opacity: 0;
-    }
-  }
-}
-
 @keyframes menu-pop {
   from { opacity: 0; transform: scale(0.96) translateY(-2px); }
   to   { opacity: 1; transform: none; }
 }
 
-/* Menu/dropdown exit — the panel (ui/Menu.tsx) stays mounted for
- * --duration-menu after close so this can transition it out instead of it
- * vanishing instantly; toggled via a `closing` class. */
-@media (prefers-reduced-motion: no-preference) {
-  .menu-exit {
-    transition: opacity var(--duration-menu) var(--ease-out), transform var(--duration-menu) var(--ease-out);
-    opacity: 0;
-    transform: scale(0.96);
-  }
-}
-
 @keyframes badge-pop {
-  0%   { transform: scale(0.7); opacity: 0; }
-  60%  { transform: scale(1.08); opacity: 1; }
+  0%   { transform: scale(0.6); opacity: 0; }
+  60%  { transform: scale(1.15); opacity: 1; }
   100% { transform: scale(1); }
 }
 
@@ -574,25 +664,13 @@ summary {
   border: 1px solid var(--border);
   background: var(--surface-card);
 }
-
-/* Pro profile-theme tiles — only bites when the profile wrapper carries
-   `.profile-themed` (theme set + vars present via themeCssVars); a no-op on
-   every other page/card since --profile-border/--profile-accent are unset there.
-   Scoped to `.theme-zone` (identity zone only, see [username]/page.tsx) so the
-   Posts timeline's cards don't pick up a themed border. */
-.profile-themed .theme-zone .card {
-  background: var(--profile-surface);
-  border-color: var(--profile-border);
+.card-hover:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+  box-shadow: rgba(0, 0, 0, 0.06) 0 4px 12px;
 }
-@media (hover: hover) and (pointer: fine) {
-  .card-hover:hover {
-    border-color: var(--border-strong);
-    transform: translateY(-1px);
-    box-shadow: rgba(0, 0, 0, 0.06) 0 4px 12px;
-  }
-  .dark .card-hover:hover {
-    box-shadow: rgba(0, 0, 0, 0.24) 0 4px 12px;
-  }
+.dark .card-hover:hover {
+  box-shadow: rgba(0, 0, 0, 0.24) 0 4px 12px;
 }
 
 /* Skeleton shimmer ------------------------------------------------------ */
@@ -635,36 +713,9 @@ summary {
 }
 @media (prefers-reduced-motion: no-preference) {
   .page-enter {
-    animation: page-enter 300ms var(--ease-out) both;
+    animation: page-enter 320ms ease both;
   }
 }
 
 } /* @layer components */
-
-/* Unlayered (deliberately outside @layer components): these override Tailwind
-   utility classes (e.g. text-[var(--ink)], bg-[var(--ink)]) applied inline on
-   the same elements. Utilities sit in Tailwind's own `utilities` layer, which
-   always wins over an equally-specific rule in an earlier layer regardless of
-   selector specificity — unlayered CSS is the one thing that outranks it. */
-
-/* Section headers everywhere on a themed profile, including the Posts h2
-   (which sits outside .card and outside .theme-zone as a direct child of
-   <main>) — just not post content itself. */
-.profile-themed > section > h2,
-.profile-themed .theme-zone h2 {
-  color: var(--profile-accent);
-}
-/* Follow CTA (FollowButton "none" state, pill variant) + owner's "Edit
-   profile" link take the accent as their primary color when themed. */
-.profile-themed .theme-zone .btn-inset.rounded-full,
-.profile-themed .theme-zone .btn-ghost {
-  background: var(--profile-accent);
-  border-color: var(--profile-accent);
-  color: #fff;
-}
-/* Heatmap cell hover outline picks up the accent instead of the generic border. */
-.profile-themed .theme-zone [role="img"]:hover {
-  outline-color: var(--profile-accent);
-}
-
 

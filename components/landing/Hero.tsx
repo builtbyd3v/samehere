@@ -1,84 +1,72 @@
 "use client";
 
 import Link from "next/link";
-import { useReducedMotion } from "motion/react";
-import HeroCluster from "./HeroCluster";
+import HeroSearchDemo from "./HeroSearchDemo";
 import { ghostCta, signupCta } from "./cta";
 
-// "looking" carries the highlight — Fraunces italic in the SameHere blue.
-const HEADLINE = [
-  { w: "Describe", accent: false },
-  { w: "who", accent: false },
-  { w: "you're", accent: false },
-  { w: "looking", accent: true },
-  { w: "for.", accent: false },
-] as const;
+// Word-by-word headline reveal. "people." and "path." carry the Fraunces
+// italic accent (both have descenders — their wrap spans reserve bottom padding).
+const LINE_1 = [{ w: "Find", accent: false }, { w: "your", accent: false }, { w: "people.", accent: true }] as const;
+const LINE_2 = [{ w: "Find", accent: false }, { w: "your", accent: false }, { w: "path.", accent: true }] as const;
+
+function Word({ w, delay, accent = false, descender = false }: { w: string; delay: number; accent?: boolean; descender?: boolean }) {
+  return (
+    <span className={`word-wrap mr-[0.22em] align-top ${descender ? "pb-[0.12em]" : ""}`}>
+      <span
+        className={`word-slide inline-block will-change-transform ${accent ? "font-display italic text-[var(--blue)]" : ""}`}
+        style={{ ["--delay" as string]: `${delay}s` }}
+      >
+        {w}
+      </span>
+    </span>
+  );
+}
 
 export default function Hero() {
-  const reduce = useReducedMotion();
-
   return (
-    <section className="relative">
-      <div className="relative mx-auto flex min-h-[calc(100dvh-5.5rem)] max-w-[1200px] flex-col justify-center gap-6 px-5 py-10 md:gap-8 md:py-14">
-        <HeroCluster />
+    <section className="hero-grain relative flex min-h-[100dvh] items-center overflow-hidden">
+      {/* static ambient presence: one slow-breathing blue field centered behind
+          the search bar, so the hero reads lit even before anything types */}
+      <div aria-hidden className="hero-ambient pointer-events-none absolute" />
 
-        <div className="relative z-10 mx-auto max-w-[46rem] text-center">
-          <p
-            className="fade-rise mb-5 inline-flex items-center gap-1.5 rounded-full border border-[var(--border-strong)] px-3 py-1 text-[13px] font-medium text-[var(--ink-muted)]"
-            style={{ ["--y" as string]: "12px" }}
-          >
-            <span className="h-1.5 w-1.5 rounded-full bg-[var(--blue)]" />
-            Built for students · free to join
-          </p>
+      <div className="relative z-10 mx-auto flex w-full max-w-[820px] flex-col items-center px-5 py-10 text-center">
+        <h1 className="text-balance text-[38px] font-semibold leading-[1.1] tracking-[-0.03em] sm:text-[52px] md:text-[60px] md:tracking-[-0.04em]">
+          {LINE_1.map((item, i) => (
+            <Word key={item.w} w={item.w} delay={0.1 + i * 0.07} accent={item.accent} descender={item.accent} />
+          ))}
+          <br className="hidden sm:block" />
+          {LINE_2.map((item, i) => (
+            <Word
+              key={item.w}
+              w={item.w}
+              delay={0.1 + (LINE_1.length + i) * 0.07}
+              accent={item.accent}
+              descender={item.accent}
+            />
+          ))}
+        </h1>
 
-          <h1 className="text-balance text-[44px] font-semibold leading-[1.02] tracking-[-0.03em] sm:text-[56px] md:text-[68px] md:tracking-[-0.04em]">
-            {HEADLINE.map((item, i) => (
-              <span
-                key={i}
-                className={`word-rise mr-[0.22em] inline-block will-change-transform ${
-                  item.accent ? "font-display italic text-[var(--blue)]" : ""
-                }`}
-                style={{ ["--delay" as string]: `${0.05 + i * 0.07}s` }}
-              >
-                {item.w}
-              </span>
-            ))}
-          </h1>
+        <p
+          className="cascade-up mt-5 max-w-[52ch] text-base leading-relaxed text-[var(--ink-muted)] md:text-lg"
+          style={{ ["--delay" as string]: "0.42s" }}
+        >
+          One AI-native network for students. Post what&apos;s real, find who gets it, land the internship.
+        </p>
 
-          <p
-            className="fade-rise mx-auto mt-6 max-w-[42ch] text-lg leading-[1.45] text-[var(--ink-muted)] md:text-xl"
-            style={{ ["--y" as string]: "20px", ["--delay" as string]: "0.3s" }}
-          >
-            Same major, same goals, same boat — our AI reads what you need and
-            finds verified students with real activity to match, not just a profile pic.
-          </p>
+        <div className="cascade-up mt-8 w-full" style={{ ["--delay" as string]: "0.55s" }}>
+          <HeroSearchDemo />
+        </div>
 
-          <div
-            className="fade-rise mt-9 flex flex-wrap items-center justify-center gap-3"
-            style={{ ["--y" as string]: "20px", ["--delay" as string]: "0.4s" }}
-          >
-            <span className="relative">
-              {/* blue glow bloom behind the primary CTA — SameHere signature as
-                  atmosphere (button text stays high-contrast charcoal) */}
-              <span
-                aria-hidden
-                className="pointer-events-none absolute inset-0 -z-10 rounded-full blur-xl"
-                style={{ background: "var(--blue-glow)" }}
-              />
-              <Link href="/signup" className={`group relative overflow-hidden ${signupCta}`}>
-                <span className="relative z-10">Join free</span>
-                {!reduce && (
-                  <span
-                    aria-hidden
-                    className="pointer-events-none absolute inset-0 z-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full"
-                  />
-                )}
-              </Link>
-            </span>
-            <Link href="/login" className={ghostCta}>
-              Log in
-            </Link>
-          </div>
+        <div
+          className="cascade-up mt-10 flex flex-wrap items-center justify-center gap-3"
+          style={{ ["--delay" as string]: "0.7s" }}
+        >
+          <Link href="/signup" className={signupCta}>
+            Join free
+          </Link>
+          <Link href="/login" className={ghostCta}>
+            Log in
+          </Link>
         </div>
       </div>
     </section>
