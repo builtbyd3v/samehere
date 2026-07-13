@@ -6,6 +6,19 @@ import PitchButton from "../PitchButton";
 import FitCheck from "./FitCheck";
 import { relAge, isNew } from "../format";
 import { IconGraduationCap, IconPin } from "@/components/icons";
+import AvatarImage from "@/components/ui/AvatarImage";
+
+const PEERS_LIMIT = 6;
+
+type PeerRow = {
+  id: string;
+  username: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  is_pro: boolean;
+  role: string;
+  term: string | null;
+};
 
 type ListingRow = {
   id: string;
@@ -104,17 +117,40 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
   const pro = isPro(profile?.data ?? { is_pro: false, pro_until: null });
   const more = moreListings ?? [];
 
-  // "N students with a path here": same distinct-user-count query the board
-  // runs, scoped to this listing's org.
-  let studentCount = 0;
+  // "Students with a path here": real peers, not just a count -- distinct
+  // user_id + role + term from experiences at this org, blocked-viewer ids
+  // excluded (get_blocked_ids, same pattern as lib/people-search.ts), then
+  // profile shells fetched for whoever's left. studentCount is derived from
+  // this same post-filter list so the chip and the panel never disagree.
+  let peers: PeerRow[] = [];
   {
-    const { data: expRows } = await supabase
-      .from("experiences")
-      .select("user_id")
-      .ilike("org", listing.org.replace(/[,()%*]/g, ""))
-      .limit(1000);
-    studentCount = new Set((expRows ?? []).map((e) => e.user_id)).size;
+    const [{ data: expRows }, { data: blocked }] = await Promise.all([
+      supabase
+        .from("experiences")
+        .select("user_id, role, term")
+        .ilike("org", listing.org.replace(/[,()%*]/g, ""))
+        .order("created_at", { ascending: false })
+        .limit(50),
+      user ? supabase.rpc("get_blocked_ids") : Promise.resolve({ data: [] }),
+    ]);
+
+    const blockedSet = new Set((blocked ?? []) as string[]);
+    const byUser = new Map<string, { role: string; term: string | null }>();
+    for (const e of expRows ?? []) {
+      if (blockedSet.has(e.user_id) || e.user_id === user?.id || byUser.has(e.user_id)) continue;
+      byUser.set(e.user_id, { role: e.role, term: e.term });
+    }
+    const peerIds = [...byUser.keys()].slice(0, PEERS_LIMIT);
+
+    if (peerIds.length) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, username, display_name, avatar_url, is_pro")
+        .in("id", peerIds);
+      peers = (profiles ?? []).map((p) => ({ ...p, ...byUser.get(p.id)! }));
+    }
   }
+  const studentCount = peers.length;
 
   const location = listing.locations ? listing.locations.slice(0, 80) : null;
   const kindLabel = listing.kind === "internship" ? "Internship" : "New grad";
@@ -190,12 +226,12 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
         </div>
 
         {studentCount > 0 && (
-          <Link
-            href={`/search?q=${encodeURIComponent(listing.org)}`}
+          <a
+            href="#peers"
             className="mt-3 inline-flex items-center gap-1 rounded-full bg-[var(--blue-glow)] px-2.5 py-1 text-xs font-medium text-[var(--blue)] transition hover:opacity-80"
           >
             {studentCount} student{studentCount === 1 ? "" : "s"} with a path here
-          </Link>
+          </a>
         )}
 
         <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-[var(--border)] pt-4">
@@ -230,6 +266,47 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
         >
           <h2 className="text-sm font-semibold text-[var(--ink)]">Why you fit</h2>
           <FitCheck listingId={listing.id} initialReason={fit?.reason ?? null} />
+        </div>
+      )}
+
+      {peers.length > 0 && (
+        <div
+          id="peers"
+          className="cascade-up mt-4 rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] p-5 shadow-paper"
+          style={{ "--delay": "90ms" } as React.CSSProperties}
+        >
+          <h2 className="text-sm font-semibold text-[var(--ink)]">Students with a path here</h2>
+          <ul className="mt-3 flex flex-col gap-2">
+            {peers.map((p) => {
+              const nm = p.display_name ?? p.username;
+              const meta = [p.role, p.term].filter(Boolean).join(" · ");
+              return (
+                <li key={p.id} className="flex items-center gap-3 rounded-lg border border-[var(--border)] px-3 py-2.5">
+                  <Link href={`/profile/${p.username}`} className="flex min-w-0 flex-1 items-center gap-3">
+                    {p.avatar_url ? (
+                      <AvatarImage
+                        src={p.avatar_url}
+                        alt=""
+                        className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover"
+                        pro={p.is_pro}
+                      />
+                    ) : (
+                      <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-sm font-semibold text-[var(--ink-muted)]">
+                        {nm.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div className="min-w-0 text-sm">
+                      <p className="truncate font-medium text-[var(--ink)]">{nm}</p>
+                      {meta && <p className="truncate text-xs text-[var(--ink-muted)]">{meta}</p>}
+                    </div>
+                  </Link>
+                  <Link href={`/messages?to=${encodeURIComponent(p.username)}`} className="btn-ghost shrink-0 rounded-md px-3 py-1.5 text-sm">
+                    Say hi
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
         </div>
       )}
 

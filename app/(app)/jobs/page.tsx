@@ -295,7 +295,7 @@ export default async function JobsPage({
 
                 {studentCount > 0 && (
                   <Link
-                    href={`/search?q=${encodeURIComponent(l.org)}`}
+                    href={`/jobs/${l.id}`}
                     className="relative z-10 mt-3 inline-flex items-center gap-1 rounded-full bg-[var(--blue-glow)] px-2.5 py-1 text-xs font-medium text-[var(--blue)] transition hover:opacity-80"
                   >
                     {studentCount} student{studentCount === 1 ? "" : "s"} with a path here
