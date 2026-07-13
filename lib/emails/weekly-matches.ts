@@ -43,7 +43,10 @@ function cardHtml(c: MatchCard): string {
                     ${c.reason ? `<p style="margin:6px 0 0;font-size:13px;line-height:1.5;color:${INK_MUTED};">${escapeHtml(c.reason)}</p>` : ""}
                   </td>
                   <td style="vertical-align:top;text-align:right;white-space:nowrap;">
-                    <a href="https://samehere.dev/profile/${escapeHtml(c.username)}" style="display:inline-block;background:${INK};color:${CANVAS};font-size:13px;font-weight:600;text-decoration:none;padding:8px 14px;border-radius:8px;">View profile</a>
+                    <a href="https://samehere.dev/messages?to=${escapeHtml(c.username)}" style="display:inline-block;background:${INK};color:${CANVAS};font-size:13px;font-weight:600;text-decoration:none;padding:8px 14px;border-radius:8px;">Say hi</a>
+                    <p style="margin:6px 0 0;font-size:12px;">
+                      <a href="https://samehere.dev/profile/${escapeHtml(c.username)}" style="color:${INK_MUTED};text-decoration:underline;">View profile</a>
+                    </p>
                   </td>
                 </tr>
               </table>
@@ -71,7 +74,8 @@ export function weeklyMatchesEmail({
     ...cards.map((c) => {
       const lines = [`${c.name} (@${c.username})${c.school ? ` — ${c.school}` : ""}`];
       if (c.reason) lines.push(c.reason);
-      lines.push(`https://samehere.dev/profile/${c.username}`);
+      lines.push(`Say hi: https://samehere.dev/messages?to=${c.username}`);
+      lines.push(`Profile: https://samehere.dev/profile/${c.username}`);
       return lines.join("\n");
     }),
     "",
