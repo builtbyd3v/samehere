@@ -44,7 +44,8 @@ export default function JobsProof() {
         viewport={{ once: true, margin: "-10%" }}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
       >
-        Find the opportunity. <span className="font-display italic text-[var(--blue)]">Connect</span> with someone who&apos;s been there.
+        Find the opportunity. <span className="font-display italic text-[var(--blue)]">Connect</span>{" "}
+        with someone who&apos;s been there.
       </motion.h2>
 
       <div className="mt-12 flex flex-col gap-4">
