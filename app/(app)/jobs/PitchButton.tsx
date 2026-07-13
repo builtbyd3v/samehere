@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion, useReducedMotion } from "motion/react";
 import posthog from "posthog-js";
 import { IconBolt } from "@/components/icons";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { tailorPitch } from "./actions";
 
 // Per-listing tailored pitch (Pro). Free users see the Pro badge and an
@@ -57,8 +58,20 @@ export default function PitchButton({
   }
 
   return (
-    <div className={text === null ? "" : block ? "w-full" : "max-w-xs"}>
-      {text === null ? (
+    <div className={text === null && !pending ? "" : block ? "w-full" : "max-w-xs"}>
+      {pending ? (
+        <div className="w-full overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--canvas)] p-4 text-left">
+          <div className="mb-3 flex items-center gap-1.5">
+            <IconBolt className="h-3.5 w-3.5 text-[var(--blue)]" />
+            <Skeleton className="h-3 w-32" />
+          </div>
+          <div className="max-w-[64ch] space-y-1.5">
+            <Skeleton className="h-[13.5px] w-full" />
+            <Skeleton className="h-[13.5px] w-full" />
+            <Skeleton className="h-[13.5px] w-4/5" />
+          </div>
+        </div>
+      ) : text === null ? (
         <button
           type="button"
           onClick={run}
@@ -66,7 +79,7 @@ export default function PitchButton({
           className="btn-accent"
         >
           <IconBolt className="h-3.5 w-3.5" />
-          {pending ? "Tailoring…" : "Tailor my pitch"}
+          Tailor my pitch
         </button>
       ) : (
         <motion.div

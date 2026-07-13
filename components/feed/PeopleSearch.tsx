@@ -8,6 +8,7 @@ import type { PeopleSearchState } from "@/lib/people-search";
 import FollowButton from "@/components/profile/FollowButton";
 import UserBadges from "@/components/profile/UserBadges";
 import AvatarImage from "@/components/ui/AvatarImage";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { TEXT_LIMITS } from "@/lib/utils/validation";
 
 // Persistent feed search with two modes: keyword (server-rendered, free,
@@ -96,7 +97,7 @@ export default function PeopleSearch({
               className={inputCls}
             />
             <button type="submit" disabled={pending} className="btn-primary shrink-0">
-              {pending ? "…" : "Search"}
+              {pending ? "Searching…" : "Search"}
             </button>
           </form>
           <div className="mt-1.5 flex items-center justify-between gap-2">
@@ -120,9 +121,23 @@ export default function PeopleSearch({
             </button>
           </div>
 
-          {state.error && <p className="mt-2 text-sm text-[var(--danger)]">{state.error}</p>}
+          {pending && (
+            <ul className="mt-4 flex flex-col gap-1.5">
+              {[0, 1, 2].map((i) => (
+                <li key={i} className="card flex items-center gap-2.5 px-3 py-2.5">
+                  <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
+                  <div className="min-w-0 flex-1 space-y-1.5">
+                    <Skeleton className="h-3.5 w-28" />
+                    <Skeleton className="h-3 w-20" />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
 
-          {state.overCap && (
+          {!pending && state.error && <p className="mt-2 text-sm text-[var(--danger)]">{state.error}</p>}
+
+          {!pending && state.overCap && (
             <div className="mt-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] px-4 py-3 text-sm">
               <p className="text-[var(--ink)]">You&apos;ve used today&apos;s free smart searches.</p>
               <Link href="/pro" className="mt-1 inline-block text-[var(--ink-muted)] underline">
@@ -131,13 +146,13 @@ export default function PeopleSearch({
             </div>
           )}
 
-          {state.empty && (
+          {!pending && state.empty && (
             <p className="mt-3 text-sm text-[var(--ink-muted)]">
               No students matched. Try describing it a different way.
             </p>
           )}
 
-          {state.results &&
+          {!pending && state.results &&
             (state.results.length ? (
               <ul className="mt-4 flex flex-col gap-1.5">
                 {state.results.map((p) => {
