@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { aiEnabled, generateText, modelForTier, type AiResult } from "@/lib/ai";
 import { PROFILE_DRAFT_SYSTEM, PROFILE_NUDGE_SYSTEM, untrusted } from "@/lib/ai-prompts";
@@ -9,6 +10,8 @@ import { isProfileTheme } from "@/lib/themes";
 import { getPostHogServerClient } from "@/lib/posthog-server";
 import { fallbackProfileNudge, getProfileGaps } from "@/lib/profile-completion";
 import type { TablesUpdate } from "@/types/database.types";
+
+const EXPERIENCE_KINDS = ["internship", "job", "research", "club_role"];
 
 const YEARS = ["freshman", "sophomore", "junior", "senior", "grad"];
 const ALLOWED_AVATAR_MIME = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
@@ -244,6 +247,63 @@ export async function uploadBanner(_prev: AvatarState, formData: FormData): Prom
   if (dbErr) return { error: "Saved the image but couldn't update your profile." };
 
   return { url };
+}
+
+export type ExperienceState = { error?: string };
+
+// Add one experience entry. Server-side validates the same constraints the
+// DB already enforces (length, kind enum) so a bad request fails with a
+// friendly message instead of a raw 23514 constraint error; the 10-row cap
+// is enforced by the experiences_cap trigger and surfaced below.
+export async function addExperience(_prev: ExperienceState, formData: FormData): Promise<ExperienceState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be logged in." };
+
+  const str = (k: string, max: number) => String(formData.get(k) ?? "").trim().slice(0, max);
+
+  const kind = str("kind", 20);
+  if (!EXPERIENCE_KINDS.includes(kind)) return { error: "Choose a type." };
+
+  const org = str("org", 80);
+  const role = str("role", 80);
+  if (!org || !role) return { error: "Org and role are required." };
+
+  const term = str("term", 40) || null;
+  const note = str("note", 280) || null;
+
+  const { error } = await supabase.from("experiences").insert({ user_id: user.id, kind, org, role, term, note });
+  if (error) {
+    if (error.message.includes("limit: at most 10 experiences")) return { error: "Max 10 experiences." };
+    return { error: "Could not add experience. Try again." };
+  }
+
+  const { data: prof } = await supabase.from("profiles").select("username").eq("id", user.id).single();
+  revalidatePath("/profile/edit");
+  if (prof?.username) revalidatePath(`/profile/${prof.username}`);
+
+  return {};
+}
+
+// Delete one of the caller's own experiences. RLS (auth.uid() = user_id)
+// enforces ownership; no need to re-check it here.
+export async function deleteExperience(id: string): Promise<ExperienceState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be logged in." };
+
+  const { error } = await supabase.from("experiences").delete().eq("id", id);
+  if (error) return { error: "Could not delete experience. Try again." };
+
+  const { data: prof } = await supabase.from("profiles").select("username").eq("id", user.id).single();
+  revalidatePath("/profile/edit");
+  if (prof?.username) revalidatePath(`/profile/${prof.username}`);
+
+  return {};
 }
 
 // Byte-sniff for animation, no libraries. Each format is checked by its own

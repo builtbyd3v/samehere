@@ -47,6 +47,22 @@ const YEAR_LABEL: Record<string, string> = {
   grad: "Grad student",
 };
 
+const EXPERIENCE_KIND_LABEL: Record<string, string> = {
+  internship: "Internship",
+  job: "Job",
+  research: "Research",
+  club_role: "Club role",
+};
+
+type ExperienceRow = {
+  id: string;
+  kind: string;
+  org: string;
+  role: string;
+  term: string | null;
+  note: string | null;
+};
+
 function Stat({ value, label, accent }: { value: number; label: string; accent?: boolean }) {
   return (
     <span className="text-[15px]">
@@ -314,7 +330,7 @@ export default async function ProfilePage({
     });
   }
 
-  const [schoolRes, countRes, relRes, postsRes, quotesRes, repostsRes, blockedIdsRes, myBlockRes] = await Promise.all([
+  const [schoolRes, countRes, relRes, postsRes, quotesRes, repostsRes, blockedIdsRes, myBlockRes, experiencesRes] = await Promise.all([
     supabase.from("profile_school").select("school").eq("profile_id", profile.id).maybeSingle(),
     supabase.rpc("get_profile_counts", { p_profile_id: profile.id }),
     user && !isOwner
@@ -338,6 +354,12 @@ export default async function ProfilePage({
     user && !isOwner
       ? supabase.from("blocks").select("id").eq("blocker_id", user.id).eq("blocked_id", profile.id).maybeSingle()
       : Promise.resolve({ data: null as { id: string } | null }),
+    supabase
+      .from("experiences")
+      .select("id, kind, org, role, term, note")
+      .eq("user_id", profile.id)
+      .order("created_at", { ascending: false })
+      .returns<ExperienceRow[]>(),
   ]);
 
   const viewerId = user?.id ?? null;
@@ -367,6 +389,7 @@ export default async function ProfilePage({
     reposter: r.reposter,
     original: engagedById.get(r.post.id)!,
   }));
+  const experiences = experiencesRes.data ?? [];
   const isBlocked = !!(blockedIdsRes.data ?? []).includes(profile.id);
   const amIBlocking = !!myBlockRes.data;
   const profileIsPro = isPro(profile);
@@ -540,6 +563,32 @@ export default async function ProfilePage({
             </section>
           )}
         </div>
+      )}
+
+      {/* Experience — same visibility as bio (no privacy tier, mirrors the
+          experiences RLS "any signed-in user reads" policy). */}
+      {experiences.length > 0 && (
+        <section className="card card-hover mt-3 p-5 shadow-paper sm:p-6">
+          <h2 className="text-sm font-semibold text-[var(--ink)]">Experience</h2>
+          <ul className="mt-3 flex flex-col gap-3">
+            {experiences.map((exp) => (
+              <li key={exp.id}>
+                <p className="text-sm font-medium text-[var(--ink)]">
+                  {EXPERIENCE_KIND_LABEL[exp.kind] ?? exp.kind}
+                </p>
+                <p className="text-[15px] text-[var(--ink)]">
+                  {exp.org} — {exp.role}
+                  {exp.term && <span className="text-[var(--ink-muted)]"> · {exp.term}</span>}
+                </p>
+                {exp.note && (
+                  <p className="mt-0.5 whitespace-pre-line break-words text-sm text-[var(--ink-muted)]">
+                    {exp.note}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {!isOwner && user && (!isBlocked || amIBlocking) && (

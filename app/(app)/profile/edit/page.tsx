@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import EditProfileForm from "@/components/profile/EditProfileForm";
+import ExperienceEditor from "@/components/profile/ExperienceEditor";
 
 export default async function EditProfilePage() {
   const supabase = await createClient();
@@ -9,8 +10,8 @@ export default async function EditProfilePage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // Profile and school both key off user.id and are independent — fetch together.
-  const [{ data: profile }, { data: schoolRow }] = await Promise.all([
+  // Profile, school, and experiences all key off user.id and are independent — fetch together.
+  const [{ data: profile }, { data: schoolRow }, { data: experiences }] = await Promise.all([
     supabase
       .from("profiles")
       .select(
@@ -19,8 +20,20 @@ export default async function EditProfilePage() {
       .eq("id", user.id)
       .single(),
     supabase.from("profile_school").select("school").eq("profile_id", user.id).maybeSingle(),
+    supabase
+      .from("experiences")
+      .select("id, kind, org, role, term, note")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false }),
   ]);
   if (!profile) redirect("/login");
 
-  return <EditProfileForm initial={{ ...profile, id: user.id, school: schoolRow?.school ?? "" }} />;
+  return (
+    <>
+      <EditProfileForm initial={{ ...profile, id: user.id, school: schoolRow?.school ?? "" }} />
+      <div className="mx-auto max-w-xl px-5 pb-10">
+        <ExperienceEditor initial={experiences ?? []} />
+      </div>
+    </>
+  );
 }
