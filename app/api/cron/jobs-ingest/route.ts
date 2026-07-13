@@ -44,17 +44,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Could not fetch listings" }, { status: 500 });
   }
 
-  if (rows.length > MAX_ROWS) {
-    console.error(`jobs-ingest: source returned ${rows.length} rows, capping at ${MAX_ROWS}`);
+  // Filter BEFORE capping — the feed is append-ordered, so its head is years
+  // of inactive rows and a pre-filter cap would ingest almost nothing.
+  const live = rows.filter((r) => Boolean(r.active) && Boolean(r.is_visible));
+  if (live.length > MAX_ROWS) {
+    console.error(`jobs-ingest: source returned ${live.length} active rows, capping at ${MAX_ROWS}`);
   }
-  const batch = rows.slice(0, MAX_ROWS);
+  const batch = live.slice(0, MAX_ROWS);
 
   let skipped = 0;
   const now = new Date().toISOString();
   const upsertRows = [];
   for (const r of batch) {
-    const active = Boolean(r.active) && Boolean(r.is_visible);
-    if (!active) continue;
     if (!r.id || !r.company_name || !r.title || !r.url) {
       skipped++;
       continue;
