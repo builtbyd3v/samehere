@@ -74,6 +74,9 @@ export async function updateSession(request: NextRequest) {
     path === '/api/cron/eve' ||
     path === '/api/cron/jobs-ingest' ||
     path === '/api/email/unsubscribe' ||
+    // CSP violation collector (Plan 040) — browsers POST this straight from the
+    // Report-Only header's report-uri/report-to, no session cookie sent.
+    path === '/api/csp-report' ||
     // PostHog reverse proxy (next.config.ts rewrites /ingest/* to PostHog).
     // Without this, ANON analytics 307 to /signup and the logged-out funnel
     // (landing -> signup) is silently lost. Pure pass-through, no auth needed.
