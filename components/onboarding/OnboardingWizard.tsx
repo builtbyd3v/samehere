@@ -3,7 +3,7 @@
 import { useActionState, useState, useTransition, type ReactNode } from "react";
 import { uploadAvatar, type AvatarState, type EditState } from "@/app/(app)/profile/edit/actions";
 import { createPost, type ComposerState } from "@/app/(app)/feed/actions";
-import { saveOnboardingBasics, finishOnboarding, getOnboardingMatches, type OnboardingMatch } from "@/app/(app)/onboarding/actions";
+import { saveOnboardingBasics, finishOnboarding, getOnboardingMatches, addOnboardingExperience, type OnboardingMatch, type ExperienceState } from "@/app/(app)/onboarding/actions";
 import AvatarImage from "@/components/ui/AvatarImage";
 import SchoolAutocomplete from "@/components/profile/SchoolAutocomplete";
 import UserBadges from "@/components/profile/UserBadges";
@@ -31,7 +31,7 @@ const YEARS: [string, string][] = [
 const label = "block text-sm font-medium text-[var(--ink)]";
 const field = "input-base mt-1.5";
 
-// Skippable 3-step wizard shown once after signup confirmation (see
+// Skippable 5-step wizard shown once after signup confirmation (see
 // app/(app)/onboarding/page.tsx). Step 1 saves through the existing
 // profile-edit action (via the local saveOnboardingBasics wrapper — see
 // app/(app)/onboarding/actions.ts for why a wrapper is needed), step 3 posts
@@ -44,7 +44,7 @@ export default function OnboardingWizard({
   profile: OnboardingProfile;
   followStep: ReactNode;
 }) {
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
 
   // Avatar upload has no redirect in its own action, so it's called directly
   // (same pattern as EditProfileForm) — no wrapper needed.
@@ -99,7 +99,7 @@ export default function OnboardingWizard({
         return;
       }
       setMatches(results);
-      setStep(4);
+      setStep(5);
     });
   }
 
@@ -113,6 +113,20 @@ export default function OnboardingWizard({
     startPost(async () => {
       const result: ComposerState = await createPost({}, fd);
       if (result.error) setPostError(result.error);
+      else setStep(4);
+    });
+  }
+
+  const [expPending, startExp] = useTransition();
+  const [expError, setExpError] = useState<string | undefined>();
+
+  function onSubmitExperience(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    setExpError(undefined);
+    startExp(async () => {
+      const result: ExperienceState = await addOnboardingExperience({}, fd);
+      if (result.error) setExpError(result.error);
       else advanceToMatches();
     });
   }
@@ -122,7 +136,7 @@ export default function OnboardingWizard({
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-[-0.02em]">Welcome to samehere</h1>
-          <p className="mt-1 text-sm text-[var(--ink-muted)]">Step {step} of 4</p>
+          <p className="mt-1 text-sm text-[var(--ink-muted)]">Step {step} of 5</p>
         </div>
         <button
           type="button"
@@ -237,17 +251,56 @@ export default function OnboardingWizard({
               className="w-full resize-y rounded-lg border border-[var(--border)] bg-transparent p-3 text-[15px] leading-[1.55] text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
             />
             <div className="mt-6 flex items-center justify-between">
-              <button type="button" onClick={advanceToMatches} disabled={finishing || matchesPending} className="text-sm text-[var(--ink-muted)] underline disabled:opacity-50">
+              <button type="button" onClick={() => setStep(4)} disabled={postPending} className="text-sm text-[var(--ink-muted)] underline disabled:opacity-50">
                 Skip
               </button>
-              <button type="submit" disabled={postPending || finishing || matchesPending || postContent.trim().length === 0} className="btn-primary !py-2.5">
-                {postPending ? "Posting…" : matchesPending ? "Finding matches…" : "Post & finish"}
+              <button type="submit" disabled={postPending || postContent.trim().length === 0} className="btn-primary !py-2.5">
+                {postPending ? "Posting…" : "Post & continue"}
               </button>
             </div>
           </form>
         )}
 
         {step === 4 && (
+          <form onSubmit={onSubmitExperience}>
+            <h2 className="mb-1 text-lg font-semibold">Add an experience</h2>
+            <p className="mb-4 text-sm text-[var(--ink-muted)]">Interned somewhere? Led a club? It helps peers find you.</p>
+            {expError && <p role="alert" className="mb-3 text-sm text-[var(--danger)]">{expError}</p>}
+            <div className="flex flex-col gap-4">
+              <div>
+                <label htmlFor="kind" className={label}>Type</label>
+                <select id="kind" name="kind" defaultValue="internship" className={field}>
+                  <option value="internship">Internship</option>
+                  <option value="job">Job</option>
+                  <option value="research">Research</option>
+                  <option value="club_role">Club role</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="org" className={label}>Where</label>
+                <input id="org" name="org" type="text" maxLength={80} placeholder="Company, lab, or club" className={field} />
+              </div>
+              <div>
+                <label htmlFor="role" className={label}>Role</label>
+                <input id="role" name="role" type="text" maxLength={80} placeholder="e.g. Software Engineering Intern" className={field} />
+              </div>
+              <div>
+                <label htmlFor="term" className={label}>When (optional)</label>
+                <input id="term" name="term" type="text" maxLength={40} placeholder="e.g. Summer 2025" className={field} />
+              </div>
+            </div>
+            <div className="mt-6 flex items-center justify-between">
+              <button type="button" onClick={advanceToMatches} disabled={expPending || matchesPending} className="text-sm text-[var(--ink-muted)] underline disabled:opacity-50">
+                Skip
+              </button>
+              <button type="submit" disabled={expPending || matchesPending} className="btn-primary !py-2.5">
+                {expPending ? "Saving…" : matchesPending ? "Finding matches…" : "Add & continue"}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {step === 5 && (
           <div>
             <h2 className="mb-1 text-lg font-semibold">Your first matches</h2>
             <p className="mb-4 text-sm text-[var(--ink-muted)]">Students who fit what you&apos;re into, picked for you.</p>

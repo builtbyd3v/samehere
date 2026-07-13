@@ -44,6 +44,32 @@ export async function finishOnboarding(): Promise<void> {
   redirect("/feed");
 }
 
+export type ExperienceState = { error?: string };
+
+const EXPERIENCE_KINDS = new Set(["internship", "job", "research", "club_role"]);
+
+// Owner-insert into public.experiences (20260719120000_experiences.sql) —
+// RLS "experiences owner all" policy covers this, no definer fn needed.
+export async function addOnboardingExperience(prev: ExperienceState, formData: FormData): Promise<ExperienceState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be logged in." };
+
+  const kind = String(formData.get("kind") ?? "");
+  if (!EXPERIENCE_KINDS.has(kind)) return { error: "Choose a type." };
+  const org = String(formData.get("org") ?? "").trim().slice(0, 80);
+  const role = String(formData.get("role") ?? "").trim().slice(0, 80);
+  const term = String(formData.get("term") ?? "").trim().slice(0, 40) || null;
+  if (!org) return { error: "Add where you did this." };
+  if (!role) return { error: "Add your role." };
+
+  const { error } = await supabase.from("experiences").insert({ user_id: user.id, kind, org, role, term });
+  if (error) return { error: "Could not save. Try again." };
+  return {};
+}
+
 export type OnboardingMatch = {
   id: string;
   username: string;
