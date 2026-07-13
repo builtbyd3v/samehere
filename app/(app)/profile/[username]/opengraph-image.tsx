@@ -354,7 +354,7 @@ function Footer({ username }: { username: string }) {
     >
       <div style={{ display: "flex", flexDirection: "column" }}>
         <Wordmark size={24} />
-        <div style={{ marginTop: 3, fontSize: 17, color: INK_MUTED }}>Verified students only.</div>
+        <div style={{ marginTop: 3, fontSize: 17, color: INK_MUTED }}>Built for students.</div>
       </div>
       <div style={{ fontSize: 17, color: INK_FAINT }}>{`samehere.dev/profile/${username}`}</div>
     </div>
@@ -387,12 +387,14 @@ export default async function OgImage({ params }: { params: Promise<{ username: 
             justifyContent: "center",
             padding: 80,
             background: CANVAS,
+            backgroundImage:
+              "radial-gradient(ellipse 900px 600px at 50% -10%, rgba(79, 159, 232, 0.16), transparent 70%)",
             color: INK,
             fontFamily: "Figtree",
           }}
         >
           <Wordmark size={60} />
-          <div style={{ marginTop: 18, fontSize: 26, color: INK_MUTED }}>Verified students only.</div>
+          <div style={{ marginTop: 18, fontSize: 26, color: INK_MUTED }}>Built for students.</div>
         </div>
       ),
       { ...size, fonts: font },
@@ -420,6 +422,8 @@ export default async function OgImage({ params }: { params: Promise<{ username: 
           display: "flex",
           flexDirection: "column",
           background: CANVAS,
+          backgroundImage:
+            "radial-gradient(ellipse 900px 600px at 50% -10%, rgba(79, 159, 232, 0.16), transparent 70%)",
           padding: 44,
           fontFamily: "Figtree",
         }}

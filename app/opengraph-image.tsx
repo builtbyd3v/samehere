@@ -189,6 +189,8 @@ export default async function OgImage() {
           display: "flex",
           flexDirection: "column",
           background: CANVAS,
+          backgroundImage:
+            "radial-gradient(ellipse 900px 600px at 50% -10%, rgba(79, 159, 232, 0.16), transparent 70%)",
           padding: 44,
           fontFamily: "Figtree",
         }}
