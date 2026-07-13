@@ -1233,6 +1233,21 @@ export type Database = {
           },
         ]
       }
+      signup_attempts: {
+        Row: {
+          created_at: string
+          ip_hash: string
+        }
+        Insert: {
+          created_at?: string
+          ip_hash: string
+        }
+        Update: {
+          created_at?: string
+          ip_hash?: string
+        }
+        Relationships: []
+      }
       stripe_events: {
         Row: {
           created_at: string
@@ -1685,6 +1700,7 @@ export type Database = {
         Args: { p_action: string; p_source: string; p_user: string }
         Returns: undefined
       }
+      rl_check_signup: { Args: { p_ip_hash: string }; Returns: boolean }
       set_referral_code: { Args: { p_code: string }; Returns: string }
       sweep_unconfirmed_signups: { Args: never; Returns: number }
       use_ai_quota: { Args: { p_kind: string }; Returns: boolean }

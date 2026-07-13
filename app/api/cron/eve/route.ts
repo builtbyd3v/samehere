@@ -113,7 +113,7 @@ export async function GET(request: NextRequest) {
       .select("club_id, clubs(id, name, purpose)")
       .eq("user_id", eveId)
       .eq("status", "accepted")
-      .in("role", ["officer", "owner"])
+      .eq("role", "officer")
       .limit(MAX_CLUBS)
       .returns<OfficerMembership[]>();
 

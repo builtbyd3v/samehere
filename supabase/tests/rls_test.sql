@@ -1815,6 +1815,62 @@ exception when others then
 end $$;
 reset role;
 
+-- ============ SIGNUP_RL — anon can execute rl_check_signup; nobody can select
+-- signup_attempts directly (20260719110000_signup_rate_limit.sql) ============
+select tests.as_anon();
+do $$
+begin
+  perform public.rl_check_signup('test_hash_anon');
+  insert into tests_results values ('SIGNUP_RL_anon_execute', true, 'ok');
+exception when others then
+  insert into tests_results values ('SIGNUP_RL_anon_execute', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_anon();
+do $$
+declare
+  v_state text;
+  v_raised boolean;
+begin
+  begin
+    perform 1 from public.signup_attempts limit 1;
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state <> '42501' then
+    raise exception 'SIGNUP_RL_no_table_access REGRESSION: anon selecting public.signup_attempts did not fail with 42501 (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+  insert into tests_results values ('SIGNUP_RL_no_table_access_anon', true, 'ok');
+exception when others then
+  insert into tests_results values ('SIGNUP_RL_no_table_access_anon', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user((select id from tests_fixture where key = 'A'));
+do $$
+declare
+  v_state text;
+  v_raised boolean;
+begin
+  begin
+    perform 1 from public.signup_attempts limit 1;
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state <> '42501' then
+    raise exception 'SIGNUP_RL_no_table_access REGRESSION: authenticated selecting public.signup_attempts did not fail with 42501 (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+  insert into tests_results values ('SIGNUP_RL_no_table_access_authenticated', true, 'ok');
+exception when others then
+  insert into tests_results values ('SIGNUP_RL_no_table_access_authenticated', false, sqlerrm);
+end $$;
+reset role;
+
 -- ============ report ============
 -- Print the PASS/FAIL table FIRST so the operator sees exactly which assertions
 -- failed, then raise so psql exits non-zero and the harness actually gates.
@@ -1832,7 +1888,7 @@ declare v_failed int;
 begin
   select count(*) into v_failed from tests_results where not passed;
   if v_failed > 0 then
-    raise exception '% assertion(s) failed — see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, CLUBS_V2_1, CLUBS_V2_2, CLUBS_V2_3, CLUBS_V2_7a, CLUBS_V2_4, CLUBS_V2_7b, CLUBS_V2_5_officer_denied, CLUBS_V2_5_owner_allowed, CLUBS_V2_6_outsider, CLUBS_V2_6_pending, CLUBS_V2_8, CLUBS_V2_9, H1_suggested_profiles, CLUBS_V2_12_outsider, CLUBS_V2_12_anon.', v_failed;
+    raise exception '% assertion(s) failed — see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, CLUBS_V2_1, CLUBS_V2_2, CLUBS_V2_3, CLUBS_V2_7a, CLUBS_V2_4, CLUBS_V2_7b, CLUBS_V2_5_officer_denied, CLUBS_V2_5_owner_allowed, CLUBS_V2_6_outsider, CLUBS_V2_6_pending, CLUBS_V2_8, CLUBS_V2_9, H1_suggested_profiles, CLUBS_V2_12_outsider, CLUBS_V2_12_anon, SIGNUP_RL_anon_execute, SIGNUP_RL_no_table_access_anon, SIGNUP_RL_no_table_access_authenticated.', v_failed;
 
   end if;
 end $$;

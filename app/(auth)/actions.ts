@@ -2,6 +2,7 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { createHash } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
 import { usernameError } from "@/lib/utils/validation";
 
@@ -28,6 +29,21 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
   // client controls) for the confirmation link. Supabase's redirect allowlist
   // is the real guard; this is defense in depth.
   const origin = process.env.NEXT_PUBLIC_SITE_URL || (await headers()).get("origin") || "";
+
+  // DB-backed signup rate limit (Supabase Auth's own limiter is IP-blind across
+  // its own window; this adds a per-IP cap). x-forwarded-for's first hop is the
+  // client IP behind Vercel's proxy. Fail-open on any rpc error — a limiter
+  // outage should never block signup.
+  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const ipHash = createHash("sha256").update(ip).digest("hex");
+  const { data: allowed, error: rlError } = await supabase.rpc("rl_check_signup", {
+    p_ip_hash: ipHash,
+  });
+  if (rlError) {
+    console.error("rl_check_signup failed, failing open:", rlError);
+  } else if (allowed === false) {
+    return { error: "Too many signups. Try again later." };
+  }
 
   const { error } = await supabase.auth.signUp({
     email,
