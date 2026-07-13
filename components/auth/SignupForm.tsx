@@ -13,7 +13,11 @@ import PasswordField from "./PasswordField";
 import OAuthButtons, { OAuthDivider } from "./OAuthButtons";
 import { authHint, authInput, authInputError, authLabel } from "./auth-fields";
 
-export default function SignupForm() {
+type SignupFormProps = {
+  inviteOnly?: boolean;
+};
+
+export default function SignupForm({ inviteOnly = false }: SignupFormProps) {
   const [state, formAction, pending] = useActionState<AuthState, FormData>(signUp, {});
   const hasError = !!state.error;
   const refFromLink = useSearchParams().get("ref") ?? "";
@@ -45,6 +49,9 @@ export default function SignupForm() {
   return (
     <AuthCard title="Create your account">
       <form action={formAction} onFocus={handleFormFocus}>
+        {inviteOnly && (
+          <p className={`${authHint} mb-3`}>samehere is in private beta — ask a member for their code.</p>
+        )}
         {state.error && <AuthAlert message={state.error} />}
 
         <OAuthButtons variant="signup" />
@@ -100,18 +107,29 @@ export default function SignupForm() {
 
         <div className="mb-4">
           <label htmlFor="ref_code" className={authLabel}>
-            Referral code <span className="font-normal text-[var(--ink-muted)]">(optional)</span>
+            {inviteOnly ? (
+              "Invite code"
+            ) : (
+              <>
+                Referral code <span className="font-normal text-[var(--ink-muted)]">(optional)</span>
+              </>
+            )}
           </label>
           <input
             id="ref_code"
             name="ref_code"
             type="text"
             autoComplete="off"
+            required={inviteOnly}
             defaultValue={refFromLink}
             placeholder="friendcode"
             className={authInput}
           />
-          <p className={`${authHint} hidden sm:block`}>Have a referral code? Enter it here.</p>
+          <p className={`${authHint} hidden sm:block`}>
+            {inviteOnly
+              ? "samehere is in private beta — ask a member for their code."
+              : "Have a referral code? Enter it here."}
+          </p>
         </div>
 
         <AuthSubmitButton pending={pending} pendingLabel="Creating account…">
