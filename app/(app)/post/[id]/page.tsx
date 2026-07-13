@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import PostCard, { POST_SELECT, withEngagement, type PostRow } from "@/components/feed/PostCard";
 import CommentThread from "@/components/feed/CommentThread";
 import UserBadges from "@/components/profile/UserBadges";
-import AvatarImage from "@/components/ui/AvatarImage";
+import AvatarBase from "@/components/ui/Avatar";
 import MentionText from "@/components/ui/MentionText";
 import ProfileHoverLink from "@/components/profile/ProfileHoverLink";
 import LocalTime from "@/components/ui/LocalTime";
@@ -117,18 +117,13 @@ async function PublicPostView({ id }: { id: string }) {
       <article className="mt-4 rounded-2xl border border-[var(--border)] bg-[var(--surface-post)] p-4 sm:p-5">
         <div className="flex gap-3 sm:gap-4">
           <ProfileHoverLink href={`/profile/${post.author_username}`} username={post.author_username} className="shrink-0">
-            {post.author_avatar_url ? (
-              <AvatarImage
-                src={post.author_avatar_url}
-                alt=""
-                pro={post.author_is_pro}
-                className="h-10 w-10 rounded-full border border-[var(--border)] object-cover"
-              />
-            ) : (
-              <div className="grid h-10 w-10 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-sm font-semibold text-[var(--ink-muted)]">
-                {name.charAt(0).toUpperCase()}
-              </div>
-            )}
+            <AvatarBase
+              src={post.author_avatar_url}
+              seed={post.author_username}
+              name={name}
+              pro={post.author_is_pro}
+              className="h-10 w-10 rounded-full border border-[var(--border)] text-sm"
+            />
           </ProfileHoverLink>
 
           <div className="min-w-0 flex-1">

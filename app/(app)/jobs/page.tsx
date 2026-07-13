@@ -10,6 +10,7 @@ import PitchButton from "./PitchButton";
 import SaveJobButton from "@/components/jobs/SaveJobButton";
 import type { JobFitResult } from "./actions";
 import { relAge, isNew } from "./format";
+import AvatarBase from "@/components/ui/Avatar";
 
 const PAGE = 30;
 
@@ -49,11 +50,7 @@ function CompanyLogo({ org, logoUrl }: { org: string; logoUrl: string | null | u
       />
     );
   }
-  return (
-    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--featured-surface)] text-sm font-semibold text-[var(--ink-muted)]">
-      {org.charAt(0).toUpperCase()}
-    </div>
-  );
+  return <AvatarBase seed={org} name={org} className="h-10 w-10 shrink-0 rounded-lg border border-[var(--border)] text-sm" />;
 }
 
 export default async function JobsPage({

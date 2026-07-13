@@ -1,5 +1,5 @@
 import Link from "next/link";
-import AvatarImage from "@/components/ui/AvatarImage";
+import AvatarBase from "@/components/ui/Avatar";
 import UserBadges from "@/components/profile/UserBadges";
 import LocalTime from "@/components/ui/LocalTime";
 import type { ClubMemberProfile } from "./MemberRow";
@@ -36,18 +36,13 @@ export default function AnnouncementBanner({ announcement }: { announcement: Ban
     <div className="card mt-4 p-4">
       <p className="mb-2.5 text-xs font-medium text-[var(--ink-muted)]">Pinned announcement</p>
       <div className="flex items-start gap-3">
-        {author?.avatar_url ? (
-          <AvatarImage
-            src={author.avatar_url}
-            alt=""
-            className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover"
-            pro={author.is_pro}
-          />
-        ) : (
-          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-sm font-semibold text-[var(--ink-muted)]">
-            {name.charAt(0).toUpperCase()}
-          </div>
-        )}
+        <AvatarBase
+          src={author?.avatar_url}
+          seed={author?.username ?? name}
+          name={name}
+          className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] text-sm"
+          pro={author?.is_pro}
+        />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm">
             {author ? (

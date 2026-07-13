@@ -5,7 +5,7 @@ import { useActionState, useRef, useState, useTransition } from "react";
 import { draftProfileText, updateProfile, uploadAvatar, uploadBanner, type AvatarState, type DraftState, type EditState } from "@/app/(app)/profile/edit/actions";
 import { isPro } from "@/lib/pro";
 import { PROFILE_THEME_KEYS, PROFILE_THEMES, isProfileTheme, type ProfileTheme } from "@/lib/themes";
-import AvatarImage from "@/components/ui/AvatarImage";
+import AvatarBase from "@/components/ui/Avatar";
 import ProfileNudgePanel from "@/components/profile/ProfileNudgePanel";
 import SchoolAutocomplete from "@/components/profile/SchoolAutocomplete";
 import Select from "@/components/ui/Select";
@@ -155,18 +155,13 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
 
         {/* Avatar */}
         <div className="mb-6 flex items-center gap-4 border-b border-[var(--border)] pb-6">
-          {avatarUrl ? (
-            <AvatarImage
-              src={avatarUrl}
-              alt=""
-              className="h-16 w-16 shrink-0 rounded-full border border-[var(--border)] object-cover"
-              pro={pro}
-            />
-          ) : (
-            <div className="grid h-16 w-16 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--canvas)] text-xl font-semibold text-[var(--ink-muted)]">
-              {(initial.display_name ?? initial.username).charAt(0).toUpperCase()}
-            </div>
-          )}
+          <AvatarBase
+            src={avatarUrl}
+            seed={initial.username}
+            name={initial.display_name ?? initial.username}
+            className="h-16 w-16 shrink-0 rounded-full border border-[var(--border)] text-xl"
+            pro={pro}
+          />
           <div>
             <label
               id="avatar-upload"

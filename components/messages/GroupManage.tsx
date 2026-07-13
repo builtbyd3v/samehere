@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Menu from "@/components/ui/Menu";
 import Modal from "@/components/ui/Modal";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
-import AvatarImage from "@/components/ui/AvatarImage";
+import AvatarBase from "@/components/ui/Avatar";
 import { menuItemClass, menuDangerClass } from "@/lib/ui/menu-styles";
 import {
   addGroupMember,
@@ -87,18 +87,13 @@ export default function GroupManage({
             const name = m.display_name ?? m.username;
             return (
               <li key={m.id} className="flex items-center gap-2 py-1">
-                {m.avatar_url ? (
-                  <AvatarImage
-                    src={m.avatar_url}
-                    alt=""
-                    pro={m.is_pro}
-                    className="h-8 w-8 shrink-0 rounded-full border border-[var(--border)] object-cover"
-                  />
-                ) : (
-                  <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-xs font-semibold text-[var(--ink-muted)]">
-                    {name.charAt(0).toUpperCase()}
-                  </div>
-                )}
+                <AvatarBase
+                  src={m.avatar_url}
+                  seed={m.username}
+                  name={name}
+                  pro={m.is_pro}
+                  className="h-8 w-8 shrink-0 rounded-full border border-[var(--border)] text-xs"
+                />
                 <span className="min-w-0 flex-1 truncate text-sm text-[var(--ink)]">
                   {name}
                   {m.id === createdBy && (
@@ -129,18 +124,13 @@ export default function GroupManage({
             const name = c.display_name ?? c.username;
             return (
               <li key={c.id} className="flex items-center gap-2 py-1">
-                {c.avatar_url ? (
-                  <AvatarImage
-                    src={c.avatar_url}
-                    alt=""
-                    pro={c.is_pro}
-                    className="h-8 w-8 shrink-0 rounded-full border border-[var(--border)] object-cover"
-                  />
-                ) : (
-                  <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-xs font-semibold text-[var(--ink-muted)]">
-                    {name.charAt(0).toUpperCase()}
-                  </div>
-                )}
+                <AvatarBase
+                  src={c.avatar_url}
+                  seed={c.username}
+                  name={name}
+                  pro={c.is_pro}
+                  className="h-8 w-8 shrink-0 rounded-full border border-[var(--border)] text-xs"
+                />
                 <span className="min-w-0 flex-1 truncate text-sm text-[var(--ink)]">{name}</span>
                 <button
                   type="button"

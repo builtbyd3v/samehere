@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
 import { getBrowserClient } from "@/lib/supabase/client";
-import AvatarImage from "@/components/ui/AvatarImage";
+import AvatarBase from "@/components/ui/Avatar";
 import { unbanMember } from "@/app/(app)/community/clubs/actions";
 
 type BannedProfile = { username: string; display_name: string | null; avatar_url: string | null } | null;
@@ -52,17 +52,12 @@ export default function BannedMembers({ clubId }: { clubId: string }) {
               key={b.user_id}
               className="flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3"
             >
-              {b.user?.avatar_url ? (
-                <AvatarImage
-                  src={b.user.avatar_url}
-                  alt=""
-                  className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover"
-                />
-              ) : (
-                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-sm font-semibold text-[var(--ink-muted)]">
-                  {name.charAt(0).toUpperCase()}
-                </div>
-              )}
+              <AvatarBase
+                src={b.user?.avatar_url}
+                seed={b.user?.username ?? name}
+                name={name}
+                className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] text-sm"
+              />
               <div className="min-w-0 flex-1 text-sm">
                 {b.user ? (
                   <Link href={`/profile/${b.user.username}`} className="font-medium hover:underline">

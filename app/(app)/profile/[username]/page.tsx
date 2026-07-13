@@ -21,7 +21,7 @@ import { fetchPlainReposts } from "@/lib/feed-reposts";
 import { fetchViewerMineState } from "@/lib/feed-engagement";
 import { mergeFeedTimeline } from "@/lib/feed-timeline";
 import UserBadges from "@/components/profile/UserBadges";
-import AvatarImage from "@/components/ui/AvatarImage";
+import AvatarBase from "@/components/ui/Avatar";
 import ContributionHeatmap, { type HeatmapDay } from "@/components/profile/ContributionHeatmap";
 import { isPro } from "@/lib/pro";
 import { PROFILE_THEMES, isProfileTheme, themeCssVars } from "@/lib/themes";
@@ -170,19 +170,14 @@ async function PublicProfileView({ username }: { username: string }) {
           style={{ background: "linear-gradient(120deg, color-mix(in srgb, var(--blue) 14%, var(--surface-card)) 0%, var(--surface-card) 62%)" }}
         />
         <div className="px-5 pb-5 sm:px-6 sm:pb-6">
-          {profile.avatar_url ? (
-            <AvatarImage
-              src={profile.avatar_url}
-              alt=""
-              pro={profile.is_pro}
-              priority
-              className="-mt-12 h-24 w-24 shrink-0 rounded-full border-4 border-[var(--surface-card)] object-cover sm:-mt-14 sm:h-28 sm:w-28"
-            />
-          ) : (
-            <div className="-mt-12 grid h-24 w-24 shrink-0 place-items-center rounded-full border-4 border-[var(--surface-card)] bg-[var(--featured-surface)] text-3xl font-semibold text-[var(--ink-muted)] sm:-mt-14 sm:h-28 sm:w-28">
-              {displayName.charAt(0).toUpperCase()}
-            </div>
-          )}
+          <AvatarBase
+            src={profile.avatar_url}
+            seed={profile.username}
+            name={displayName}
+            pro={profile.is_pro}
+            priority
+            className="-mt-12 h-24 w-24 shrink-0 rounded-full border-4 border-[var(--surface-card)] text-3xl sm:-mt-14 sm:h-28 sm:w-28"
+          />
 
           <div className="mt-3">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
@@ -470,22 +465,14 @@ export default async function ProfilePage({
         <div className="px-5 pb-5 sm:px-6 sm:pb-6">
           {/* avatar pulls up over the banner; primary action sits to its right */}
           <div className="flex items-end justify-between gap-3">
-            {profile.avatar_url ? (
-              <AvatarImage
-                src={profile.avatar_url}
-                alt=""
-                pro={pro}
-                style={accentColor ? { borderColor: accentColor } : undefined}
-                className="-mt-12 h-24 w-24 shrink-0 rounded-full border-4 border-[var(--surface-card)] object-cover sm:-mt-14 sm:h-28 sm:w-28"
-              />
-            ) : (
-              <div
-                style={accentColor ? { borderColor: accentColor } : undefined}
-                className="-mt-12 grid h-24 w-24 shrink-0 place-items-center rounded-full border-4 border-[var(--surface-card)] bg-[var(--featured-surface)] text-3xl font-semibold text-[var(--ink-muted)] sm:-mt-14 sm:h-28 sm:w-28"
-              >
-                {displayName.charAt(0).toUpperCase()}
-              </div>
-            )}
+            <AvatarBase
+              src={profile.avatar_url}
+              seed={profile.username}
+              name={displayName}
+              pro={pro}
+              style={accentColor ? { borderColor: accentColor } : undefined}
+              className="-mt-12 h-24 w-24 shrink-0 rounded-full border-4 border-[var(--surface-card)] text-3xl sm:-mt-14 sm:h-28 sm:w-28"
+            />
 
             {isOwner ? (
               <Link href="/profile/edit" className="btn-ghost shrink-0 !rounded-full !px-4 !py-1.5 text-sm">

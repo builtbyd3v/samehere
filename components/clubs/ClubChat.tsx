@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { getBrowserClient } from "@/lib/supabase/client";
-import AvatarImage from "@/components/ui/AvatarImage";
+import AvatarBase from "@/components/ui/Avatar";
 import UserBadges from "@/components/profile/UserBadges";
 import MessageTime from "@/components/messages/MessageTime";
 import EmptyState from "@/components/ui/EmptyState";
@@ -327,17 +327,14 @@ function ChannelMessages({
                   {!mine &&
                     (grouped ? (
                       <div className="w-7 shrink-0" />
-                    ) : m.sender?.avatar_url ? (
-                      <AvatarImage
-                        src={m.sender.avatar_url}
-                        alt=""
-                        pro={m.sender.is_pro}
-                        className="h-7 w-7 shrink-0 rounded-full border border-[var(--border)] object-cover"
-                      />
                     ) : (
-                      <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-xs font-semibold text-[var(--ink-muted)]">
-                        {name.charAt(0).toUpperCase()}
-                      </div>
+                      <AvatarBase
+                        src={m.sender?.avatar_url}
+                        seed={m.sender?.username ?? name}
+                        name={name}
+                        pro={m.sender?.is_pro}
+                        className="h-7 w-7 shrink-0 rounded-full border border-[var(--border)] text-xs"
+                      />
                     ))}
                   <div className={`flex max-w-[min(82%,24rem)] flex-col ${mine ? "items-end" : "items-start"}`}>
                     {!mine && !grouped && (

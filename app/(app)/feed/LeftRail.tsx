@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getViewer, getViewerProfile, getViewerProfileCounts } from "@/lib/viewer";
 import AvatarImage from "@/components/ui/AvatarImage";
+import AvatarBase from "@/components/ui/Avatar";
 import UserBadges from "@/components/profile/UserBadges";
 import ContributionHeatmap, { type HeatmapDay } from "@/components/profile/ContributionHeatmap";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -8,11 +9,7 @@ import { isPro } from "@/lib/pro";
 import { isProfileTheme, themeCssVars } from "@/lib/themes";
 
 function Initials({ name, className }: { name: string; className: string }) {
-  return (
-    <div className={`grid shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-sm font-semibold text-[var(--ink-muted)] ${className}`}>
-      {name.charAt(0).toUpperCase()}
-    </div>
-  );
+  return <AvatarBase seed={name} name={name} className={`${className} text-sm`} />;
 }
 
 export default async function LeftRail() {

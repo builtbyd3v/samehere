@@ -1,23 +1,17 @@
 import Link from "next/link";
-import AvatarImage from "@/components/ui/AvatarImage";
+import AvatarBase from "@/components/ui/Avatar";
 import MessageTime from "@/components/messages/MessageTime";
 import type { InboxThread } from "@/lib/messages";
 
-function Avatar({ url, name, isPro }: { url: string | null; name: string; isPro: boolean }) {
-  if (url) {
-    return (
-      <AvatarImage
-        src={url}
-        alt=""
-        className="h-10 w-10 shrink-0 rounded-full border border-[var(--border)] object-cover"
-        pro={isPro}
-      />
-    );
-  }
+function Avatar({ url, seed, name, isPro }: { url: string | null; seed: string; name: string; isPro: boolean }) {
   return (
-    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-sm font-semibold text-[var(--ink-muted)]">
-      {name.charAt(0).toUpperCase()}
-    </div>
+    <AvatarBase
+      src={url}
+      seed={seed}
+      name={name}
+      className="h-10 w-10 shrink-0 rounded-full border border-[var(--border)] text-sm"
+      pro={isPro}
+    />
   );
 }
 
@@ -30,7 +24,7 @@ function GroupAvatarStack({ members }: { members: { avatar_url: string | null; u
       <div className="relative h-10 w-10">
         {shown.map((m, i) => (
           <div key={i} className="absolute h-7 w-7 rounded-full ring-2 ring-[var(--surface-card)]" style={{ left: i * 8, top: i === 1 ? 8 : 0, zIndex: shown.length - i }}>
-            <Avatar url={m.avatar_url} name={m.username} isPro={false} />
+            <Avatar url={m.avatar_url} seed={m.username} name={m.username} isPro={false} />
           </div>
         ))}
       </div>
@@ -104,7 +98,7 @@ export default function MessageInboxList({
               href={`/messages/${t.conversation_id}`}
               className="flex items-center gap-3 px-4 py-3.5 transition hover:bg-[var(--featured-surface)]"
             >
-              <Avatar url={t.peer_avatar_url} name={name} isPro={t.peer_is_pro} />
+              <Avatar url={t.peer_avatar_url} seed={t.peer_username} name={name} isPro={t.peer_is_pro} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline justify-between gap-3">
                   <p className={`truncate text-[15px] ${unread ? "font-semibold text-[var(--ink)]" : "font-medium text-[var(--ink)]"}`}>

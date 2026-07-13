@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { getBrowserClient } from "@/lib/supabase/client";
 import UserBadges from "./UserBadges";
-import AvatarImage from "@/components/ui/AvatarImage";
+import AvatarBase from "@/components/ui/Avatar";
 
 export type FollowRequest = {
   follower_id: string;
@@ -38,18 +38,13 @@ export default function FollowRequests({ requests }: { requests: FollowRequest[]
               key={r.follower_id}
               className="flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3"
             >
-              {r.requester?.avatar_url ? (
-                <AvatarImage
-                  src={r.requester.avatar_url}
-                  alt=""
-                  className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover"
-                  pro={r.requester.is_pro}
-                />
-              ) : (
-                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-sm font-semibold text-[var(--ink-muted)]">
-                  {name.charAt(0).toUpperCase()}
-                </div>
-              )}
+              <AvatarBase
+                src={r.requester?.avatar_url}
+                seed={r.requester?.username ?? name}
+                name={name}
+                className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] text-sm"
+                pro={r.requester?.is_pro}
+              />
               <div className="min-w-0 flex-1 text-sm">
                 <div className="flex flex-wrap items-center gap-x-1.5">
                   {r.requester ? (

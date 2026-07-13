@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import AvatarImage from "@/components/ui/AvatarImage";
+import AvatarBase from "@/components/ui/Avatar";
 import LocalTime from "@/components/ui/LocalTime";
 import { IconBolt } from "@/components/icons";
 
@@ -26,14 +26,9 @@ function IconLock() {
   );
 }
 
-function ViewerAvatar({ url, name, ring = false, isPro = false }: { url: string | null; name: string; ring?: boolean; isPro?: boolean }) {
-  const cls = `h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover${ring ? " ring-2 ring-[var(--surface-card)]" : ""}`;
-  if (url) return <AvatarImage src={url} alt="" className={cls} pro={isPro} />;
-  return (
-    <div className={`grid place-items-center bg-[var(--featured-surface)] text-xs font-semibold text-[var(--ink-muted)] ${cls}`}>
-      {name.charAt(0).toUpperCase()}
-    </div>
-  );
+function ViewerAvatar({ url, name, username, ring = false, isPro = false }: { url: string | null; name: string; username: string; ring?: boolean; isPro?: boolean }) {
+  const cls = `h-9 w-9 shrink-0 rounded-full border border-[var(--border)] text-xs${ring ? " ring-2 ring-[var(--surface-card)]" : ""}`;
+  return <AvatarBase src={url} seed={username} name={name} className={cls} pro={isPro} />;
 }
 
 function ViewerRow({ v }: { v: ProfileViewer }) {
@@ -43,7 +38,7 @@ function ViewerRow({ v }: { v: ProfileViewer }) {
       href={`/profile/${v.username}`}
       className="-mx-2 flex items-center gap-3 rounded-lg px-2 py-2 transition hover:bg-[var(--featured-surface)]"
     >
-      <ViewerAvatar url={v.avatar_url} name={name} isPro={v.is_pro} />
+      <ViewerAvatar url={v.avatar_url} name={name} username={v.username} isPro={v.is_pro} />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-[var(--ink)]">{name}</p>
         <p className="truncate text-xs text-[var(--ink-muted)]">@{v.username}</p>
@@ -163,7 +158,7 @@ export default function ProfileViewers({
         {preview.length > 0 && (
           <div className="flex shrink-0 -space-x-2.5">
             {preview.map((v) => (
-              <ViewerAvatar key={v.id} url={v.avatar_url} name={v.display_name ?? v.username} ring isPro={v.is_pro} />
+              <ViewerAvatar key={v.id} url={v.avatar_url} name={v.display_name ?? v.username} username={v.username} ring isPro={v.is_pro} />
             ))}
           </div>
         )}

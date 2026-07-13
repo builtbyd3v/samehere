@@ -1,4 +1,5 @@
 import Image from "next/image";
+import AvatarBase from "@/components/ui/Avatar";
 
 // Clubs have no per-club "pro" concept (unlike profile avatars), so this is a
 // plain next/image render, not AvatarImage's animated-pause branch — nothing
@@ -7,10 +8,14 @@ import Image from "next/image";
 export default function ClubAvatar({
   url,
   name,
+  seed,
   className = "h-10 w-10",
 }: {
   url: string | null;
   name: string;
+  // Stable identity for the fallback color (slug). Falls back to name when a
+  // caller has no slug -- clubs rarely rename, so name is an acceptable seed.
+  seed?: string;
   className?: string;
 }) {
   if (url) {
@@ -26,10 +31,11 @@ export default function ClubAvatar({
   }
 
   return (
-    <div
-      className={`${className} grid shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-sm font-semibold text-[var(--ink-muted)]`}
-    >
-      {name.charAt(0).toUpperCase()}
-    </div>
+    <AvatarBase
+      src={null}
+      seed={seed ?? name}
+      name={name}
+      className={`${className} shrink-0 rounded-full border border-[var(--border)] text-sm`}
+    />
   );
 }

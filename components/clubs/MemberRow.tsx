@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import AvatarImage from "@/components/ui/AvatarImage";
+import AvatarBase from "@/components/ui/Avatar";
 import UserBadges from "@/components/profile/UserBadges";
 import RoleControls from "./RoleControls";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
@@ -87,18 +87,13 @@ export default function MemberRow({
 
   return (
     <div className="flex flex-wrap items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3">
-      {profile?.avatar_url ? (
-        <AvatarImage
-          src={profile.avatar_url}
-          alt=""
-          className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover"
-          pro={profile.is_pro}
-        />
-      ) : (
-        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-sm font-semibold text-[var(--ink-muted)]">
-          {name.charAt(0).toUpperCase()}
-        </div>
-      )}
+      <AvatarBase
+        src={profile?.avatar_url}
+        seed={profile?.username ?? name}
+        name={name}
+        className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] text-sm"
+        pro={profile?.is_pro}
+      />
       <div className="min-w-0 flex-1 text-sm">
         <div className="flex flex-wrap items-center gap-x-1.5">
           {profile ? (

@@ -6,7 +6,7 @@ import posthog from "posthog-js";
 import { uploadAvatar, type AvatarState, type EditState } from "@/app/(app)/profile/edit/actions";
 import { createPost, type ComposerState } from "@/app/(app)/feed/actions";
 import { saveOnboardingBasics, finishOnboarding, getOnboardingMatches, addOnboardingExperience, type OnboardingMatch, type ExperienceState } from "@/app/(app)/onboarding/actions";
-import AvatarImage from "@/components/ui/AvatarImage";
+import AvatarBase from "@/components/ui/Avatar";
 import SchoolAutocomplete from "@/components/profile/SchoolAutocomplete";
 import UserBadges from "@/components/profile/UserBadges";
 import FollowButton from "@/components/profile/FollowButton";
@@ -186,17 +186,12 @@ export default function OnboardingWizard({
               </p>
             )}
             <div className="mb-6 flex items-center gap-4 border-b border-[var(--border)] pb-6">
-              {avatarUrl ? (
-                <AvatarImage
-                  src={avatarUrl}
-                  alt=""
-                  className="h-16 w-16 shrink-0 rounded-full border border-[var(--border)] object-cover"
-                />
-              ) : (
-                <div className="grid h-16 w-16 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--canvas)] text-xl font-semibold text-[var(--ink-muted)]">
-                  {(profile.display_name ?? profile.username).charAt(0).toUpperCase()}
-                </div>
-              )}
+              <AvatarBase
+                src={avatarUrl}
+                seed={profile.username}
+                name={profile.display_name ?? profile.username}
+                className="h-16 w-16 shrink-0 rounded-full border border-[var(--border)] text-xl"
+              />
               <div>
                 <label className="btn-ghost inline-flex cursor-pointer !py-1.5 text-sm">
                   <input type="file" accept="image/*" onChange={onAvatar} disabled={avatarBusy} className="hidden" />
@@ -365,18 +360,13 @@ export default function OnboardingWizard({
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       transition={{ type: "spring", stiffness: 100, damping: 20, delay: 0.08 * i }}
                     >
-                      {m.avatar_url ? (
-                        <AvatarImage
-                          src={m.avatar_url}
-                          alt=""
-                          className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover"
-                          pro={m.is_pro}
-                        />
-                      ) : (
-                        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-sm font-semibold text-[var(--ink-muted)]">
-                          {name.charAt(0).toUpperCase()}
-                        </div>
-                      )}
+                      <AvatarBase
+                        src={m.avatar_url}
+                        seed={m.username}
+                        name={name}
+                        className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] text-sm"
+                        pro={m.is_pro}
+                      />
                       <div className="min-w-0 flex-1 text-sm">
                         <div className="flex flex-wrap items-center gap-x-1.5">
                           <span className="font-medium">{name}</span>

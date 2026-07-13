@@ -1,5 +1,5 @@
 import Link from "next/link";
-import AvatarImage from "@/components/ui/AvatarImage";
+import AvatarBase from "@/components/ui/Avatar";
 import UserBadges from "@/components/profile/UserBadges";
 import type { ProfilePreview } from "@/lib/profile-preview";
 
@@ -32,18 +32,13 @@ export default function ProfilePreviewCard({
   const inner = (
     <>
       <div className="flex gap-3">
-        {profile.avatar_url ? (
-          <AvatarImage
-            src={profile.avatar_url}
-            alt=""
-            className="h-12 w-12 shrink-0 rounded-full border border-[var(--border)] object-cover"
-            pro={profile.is_pro}
-          />
-        ) : (
-          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-sm font-semibold text-[var(--ink-muted)]">
-            {name.charAt(0).toUpperCase()}
-          </div>
-        )}
+        <AvatarBase
+          src={profile.avatar_url}
+          seed={profile.username}
+          name={name}
+          className="h-12 w-12 shrink-0 rounded-full border border-[var(--border)] text-sm"
+          pro={profile.is_pro}
+        />
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-x-1.5">
             <span className="font-semibold text-[var(--ink)]">{name}</span>

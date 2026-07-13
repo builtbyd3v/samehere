@@ -1,6 +1,6 @@
 "use client";
 
-import AvatarImage from "@/components/ui/AvatarImage";
+import AvatarBase from "@/components/ui/Avatar";
 import UserBadges from "@/components/profile/UserBadges";
 import type { MentionSuggestion } from "@/lib/profile-preview";
 
@@ -32,18 +32,13 @@ export default function MentionSuggestionList({
                 i === highlight ? "bg-[var(--featured-surface)]" : "hover:bg-[var(--featured-surface)]"
               }`}
             >
-              {s.avatar_url ? (
-                <AvatarImage
-                  src={s.avatar_url}
-                  alt=""
-                  className="h-8 w-8 shrink-0 rounded-full border border-[var(--border)] object-cover"
-                  pro={s.is_pro}
-                />
-              ) : (
-                <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-xs font-semibold text-[var(--ink-muted)]">
-                  {name.charAt(0).toUpperCase()}
-                </div>
-              )}
+              <AvatarBase
+                src={s.avatar_url}
+                seed={s.username}
+                name={name}
+                className="h-8 w-8 shrink-0 rounded-full border border-[var(--border)] text-xs"
+                pro={s.is_pro}
+              />
               <span className="min-w-0 flex-1">
                 <span className="flex flex-wrap items-center gap-x-1 font-medium text-[var(--ink)]">
                   {name}

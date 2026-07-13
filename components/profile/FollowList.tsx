@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import AvatarImage from "@/components/ui/AvatarImage";
+import AvatarBase from "@/components/ui/Avatar";
 import UserBadges from "@/components/profile/UserBadges";
 import FollowButton, { type FollowState } from "@/components/profile/FollowButton";
 
@@ -123,18 +123,13 @@ export default async function FollowList({
                 className="cascade-up flex items-center gap-3 px-5 py-3"
                 style={{ "--delay": `${i * 40}ms` } as React.CSSProperties}
               >
-                {row.avatar_url ? (
-                  <AvatarImage
-                    src={row.avatar_url}
-                    alt=""
-                    pro={row.is_pro}
-                    className="h-11 w-11 shrink-0 rounded-full border border-[var(--border)] object-cover"
-                  />
-                ) : (
-                  <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-sm font-semibold text-[var(--ink-muted)]">
-                    {rowName.charAt(0).toUpperCase()}
-                  </div>
-                )}
+                <AvatarBase
+                  src={row.avatar_url}
+                  seed={row.username}
+                  name={rowName}
+                  pro={row.is_pro}
+                  className="h-11 w-11 shrink-0 rounded-full border border-[var(--border)] text-sm"
+                />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-x-1.5">
                     <Link href={`/profile/${row.username}`} className="truncate font-medium hover:underline">

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import AvatarImage from "@/components/ui/AvatarImage";
+import AvatarBase from "@/components/ui/Avatar";
 import UserBadges from "@/components/profile/UserBadges";
 import FollowButton from "@/components/profile/FollowButton";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -40,18 +40,13 @@ function SuggestedCard({
       className="cascade-up flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3"
       style={{ "--delay": `${i * 80}ms` } as React.CSSProperties}
     >
-      {s.avatar_url ? (
-        <AvatarImage
-          src={s.avatar_url}
-          alt=""
-          className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover"
-          pro={s.is_pro}
-        />
-      ) : (
-        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-sm font-semibold text-[var(--ink-muted)]">
-          {name.charAt(0).toUpperCase()}
-        </div>
-      )}
+      <AvatarBase
+        src={s.avatar_url}
+        seed={s.username}
+        name={name}
+        className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] text-sm"
+        pro={s.is_pro}
+      />
       <div className="min-w-0 flex-1 text-sm">
         <div className="flex flex-wrap items-center gap-x-1.5">
           <Link href={`/profile/${s.username}`} className="font-medium hover:underline">

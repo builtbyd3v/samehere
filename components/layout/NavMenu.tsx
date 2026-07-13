@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import posthog from "posthog-js";
 import Menu, { useMenuClose } from "@/components/ui/Menu";
-import AvatarImage from "@/components/ui/AvatarImage";
+import AvatarBase from "@/components/ui/Avatar";
 import { FeedbackModal } from "@/components/feedback/FeedbackButton";
 import { signOut } from "@/app/(auth)/actions";
 
@@ -91,13 +91,7 @@ export default function NavMenu({
         align="end"
         variant="avatar"
         trigger={
-          avatarUrl ? (
-            <AvatarImage src={avatarUrl} alt="" className="h-full w-full object-cover" pro={isPro} />
-          ) : (
-            <span className="grid h-full w-full place-items-center bg-[var(--featured-surface)] text-xs font-semibold text-[var(--ink-muted)]">
-              {username.charAt(0).toUpperCase()}
-            </span>
-          )
+          <AvatarBase src={avatarUrl} seed={username} name={username} className="h-full w-full text-xs" pro={isPro} />
         }
       >
         <MenuItems isAdmin={isAdmin} onFeedback={() => setFeedbackOpen(true)} />

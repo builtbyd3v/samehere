@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getCachedLeaderboard, getPeersLeaderboard } from "@/lib/leaderboard";
-import AvatarImage from "@/components/ui/AvatarImage";
+import AvatarBase from "@/components/ui/Avatar";
 import UserBadges from "@/components/profile/UserBadges";
 import EmptyState from "@/components/ui/EmptyState";
 
@@ -89,18 +89,13 @@ export default async function LeaderboardTab({ scope: rawScope }: { scope?: stri
                     >
                       {row.rank}
                     </span>
-                    {row.avatar_url ? (
-                      <AvatarImage
-                        src={row.avatar_url}
-                        alt=""
-                        className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover"
-                        pro={row.is_pro ?? false}
-                      />
-                    ) : (
-                      <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-sm font-semibold text-[var(--ink-muted)]">
-                        {name.charAt(0).toUpperCase()}
-                      </div>
-                    )}
+                    <AvatarBase
+                      src={row.avatar_url}
+                      seed={row.username}
+                      name={name}
+                      className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] text-sm"
+                      pro={row.is_pro ?? false}
+                    />
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-x-1.5">
                         <span className="truncate font-medium text-[var(--ink)]">{name}</span>

@@ -6,7 +6,7 @@ import PrivacyForm from "@/components/settings/PrivacyForm";
 import ChangePasswordForm from "@/components/settings/ChangePasswordForm";
 import UsernameForm from "@/components/settings/UsernameForm";
 import DeleteAccountSection from "@/components/settings/DeleteAccountSection";
-import AvatarImage from "@/components/ui/AvatarImage";
+import AvatarBase from "@/components/ui/Avatar";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import StudentVerification from "@/components/settings/StudentVerification";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -50,13 +50,7 @@ async function BlockedUsers({ userId }: { userId: string }) {
         const name = b.blocked?.display_name ?? b.blocked?.username ?? "Unknown";
         return (
           <li key={b.blocked_id} className="flex items-center gap-3 rounded-lg border border-[var(--border)] p-3 transition hover:border-[var(--border-strong)]">
-            {b.blocked?.avatar_url ? (
-              <AvatarImage src={b.blocked.avatar_url} alt="" className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover" pro={b.blocked.is_pro ?? false} />
-            ) : (
-              <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--canvas)] text-sm font-semibold text-[var(--ink-muted)]">
-                {name.charAt(0).toUpperCase()}
-              </div>
-            )}
+            <AvatarBase src={b.blocked?.avatar_url ?? null} seed={b.blocked?.username ?? name} name={name} className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] text-sm" pro={b.blocked?.is_pro ?? false} />
             <div className="min-w-0 flex-1 text-sm text-[var(--ink)]">
               {b.blocked ? (
                 <Link href={`/profile/${b.blocked.username}`} className="font-medium hover:underline">{name}</Link>
