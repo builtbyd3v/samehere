@@ -30,7 +30,7 @@ export default function HeatmapProof() {
             ))}
           </h2>
           <motion.p
-            className="mt-5 max-w-[42ch] text-base leading-relaxed text-[var(--ink-muted)]"
+            className="mt-5 max-w-[42ch] text-pretty text-base leading-relaxed text-[var(--ink-muted)]"
             initial={reduce ? undefined : { opacity: 0, y: 16 }}
             whileInView={reduce ? undefined : { opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-10%" }}

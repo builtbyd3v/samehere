@@ -54,7 +54,7 @@ export default function Pricing() {
         ))}
       </h2>
       <motion.p
-        className="mt-4 max-w-[48ch] text-base leading-relaxed text-[var(--ink-muted)]"
+        className="mt-4 max-w-[48ch] text-pretty text-base leading-relaxed text-[var(--ink-muted)]"
         initial={reduce ? undefined : { opacity: 0, y: 16 }}
         whileInView={reduce ? undefined : { opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-10%" }}

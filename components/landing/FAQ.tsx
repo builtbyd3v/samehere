@@ -37,7 +37,7 @@ export default function FAQ() {
                 +
               </span>
             </summary>
-            <p className="mt-3 text-base leading-relaxed text-[var(--ink-muted)]">
+            <p className="mt-3 text-pretty text-base leading-relaxed text-[var(--ink-muted)]">
               {a}
               {q === "What is Pro?" && (
                 <>

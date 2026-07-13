@@ -47,7 +47,7 @@ export default function Hero() {
         </h1>
 
         <p
-          className="cascade-up mt-5 max-w-[52ch] text-base leading-relaxed text-[var(--ink-muted)] md:text-lg"
+          className="cascade-up mt-5 max-w-[52ch] text-balance text-base leading-relaxed text-[var(--ink-muted)] md:text-lg"
           style={{ ["--delay" as string]: "0.42s" }}
         >
           One AI-native network for students. Post what&apos;s real, find who gets it, land what&apos;s next.
