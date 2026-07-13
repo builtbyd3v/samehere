@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, useReducedMotion, AnimatePresence } from "motion/react";
 import DemoAvatar from "./DemoAvatar";
 import AiTag from "./AiTag";
+import { useIsMobile } from "@/lib/landing/useIsMobile";
 
 type Match = { name: string; school: string; avatarSeed: string; why: string };
 
@@ -42,7 +43,7 @@ function MatchCard({ m, i }: { m: Match; i: number }) {
   const s = SCATTER[i % SCATTER.length];
   return (
     <motion.div
-      className="match-card w-full max-w-[280px] rounded-2xl border border-[var(--border-strong)] bg-[var(--surface-raised)] p-4 shadow-paper sm:w-[220px]"
+      className="match-card w-full max-w-[280px] rounded-2xl border border-[var(--border-strong)] bg-[var(--surface-raised)] p-4 shadow-paper md:w-[220px]"
       style={{ rotate: s.rotate }}
       initial={{ opacity: 0, y: 28 + s.y, scale: 0.88, rotate: 0 }}
       animate={{ opacity: 1, y: s.y, scale: 1, rotate: s.rotate }}
@@ -66,15 +67,20 @@ function MatchCard({ m, i }: { m: Match; i: number }) {
 
 export default function HeroSearchDemo() {
   const reduce = useReducedMotion();
+  // Mobile: skip the typing/cycling loop entirely — a compact static stack
+  // reads better than a demo that flickers blank between cycles on a phone.
+  const isMobile = useIsMobile();
+  const staticMode = reduce || isMobile;
+
   const [qi, setQi] = useState(0);
-  const [typed, setTyped] = useState(reduce ? QUERIES[0].text : "");
-  const [showMatches, setShowMatches] = useState(!!reduce);
+  const [typed, setTyped] = useState(staticMode ? QUERIES[0].text : "");
+  const [showMatches, setShowMatches] = useState(!!staticMode);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const query = QUERIES[qi];
 
   useEffect(() => {
-    if (reduce) return; // static completed state, no loop
+    if (staticMode) return; // static completed state (set in initial state), no loop
 
     timers.current.forEach(clearTimeout);
     timers.current = [];
@@ -108,9 +114,10 @@ export default function HeroSearchDemo() {
 
     return () => timers.current.forEach(clearTimeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [qi, reduce]);
+  }, [qi, staticMode]);
 
-  const matches = useMemo(() => query.matches, [query]);
+  // Mobile stays on the first query, compact (2 cards) — no cycling.
+  const matches = useMemo(() => (isMobile ? query.matches.slice(0, 2) : query.matches), [query, isMobile]);
 
   return (
     <div aria-hidden className="mx-auto w-full max-w-[640px]">
@@ -125,12 +132,12 @@ export default function HeroSearchDemo() {
         </p>
       </div>
 
-      <div className="mt-8 flex min-h-[190px] flex-col items-center justify-start gap-3 sm:min-h-[210px] sm:flex-row sm:items-start sm:justify-center sm:gap-5">
+      <div className="mt-6 flex flex-col items-center justify-start gap-3 sm:mt-8 md:min-h-[210px] md:flex-row md:items-start md:justify-center md:gap-5">
         <AnimatePresence mode="wait">
           {showMatches && (
             <motion.div
               key={qi}
-              className="flex w-full flex-col items-center gap-3 sm:flex-row sm:items-start sm:justify-center sm:gap-5"
+              className="flex w-full flex-col items-center gap-3 md:flex-row md:items-start md:justify-center md:gap-5"
               exit={{ opacity: 0, transition: { duration: 0.3 } }}
             >
               {matches.map((m, i) => (

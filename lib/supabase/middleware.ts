@@ -74,6 +74,10 @@ export async function updateSession(request: NextRequest) {
     path === '/api/cron/eve' ||
     path === '/api/cron/jobs-ingest' ||
     path === '/api/email/unsubscribe' ||
+    // PostHog reverse proxy (next.config.ts rewrites /ingest/* to PostHog).
+    // Without this, ANON analytics 307 to /signup and the logged-out funnel
+    // (landing -> signup) is silently lost. Pure pass-through, no auth needed.
+    path.startsWith('/ingest') ||
     isMetadataImage ||
     isPublicProfile ||
     isPublicPost ||

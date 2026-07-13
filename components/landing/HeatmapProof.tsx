@@ -13,7 +13,7 @@ export default function HeatmapProof() {
 
   return (
     <section className="mx-auto max-w-[1200px] px-5 py-24">
-      <div className="grid items-center gap-10 md:grid-cols-[0.85fr_1.15fr] md:gap-14">
+      <div className="grid grid-cols-1 items-center gap-10 md:grid-cols-[0.85fr_1.15fr] md:gap-14">
         <div>
           <h2 className="text-balance text-[32px] font-semibold leading-[1.12] tracking-[-0.03em] sm:text-[42px] md:text-[46px] md:tracking-[-0.04em]">
             {HEADLINE.map((w, i) => (

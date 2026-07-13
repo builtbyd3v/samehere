@@ -6,6 +6,7 @@ import { IconSame } from "@/components/icons";
 import DemoAvatar from "./DemoAvatar";
 import AiTag from "./AiTag";
 import { HERO_PEERS } from "@/lib/landing/demo-data";
+import { useIsMobile } from "@/lib/landing/useIsMobile";
 
 // Column post cards — reuses the hero-peer identities/lines (already written
 // as real-feeling, vulnerable student posts) as the "wall of the feed" feed.
@@ -159,27 +160,48 @@ function ScrubbedWall() {
 }
 
 function StaticWall() {
-  const peers = HERO_PEERS.slice(0, 6);
+  const reduce = useReducedMotion();
+  // Mobile/reduced-motion variant: 3-4 readable cards, no pin/parallax.
+  const peers = HERO_PEERS.slice(0, 3);
   return (
-    <section id="how" className="scroll-mt-[5.5rem] mx-auto max-w-[1200px] px-5 py-20 text-center">
-      <p className="mx-auto max-w-[600px] text-balance text-[32px] font-semibold leading-[1.15] tracking-[-0.03em] sm:text-[44px]">
+    <section id="how" className="scroll-mt-[5.5rem] mx-auto max-w-[1200px] px-5 py-16 text-center sm:py-20">
+      <p className="mx-auto max-w-[600px] text-balance text-[28px] font-semibold leading-[1.15] tracking-[-0.03em] sm:text-[44px]">
         A real feed. <span className="font-display italic text-[var(--blue)]">Real</span> students.{" "}
         <span className="inline-flex items-center gap-2 align-middle">
-          <IconSame on className="h-8 w-8 text-[var(--blue)]" />
+          <IconSame on className="h-7 w-7 text-[var(--blue)] sm:h-8 sm:w-8" />
           Say <span className="font-display italic text-[var(--blue)]">same here</span>.
         </span>
       </p>
-      <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <DmMomentCard />
+      <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3">
+        <motion.div
+          initial={reduce ? undefined : { opacity: 0, y: 20 }}
+          whileInView={reduce ? undefined : { opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-10%" }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <DmMomentCard />
+        </motion.div>
         {peers.map((peer, i) => (
-          <PostCard key={peer.username} peer={peer} icebreaker={i === 0} />
+          <motion.div
+            key={peer.username}
+            initial={reduce ? undefined : { opacity: 0, y: 20 }}
+            whileInView={reduce ? undefined : { opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-10%" }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1], delay: (i + 1) * 0.08 }}
+          >
+            <PostCard peer={peer} icebreaker={i === 0} />
+          </motion.div>
         ))}
       </div>
     </section>
   );
 }
 
+// Below md, the sticky/pin scroll-scrub wall (h-[240vh], hardcoded 3 columns)
+// never fits a phone viewport — it leaves a huge blank pinned stretch and
+// microscopic unreadable cards. Swap to the static single-column variant.
 export default function ProofWall() {
   const reduce = useReducedMotion();
-  return reduce ? <StaticWall /> : <ScrubbedWall />;
+  const isMobile = useIsMobile();
+  return reduce || isMobile ? <StaticWall /> : <ScrubbedWall />;
 }
