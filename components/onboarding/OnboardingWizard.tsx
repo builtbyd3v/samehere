@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState, useTransition, type ReactNode } from "react";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { uploadAvatar, type AvatarState, type EditState } from "@/app/(app)/profile/edit/actions";
 import { createPost, type ComposerState } from "@/app/(app)/feed/actions";
 import { saveOnboardingBasics, finishOnboarding, getOnboardingMatches, addOnboardingExperience, type OnboardingMatch, type ExperienceState } from "@/app/(app)/onboarding/actions";
@@ -8,6 +9,8 @@ import AvatarImage from "@/components/ui/AvatarImage";
 import SchoolAutocomplete from "@/components/profile/SchoolAutocomplete";
 import UserBadges from "@/components/profile/UserBadges";
 import FollowButton from "@/components/profile/FollowButton";
+import { Skeleton } from "@/components/ui/Skeleton";
+import Select from "@/components/ui/Select";
 
 export type OnboardingProfile = {
   username: string;
@@ -27,6 +30,13 @@ const YEARS: [string, string][] = [
   ["senior", "Senior"],
   ["grad", "Grad student"],
 ];
+const YEAR_OPTIONS = YEARS.map(([value, label]) => ({ value, label }));
+const KIND_OPTIONS = [
+  { value: "internship", label: "Internship" },
+  { value: "job", label: "Job" },
+  { value: "research", label: "Research" },
+  { value: "club_role", label: "Club role" },
+];
 
 const label = "block text-sm font-medium text-[var(--ink)]";
 const field = "input-base mt-1.5";
@@ -45,6 +55,7 @@ export default function OnboardingWizard({
   followStep: ReactNode;
 }) {
   const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
+  const reduce = useReducedMotion();
 
   // Avatar upload has no redirect in its own action, so it's called directly
   // (same pattern as EditProfileForm) — no wrapper needed.
@@ -92,6 +103,9 @@ export default function OnboardingWizard({
   const [matchesPending, startMatches] = useTransition();
 
   function advanceToMatches() {
+    // Step advances immediately so the skeleton rows below render for the
+    // actual fetch latency, then real matches spring in when they land.
+    setStep(5);
     startMatches(async () => {
       const results = await getOnboardingMatches();
       if (results.length === 0) {
@@ -99,7 +113,6 @@ export default function OnboardingWizard({
         return;
       }
       setMatches(results);
-      setStep(5);
     });
   }
 
@@ -134,9 +147,15 @@ export default function OnboardingWizard({
   return (
     <main className="mx-auto max-w-xl px-5 py-10">
       <div className="mb-6 flex items-center justify-between">
-        <div>
+        <div className="flex-1">
           <h1 className="text-2xl font-semibold tracking-[-0.02em]">Welcome to samehere</h1>
           <p className="mt-1 text-sm text-[var(--ink-muted)]">Step {step} of 5</p>
+          <div className="mt-2 h-1 w-40 overflow-hidden rounded-full bg-[var(--featured-surface)]">
+            <div
+              className="h-full rounded-full bg-[var(--blue)] transition-[width] duration-[400ms] ease-out"
+              style={{ width: `${(step / 5) * 100}%` }}
+            />
+          </div>
         </div>
         <button
           type="button"
@@ -148,7 +167,15 @@ export default function OnboardingWizard({
         </button>
       </div>
 
-      <div key={step} className="card animate-[modal-in_200ms_var(--ease-out)] p-6 motion-reduce:animate-none">
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={step}
+          className="card p-6"
+          initial={reduce ? undefined : { opacity: 0, x: 24 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={reduce ? undefined : { opacity: 0, x: -24 }}
+          transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+        >
         {step === 1 && (
           <form onSubmit={onSubmitBasics}>
             {basicsError && (
@@ -192,10 +219,14 @@ export default function OnboardingWizard({
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="year" className={label}>Year</label>
-                  <select id="year" name="year" defaultValue={profile.year ?? ""} className={field}>
-                    {YEARS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                  </select>
+                  <label className={label}>Year</label>
+                  <Select
+                    options={YEAR_OPTIONS}
+                    name="year"
+                    defaultValue={profile.year ?? ""}
+                    ariaLabel="Year"
+                    className="mt-1.5 w-full"
+                  />
                 </div>
                 <div>
                   <label htmlFor="major" className={label}>Major</label>
@@ -268,13 +299,14 @@ export default function OnboardingWizard({
             {expError && <p role="alert" className="mb-3 text-sm text-[var(--danger)]">{expError}</p>}
             <div className="flex flex-col gap-4">
               <div>
-                <label htmlFor="kind" className={label}>Type</label>
-                <select id="kind" name="kind" defaultValue="internship" className={field}>
-                  <option value="internship">Internship</option>
-                  <option value="job">Job</option>
-                  <option value="research">Research</option>
-                  <option value="club_role">Club role</option>
-                </select>
+                <label className={label}>Type</label>
+                <Select
+                  options={KIND_OPTIONS}
+                  name="kind"
+                  defaultValue="internship"
+                  ariaLabel="Type"
+                  className="mt-1.5 w-full"
+                />
               </div>
               <div>
                 <label htmlFor="org" className={label}>Where</label>
@@ -302,39 +334,70 @@ export default function OnboardingWizard({
 
         {step === 5 && (
           <div>
-            <h2 className="mb-1 text-lg font-semibold">Your first matches</h2>
+            <h2 className="mb-1 text-lg font-semibold">
+              People already on your <span className="font-display italic text-[var(--blue)]">path</span>.
+            </h2>
             <p className="mb-4 text-sm text-[var(--ink-muted)]">Students who fit what you&apos;re into, picked for you.</p>
-            <div className="flex flex-col gap-2">
-              {matches.map((m) => {
-                const name = m.display_name ?? m.username;
-                const line = [m.year, m.major].filter(Boolean).join(" · ");
-                return (
-                  <div key={m.id} className="flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3">
-                    {m.avatar_url ? (
-                      <AvatarImage
-                        src={m.avatar_url}
-                        alt=""
-                        className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover"
-                        pro={m.is_pro}
-                      />
-                    ) : (
-                      <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-sm font-semibold text-[var(--ink-muted)]">
-                        {name.charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                    <div className="min-w-0 flex-1 text-sm">
-                      <div className="flex flex-wrap items-center gap-x-1.5">
-                        <span className="font-medium">{name}</span>
-                        <UserBadges isPro={m.is_pro} isFounder={m.is_founder} isCampusFounder={m.is_campus_founder} isVerifiedStudent={m.verified_student} />
-                      </div>
-                      {line && <p className="text-[var(--ink-muted)]">{line}</p>}
-                      {m.reason && <p className="mt-0.5 text-xs text-[var(--ink-muted)]">{m.reason}</p>}
+            {matchesPending ? (
+              <div className="flex flex-col gap-2">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3">
+                    <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
+                    <div className="min-w-0 flex-1 space-y-1.5">
+                      <Skeleton className="h-3.5 w-28" />
+                      <Skeleton className="h-3 w-40" />
                     </div>
-                    <FollowButton targetId={m.id} initial="none" />
                   </div>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {matches.map((m, i) => {
+                  const name = m.display_name ?? m.username;
+                  const line = [m.year, m.major].filter(Boolean).join(" · ");
+                  return (
+                    <motion.div
+                      key={m.id}
+                      className="flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3"
+                      initial={reduce ? undefined : { opacity: 0, y: 28, scale: 0.88 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ type: "spring", stiffness: 100, damping: 20, delay: 0.08 * i }}
+                    >
+                      {m.avatar_url ? (
+                        <AvatarImage
+                          src={m.avatar_url}
+                          alt=""
+                          className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover"
+                          pro={m.is_pro}
+                        />
+                      ) : (
+                        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-sm font-semibold text-[var(--ink-muted)]">
+                          {name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1 text-sm">
+                        <div className="flex flex-wrap items-center gap-x-1.5">
+                          <span className="font-medium">{name}</span>
+                          <UserBadges isPro={m.is_pro} isFounder={m.is_founder} isCampusFounder={m.is_campus_founder} isVerifiedStudent={m.verified_student} />
+                        </div>
+                        {line && <p className="text-[var(--ink-muted)]">{line}</p>}
+                        {m.reason && (
+                          <motion.p
+                            className="mt-0.5 text-xs text-[var(--ink-muted)]"
+                            initial={reduce ? undefined : { opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.08 * i + 0.25, duration: 0.4 }}
+                          >
+                            {m.reason}
+                          </motion.p>
+                        )}
+                      </div>
+                      <FollowButton targetId={m.id} initial="none" />
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
             <div className="mt-6 flex items-center justify-between">
               <button type="button" onClick={onFinish} disabled={finishing} className="text-sm text-[var(--ink-muted)] underline disabled:opacity-50">
                 Skip
@@ -345,7 +408,8 @@ export default function OnboardingWizard({
             </div>
           </div>
         )}
-      </div>
+        </motion.div>
+      </AnimatePresence>
     </main>
   );
 }

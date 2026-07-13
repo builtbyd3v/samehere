@@ -2,6 +2,12 @@
 
 import { useActionState } from "react";
 import { updatePrivacy, type PrivacyState } from "@/app/(app)/settings/actions";
+import Select from "@/components/ui/Select";
+
+const HEATMAP_OPTIONS = [
+  { value: "public", label: "Everyone" },
+  { value: "followers", label: "Followers only" },
+];
 
 const label = "block text-sm font-medium text-[var(--ink)]";
 const field = "input-base mt-1.5";
@@ -43,12 +49,14 @@ export default function PrivacyForm({ initial }: { initial: PrivacyInitial }) {
         <span>Daily unread-activity email <span className="text-[var(--ink-muted)]">, only sent when you have something unread</span></span>
       </label>
       <div>
-        <label htmlFor="heatmap_visibility" className={label}>Heatmap visibility</label>
-        <select id="heatmap_visibility" name="heatmap_visibility"
-          defaultValue={initial.heatmap_visibility} className={field}>
-          <option value="public">Everyone</option>
-          <option value="followers">Followers only</option>
-        </select>
+        <label className={label}>Heatmap visibility</label>
+        <Select
+          options={HEATMAP_OPTIONS}
+          name="heatmap_visibility"
+          defaultValue={initial.heatmap_visibility}
+          ariaLabel="Heatmap visibility"
+          className="mt-1.5 w-full"
+        />
       </div>
 
       <button type="submit" disabled={pending} className="btn-primary w-full">

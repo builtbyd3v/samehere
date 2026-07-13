@@ -547,7 +547,10 @@ export default async function ProfilePage({
 
       {/* Identity canvas — activity, goals as tactile tiles */}
       {(canSeeHeatmap || profile.goals) && (
-        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div
+          className="cascade-up mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2"
+          style={{ "--delay": "80ms" } as React.CSSProperties}
+        >
           {canSeeHeatmap && (
             <Suspense
               fallback={
@@ -575,17 +578,24 @@ export default async function ProfilePage({
       {/* Experience — same visibility as bio (no privacy tier, mirrors the
           experiences RLS "any signed-in user reads" policy). */}
       {experiences.length > 0 && (
-        <section className="card card-hover mt-3 p-5 shadow-paper sm:p-6">
+        <section
+          className="card card-hover cascade-up mt-4 p-5 shadow-paper sm:p-6"
+          style={{ "--delay": "160ms" } as React.CSSProperties}
+        >
           <h2 className="text-sm font-semibold text-[var(--ink)]">Experience</h2>
-          <ul className="mt-3 flex flex-col gap-3">
-            {experiences.map((exp) => (
-              <li key={exp.id}>
-                <p className="text-sm font-medium text-[var(--ink)]">
+          <ul className="mt-3 flex flex-col gap-2">
+            {experiences.map((exp, i) => (
+              <li
+                key={exp.id}
+                className="cascade-up rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3"
+                style={{ "--delay": `${i * 60}ms` } as React.CSSProperties}
+              >
+                <p className="text-[10px] font-semibold tracking-wide text-[var(--ink-faint)] uppercase">
                   {EXPERIENCE_KIND_LABEL[exp.kind] ?? exp.kind}
                 </p>
-                <p className="text-[15px] text-[var(--ink)]">
-                  {exp.org} — {exp.role}
-                  {exp.term && <span className="text-[var(--ink-muted)]"> · {exp.term}</span>}
+                <p className="mt-0.5 text-[15px] font-medium text-[var(--ink)]">
+                  {exp.org} · {exp.role}
+                  {exp.term && <span className="font-normal text-[var(--ink-muted)]"> · {exp.term}</span>}
                 </p>
                 {exp.note && (
                   <p className="mt-0.5 whitespace-pre-line break-words text-sm text-[var(--ink-muted)]">
@@ -618,7 +628,7 @@ export default async function ProfilePage({
       )}
       </div>
 
-      <section className="mt-6">
+      <section className="cascade-up mt-4" style={{ "--delay": "240ms" } as React.CSSProperties}>
         <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">Posts</h2>
 
         {isBlocked ? (

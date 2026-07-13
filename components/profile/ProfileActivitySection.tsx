@@ -22,7 +22,7 @@ export default async function ProfileActivitySection({
   const streak = streakRes.error ? null : (streakRes.data?.[0] ?? null);
 
   return (
-    <section className="card card-hover p-5 shadow-paper sm:col-span-2 sm:p-6">
+    <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] p-5 shadow-paper sm:col-span-2 sm:p-6">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-semibold text-[var(--ink)]">Activity</h2>
         {streak && (streak.current_streak > 0 || streak.longest_streak > 0) && (
@@ -32,7 +32,7 @@ export default async function ProfileActivitySection({
           </p>
         )}
       </div>
-      <ContributionHeatmap data={heatmap} />
+      <ContributionHeatmap data={heatmap} animate />
       {isOwner && streak && streak.current_streak > 0 && !streak.today_earned && (
         <p className="mt-4 rounded-lg border border-[var(--border)] bg-[var(--canvas)] px-3 py-2 text-sm text-[var(--ink-muted)]">
           Post today to keep your {streak.current_streak}-day streak.

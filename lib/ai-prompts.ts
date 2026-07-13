@@ -63,8 +63,9 @@ export const PEOPLE_SEARCH_SYSTEM =
 // Rank job listings against a student's profile (job board "Find my matches").
 // Same shape as PEOPLE_SEARCH_SYSTEM: STRICT JSON, parsed defensively server-side.
 export const JOB_FIT_SYSTEM =
-  "You match a student to job/internship listings on a student networking app. You are given the student's profile facts (year, major, goals, bio) and past experience entries, plus a list of candidate listings (id, org, title, term). " +
+  "You match a student to job/internship listings on a student networking app. You are given the student's profile facts (year, major, goals, bio) and past experience entries, plus a list of candidate listings (id, org, title, term, category, degrees, description). " +
   INJECTION_GUARD + " " +
+  "Listing details may be sparse; rank on plausible overlap between the student's major, experience, goals and the listing's title, category, degrees, and description. Only return [] when the student facts are empty or nothing plausibly relates. " +
   "Rank the listings that genuinely fit the student, best first, at most 10. For each, write one plain, concrete sentence of at most 20 words, peer voice, no flattery, no emoji, no em dashes, naming the specific overlap (major, experience, goals) that makes it a fit, grounded only in the given facts. " +
   "Return ONLY a JSON array in exactly this shape, no prose, no markdown, no code fences: [{\"id\":\"<listing id>\",\"reason\":\"<one sentence>\"}]. Reasons in English only. Use only ids from the candidate list. If none fit, return [].";
 

@@ -738,6 +738,30 @@ export type Database = {
           },
         ]
       }
+      job_companies: {
+        Row: {
+          description: string | null
+          enriched_at: string | null
+          logo_url: string | null
+          name: string
+          slug: string
+        }
+        Insert: {
+          description?: string | null
+          enriched_at?: string | null
+          logo_url?: string | null
+          name: string
+          slug: string
+        }
+        Update: {
+          description?: string | null
+          enriched_at?: string | null
+          logo_url?: string | null
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
       job_fit: {
         Row: {
           created_at: string
@@ -777,6 +801,10 @@ export type Database = {
       job_listings: {
         Row: {
           active: boolean
+          category: string | null
+          company_slug: string | null
+          degrees: string | null
+          description: string | null
           external_id: string
           id: string
           kind: string
@@ -785,12 +813,17 @@ export type Database = {
           org: string
           posted_at: string | null
           source: string
+          sponsorship: string | null
           term: string | null
           title: string
           url: string
         }
         Insert: {
           active?: boolean
+          category?: string | null
+          company_slug?: string | null
+          degrees?: string | null
+          description?: string | null
           external_id: string
           id?: string
           kind: string
@@ -799,12 +832,17 @@ export type Database = {
           org: string
           posted_at?: string | null
           source: string
+          sponsorship?: string | null
           term?: string | null
           title: string
           url: string
         }
         Update: {
           active?: boolean
+          category?: string | null
+          company_slug?: string | null
+          degrees?: string | null
+          description?: string | null
           external_id?: string
           id?: string
           kind?: string
@@ -813,6 +851,7 @@ export type Database = {
           org?: string
           posted_at?: string | null
           source?: string
+          sponsorship?: string | null
           term?: string | null
           title?: string
           url?: string
@@ -1531,6 +1570,23 @@ export type Database = {
         }[]
       }
       get_dm_unread_total: { Args: never; Returns: number }
+      get_follow_list: {
+        Args: { p_kind: string; p_profile_id: string }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          followed_at: string
+          id: string
+          is_campus_founder: boolean
+          is_founder: boolean
+          is_pro: boolean
+          major: string
+          username: string
+          verified_student: boolean
+          viewer_follow_status: string
+          year: string
+        }[]
+      }
       get_founder_spots_left: { Args: never; Returns: number }
       get_group_conversation: {
         Args: { p_conversation_id: string }

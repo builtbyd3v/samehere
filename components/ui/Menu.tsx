@@ -28,6 +28,7 @@ export default function Menu({
   open: openProp,
   onOpenChange,
   customTrigger = false,
+  fullWidth = false,
 }: {
   trigger: React.ReactNode;
   children: React.ReactNode;
@@ -40,6 +41,8 @@ export default function Menu({
   onOpenChange?: (open: boolean) => void;
   /** When true, `trigger` is already a full interactive element that manages its own onClick + `open`/`onOpenChange`; Menu only clones in aria attributes instead of wrapping its own <button>. */
   customTrigger?: boolean;
+  /** Stretch the wrapper (and panel) to the trigger's full width — for select-style dropdowns in grid/flex cells. */
+  fullWidth?: boolean;
 }) {
   const [internalOpen, setInternalOpen] = useState(false);
   const open = openProp ?? internalOpen;
@@ -93,7 +96,7 @@ export default function Menu({
 
   return (
     <MenuCloseContext.Provider value={close}>
-      <div ref={ref} className="relative inline-block">
+      <div ref={ref} className={fullWidth ? "relative block w-full" : "relative inline-block"}>
         {customTrigger
           ? cloneElement(trigger as React.ReactElement<{ "aria-haspopup"?: string; "aria-expanded"?: boolean }>, {
               "aria-haspopup": "menu",
@@ -117,7 +120,7 @@ export default function Menu({
         {mounted && (
           <div
             role="menu"
-            className={`absolute z-50 min-w-[9rem] overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)] py-1 shadow-lg ${originClass} ${
+            className={`absolute z-50 min-w-[9rem] overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)] py-1 shadow-lg ${fullWidth ? "w-full" : ""} ${originClass} ${
               align === "end" ? "right-0" : "left-0"
             } ${closing ? "menu-exit" : "animate-[menu-pop_120ms_var(--ease-out)] motion-reduce:animate-none"}`}
           >

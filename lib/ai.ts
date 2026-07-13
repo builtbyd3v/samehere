@@ -37,10 +37,12 @@ export async function generateText(
   const useModel = opts?.model ?? model;
   if (!client || !useModel) return null;
 
-  const call = (withTemp: boolean) =>
+  const baseTokens = opts?.maxTokens ?? 80;
+
+  const call = (withTemp: boolean, maxTokens: number) =>
     client!.chat.completions.create({
       model: useModel,
-      max_completion_tokens: opts?.maxTokens ?? 80,
+      max_completion_tokens: maxTokens,
       ...(withTemp && opts?.temperature !== undefined ? { temperature: opts.temperature } : {}),
       messages: [
         { role: "system", content: system },
@@ -48,15 +50,29 @@ export async function generateText(
       ],
     });
 
+  // Reasoning models (claude-sonnet-5 via OpenAI compat) burn the whole
+  // max_completion_tokens budget on hidden reasoning and return EMPTY content
+  // with finish_reason=length. Detect that and retry once with 4x headroom
+  // (floor 2000) so every caller's small budget keeps working on both tiers.
+  const extract = (res: Awaited<ReturnType<typeof call>>) => {
+    const choice = res.choices[0];
+    const text = choice?.message?.content?.trim() || null;
+    return { text, truncatedEmpty: !text && choice?.finish_reason === "length" };
+  };
+
+  const run = async (withTemp: boolean): Promise<string | null> => {
+    const first = extract(await call(withTemp, baseTokens));
+    if (!first.truncatedEmpty) return first.text;
+    return extract(await call(withTemp, Math.max(baseTokens * 4, 2000))).text;
+  };
+
   try {
-    const res = await call(true);
-    return res.choices[0]?.message?.content?.trim() || null;
+    return await run(true);
   } catch {
     if (opts?.temperature === undefined) return null;
     // ponytail: retry-once-without-temperature on any error — some models (claude-sonnet-5 via OpenAI compat) 400 on the param; no per-model capability table.
     try {
-      const res = await call(false);
-      return res.choices[0]?.message?.content?.trim() || null;
+      return await run(false);
     } catch {
       return null;
     }

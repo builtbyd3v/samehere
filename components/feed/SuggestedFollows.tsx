@@ -27,14 +27,19 @@ function SuggestedCard({
   s,
   prompt,
   loading,
+  i,
 }: {
   s: SuggestedProfile;
   prompt?: string | null;
   loading?: boolean;
+  i: number;
 }) {
   const name = s.display_name ?? s.username;
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3">
+    <div
+      className="cascade-up flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3"
+      style={{ "--delay": `${i * 80}ms` } as React.CSSProperties}
+    >
       {s.avatar_url ? (
         <AvatarImage
           src={s.avatar_url}
@@ -72,8 +77,8 @@ function SuggestedCard({
 export function SuggestedFollowsFallback({ suggested }: { suggested: SuggestedProfile[] }) {
   return (
     <div className="flex flex-col gap-2">
-      {suggested.map((s) => (
-        <SuggestedCard key={s.id} s={s} loading />
+      {suggested.map((s, i) => (
+        <SuggestedCard key={s.id} s={s} loading i={i} />
       ))}
     </div>
   );
@@ -120,7 +125,7 @@ export default async function SuggestedFollows({
   return (
     <div className="flex flex-col gap-2">
       {suggested.map((s, i) => (
-        <SuggestedCard key={s.id} s={s} prompt={prompts[i]} />
+        <SuggestedCard key={s.id} s={s} prompt={prompts[i]} i={i} />
       ))}
     </div>
   );

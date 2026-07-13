@@ -1,0 +1,18 @@
+name: jobs-ingest
+
+# Vercel Hobby crons are daily-only; this hits the ingest endpoint hourly so
+# the board stays fresh. Offset minute avoids GitHub's top-of-hour queue lag.
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger ingest
+        run: |
+          curl -fsS --retry 3 --retry-delay 10 --max-time 280 \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "https://www.samehere.dev/api/cron/jobs-ingest"

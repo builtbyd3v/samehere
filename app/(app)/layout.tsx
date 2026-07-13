@@ -53,7 +53,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <TabTitleUnread userId={user.id} />
         </Suspense>
       )}
-      <div className="app-shell mx-auto flex w-full max-w-[1320px] justify-center gap-7 px-4 pb-20 sm:px-6 lg:pb-0">
+      <div className="app-shell mx-auto flex w-full max-w-[1384px] justify-center gap-7 px-4 pb-20 sm:px-6 lg:pb-0">
         <aside className="hidden w-60 shrink-0 pt-6 lg:block lg:pt-8">
           <div className="sticky top-[72px]">
             {/* Nav badges are decoration — stream them so a slow unread RPC never

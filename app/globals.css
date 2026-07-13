@@ -2,6 +2,12 @@
 
 /* Lovable-style tokens (see DESIGN.md). Warm cream, charcoal, opacity grays, #eceae4 borders.
    Blue is kept ONLY for the profile card + heatmap (per product decision). */
+/* Reserve the scrollbar gutter permanently so centered layouts don't shift
+   7-8px between short (no scrollbar) and long pages. */
+html {
+  scrollbar-gutter: stable;
+}
+
 :root {
   color-scheme: light dark;
   --canvas: #f7f4ed;
@@ -545,12 +551,10 @@ summary {
  * the exception: its 600px post column + 340px rail need the spacer's
  * room (>=1280px), and true centering of the POST COLUMN needs a left
  * offset instead, because the rail (340+28) outweighs the nav (240+28)
- * by exactly 100px. Container widens to 1384px on the feed so it all
- * fits: 24 + 240 + 28 + 100 + 600 + 28 + 340 + 24.
+ * by exactly 100px. The shell container is 1384px on every page (single
+ * width keeps the nav's x-position identical across routes):
+ * 24 + 240 + 28 + 100 + 600 + 28 + 340 + 24.
  * ------------------------------------------------------------------- */
-.app-shell:has([data-feed-page]) {
-  max-width: 1384px;
-}
 @media (min-width: 1280px) {
   .app-shell:has([data-feed-page]) .shell-rspacer {
     display: none;

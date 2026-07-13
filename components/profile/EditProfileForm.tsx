@@ -8,6 +8,7 @@ import { PROFILE_THEME_KEYS, PROFILE_THEMES, isProfileTheme, type ProfileTheme }
 import AvatarImage from "@/components/ui/AvatarImage";
 import ProfileNudgePanel from "@/components/profile/ProfileNudgePanel";
 import SchoolAutocomplete from "@/components/profile/SchoolAutocomplete";
+import Select from "@/components/ui/Select";
 
 export type EditInitial = {
   id: string;
@@ -40,6 +41,7 @@ const YEARS: [string, string][] = [
   ["senior", "Senior"],
   ["grad", "Grad student"],
 ];
+const YEAR_OPTIONS = YEARS.map(([value, label]) => ({ value, label }));
 
 export default function EditProfileForm({ initial }: { initial: EditInitial }) {
   const [state, formAction, pending] = useActionState<EditState, FormData>(updateProfile, {});
@@ -194,10 +196,14 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="year" className={label}>Year</label>
-              <select id="year" name="year" defaultValue={initial.year ?? ""} className={field}>
-                {YEARS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-              </select>
+              <label className={label}>Year</label>
+              <Select
+                options={YEAR_OPTIONS}
+                name="year"
+                defaultValue={initial.year ?? ""}
+                ariaLabel="Year"
+                className="mt-1.5 w-full"
+              />
             </div>
             <div>
               <label htmlFor="major" className={label}>Major</label>

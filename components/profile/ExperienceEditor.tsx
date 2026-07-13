@@ -2,6 +2,7 @@
 
 import { useActionState, useState, useTransition } from "react";
 import { addExperience, deleteExperience, type ExperienceState } from "@/app/(app)/profile/edit/actions";
+import Select from "@/components/ui/Select";
 
 export type ExperienceEntry = {
   id: string;
@@ -17,6 +18,10 @@ const KIND_OPTIONS: [string, string][] = [
   ["job", "Job"],
   ["research", "Research"],
   ["club_role", "Club role"],
+];
+const KIND_SELECT_OPTIONS = [
+  { value: "", label: "Select type" },
+  ...KIND_OPTIONS.map(([value, label]) => ({ value, label })),
 ];
 
 const label = "block text-sm font-medium text-[var(--ink)]";
@@ -88,13 +93,14 @@ export default function ExperienceEditor({ initial }: { initial: ExperienceEntry
           )}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label className={label} htmlFor="exp-kind">Type</label>
-              <select id="exp-kind" name="kind" required className={field} defaultValue="">
-                <option value="" disabled>Select type</option>
-                {KIND_OPTIONS.map(([value, text]) => (
-                  <option key={value} value={value}>{text}</option>
-                ))}
-              </select>
+              <label className={label}>Type</label>
+              <Select
+                options={KIND_SELECT_OPTIONS}
+                name="kind"
+                defaultValue=""
+                ariaLabel="Type"
+                className="mt-1.5 w-full"
+              />
             </div>
             <div>
               <label className={label} htmlFor="exp-term">Term (optional)</label>

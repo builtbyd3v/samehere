@@ -3,8 +3,10 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { setMemberRole } from "@/app/(app)/community/clubs/actions";
+import Select from "@/components/ui/Select";
 
 const ROLES = ["member", "officer", "owner"] as const;
+const ROLE_OPTIONS = ROLES.map((r) => ({ value: r, label: r }));
 
 // Owner-only role/title editor for a single member row. club_set_role (RLS)
 // is the real gate -- caller=owner is only checked here to decide who SEES
@@ -37,17 +39,15 @@ export default function RoleControls({
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      <select
-        value={nextRole}
-        onChange={(e) => setNextRole(e.target.value)}
-        className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-1.5 py-1 text-xs"
-      >
-        {ROLES.map((r) => (
-          <option key={r} value={r}>
-            {r}
-          </option>
-        ))}
-      </select>
+      <div className="w-24">
+        <Select
+          options={ROLE_OPTIONS}
+          value={nextRole}
+          onChange={setNextRole}
+          ariaLabel="Role"
+          className="h-8 px-2 text-xs"
+        />
+      </div>
       <input
         value={nextTitle}
         onChange={(e) => setNextTitle(e.target.value)}

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { IconBolt } from "@/components/icons";
 import { tailorPitch } from "./actions";
 
@@ -13,14 +14,15 @@ export default function PitchButton({ listingId, pro }: { listingId: string; pro
   const [error, setError] = useState(false);
   const [copied, setCopied] = useState(false);
   const [pending, startTransition] = useTransition();
+  const reduce = useReducedMotion();
 
   if (!pro) {
     return (
       <Link
         href="/pro"
-        className="flex items-center gap-1 rounded-md border border-[var(--border)] px-3 py-1.5 text-sm text-[var(--ink-muted)] transition hover:bg-[var(--featured-surface)]"
+        className="flex items-center gap-1 rounded-full bg-[var(--blue-glow)] px-3 py-1.5 text-sm font-medium text-[var(--blue)] transition hover:opacity-80"
       >
-        <IconBolt className="h-3.5 w-3.5 text-[var(--blue)]" />
+        <IconBolt className="h-3.5 w-3.5" />
         Tailor my pitch
       </Link>
     );
@@ -44,24 +46,34 @@ export default function PitchButton({ listingId, pro }: { listingId: string; pro
 
   return (
     <div className="w-full max-w-xs text-right">
-      {text === null ? (
+      {text === null && (
         <button
           type="button"
           onClick={run}
           disabled={pending}
-          className="rounded-md border border-[var(--border-strong)] px-3 py-1.5 text-sm font-medium transition hover:bg-[var(--featured-surface)] active:opacity-80"
+          className="inline-flex items-center gap-1 rounded-full bg-[var(--blue-glow)] px-3 py-1.5 text-sm font-medium text-[var(--blue)] transition hover:opacity-80 disabled:opacity-60"
         >
-          {pending ? "…" : "Tailor my pitch"}
+          <IconBolt className="h-3.5 w-3.5" />
+          {pending ? "Tailoring…" : "Tailor my pitch"}
         </button>
-      ) : (
-        <div className="mt-2 rounded-md border border-[var(--border)] bg-[var(--canvas)] p-3 text-left text-sm">
-          {/* Model output rendered as plain text only -- never dangerouslySetInnerHTML. */}
-          <p className="whitespace-pre-wrap text-[var(--ink)]">{text}</p>
-          <button type="button" onClick={copy} className="mt-2 text-xs font-medium text-[var(--blue)] underline">
-            {copied ? "Copied" : "Copy"}
-          </button>
-        </div>
       )}
+      <AnimatePresence>
+        {text !== null && (
+          <motion.div
+            className="mt-2 overflow-hidden rounded-md border border-[var(--border)] bg-[var(--canvas)] p-3 text-left text-sm"
+            initial={reduce ? undefined : { opacity: 0, y: 8 }}
+            animate={reduce ? undefined : { opacity: 1, y: 0 }}
+            exit={reduce ? undefined : { opacity: 0, y: 8 }}
+            transition={{ duration: 0.3 }}
+          >
+            {/* Model output rendered as plain text only -- never dangerouslySetInnerHTML. */}
+            <p className="whitespace-pre-wrap text-[var(--ink)]">{text}</p>
+            <button type="button" onClick={copy} className="mt-2 text-xs font-medium text-[var(--blue)] underline">
+              {copied ? "Copied" : "Copy"}
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {error && <p className="mt-1 text-xs text-[var(--danger)]">Couldn&apos;t generate a pitch. Try again.</p>}
     </div>
   );
