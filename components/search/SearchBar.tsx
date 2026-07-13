@@ -66,7 +66,7 @@ export default function SearchBar({
             onChange={(e) => setQ(e.target.value)}
             type="search"
             maxLength={TEXT_LIMITS.searchQuery}
-            placeholder="Search…"
+            placeholder="Describe who you're looking for…"
             aria-label="Search"
             className="min-w-0 flex-1 bg-transparent text-[var(--ink)] placeholder:text-[var(--ink-muted)] focus:outline-none"
           />

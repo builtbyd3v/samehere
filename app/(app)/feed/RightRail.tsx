@@ -1,15 +1,37 @@
 import Link from "next/link";
-import { Suspense } from "react";
 import { getViewer, getViewerProfile } from "@/lib/viewer";
 import { getCachedLeaderboard } from "@/lib/leaderboard";
 import AvatarImage from "@/components/ui/AvatarImage";
-import SuggestedFollows, { SuggestedFollowsFallback, type SuggestedProfile } from "@/components/feed/SuggestedFollows";
+import { type SuggestedProfile } from "@/components/feed/SuggestedFollows";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { isPro } from "@/lib/pro";
 import type { MatchSignal } from "@/lib/match";
-import { IconHash } from "@/components/icons";
+import { cachedConnectionPrompts } from "@/lib/connection-prompt";
 import FollowButton from "@/components/profile/FollowButton";
 import UserBadges from "@/components/profile/UserBadges";
+
+function norm(s: string | null): string {
+  return s?.trim().toLowerCase() ?? "";
+}
+
+// Deterministic fallback for cache misses — same grounded-fact template as
+// lib/connection-prompt.ts's connectionPrompt() and the weekly-matches cron,
+// kept local since both of those either gate on use_ai_quota or run without a
+// session; here we must never call the model during render (see task note).
+function sharedFactLine(viewer: MatchSignal, candidate: SuggestedProfile): string | null {
+  const school = norm(viewer.school) && norm(viewer.school) === norm(candidate.profile_school?.school ?? null) ? candidate.profile_school?.school : null;
+  const major = norm(viewer.major) && norm(viewer.major) === norm(candidate.major) ? candidate.major : null;
+  const year = norm(viewer.year) && norm(viewer.year) === norm(candidate.year) ? candidate.year : null;
+  if (school && major) return `Also studies ${major} at ${school}.`;
+  if (major) return `Also studies ${major}.`;
+  if (school) return `Also at ${school}.`;
+  if (year) return `Also a ${year}.`;
+  return null;
+}
+
+function yearMajorLine(p: SuggestedProfile): string | null {
+  if (p.year && p.major) return `${p.year} · ${p.major}`;
+  return p.year ?? p.major ?? null;
+}
 
 function Initials({ name, className }: { name: string; className: string }) {
   return (
@@ -35,11 +57,10 @@ export default async function RightRail() {
   // status) + blocked users (either direction) — all done SQL-side by
   // get_suggested_profiles, replacing an app-side fetch-all-follows +
   // comma-joined NOT IN filter that also never excluded blocks (see plan 010
-  // Phase 1). Sync pool only (SuggestedFollowsFallback) — the AI "why follow"
-  // line is a feed concern, not needed for a rail test.
+  // Phase 1).
   const school = profile?.profile_school?.school ?? null;
   const [{ data: suggestedRows }, { data: schoolRows }] = await Promise.all([
-    supabase.rpc("get_suggested_profiles", { p_limit: 3 }),
+    supabase.rpc("get_suggested_profiles", { p_limit: 5 }),
     school ? supabase.rpc("get_suggested_profiles", { p_school: school, p_limit: 3 }) : Promise.resolve({ data: [] }),
   ]);
   const toSuggestedProfile = (r: NonNullable<typeof suggestedRows>[number]): SuggestedProfile => ({
@@ -56,46 +77,42 @@ export default async function RightRail() {
     bio: profile?.bio ?? null,
     school: profile?.profile_school?.school ?? null,
   };
-  const viewerPro = isPro(profile ?? { is_pro: false, pro_until: null });
-
   const me = (leaderboard ?? []).find((r) => r.id === user.id) ?? null;
 
-  // ponytail: placeholder trending data — swap for the real trending feature when it lands.
-  const TRENDING = [
-    { tag: "finalsweek", posts: 128 },
-    { tag: "internships", posts: 94 },
-    { tag: "studygroup", posts: 61 },
-    { tag: "transferlife", posts: 47 },
-    { tag: "csmajors", posts: 39 },
-  ];
+  // Cache-first only — reads any prompt already generated (composer, weekly
+  // digest cron, etc.) via cachedConnectionPrompts; never calls the model
+  // during render. Cache misses fall back to a plain shared-fact line.
+  const promptCache = await cachedConnectionPrompts(supabase, user.id, suggested.map((p) => p.id));
 
   return (
     <>
-      {/* trending */}
-      <section className="card p-5">
-        <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">Trending</h2>
-        <ul className="flex flex-col">
-          {TRENDING.map((t) => (
-            <li key={t.tag}>
-              <Link href={`/feed?search=1&q=${encodeURIComponent("#" + t.tag)}`} className="flex items-center gap-2 rounded-lg px-1 py-2 transition hover:bg-[var(--featured-surface)]">
-                <span className="text-[var(--ink-muted)]"><IconHash /></span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-[var(--ink)]">#{t.tag}</p>
-                  <p className="text-xs text-[var(--ink-muted)] tabular-nums">{t.posts} posts</p>
-                </div>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      {/* suggested peers */}
+      {/* people you should meet */}
       {suggested.length > 0 && (
         <section className="card p-5">
-          <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">Suggested peers</h2>
-          <Suspense fallback={<SuggestedFollowsFallback suggested={suggested} />}>
-            <SuggestedFollows userId={user.id} viewerSignal={viewerSignal} viewerPro={viewerPro} suggested={suggested} />
-          </Suspense>
+          <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">People you should meet</h2>
+          <div className="flex flex-col gap-2">
+            {suggested.map((p) => {
+              const nm = p.display_name ?? p.username;
+              const line = yearMajorLine(p);
+              const why = promptCache.get(p.id) ?? sharedFactLine(viewerSignal, p);
+              return (
+                <div key={p.id} className="flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3">
+                  {p.avatar_url
+                    ? <AvatarImage src={p.avatar_url} alt="" className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover" pro={p.is_pro} />
+                    : <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-sm font-semibold text-[var(--ink-muted)]">{nm.charAt(0).toUpperCase()}</div>}
+                  <div className="min-w-0 flex-1 text-sm">
+                    <div className="flex flex-wrap items-center gap-x-1.5">
+                      <Link href={`/profile/${p.username}`} className="truncate font-medium hover:underline">{nm}</Link>
+                      <UserBadges isPro={p.is_pro} isFounder={p.is_founder} isCampusFounder={p.is_campus_founder} isVerifiedStudent={p.verified_student} />
+                    </div>
+                    {line && <p className="truncate text-xs text-[var(--ink-muted)]">{line}</p>}
+                    {why && <p className="mt-0.5 truncate text-xs text-[var(--ink-muted)]">{why}</p>}
+                  </div>
+                  <FollowButton targetId={p.id} initial="none" />
+                </div>
+              );
+            })}
+          </div>
         </section>
       )}
 
