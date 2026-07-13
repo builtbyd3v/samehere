@@ -25,6 +25,24 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
   if (password.length < 8) return { error: "Password must be at least 8 characters." };
 
   const supabase = await createClient();
+
+  // Private beta gate: flag OFF (unset/anything else) = today's behavior,
+  // ref_code stays optional attribution. Flag ON = fail CLOSED — no code or
+  // an invalid code blocks signup entirely. check_invite_code is a SECURITY
+  // DEFINER RPC because this check runs pre-auth (no session yet), and the
+  // profiles SELECT policy denies anon rows outright.
+  if (process.env.INVITE_ONLY === "1") {
+    const inviteError = "samehere is invite-only right now — you need an invite code from a member.";
+    if (!refCode) return { error: inviteError };
+    const { data: codeValid, error: codeError } = await supabase.rpc("check_invite_code", {
+      p_code: refCode,
+    });
+    if (codeError) {
+      console.error("check_invite_code failed:", codeError);
+      return { error: inviteError };
+    }
+    if (!codeValid) return { error: inviteError };
+  }
   // Prefer the configured site URL over the request Origin header (which the
   // client controls) for the confirmation link. Supabase's redirect allowlist
   // is the real guard; this is defense in depth.

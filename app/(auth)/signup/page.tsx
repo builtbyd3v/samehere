@@ -14,7 +14,7 @@ export default async function SignupPage() {
       asideExtra={<SignupReassurance />}
     >
       <Suspense fallback={null}>
-        <SignupForm />
+        <SignupForm inviteOnly={process.env.INVITE_ONLY === "1"} />
       </Suspense>
     </AuthShell>
   );
