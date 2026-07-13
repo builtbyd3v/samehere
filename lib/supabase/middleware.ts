@@ -72,6 +72,7 @@ export async function updateSession(request: NextRequest) {
     path === '/api/cron/unread-digest' ||
     path === '/api/cron/weekly-matches' ||
     path === '/api/cron/eve' ||
+    path === '/api/cron/jobs-ingest' ||
     path === '/api/email/unsubscribe' ||
     isMetadataImage ||
     isPublicProfile ||
