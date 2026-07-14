@@ -54,8 +54,15 @@ export default function SignupForm({ inviteOnly = false }: SignupFormProps) {
         )}
         {state.error && <AuthAlert message={state.error} />}
 
-        <OAuthButtons variant="signup" />
-        <OAuthDivider />
+        {/* OAuth skips the invite-code check in the signUp action entirely
+            (Supabase auto-creates the account on first provider login), so
+            during invite-only beta the only door is email + code. */}
+        {!inviteOnly && (
+          <>
+            <OAuthButtons variant="signup" />
+            <OAuthDivider />
+          </>
+        )}
 
         <div className="mb-3">
           <label htmlFor="email" className={authLabel}>

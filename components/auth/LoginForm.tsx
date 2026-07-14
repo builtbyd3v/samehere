@@ -14,15 +14,19 @@ import { authInput, authInputError, authLabel } from "./auth-fields";
 // useSearchParams (for ?error=oauth) requires a Suspense boundary in a
 // statically-prerendered page; app/(auth)/login/page.tsx doesn't provide one,
 // so LoginForm wraps its own body rather than touching that file.
-export default function LoginForm() {
+type LoginFormProps = {
+  inviteOnly?: boolean;
+};
+
+export default function LoginForm({ inviteOnly = false }: LoginFormProps) {
   return (
     <Suspense fallback={<AuthCard title="Log in">{null}</AuthCard>}>
-      <LoginFormInner />
+      <LoginFormInner inviteOnly={inviteOnly} />
     </Suspense>
   );
 }
 
-function LoginFormInner() {
+function LoginFormInner({ inviteOnly }: { inviteOnly: boolean }) {
   const [state, formAction, pending] = useActionState<AuthState, FormData>(logIn, {});
   const oauthError = useSearchParams().get("error") === "oauth";
   const hasError = !!state.error || oauthError;
@@ -33,8 +37,14 @@ function LoginFormInner() {
         {state.error && <AuthAlert message={state.error} />}
         {!state.error && oauthError && <AuthAlert message="Sign-in failed, try again." />}
 
-        <OAuthButtons />
-        <OAuthDivider />
+        {/* Hidden during invite-only beta: a first OAuth "login" auto-creates
+            an account, bypassing the invite-code gate on signup. */}
+        {!inviteOnly && (
+          <>
+            <OAuthButtons />
+            <OAuthDivider />
+          </>
+        )}
 
         <div className="mb-4">
           <label htmlFor="email" className={authLabel}>
