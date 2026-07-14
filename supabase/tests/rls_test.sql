@@ -2475,7 +2475,7 @@ declare
   v_a uuid := (select id from tests_fixture where key = 'a');
   v_b uuid := (select id from tests_fixture where key = 'b');
 begin
-  insert into public.notifications (user_id, type, actor_id)
+  insert into public.notifications (user_id, actor_id, type)
   values (v_a, v_b, 'referral_joined');
 end $$;
 reset role;
