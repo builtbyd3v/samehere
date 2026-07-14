@@ -12,7 +12,7 @@ import ClubTabs from "./ClubTabs";
 import AnnouncementBanner from "@/components/clubs/AnnouncementBanner";
 import BannedMembers from "@/components/clubs/BannedMembers";
 import UserBadges from "@/components/profile/UserBadges";
-import AvatarImage from "@/components/ui/AvatarImage";
+import AvatarBase from "@/components/ui/Avatar";
 import LocalTime from "@/components/ui/LocalTime";
 import { postAnnouncement, deleteAnnouncement } from "../actions";
 
@@ -212,18 +212,13 @@ export default async function ClubPage({ params }: { params: Promise<{ slug: str
             const role = roleByUserId.get(a.author_id) ?? null;
             return (
               <div key={a.id} className="flex items-start gap-3 rounded-lg border border-[var(--border)] p-3">
-                {a.author?.avatar_url ? (
-                  <AvatarImage
-                    src={a.author.avatar_url}
-                    alt=""
-                    className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover"
-                    pro={a.author.is_pro}
-                  />
-                ) : (
-                  <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-sm font-semibold text-[var(--ink-muted)]">
-                    {name.charAt(0).toUpperCase()}
-                  </div>
-                )}
+                <AvatarBase
+                  src={a.author?.avatar_url ?? null}
+                  seed={a.author?.username ?? name}
+                  name={name}
+                  className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] text-sm"
+                  pro={a.author?.is_pro ?? false}
+                />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm">
@@ -312,7 +307,7 @@ export default async function ClubPage({ params }: { params: Promise<{ slug: str
       <div className="card p-4 sm:p-5">
         <div className="flex items-start justify-between gap-4">
           <div className="flex min-w-0 gap-3">
-            <ClubAvatar url={club.avatar_url} name={club.name} className="h-14 w-14 shrink-0" />
+            <ClubAvatar url={club.avatar_url} name={club.name} seed={slug} className="h-14 w-14 shrink-0" />
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
                 <h1 className="text-xl font-semibold tracking-[-0.02em] sm:text-2xl">{club.name}</h1>

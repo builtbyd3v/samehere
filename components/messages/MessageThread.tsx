@@ -1,5 +1,5 @@
 import Link from "next/link";
-import AvatarImage from "@/components/ui/AvatarImage";
+import AvatarBase from "@/components/ui/Avatar";
 import UserBadges from "@/components/profile/UserBadges";
 import { IconChevronLeft } from "@/components/icons";
 import MessageTime from "@/components/messages/MessageTime";
@@ -44,23 +44,19 @@ export default function MessageThread({
         const name = sender?.display_name ?? sender?.username ?? "Member";
         const avatarUrl = sender?.avatar_url ?? null;
         const senderIsPro = sender?.is_pro ?? false;
+        const senderSeed = sender?.username ?? name;
         return (
           <div
             key={m.id}
             className={`msg-in group flex items-end gap-2 ${mine ? "flex-row-reverse" : "justify-start"}`}
           >
-            {avatarUrl ? (
-              <AvatarImage
-                src={avatarUrl}
-                alt=""
-                pro={senderIsPro}
-                className="h-7 w-7 shrink-0 rounded-full border border-[var(--border)] object-cover"
-              />
-            ) : (
-              <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-xs font-semibold text-[var(--ink-muted)]">
-                {name.charAt(0).toUpperCase()}
-              </div>
-            )}
+            <AvatarBase
+              src={avatarUrl}
+              seed={senderSeed}
+              name={name}
+              pro={senderIsPro}
+              className="h-7 w-7 shrink-0 rounded-full border border-[var(--border)] text-xs"
+            />
             <div className={`flex max-w-[min(82%,24rem)] flex-col ${mine ? "items-end" : "items-start"}`}>
               {!mine && (
                 <div className="mb-0.5 flex items-center gap-1 px-1 text-xs font-medium text-[var(--ink-muted)]">
@@ -125,13 +121,13 @@ export function MessageThreadHeader({
         href={`/profile/${username}`}
         className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg px-1 py-1 transition hover:bg-[var(--featured-surface)]"
       >
-        {avatarUrl ? (
-          <AvatarImage src={avatarUrl} alt="" pro={isPro} className="h-9 w-9 rounded-full border border-[var(--border)] object-cover" />
-        ) : (
-          <div className="grid h-9 w-9 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-sm font-semibold text-[var(--ink-muted)]">
-            {displayName.charAt(0).toUpperCase()}
-          </div>
-        )}
+        <AvatarBase
+          src={avatarUrl}
+          seed={username}
+          name={displayName}
+          pro={isPro}
+          className="h-9 w-9 rounded-full border border-[var(--border)] text-sm"
+        />
         <div className="min-w-0">
           <p className="truncate text-[15px] font-semibold text-[var(--ink)]">{displayName}</p>
           <p className="truncate text-xs text-[var(--ink-muted)]">@{username}</p>
@@ -166,9 +162,11 @@ export function GroupThreadHeader({
         <IconChevronLeft />
       </Link>
       <div className="flex min-w-0 flex-1 items-center gap-2.5 px-1 py-1">
-        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-sm font-semibold text-[var(--ink-muted)]">
-          {title.charAt(0).toUpperCase()}
-        </div>
+        <AvatarBase
+          seed={title}
+          name={title}
+          className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] text-sm"
+        />
         <div className="min-w-0">
           <p className="truncate text-[15px] font-semibold text-[var(--ink)]">{title}</p>
           <p className="truncate text-xs text-[var(--ink-muted)]">{subtitle}</p>

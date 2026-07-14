@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { startDmWithUsername, searchUsersForMessage, type MessageUserResult } from "@/app/(app)/messages/actions";
 import { IconSearch } from "@/components/icons";
 import { TEXT_LIMITS } from "@/lib/utils/validation";
-import AvatarImage from "@/components/ui/AvatarImage";
+import AvatarBase from "@/components/ui/Avatar";
 
 export default function NewMessageFinder() {
   const [open, setOpen] = useState(false);
@@ -92,13 +92,13 @@ export default function NewMessageFinder() {
                   onClick={() => startTransition(() => startDmWithUsername(u.username))}
                   className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition hover:bg-[var(--featured-surface)]"
                 >
-                  {u.avatar_url ? (
-                    <AvatarImage src={u.avatar_url} alt="" className="h-9 w-9 rounded-full border border-[var(--border)] object-cover" pro={u.is_pro} />
-                  ) : (
-                    <div className="grid h-9 w-9 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-xs font-semibold text-[var(--ink-muted)]">
-                      {name.charAt(0).toUpperCase()}
-                    </div>
-                  )}
+                  <AvatarBase
+                    src={u.avatar_url}
+                    seed={u.username}
+                    name={name}
+                    className="h-9 w-9 rounded-full border border-[var(--border)] text-xs"
+                    pro={u.is_pro}
+                  />
                   <span className="min-w-0 text-sm">
                     <span className="font-medium text-[var(--ink)]">{name}</span>
                     <span className="ml-1.5 text-[var(--ink-muted)]">@{u.username}</span>

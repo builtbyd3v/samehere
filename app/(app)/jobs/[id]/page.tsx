@@ -7,7 +7,7 @@ import SaveJobButton from "@/components/jobs/SaveJobButton";
 import FitCheck from "./FitCheck";
 import { relAge, isNew } from "../format";
 import { IconGraduationCap, IconPin } from "@/components/icons";
-import AvatarImage from "@/components/ui/AvatarImage";
+import AvatarBase from "@/components/ui/Avatar";
 
 const PEERS_LIMIT = 6;
 
@@ -62,11 +62,11 @@ function CompanyLogo({
     );
   }
   return (
-    <div
-      className={`${box} flex shrink-0 items-center justify-center border border-[var(--border)] bg-[var(--featured-surface)] font-semibold text-[var(--ink-muted)] ${size === "lg" ? "text-xl" : "text-[10px]"}`}
-    >
-      {org.charAt(0).toUpperCase()}
-    </div>
+    <AvatarBase
+      seed={org}
+      name={org}
+      className={`${box} shrink-0 border border-[var(--border)] ${size === "lg" ? "text-xl" : "text-[10px]"}`}
+    />
   );
 }
 
@@ -289,18 +289,13 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
               return (
                 <li key={p.id} className="flex items-center gap-3 rounded-lg border border-[var(--border)] px-3 py-2.5">
                   <Link href={`/profile/${p.username}`} className="flex min-w-0 flex-1 items-center gap-3">
-                    {p.avatar_url ? (
-                      <AvatarImage
-                        src={p.avatar_url}
-                        alt=""
-                        className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover"
-                        pro={p.is_pro}
-                      />
-                    ) : (
-                      <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-sm font-semibold text-[var(--ink-muted)]">
-                        {nm.charAt(0).toUpperCase()}
-                      </div>
-                    )}
+                    <AvatarBase
+                      src={p.avatar_url}
+                      seed={p.username}
+                      name={nm}
+                      className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] text-sm"
+                      pro={p.is_pro}
+                    />
                     <div className="min-w-0 text-sm">
                       <p className="truncate font-medium text-[var(--ink)]">{nm}</p>
                       {meta && <p className="truncate text-xs text-[var(--ink-muted)]">{meta}</p>}

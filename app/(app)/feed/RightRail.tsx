@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getViewer, getViewerProfile } from "@/lib/viewer";
 import { getCachedLeaderboard } from "@/lib/leaderboard";
 import AvatarImage from "@/components/ui/AvatarImage";
+import AvatarBase from "@/components/ui/Avatar";
 import { type SuggestedProfile } from "@/components/feed/SuggestedFollows";
 import { Skeleton } from "@/components/ui/Skeleton";
 import type { MatchSignal } from "@/lib/match";
@@ -20,11 +21,9 @@ function norm(s: string | null): string {
 function sharedFactLine(viewer: MatchSignal, candidate: SuggestedProfile): string | null {
   const school = norm(viewer.school) && norm(viewer.school) === norm(candidate.profile_school?.school ?? null) ? candidate.profile_school?.school : null;
   const major = norm(viewer.major) && norm(viewer.major) === norm(candidate.major) ? candidate.major : null;
-  const year = norm(viewer.year) && norm(viewer.year) === norm(candidate.year) ? candidate.year : null;
   if (school && major) return `Also studies ${major} at ${school}.`;
   if (major) return `Also studies ${major}.`;
   if (school) return `Also at ${school}.`;
-  if (year) return `Also a ${year}.`;
   return null;
 }
 
@@ -34,11 +33,7 @@ function yearMajorLine(p: SuggestedProfile): string | null {
 }
 
 function Initials({ name, className }: { name: string; className: string }) {
-  return (
-    <div className={`grid shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-sm font-semibold text-[var(--ink-muted)] ${className}`}>
-      {name.charAt(0).toUpperCase()}
-    </div>
-  );
+  return <AvatarBase seed={name} name={name} className={`${className} text-sm`} />;
 }
 
 // Persistent feed right rail. Every widget maps to
@@ -71,7 +66,6 @@ export default async function RightRail() {
   const schoolPeople = (schoolRows ?? []).map(toSuggestedProfile);
 
   const viewerSignal: MatchSignal = {
-    year: profile?.year ?? null,
     major: profile?.major ?? null,
     goals: profile?.goals ?? null,
     bio: profile?.bio ?? null,
@@ -101,9 +95,7 @@ export default async function RightRail() {
                   className="cascade-up flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3"
                   style={{ "--delay": `${i * 80}ms` } as React.CSSProperties}
                 >
-                  {p.avatar_url
-                    ? <AvatarImage src={p.avatar_url} alt="" className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover" pro={p.is_pro} />
-                    : <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-sm font-semibold text-[var(--ink-muted)]">{nm.charAt(0).toUpperCase()}</div>}
+                  <AvatarBase src={p.avatar_url} seed={p.username} name={nm} className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] text-sm" pro={p.is_pro} />
                   <div className="min-w-0 flex-1 text-sm">
                     <div className="flex flex-wrap items-center gap-x-1.5">
                       <Link href={`/profile/${p.username}`} className="truncate font-medium hover:underline">{nm}</Link>
@@ -136,9 +128,7 @@ export default async function RightRail() {
               const nm = p.display_name ?? p.username;
               return (
                 <div key={p.id} className="flex items-center gap-3">
-                  {p.avatar_url
-                    ? <AvatarImage src={p.avatar_url} alt="" className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover" pro={p.is_pro} />
-                    : <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-sm font-semibold text-[var(--ink-muted)]">{nm.charAt(0).toUpperCase()}</div>}
+                  <AvatarBase src={p.avatar_url} seed={p.username} name={nm} className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] text-sm" pro={p.is_pro} />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-x-1.5">
                       <Link href={`/profile/${p.username}`} className="truncate text-sm font-medium hover:underline">{nm}</Link>

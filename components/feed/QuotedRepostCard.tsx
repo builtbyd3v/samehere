@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import AvatarImage from "@/components/ui/AvatarImage";
+import AvatarBase from "@/components/ui/Avatar";
 import MentionText from "@/components/ui/MentionText";
 import PostCard from "@/components/feed/PostCard";
 import ProfileHoverLink from "@/components/profile/ProfileHoverLink";
@@ -57,13 +57,7 @@ export default function QuotedRepostCard({
     >
       <div className="flex gap-3">
         <ProfileHoverLink href={`/profile/${r.username}`} username={r.username} className="shrink-0">
-          {r.avatar_url ? (
-            <AvatarImage src={r.avatar_url} alt="" className="h-10 w-10 rounded-full border border-[var(--border)] object-cover" pro={r.is_pro} />
-          ) : (
-            <div className="grid h-10 w-10 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-sm font-semibold text-[var(--ink-muted)]">
-              {name.charAt(0).toUpperCase()}
-            </div>
-          )}
+          <AvatarBase src={r.avatar_url} seed={r.username} name={name} className="h-10 w-10 rounded-full border border-[var(--border)] text-sm" pro={r.is_pro} />
         </ProfileHoverLink>
         <div className="min-w-0 flex-1">
           <div className="flex items-start gap-2">

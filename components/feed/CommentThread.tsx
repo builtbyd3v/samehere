@@ -4,7 +4,7 @@ import { useOptimistic } from "react";
 import CommentComposer from "./CommentComposer";
 import DeleteCommentButton from "./DeleteCommentButton";
 import UserBadges from "@/components/profile/UserBadges";
-import AvatarImage from "@/components/ui/AvatarImage";
+import AvatarBase from "@/components/ui/Avatar";
 import MentionText from "@/components/ui/MentionText";
 import ProfileHoverLink from "@/components/profile/ProfileHoverLink";
 import type { Comment, CommentAuthor } from "./comment-types";
@@ -64,18 +64,10 @@ export default function CommentThread({
                   username={c.author.username}
                   className="shrink-0"
                 >
-                  {c.author.avatar_url ? (
-                    <AvatarImage src={c.author.avatar_url} alt="" className="h-8 w-8 rounded-full border border-[var(--border)] object-cover" pro={c.author.is_pro ?? false} />
-                  ) : (
-                    <div className="grid h-8 w-8 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-xs font-semibold text-[var(--ink-muted)]">
-                      {cname.charAt(0).toUpperCase()}
-                    </div>
-                  )}
+                  <AvatarBase src={c.author.avatar_url} seed={c.author.username} name={cname} className="h-8 w-8 rounded-full border border-[var(--border)] text-xs" pro={c.author.is_pro ?? false} />
                 </ProfileHoverLink>
               ) : (
-                <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-xs font-semibold text-[var(--ink-muted)]">
-                  {cname.charAt(0).toUpperCase()}
-                </div>
+                <AvatarBase src={null} seed={cname} name={cname} className="h-8 w-8 shrink-0 rounded-full border border-[var(--border)] text-xs" />
               )}
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-x-1.5 text-sm">

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import UserBadges from "@/components/profile/UserBadges";
-import AvatarImage from "@/components/ui/AvatarImage";
+import AvatarBase from "@/components/ui/Avatar";
 import { TEXT_LIMITS } from "@/lib/utils/validation";
 
 const input =
@@ -88,18 +88,13 @@ export async function FeedSearchResults({ q }: { q: string }) {
               href={`/profile/${p.username}`}
               className="card card-hover flex items-center gap-2.5 px-3 py-2.5 active:scale-[0.99]"
             >
-              {p.avatar_url ? (
-                <AvatarImage
-                  src={p.avatar_url}
-                  alt=""
-                  className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover"
-                  pro={p.is_pro}
-                />
-              ) : (
-                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-sm font-semibold text-[var(--ink-muted)]">
-                  {name.charAt(0).toUpperCase()}
-                </div>
-              )}
+              <AvatarBase
+                src={p.avatar_url}
+                seed={p.username}
+                name={name}
+                className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] text-sm"
+                pro={p.is_pro}
+              />
               <div className="min-w-0 text-sm">
                 <p className="flex flex-wrap items-center gap-x-1.5 font-medium">
                   {name}

@@ -40,11 +40,9 @@ function norm(s: string | null): string {
 function sharedFactLine(viewer: MatchSignal, candidate: MatchSignal): string | null {
   const school = norm(viewer.school) && norm(viewer.school) === norm(candidate.school) ? candidate.school : null;
   const major = norm(viewer.major) && norm(viewer.major) === norm(candidate.major) ? candidate.major : null;
-  const year = norm(viewer.year) && norm(viewer.year) === norm(candidate.year) ? candidate.year : null;
   if (school && major) return `Also studies ${major} at ${school}.`;
   if (major) return `Also studies ${major}.`;
   if (school) return `Also at ${school}.`;
-  if (year) return `Also a ${year}.`;
   return null;
 }
 
@@ -53,7 +51,6 @@ type Recipient = {
   email: string;
   is_pro: boolean;
   pro_until: string | null;
-  year: string | null;
   major: string | null;
   goals: string | null;
   bio: string | null;
@@ -66,7 +63,6 @@ type Candidate = {
   display_name: string | null;
   avatar_url: string | null;
   school: string | null;
-  year: string | null;
   major: string | null;
   goals: string | null;
   bio: string | null;
@@ -110,7 +106,7 @@ export async function GET(request: NextRequest) {
     await Promise.all(
       slice.map(async (r) => {
         const recipientPro = isPro({ is_pro: r.is_pro, pro_until: r.pro_until });
-        const viewerSignal: MatchSignal = { year: r.year, major: r.major, goals: r.goals, bio: r.bio, school: r.school };
+        const viewerSignal: MatchSignal = { major: r.major, goals: r.goals, bio: r.bio, school: r.school };
 
         const { data: candidateData } = await admin.rpc("get_match_candidates", { p_user: r.user_id });
         const candidates = (candidateData ?? []) as Candidate[];
@@ -119,7 +115,7 @@ export async function GET(request: NextRequest) {
         const ranked = candidates
           .map((c) => ({
             c,
-            score: scoreOverlap(viewerSignal, { year: c.year, major: c.major, goals: c.goals, bio: c.bio, school: c.school }),
+            score: scoreOverlap(viewerSignal, { major: c.major, goals: c.goals, bio: c.bio, school: c.school }),
           }))
           .sort((x, y) => y.score - x.score)
           .map((x) => x.c);
@@ -141,14 +137,13 @@ export async function GET(request: NextRequest) {
             if (cached) {
               reason = cached;
             } else if (aiEnabled() && aiUsed < MAX_AI_RECIPIENTS) {
-              const candidateSignal: MatchSignal = { year: cand.year, major: cand.major, goals: cand.goals, bio: cand.bio, school: cand.school };
+              const candidateSignal: MatchSignal = { major: cand.major, goals: cand.goals, bio: cand.bio, school: cand.school };
               const fact = sharedFactLine(viewerSignal, candidateSignal);
               if (fact) {
                 aiUsed += 1;
                 const facts = [
                   norm(viewerSignal.school) && norm(viewerSignal.school) === norm(candidateSignal.school) && `same school: ${cand.school}`,
                   norm(viewerSignal.major) && norm(viewerSignal.major) === norm(candidateSignal.major) && `same major: ${cand.major}`,
-                  norm(viewerSignal.year) && norm(viewerSignal.year) === norm(candidateSignal.year) && `same year: ${cand.year}`,
                 ]
                   .filter(Boolean)
                   .join("; ");

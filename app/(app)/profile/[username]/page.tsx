@@ -21,10 +21,13 @@ import { fetchPlainReposts } from "@/lib/feed-reposts";
 import { fetchViewerMineState } from "@/lib/feed-engagement";
 import { mergeFeedTimeline } from "@/lib/feed-timeline";
 import UserBadges from "@/components/profile/UserBadges";
-import AvatarImage from "@/components/ui/AvatarImage";
+import AvatarBase from "@/components/ui/Avatar";
 import ContributionHeatmap, { type HeatmapDay } from "@/components/profile/ContributionHeatmap";
 import { isPro } from "@/lib/pro";
 import { PROFILE_THEMES, isProfileTheme, themeCssVars } from "@/lib/themes";
+import CompanyLogo from "@/components/ui/CompanyLogo";
+import { formatDateRange, descriptionBullets } from "@/lib/experience-format";
+import { schoolLogoUrl } from "@/lib/school-logo";
 
 const PROFILE_SELECT =
   "id, username, display_name, avatar_url, banner_url, year, major, bio, goals, is_private, heatmap_visibility, is_pro, pro_until, is_founder, is_campus_founder, profile_theme, verified_student";
@@ -39,21 +42,6 @@ const getProfileByUsername = cache(async (username: string) => {
   return data;
 });
 
-const YEAR_LABEL: Record<string, string> = {
-  freshman: "Freshman",
-  sophomore: "Sophomore",
-  junior: "Junior",
-  senior: "Senior",
-  grad: "Grad student",
-};
-
-const EXPERIENCE_KIND_LABEL: Record<string, string> = {
-  internship: "Internship",
-  job: "Job",
-  research: "Research",
-  club_role: "Club role",
-};
-
 type ExperienceRow = {
   id: string;
   kind: string;
@@ -61,7 +49,29 @@ type ExperienceRow = {
   role: string;
   term: string | null;
   note: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  is_current: boolean;
 };
+
+type EducationRow = {
+  id: string;
+  school: string;
+  degree: string | null;
+  field: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  school_domain: string | null;
+  is_current: boolean;
+};
+
+// Fixed group order for the Experience section, LinkedIn-style.
+const EXPERIENCE_GROUPS: { kind: string; label: string }[] = [
+  { kind: "internship", label: "Internships" },
+  { kind: "job", label: "Jobs" },
+  { kind: "research", label: "Research" },
+  { kind: "club_role", label: "Leadership & Clubs" },
+];
 
 function Stat({ value, label, accent, href }: { value: number; label: string; accent?: boolean; href?: string }) {
   const content = (
@@ -120,7 +130,6 @@ type PublicProfile = {
   is_campus_founder: boolean;
   is_private: boolean;
   heatmap_visibility: string;
-  year: string | null;
   major: string | null;
   bio: string | null;
   goals: string | null;
@@ -157,7 +166,7 @@ async function PublicProfileView({ username }: { username: string }) {
   const heatmap: HeatmapDay[] = heatmapRaw.map((d) => ({ ...d, breakdown: {} }));
 
   const displayName = profile.display_name ?? profile.username;
-  const metaParts = [profile.school, profile.year ? YEAR_LABEL[profile.year] : null, profile.major].filter(Boolean);
+  const metaParts = [profile.school, profile.major].filter(Boolean);
   const metaLine =
     metaParts.length <= 1 ? metaParts[0] ?? null : `${metaParts[0]} · ${metaParts.slice(1).join(", ")}`;
 
@@ -170,19 +179,14 @@ async function PublicProfileView({ username }: { username: string }) {
           style={{ background: "linear-gradient(120deg, color-mix(in srgb, var(--blue) 14%, var(--surface-card)) 0%, var(--surface-card) 62%)" }}
         />
         <div className="px-5 pb-5 sm:px-6 sm:pb-6">
-          {profile.avatar_url ? (
-            <AvatarImage
-              src={profile.avatar_url}
-              alt=""
-              pro={profile.is_pro}
-              priority
-              className="-mt-12 h-24 w-24 shrink-0 rounded-full border-4 border-[var(--surface-card)] object-cover sm:-mt-14 sm:h-28 sm:w-28"
-            />
-          ) : (
-            <div className="-mt-12 grid h-24 w-24 shrink-0 place-items-center rounded-full border-4 border-[var(--surface-card)] bg-[var(--featured-surface)] text-3xl font-semibold text-[var(--ink-muted)] sm:-mt-14 sm:h-28 sm:w-28">
-              {displayName.charAt(0).toUpperCase()}
-            </div>
-          )}
+          <AvatarBase
+            src={profile.avatar_url}
+            seed={profile.username}
+            name={displayName}
+            pro={profile.is_pro}
+            priority
+            className="-mt-12 h-24 w-24 shrink-0 rounded-full border-4 border-[var(--surface-card)] text-3xl sm:-mt-14 sm:h-28 sm:w-28"
+          />
 
           <div className="mt-3">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
@@ -337,7 +341,7 @@ export default async function ProfilePage({
     });
   }
 
-  const [schoolRes, countRes, relRes, postsRes, quotesRes, repostsRes, blockedIdsRes, myBlockRes, experiencesRes] = await Promise.all([
+  const [schoolRes, countRes, relRes, postsRes, quotesRes, repostsRes, blockedIdsRes, myBlockRes, experiencesRes, educationRes] = await Promise.all([
     supabase.from("profile_school").select("school").eq("profile_id", profile.id).maybeSingle(),
     supabase.rpc("get_profile_counts", { p_profile_id: profile.id }),
     user && !isOwner
@@ -363,10 +367,16 @@ export default async function ProfilePage({
       : Promise.resolve({ data: null as { id: string } | null }),
     supabase
       .from("experiences")
-      .select("id, kind, org, role, term, note")
+      .select("id, kind, org, role, term, note, start_date, end_date, is_current")
       .eq("user_id", profile.id)
       .order("created_at", { ascending: false })
       .returns<ExperienceRow[]>(),
+    supabase
+      .from("education")
+      .select("id, school, degree, field, start_date, end_date, school_domain, is_current")
+      .eq("user_id", profile.id)
+      .order("start_date", { ascending: false, nullsFirst: false })
+      .returns<EducationRow[]>(),
   ]);
 
   const viewerId = user?.id ?? null;
@@ -397,6 +407,46 @@ export default async function ProfilePage({
     original: engagedById.get(r.post.id)!,
   }));
   const experiences = experiencesRes.data ?? [];
+  const education = educationRes.data ?? [];
+
+  // Auto tagline: "<role> at <org> · <field/degree> at <school>", derived from
+  // whichever experience/education row is marked is_current (latest start_date
+  // if several are current). Falls back to school/year/major below when the
+  // user has no current roles, so profiles without experience data don't
+  // regress to a blank meta line.
+  function latestCurrent<T extends { start_date: string | null; is_current: boolean }>(rows: T[]): T | null {
+    const current = rows.filter((r) => r.is_current);
+    if (current.length === 0) return null;
+    return current.reduce((latest, r) => ((r.start_date ?? "") > (latest.start_date ?? "") ? r : latest));
+  }
+  const currentExp = latestCurrent(experiences);
+  const currentEdu = latestCurrent(education);
+  const expPhrase = currentExp ? `${currentExp.role} at ${currentExp.org}` : null;
+  // "Software Engineering at Western Governors University" (field, else degree).
+  const eduPhrase = currentEdu
+    ? currentEdu.field
+      ? `${currentEdu.field} at ${currentEdu.school}`
+      : currentEdu.degree
+        ? `${currentEdu.degree} at ${currentEdu.school}`
+        : currentEdu.school
+    : null;
+  const tagline = [expPhrase, eduPhrase].filter(Boolean).join(" · ");
+
+  // Logos: one cache-only lookup against job_companies, no external calls.
+  // ponytail: exact-name match only against the simplify company cache; case/whitespace normalized, but "Google Inc" vs "Google" or any company not in the internship feed falls back to a monogram. Upgrade path = a normalized name column or a logo API.
+  // Schools use schoolLogoUrl (domain-based) below instead of this cache.
+  const logoNames = [...new Set(experiences.map((e) => e.org))];
+  const logoByName = new Map<string, string | null>();
+  if (logoNames.length > 0) {
+    const { data: companies } = await supabase.from("job_companies").select("name, logo_url").in("name", logoNames);
+    for (const c of companies ?? []) {
+      logoByName.set(c.name.trim().toLowerCase(), c.logo_url);
+    }
+  }
+  function logoFor(name: string): string | null {
+    return logoByName.get(name.trim().toLowerCase()) ?? null;
+  }
+
   const isBlocked = !!(blockedIdsRes.data ?? []).includes(profile.id);
   const amIBlocking = !!myBlockRes.data;
   const profileIsPro = isPro(profile);
@@ -412,15 +462,14 @@ export default async function ProfilePage({
   // blocked) — see the ProfileMatchPrompt Suspense boundary below.
   const showMatchPrompt = !isOwner && !contentHidden;
 
-  const metaParts = [
-    school,
-    profile.year ? YEAR_LABEL[profile.year] : null,
-    profile.major,
-  ].filter(Boolean);
+  const metaParts = [school, profile.major].filter(Boolean);
   // Max one middle-dot per line: first item gets the dot separator, any
   // further items are comma-joined after it.
-  const metaLine =
+  const fallbackMetaLine =
     metaParts.length <= 1 ? metaParts[0] ?? null : `${metaParts[0]} · ${metaParts.slice(1).join(", ")}`;
+  // Tagline (current role/education) takes priority; school/year/major only
+  // shows when the user has no current experience or education rows.
+  const metaLine = tagline || fallbackMetaLine;
 
   // Banner, accent colour, and profile theme are Pro perks. The DB keeps all
   // three columns when a subscription lapses (guard_profile_privileged only
@@ -470,22 +519,14 @@ export default async function ProfilePage({
         <div className="px-5 pb-5 sm:px-6 sm:pb-6">
           {/* avatar pulls up over the banner; primary action sits to its right */}
           <div className="flex items-end justify-between gap-3">
-            {profile.avatar_url ? (
-              <AvatarImage
-                src={profile.avatar_url}
-                alt=""
-                pro={pro}
-                style={accentColor ? { borderColor: accentColor } : undefined}
-                className="-mt-12 h-24 w-24 shrink-0 rounded-full border-4 border-[var(--surface-card)] object-cover sm:-mt-14 sm:h-28 sm:w-28"
-              />
-            ) : (
-              <div
-                style={accentColor ? { borderColor: accentColor } : undefined}
-                className="-mt-12 grid h-24 w-24 shrink-0 place-items-center rounded-full border-4 border-[var(--surface-card)] bg-[var(--featured-surface)] text-3xl font-semibold text-[var(--ink-muted)] sm:-mt-14 sm:h-28 sm:w-28"
-              >
-                {displayName.charAt(0).toUpperCase()}
-              </div>
-            )}
+            <AvatarBase
+              src={profile.avatar_url}
+              seed={profile.username}
+              name={displayName}
+              pro={pro}
+              style={accentColor ? { borderColor: accentColor } : undefined}
+              className="-mt-12 h-24 w-24 shrink-0 rounded-full border-4 border-[var(--surface-card)] text-3xl sm:-mt-14 sm:h-28 sm:w-28"
+            />
 
             {isOwner ? (
               <Link href="/profile/edit" className="btn-ghost shrink-0 !rounded-full !px-4 !py-1.5 text-sm">
@@ -520,7 +561,6 @@ export default async function ProfilePage({
                   candidate={{
                     id: profile.id,
                     name: displayName,
-                    year: profile.year,
                     major: profile.major,
                     goals: profile.goals,
                     bio: profile.bio,
@@ -576,34 +616,85 @@ export default async function ProfilePage({
       )}
 
       {/* Experience — same visibility as bio (no privacy tier, mirrors the
-          experiences RLS "any signed-in user reads" policy). */}
+          experiences RLS "any signed-in user reads" policy). Grouped
+          LinkedIn-style by kind, each group sorted newest-first. */}
       {experiences.length > 0 && (
         <section
           className="card card-hover cascade-up mt-4 p-5 shadow-paper sm:p-6"
           style={{ "--delay": "160ms" } as React.CSSProperties}
         >
           <h2 className="text-sm font-semibold text-[var(--ink)]">Experience</h2>
-          <ul className="mt-3 flex flex-col gap-2">
-            {experiences.map((exp, i) => (
-              <li
-                key={exp.id}
-                className="cascade-up rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3"
-                style={{ "--delay": `${i * 60}ms` } as React.CSSProperties}
-              >
-                <p className="text-[10px] font-semibold tracking-wide text-[var(--ink-faint)] uppercase">
-                  {EXPERIENCE_KIND_LABEL[exp.kind] ?? exp.kind}
-                </p>
-                <p className="mt-0.5 text-[15px] font-medium text-[var(--ink)]">
-                  {exp.org} · {exp.role}
-                  {exp.term && <span className="font-normal text-[var(--ink-muted)]"> · {exp.term}</span>}
-                </p>
-                {exp.note && (
-                  <p className="mt-0.5 whitespace-pre-line break-words text-sm text-[var(--ink-muted)]">
-                    {exp.note}
+          <div className="mt-3 flex flex-col gap-5">
+            {EXPERIENCE_GROUPS.map(({ kind, label }) => {
+              const items = experiences
+                .filter((exp) => exp.kind === kind)
+                .sort((a, b) => (b.start_date ?? "").localeCompare(a.start_date ?? ""));
+              if (items.length === 0) return null;
+              return (
+                <div key={kind}>
+                  <p className="text-[10px] font-semibold tracking-wide text-[var(--ink-faint)] uppercase">
+                    {label}
                   </p>
-                )}
-              </li>
-            ))}
+                  <ul className="mt-2 flex flex-col gap-2">
+                    {items.map((exp, i) => {
+                      const dateRange = formatDateRange(exp.start_date, exp.end_date, exp.term);
+                      const bullets = descriptionBullets(exp.note);
+                      return (
+                        <li
+                          key={exp.id}
+                          className="cascade-up flex gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3"
+                          style={{ "--delay": `${i * 60}ms` } as React.CSSProperties}
+                        >
+                          <CompanyLogo name={exp.org} logoUrl={logoFor(exp.org)} size="md" />
+                          <div className="min-w-0">
+                            <p className="text-[15px] font-medium text-[var(--ink)]">{exp.role}</p>
+                            <p className="text-sm text-[var(--ink-muted)]">{exp.org}</p>
+                            {dateRange && <p className="mt-0.5 text-xs text-[var(--ink-faint)]">{dateRange}</p>}
+                            {bullets.length > 0 && (
+                              <ul className="mt-1 list-disc pl-5 text-sm break-words whitespace-pre-line text-[var(--ink-muted)]">
+                                {bullets.map((bullet, j) => (
+                                  <li key={j}>{bullet}</li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* Education — same visibility as Experience, no privacy tier. */}
+      {education.length > 0 && (
+        <section
+          className="card card-hover cascade-up mt-4 p-5 shadow-paper sm:p-6"
+          style={{ "--delay": "200ms" } as React.CSSProperties}
+        >
+          <h2 className="text-sm font-semibold text-[var(--ink)]">Education</h2>
+          <ul className="mt-3 flex flex-col gap-2">
+            {education.map((edu, i) => {
+              const dateRange = formatDateRange(edu.start_date, edu.end_date, null);
+              const degreeLine = [edu.degree, edu.field].filter(Boolean).join(", ");
+              return (
+                <li
+                  key={edu.id}
+                  className="cascade-up flex gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3"
+                  style={{ "--delay": `${i * 60}ms` } as React.CSSProperties}
+                >
+                  <CompanyLogo name={edu.school} logoUrl={schoolLogoUrl(edu.school_domain)} size="md" />
+                  <div className="min-w-0">
+                    <p className="text-[15px] font-medium text-[var(--ink)]">{edu.school}</p>
+                    {degreeLine && <p className="text-sm text-[var(--ink-muted)]">{degreeLine}</p>}
+                    {dateRange && <p className="mt-0.5 text-xs text-[var(--ink-faint)]">{dateRange}</p>}
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         </section>
       )}

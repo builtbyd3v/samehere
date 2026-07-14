@@ -18,12 +18,11 @@ export default async function ProfileMatchPrompt({
   const supabase = await createClient();
   const { data: viewerSignalData } = await supabase
     .from("profiles")
-    .select("year, major, goals, bio, is_pro, pro_until, profile_school(school)")
+    .select("major, goals, bio, is_pro, pro_until, profile_school(school)")
     .eq("id", viewerId)
     .maybeSingle();
 
   const viewerSignal: MatchSignal = {
-    year: viewerSignalData?.year ?? null,
     major: viewerSignalData?.major ?? null,
     goals: viewerSignalData?.goals ?? null,
     bio: viewerSignalData?.bio ?? null,

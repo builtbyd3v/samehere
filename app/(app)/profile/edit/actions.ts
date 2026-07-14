@@ -9,11 +9,17 @@ import { isPro } from "@/lib/pro";
 import { isProfileTheme } from "@/lib/themes";
 import { getPostHogServerClient } from "@/lib/posthog-server";
 import { fallbackProfileNudge, getProfileGaps } from "@/lib/profile-completion";
+import { DEGREE_VALUES as DEGREE_VALUES_RAW } from "@/lib/education-options";
+import { resolveInstitutionDomain } from "@/lib/resolve-domain";
+
+// DEGREE_VALUES infers as a narrow string-literal union array (mapped from an
+// `as const` options list), which Array.includes can't check against a plain
+// `string`. Widen once here rather than touching the shared options file.
+const DEGREE_VALUES: readonly string[] = DEGREE_VALUES_RAW;
 import type { TablesUpdate } from "@/types/database.types";
 
 const EXPERIENCE_KINDS = ["internship", "job", "research", "club_role"];
 
-const YEARS = ["freshman", "sophomore", "junior", "senior", "grad"];
 const ALLOWED_AVATAR_MIME = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 const ALLOWED_BANNER_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -36,14 +42,10 @@ export async function updateProfile(_prev: EditState, formData: FormData): Promi
   // Trim + cap every free-text field at the trust boundary.
   const str = (k: string, max: number) => String(formData.get(k) ?? "").trim().slice(0, max);
 
-  const yearRaw = str("year", 20);
-
   const updates: TablesUpdate<"profiles"> = {
     display_name: str("display_name", 50) || null,
-    major: str("major", 100) || null,
     bio: str("bio", 500) || null,
     goals: str("goals", 500) || null,
-    year: YEARS.includes(yearRaw) ? yearRaw : null,
   };
 
   // Trust boundary: never take the client's word for Pro status. Non-Pro
@@ -60,12 +62,6 @@ export async function updateProfile(_prev: EditState, formData: FormData): Promi
     .update(updates)
     .eq("id", user.id);
   if (pErr) return { error: "Could not save your profile. Try again." };
-
-  const school = str("school", 100) || null;
-  const { error: sErr } = await supabase
-    .from("profile_school")
-    .upsert({ profile_id: user.id, school }, { onConflict: "profile_id" });
-  if (sErr) return { error: "Could not save your school. Try again." };
 
   // 1 pt for a profile update is awarded by the profiles_award_contribution
   // AFTER UPDATE trigger (fires only when a meaningful content field changed;
@@ -151,7 +147,6 @@ export async function draftProfileText(): Promise<DraftState> {
 
   const facts = [
     p?.display_name ? `name: ${untrusted(p.display_name)}` : "",
-    p?.year ? `year: ${untrusted(String(p.year))}` : "",
     p?.major ? `major: ${untrusted(p.major)}` : "",
     schoolRow?.school ? `school: ${untrusted(schoolRow.school)}` : "",
   ].filter(Boolean).join("\n");
@@ -251,6 +246,19 @@ export async function uploadBanner(_prev: AvatarState, formData: FormData): Prom
 
 export type ExperienceState = { error?: string };
 
+// Turn a month/year pair from the form into an ISO date (day fixed to the
+// 1st, since the form only collects month + year). Returns null for an
+// unset field ("currently here" leaves end_month/end_year empty) or a
+// year outside a sane human-career range.
+function toDate(month: string, year: string): string | null {
+  const y = Number(year);
+  if (!Number.isInteger(y)) return null;
+  const now = new Date().getFullYear();
+  if (y < now - 15 || y > now + 8) return null; // sane range
+  const m = Math.min(12, Math.max(1, Number(month) || 1));
+  return `${y}-${String(m).padStart(2, "0")}-01`;
+}
+
 // Add one experience entry. Server-side validates the same constraints the
 // DB already enforces (length, kind enum) so a bad request fails with a
 // friendly message instead of a raw 23514 constraint error; the 10-row cap
@@ -271,14 +279,66 @@ export async function addExperience(_prev: ExperienceState, formData: FormData):
   const role = str("role", 80);
   if (!org || !role) return { error: "Org and role are required." };
 
-  const term = str("term", 40) || null;
-  const note = str("note", 280) || null;
+  const start_date = toDate(str("start_month", 2), str("start_year", 4));
+  const end_date = toDate(str("end_month", 2), str("end_year", 4));
+  if (start_date && end_date && end_date < start_date) {
+    return { error: "End date must be after the start date." };
+  }
 
-  const { error } = await supabase.from("experiences").insert({ user_id: user.id, kind, org, role, term, note });
+  const note = str("note", 600) || null;
+  const isCurrent = formData.get("is_current") === "on";
+
+  const { error } = await supabase
+    .from("experiences")
+    .insert({ user_id: user.id, kind, org, role, start_date, end_date, note, is_current: isCurrent });
   if (error) {
     if (error.message.includes("limit: at most 10 experiences")) return { error: "Max 10 experiences." };
     return { error: "Could not add experience. Try again." };
   }
+
+  const { data: prof } = await supabase.from("profiles").select("username").eq("id", user.id).single();
+  revalidatePath("/profile/edit");
+  if (prof?.username) revalidatePath(`/profile/${prof.username}`);
+
+  return {};
+}
+
+// Update one of the caller's own experiences. Mirrors addExperience's
+// validation; RLS (auth.uid() = user_id) enforces ownership on the update.
+export async function updateExperience(
+  id: string,
+  _prev: ExperienceState,
+  formData: FormData,
+): Promise<ExperienceState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be logged in." };
+
+  const str = (k: string, max: number) => String(formData.get(k) ?? "").trim().slice(0, max);
+
+  const kind = str("kind", 20);
+  if (!EXPERIENCE_KINDS.includes(kind)) return { error: "Choose a type." };
+
+  const org = str("org", 80);
+  const role = str("role", 80);
+  if (!org || !role) return { error: "Org and role are required." };
+
+  const start_date = toDate(str("start_month", 2), str("start_year", 4));
+  const end_date = toDate(str("end_month", 2), str("end_year", 4));
+  if (start_date && end_date && end_date < start_date) {
+    return { error: "End date must be after the start date." };
+  }
+
+  const note = str("note", 600) || null;
+  const isCurrent = formData.get("is_current") === "on";
+
+  const { error } = await supabase
+    .from("experiences")
+    .update({ kind, org, role, start_date, end_date, note, is_current: isCurrent })
+    .eq("id", id);
+  if (error) return { error: "Could not update experience. Try again." };
 
   const { data: prof } = await supabase.from("profiles").select("username").eq("id", user.id).single();
   revalidatePath("/profile/edit");
@@ -304,6 +364,161 @@ export async function deleteExperience(id: string): Promise<ExperienceState> {
   if (prof?.username) revalidatePath(`/profile/${prof.username}`);
 
   return {};
+}
+
+export type EducationState = { error?: string };
+
+// Add one education entry. Mirrors addExperience: school is required, degree
+// is required + validated against DEGREE_VALUES, field is optional, dates
+// parse the same way, and the 5-row cap is enforced by a DB trigger and
+// surfaced below. On success, derived profile fields (major/year/school) are
+// re-synced from the current education entry.
+export async function addEducation(_prev: EducationState, formData: FormData): Promise<EducationState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be logged in." };
+
+  const str = (k: string, max: number) => String(formData.get(k) ?? "").trim().slice(0, max);
+
+  const school = str("school", 80);
+  if (!school) return { error: "School is required." };
+
+  const degree = str("degree", 80);
+  if (!DEGREE_VALUES.includes(degree)) return { error: "Choose a degree." };
+
+  const field = str("field", 80) || null;
+  // A listed US school carries its domain from the autocomplete. An outside
+  // institution (e.g. a certificate provider) does not, so resolve one so it
+  // still gets a logo. Best-effort; null falls back to a monogram.
+  let school_domain = str("school_domain", 255) || null;
+  if (!school_domain && school) school_domain = await resolveInstitutionDomain(school);
+
+  const start_date = toDate(str("start_month", 2), str("start_year", 4));
+  const end_date = toDate(str("end_month", 2), str("end_year", 4));
+  if (start_date && end_date && end_date < start_date) {
+    return { error: "End date must be after the start date." };
+  }
+
+  const isCurrent = formData.get("is_current") === "on";
+
+  const { error } = await supabase
+    .from("education")
+    .insert({ user_id: user.id, school, degree, field, school_domain, start_date, end_date, is_current: isCurrent });
+  if (error) {
+    if (error.message.includes("limit: at most 5 education")) return { error: "Max 5 education entries." };
+    return { error: "Could not add education. Try again." };
+  }
+
+  await syncAcademicFromCurrentEducation(supabase, user.id);
+
+  const { data: prof } = await supabase.from("profiles").select("username").eq("id", user.id).single();
+  revalidatePath("/profile/edit");
+  if (prof?.username) revalidatePath(`/profile/${prof.username}`);
+
+  return {};
+}
+
+// Update one of the caller's own education entries. Mirrors addEducation's
+// validation; RLS (auth.uid() = user_id) enforces ownership on the update, so
+// there's no cap check here (a cap only matters on insert).
+export async function updateEducation(
+  id: string,
+  _prev: EducationState,
+  formData: FormData,
+): Promise<EducationState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be logged in." };
+
+  const str = (k: string, max: number) => String(formData.get(k) ?? "").trim().slice(0, max);
+
+  const school = str("school", 80);
+  if (!school) return { error: "School is required." };
+
+  const degree = str("degree", 80);
+  if (!DEGREE_VALUES.includes(degree)) return { error: "Choose a degree." };
+
+  const field = str("field", 80) || null;
+  // A listed US school carries its domain from the autocomplete. An outside
+  // institution (e.g. a certificate provider) does not, so resolve one so it
+  // still gets a logo. Best-effort; null falls back to a monogram.
+  let school_domain = str("school_domain", 255) || null;
+  if (!school_domain && school) school_domain = await resolveInstitutionDomain(school);
+
+  const start_date = toDate(str("start_month", 2), str("start_year", 4));
+  const end_date = toDate(str("end_month", 2), str("end_year", 4));
+  if (start_date && end_date && end_date < start_date) {
+    return { error: "End date must be after the start date." };
+  }
+
+  const isCurrent = formData.get("is_current") === "on";
+
+  const { error } = await supabase
+    .from("education")
+    .update({ school, degree, field, school_domain, start_date, end_date, is_current: isCurrent })
+    .eq("id", id);
+  if (error) return { error: "Could not update education. Try again." };
+
+  await syncAcademicFromCurrentEducation(supabase, user.id);
+
+  const { data: prof } = await supabase.from("profiles").select("username").eq("id", user.id).single();
+  revalidatePath("/profile/edit");
+  if (prof?.username) revalidatePath(`/profile/${prof.username}`);
+
+  return {};
+}
+
+// Delete one of the caller's own education entries. RLS (auth.uid() = user_id)
+// enforces ownership; no need to re-check it here.
+export async function deleteEducation(id: string): Promise<EducationState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be logged in." };
+
+  const { error } = await supabase.from("education").delete().eq("id", id);
+  if (error) return { error: "Could not delete education. Try again." };
+
+  await syncAcademicFromCurrentEducation(supabase, user.id);
+
+  const { data: prof } = await supabase.from("profiles").select("username").eq("id", user.id).single();
+  revalidatePath("/profile/edit");
+  if (prof?.username) revalidatePath(`/profile/${prof.username}`);
+
+  return {};
+}
+
+// Derive profiles.major / profiles.year / profile_school.school from the
+// user's current education entry, since those inputs were removed from the
+// profile form. "Current" = the entry with is_current = true (most recent by
+// start_date among those); falls back to the most recent entry by start_date
+// if none are marked current. No-op if the user has no education rows.
+async function syncAcademicFromCurrentEducation(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+): Promise<void> {
+  const { data: rows } = await supabase
+    .from("education")
+    .select("school, field, start_date, end_date, is_current")
+    .eq("user_id", userId)
+    .order("start_date", { ascending: false, nullsFirst: false });
+  if (!rows || rows.length === 0) return;
+
+  const current = rows.find((r) => r.is_current) ?? rows[0];
+
+  await supabase
+    .from("profiles")
+    .update({ major: current.field })
+    .eq("id", userId);
+
+  await supabase
+    .from("profile_school")
+    .upsert({ profile_id: userId, school: current.school }, { onConflict: "profile_id" });
 }
 
 // Byte-sniff for animation, no libraries. Each format is checked by its own

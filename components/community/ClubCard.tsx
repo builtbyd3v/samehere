@@ -19,7 +19,7 @@ export default function ClubCard({ club, count }: { club: Club; count?: number }
       href={`/community/clubs/${club.slug}`}
       className="flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3 transition hover:bg-[var(--featured-surface)]"
     >
-      <ClubAvatar url={club.avatar_url} name={club.name} className="h-9 w-9 shrink-0" />
+      <ClubAvatar url={club.avatar_url} name={club.name} seed={club.slug} className="h-9 w-9 shrink-0" />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-1.5">
           <span className="truncate font-medium text-[var(--ink)]">{club.name}</span>

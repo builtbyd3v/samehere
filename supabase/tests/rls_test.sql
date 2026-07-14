@@ -2052,6 +2052,152 @@ exception when others then
 end $$;
 reset role;
 
+-- ============ EDUCATION — same RLS shape as experiences ============
+-- Owner ALL (auth.uid() = user_id), any signed-in user can SELECT, anon
+-- fully denied, 6th row/user hits the education_cap() BEFORE INSERT trigger
+-- (5-row cap).
+
+-- EDUCATION_anon_select_denied — anon (logged-out) gets 42501, no RLS row leak.
+select tests.as_anon();
+do $$
+declare
+  v_state text;
+  v_raised boolean;
+begin
+  begin
+    perform 1 from public.education limit 1;
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state <> '42501' then
+    raise exception 'EDUCATION_anon_select_denied REGRESSION: anon selecting public.education did not fail with 42501 (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+  insert into tests_results values ('EDUCATION_anon_select_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('EDUCATION_anon_select_denied', false, sqlerrm);
+end $$;
+reset role;
+
+-- EDUCATION_owner_insert_select — A can insert an education row for herself
+-- and select it back.
+select tests.as_user(id) from tests_fixture where key = 'a';
+do $$
+declare
+  v_id uuid;
+begin
+  insert into public.education (user_id, school, degree, field)
+  values ((select id from tests_fixture where key = 'a'), 'State University', 'BS', 'Computer Science')
+  returning id into v_id;
+  insert into tests_fixture (key, id) values ('edu_a', v_id);
+  if not exists (select 1 from public.education where id = v_id) then
+    raise exception 'EDUCATION_owner_insert_select REGRESSION: owner cannot select the education row she just inserted';
+  end if;
+  insert into tests_results values ('EDUCATION_owner_insert_select', true, 'ok');
+exception when others then
+  insert into tests_results values ('EDUCATION_owner_insert_select', false, sqlerrm);
+end $$;
+reset role;
+
+-- EDUCATION_insert_other_denied — A cannot insert an education row with B's
+-- user_id; the owner WITH CHECK clause must reject it with 42501.
+select tests.as_user(id) from tests_fixture where key = 'a';
+do $$
+declare
+  v_b uuid := (select id from tests_fixture where key = 'b');
+  v_state text;
+  v_raised boolean;
+begin
+  begin
+    insert into public.education (user_id, school) values (v_b, 'Forged University');
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state <> '42501' then
+    raise exception 'EDUCATION_insert_other_denied REGRESSION: A inserted an education row with B''s user_id (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+  insert into tests_results values ('EDUCATION_insert_other_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('EDUCATION_insert_other_denied', false, sqlerrm);
+end $$;
+reset role;
+
+-- EDUCATION_owner_update — A can update her own row (class_year, school_domain)
+-- and the change is visible on select-back.
+select tests.as_user(id) from tests_fixture where key = 'a';
+do $$
+declare
+  v_updated int;
+  v_class_year text;
+  v_school_domain text;
+begin
+  update public.education set class_year = '2026', school_domain = 'stateu.edu'
+   where id = (select id from tests_fixture where key = 'edu_a');
+  get diagnostics v_updated = row_count;
+  if v_updated <> 1 then
+    raise exception 'EDUCATION_owner_update REGRESSION: owner update affected % rows, expected 1', v_updated;
+  end if;
+  select class_year, school_domain into v_class_year, v_school_domain
+    from public.education where id = (select id from tests_fixture where key = 'edu_a');
+  if v_class_year <> '2026' or v_school_domain <> 'stateu.edu' then
+    raise exception 'EDUCATION_owner_update REGRESSION: select-back did not reflect owner update (class_year=%, school_domain=%)', v_class_year, v_school_domain;
+  end if;
+  insert into tests_results values ('EDUCATION_owner_update', true, 'ok');
+exception when others then
+  insert into tests_results values ('EDUCATION_owner_update', false, sqlerrm);
+end $$;
+reset role;
+
+-- EDUCATION_update_other_denied — B cannot update A's row; owner policy must
+-- filter it out of the UPDATE's USING clause, affecting 0 rows.
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+declare
+  v_updated int;
+begin
+  update public.education set class_year = 'hacked by B'
+   where id = (select id from tests_fixture where key = 'edu_a');
+  get diagnostics v_updated = row_count;
+  if v_updated <> 0 then
+    raise exception 'EDUCATION_update_other_denied REGRESSION: non-owner B updated % of A''s education row(s)', v_updated;
+  end if;
+  insert into tests_results values ('EDUCATION_update_other_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('EDUCATION_update_other_denied', false, sqlerrm);
+end $$;
+reset role;
+
+-- EDUCATION_cap — the 6th education row for the same user is rejected by the
+-- education_cap() BEFORE INSERT trigger.
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+declare
+  v_b uuid := (select id from tests_fixture where key = 'b');
+  i int;
+  v_raised boolean := false;
+begin
+  for i in 1..5 loop
+    insert into public.education (user_id, school) values (v_b, 'School ' || i);
+  end loop;
+
+  begin
+    insert into public.education (user_id, school) values (v_b, 'School 6');
+  exception when others then
+    v_raised := true;
+  end;
+
+  if not v_raised then
+    raise exception 'EDUCATION_cap REGRESSION: a 6th education row for the same user was accepted — cap trigger did not fire';
+  end if;
+  insert into tests_results values ('EDUCATION_cap', true, 'ok');
+exception when others then
+  insert into tests_results values ('EDUCATION_cap', false, sqlerrm);
+end $$;
+reset role;
+
 -- ============ JOB_LISTINGS / JOB_FIT / JOB_PITCHES — 20260719130000_job_listings.sql ============
 -- job_listings: authenticated SELECT-only (no insert/update/delete policies
 -- -- ingest cron uses the admin client, bypasses RLS), anon fully denied.

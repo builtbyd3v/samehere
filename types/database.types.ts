@@ -626,34 +626,93 @@ export type Database = {
           },
         ]
       }
+      education: {
+        Row: {
+          class_year: string | null
+          created_at: string
+          degree: string | null
+          end_date: string | null
+          field: string | null
+          id: string
+          is_current: boolean
+          school: string
+          school_domain: string | null
+          start_date: string | null
+          user_id: string
+        }
+        Insert: {
+          class_year?: string | null
+          created_at?: string
+          degree?: string | null
+          end_date?: string | null
+          field?: string | null
+          id?: string
+          is_current?: boolean
+          school: string
+          school_domain?: string | null
+          start_date?: string | null
+          user_id: string
+        }
+        Update: {
+          class_year?: string | null
+          created_at?: string
+          degree?: string | null
+          end_date?: string | null
+          field?: string | null
+          id?: string
+          is_current?: boolean
+          school?: string
+          school_domain?: string | null
+          start_date?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "education_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       experiences: {
         Row: {
           created_at: string
+          end_date: string | null
           id: string
+          is_current: boolean
           kind: string
           note: string | null
           org: string
           role: string
+          start_date: string | null
           term: string | null
           user_id: string
         }
         Insert: {
           created_at?: string
+          end_date?: string | null
           id?: string
+          is_current?: boolean
           kind: string
           note?: string | null
           org: string
           role: string
+          start_date?: string | null
           term?: string | null
           user_id: string
         }
         Update: {
           created_at?: string
+          end_date?: string | null
           id?: string
+          is_current?: boolean
           kind?: string
           note?: string | null
           org?: string
           role?: string
+          start_date?: string | null
           term?: string | null
           user_id?: string
         }

@@ -9,7 +9,7 @@ import {
 } from "@/app/(app)/messages/actions";
 import { IconCommunity } from "@/components/icons";
 import { TEXT_LIMITS, textLimitError } from "@/lib/utils/validation";
-import AvatarImage from "@/components/ui/AvatarImage";
+import AvatarBase from "@/components/ui/Avatar";
 
 const MAX_MEMBERS = 10;
 
@@ -120,13 +120,13 @@ export default function NewGroupButton() {
                   onChange={() => toggle(u.id)}
                   className="h-4 w-4 shrink-0"
                 />
-                {u.avatar_url ? (
-                  <AvatarImage src={u.avatar_url} alt="" className="h-9 w-9 rounded-full border border-[var(--border)] object-cover" pro={u.is_pro} />
-                ) : (
-                  <div className="grid h-9 w-9 place-items-center rounded-full border border-[var(--border)] bg-[var(--featured-surface)] text-xs font-semibold text-[var(--ink-muted)]">
-                    {name.charAt(0).toUpperCase()}
-                  </div>
-                )}
+                <AvatarBase
+                  src={u.avatar_url}
+                  seed={u.username}
+                  name={name}
+                  className="h-9 w-9 rounded-full border border-[var(--border)] text-xs"
+                  pro={u.is_pro}
+                />
                 <span className="min-w-0 text-sm">
                   <span className="font-medium text-[var(--ink)]">{name}</span>
                   <span className="ml-1.5 text-[var(--ink-muted)]">@{u.username}</span>
