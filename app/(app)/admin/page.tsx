@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import LocalTime from "@/components/ui/LocalTime";
 import ReportActions from "./ReportActions";
+import FeedbackActions from "./FeedbackActions";
 
 export const metadata: Metadata = { title: "Admin" };
 
@@ -19,8 +20,12 @@ export default async function AdminPage() {
   const { data: isAdmin } = await supabase.rpc("current_is_admin");
   if (!isAdmin) redirect("/feed");
 
-  const { data: reports } = await supabase.rpc("admin_list_reports");
+  const [{ data: reports }, { data: feedback }] = await Promise.all([
+    supabase.rpc("admin_list_reports"),
+    supabase.rpc("admin_list_feedback"),
+  ]);
   const rows = reports ?? [];
+  const feedbackRows = feedback ?? [];
 
   return (
     <main className="page-enter mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8">
@@ -98,6 +103,45 @@ export default async function AdminPage() {
                 postHidden={r.post_hidden}
                 authorSuspended={r.author_suspended}
               />
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <h2 className="mt-8 mb-1 text-xl font-semibold tracking-[-0.02em] text-[var(--ink)]">Feedback</h2>
+      <p className="mb-4 text-sm text-[var(--ink-muted)]">
+        {feedbackRows.length} unresolved item{feedbackRows.length === 1 ? "" : "s"}
+      </p>
+
+      {feedbackRows.length === 0 ? (
+        <div className="card px-4 py-8 text-center text-sm text-[var(--ink-muted)]">Inbox zero.</div>
+      ) : (
+        <ul className="space-y-3">
+          {feedbackRows.map((f) => (
+            <li key={f.feedback_id} className="card p-4">
+              <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[var(--ink-muted)]">
+                <span
+                  className={`rounded-full px-2 py-0.5 font-medium ${
+                    f.category === "bug"
+                      ? "bg-[var(--danger)]/10 text-[var(--danger)]"
+                      : "bg-[var(--featured-surface)] text-[var(--ink)]"
+                  }`}
+                >
+                  {f.category}
+                </span>
+                <span>
+                  {f.author_username ? (
+                    <Link href={`/profile/${f.author_username}`} className="text-[var(--ink)] hover:underline">
+                      @{f.author_username}
+                    </Link>
+                  ) : (
+                    "deleted account"
+                  )}{" "}
+                  · <LocalTime iso={f.created_at} />
+                </span>
+              </div>
+              <p className="mb-3 whitespace-pre-wrap text-sm text-[var(--ink)]">{f.message}</p>
+              <FeedbackActions feedbackId={f.feedback_id} />
             </li>
           ))}
         </ul>

@@ -39,6 +39,13 @@ export async function resolveReport(reportId: string) {
   revalidatePath("/admin");
 }
 
+export async function resolveFeedback(feedbackId: string) {
+  const supabase = await requireAdmin();
+  const { error } = await supabase.rpc("admin_resolve_feedback", { p_feedback_id: feedbackId });
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin");
+}
+
 export async function suspendUser(userId: string) {
   const supabase = await requireAdmin();
   const { error } = await supabase.rpc("admin_suspend_user", { p_user: userId });

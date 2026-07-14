@@ -732,6 +732,7 @@ export type Database = {
           created_at: string | null
           id: string
           message: string
+          resolved_at: string | null
           user_id: string | null
         }
         Insert: {
@@ -739,6 +740,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           message: string
+          resolved_at?: string | null
           user_id?: string | null
         }
         Update: {
@@ -746,6 +748,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           message?: string
+          resolved_at?: string | null
           user_id?: string | null
         }
         Relationships: [
@@ -1576,6 +1579,16 @@ export type Database = {
         Returns: undefined
       }
       admin_hide_post: { Args: { p_post_id: string }; Returns: undefined }
+      admin_list_feedback: {
+        Args: never
+        Returns: {
+          author_username: string
+          category: string
+          created_at: string
+          feedback_id: string
+          message: string
+        }[]
+      }
       admin_list_reports: {
         Args: never
         Returns: {
@@ -1595,6 +1608,10 @@ export type Database = {
           snapshot: string
           target_type: string
         }[]
+      }
+      admin_resolve_feedback: {
+        Args: { p_feedback_id: string }
+        Returns: undefined
       }
       admin_resolve_report: {
         Args: { p_report_id: string }
