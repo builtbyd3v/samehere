@@ -12,7 +12,6 @@ function baseCandidate(overrides: Partial<Record<string, unknown>> = {}) {
     is_founder: false,
     is_campus_founder: false,
     verified_student: false,
-    year: "junior",
     major: "cs",
     goals: null,
     bio: null,
@@ -46,6 +45,21 @@ describe("compactCandidate", () => {
     const flagsIndex = out.indexOf("flags=");
     expect(flagsIndex).toBeGreaterThan(-1);
     expect(flagsIndex).toBeLessThan(delimiterStart);
+  });
+
+  it("omits the expected-graduation token when no education entry is given", () => {
+    const out = compactCandidate(baseCandidate() as never, []);
+    expect(out).not.toContain("expected grad");
+  });
+
+  it("includes the expected-graduation year token derived from education end_date", () => {
+    const out = compactCandidate(baseCandidate() as never, [], {
+      end_date: "2027-05-15",
+      field: "Computer Science",
+      degree: "BS",
+      school: "State U",
+    });
+    expect(out).toContain("expected grad 2027");
   });
 });
 

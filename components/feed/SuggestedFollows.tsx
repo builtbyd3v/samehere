@@ -105,7 +105,6 @@ export default async function SuggestedFollows({
             {
               id: s.id,
               name: s.display_name ?? s.username,
-              year: s.year,
               major: s.major,
               goals: s.goals,
               bio: s.bio,

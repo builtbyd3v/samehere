@@ -7,8 +7,6 @@ import { isPro } from "@/lib/pro";
 import { PROFILE_THEME_KEYS, PROFILE_THEMES, isProfileTheme, type ProfileTheme } from "@/lib/themes";
 import AvatarBase from "@/components/ui/Avatar";
 import ProfileNudgePanel from "@/components/profile/ProfileNudgePanel";
-import SchoolAutocomplete from "@/components/profile/SchoolAutocomplete";
-import Select from "@/components/ui/Select";
 
 export type EditInitial = {
   id: string;
@@ -33,18 +31,8 @@ const label = "block text-sm font-medium text-[var(--ink)]";
 const field = "input-base mt-1.5";
 const hint = "mt-1 text-xs text-[var(--ink-muted)]";
 
-const YEARS: [string, string][] = [
-  ["", "Select year"],
-  ["freshman", "Freshman"],
-  ["sophomore", "Sophomore"],
-  ["junior", "Junior"],
-  ["senior", "Senior"],
-  ["grad", "Grad student"],
-];
-const YEAR_OPTIONS = YEARS.map(([value, label]) => ({ value, label }));
-
 export default function EditProfileForm({ initial }: { initial: EditInitial }) {
-  const [state, formAction, pending] = useActionState<EditState, FormData>(updateProfile, {});
+  const [state, formAction, _pending] = useActionState<EditState, FormData>(updateProfile, {});
 
   const [avatarState, avatarAction, avatarBusy] = useActionState<AvatarState, FormData>(uploadAvatar, {});
   const avatarUrl = avatarState.url ?? initial.avatar_url;
@@ -113,98 +101,77 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
         }}
       />
 
-      <form action={formAction} className="card p-6">
+      <form id="edit-profile-form" action={formAction} className="card p-6">
         {state.error && (
           <p role="alert" className="mb-5 rounded-md border border-[var(--border-strong)] bg-[var(--featured-surface)] px-3 py-2 text-sm text-[var(--ink)]">
             {state.error}
           </p>
         )}
 
-        {/* Banner (Pro) */}
-        <div className="mb-6 border-b border-[var(--border)] pb-6">
-          <label className={label}>Profile banner</label>
-          {pro ? (
-            <>
-              <div className="mt-1.5 aspect-[3/1] w-full overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--canvas)]">
-                {bannerUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={bannerUrl} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  <div className="grid h-full place-items-center text-xs text-[var(--ink-faint)]">No banner yet</div>
-                )}
-              </div>
-              <div className="mt-2 flex items-center gap-3">
-                <label className="btn-ghost inline-flex cursor-pointer !py-1.5 text-sm">
-                  <input type="file" accept="image/jpeg,image/png,image/webp" onChange={onBanner} disabled={bannerBusy} className="hidden" />
-                  {bannerBusy ? "Uploading…" : "Change banner"}
-                </label>
-                <p className={bannerState.error ? "text-xs text-[var(--danger)]" : hint}>
-                  {bannerState.error ?? "JPG, PNG, or WebP. Max 4 MB."}
-                </p>
-              </div>
-            </>
-          ) : (
-            <div className="mt-1.5">
-              <div className="aspect-[3/1] w-full rounded-lg border border-[var(--border)] bg-[var(--canvas)] opacity-50" />
-              <Link href="/pro" className="mt-2 inline-block text-sm text-[var(--ink-muted)] underline">
-                Profile banner · Pro
-              </Link>
-            </div>
-          )}
-        </div>
-
-        {/* Avatar */}
-        <div className="mb-6 flex items-center gap-4 border-b border-[var(--border)] pb-6">
-          <AvatarBase
-            src={avatarUrl}
-            seed={initial.username}
-            name={initial.display_name ?? initial.username}
-            className="h-16 w-16 shrink-0 rounded-full border border-[var(--border)] text-xl"
-            pro={pro}
-          />
+        {/* Media: banner + avatar grouped into one compact block */}
+        <div className="mb-6 space-y-4 border-b border-[var(--border)] pb-6">
+          {/* Banner (Pro) */}
           <div>
-            <label
-              id="avatar-upload"
-              className="btn-ghost inline-flex cursor-pointer !py-1.5 text-sm"
-            >
-              <input type="file" accept="image/*" onChange={onAvatar} disabled={avatarBusy} className="hidden" />
-              {avatarBusy ? "Uploading…" : "Change avatar"}
-            </label>
-            <p className={avatarState.error ? "mt-1.5 text-xs text-[var(--danger)]" : hint}>
-              {avatarState.error ?? "JPG, PNG, or WebP. Max 2 MB."}
-            </p>
+            <label className={label}>Profile banner</label>
+            {pro ? (
+              <>
+                <div className="mt-1.5 aspect-[4/1] w-full overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--canvas)]">
+                  {bannerUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={bannerUrl} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="grid h-full place-items-center text-xs text-[var(--ink-faint)]">No banner yet</div>
+                  )}
+                </div>
+                <div className="mt-2 flex items-center gap-3">
+                  <label className="btn-ghost inline-flex cursor-pointer !py-1.5 text-sm">
+                    <input type="file" accept="image/jpeg,image/png,image/webp" onChange={onBanner} disabled={bannerBusy} className="hidden" />
+                    {bannerBusy ? "Uploading…" : "Change banner"}
+                  </label>
+                  <p className={bannerState.error ? "text-xs text-[var(--danger)]" : hint}>
+                    {bannerState.error ?? "JPG, PNG, or WebP. Max 4 MB."}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <div className="mt-1.5">
+                <div className="aspect-[4/1] w-full rounded-lg border border-[var(--border)] bg-[var(--canvas)] opacity-50" />
+                <Link href="/pro" className="mt-2 inline-block text-sm text-[var(--ink-muted)] underline">
+                  Profile banner · Pro
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {/* Avatar */}
+          <div className="flex items-center gap-4">
+            <AvatarBase
+              src={avatarUrl}
+              seed={initial.username}
+              name={initial.display_name ?? initial.username}
+              className="h-16 w-16 shrink-0 rounded-full border border-[var(--border)] text-xl"
+              pro={pro}
+            />
+            <div>
+              <label
+                id="avatar-upload"
+                className="btn-ghost inline-flex cursor-pointer !py-1.5 text-sm"
+              >
+                <input type="file" accept="image/*" onChange={onAvatar} disabled={avatarBusy} className="hidden" />
+                {avatarBusy ? "Uploading…" : "Change avatar"}
+              </label>
+              <p className={avatarState.error ? "mt-1.5 text-xs text-[var(--danger)]" : hint}>
+                {avatarState.error ?? "JPG, PNG, or WebP. Max 2 MB."}
+              </p>
+            </div>
           </div>
         </div>
 
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-5">
           <div>
             <label htmlFor="display_name" className={label}>Display name</label>
             <input id="display_name" name="display_name" type="text" maxLength={50}
               defaultValue={initial.display_name ?? ""} placeholder="Your name" className={field} />
-          </div>
-
-          <div>
-            <label htmlFor="school" className={label}>School</label>
-            <SchoolAutocomplete id="school" name="school" maxLength={100}
-              defaultValue={initial.school} placeholder="Your university" className={field} />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={label}>Year</label>
-              <Select
-                options={YEAR_OPTIONS}
-                name="year"
-                defaultValue={initial.year ?? ""}
-                ariaLabel="Year"
-                className="mt-1.5 w-full"
-              />
-            </div>
-            <div>
-              <label htmlFor="major" className={label}>Major</label>
-              <input id="major" name="major" type="text" maxLength={100}
-                defaultValue={initial.major ?? ""} placeholder="e.g. Computer Science" className={field} />
-            </div>
           </div>
 
           <div>
@@ -287,10 +254,6 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
           )}
         </div>
 
-        <button type="submit" disabled={pending}
-          className="btn-primary mt-6 w-full !py-2.5 text-[15px]">
-          {pending ? "Saving…" : "Save profile"}
-        </button>
       </form>
     </main>
   );

@@ -21,11 +21,9 @@ function norm(s: string | null): string {
 function sharedFactLine(viewer: MatchSignal, candidate: SuggestedProfile): string | null {
   const school = norm(viewer.school) && norm(viewer.school) === norm(candidate.profile_school?.school ?? null) ? candidate.profile_school?.school : null;
   const major = norm(viewer.major) && norm(viewer.major) === norm(candidate.major) ? candidate.major : null;
-  const year = norm(viewer.year) && norm(viewer.year) === norm(candidate.year) ? candidate.year : null;
   if (school && major) return `Also studies ${major} at ${school}.`;
   if (major) return `Also studies ${major}.`;
   if (school) return `Also at ${school}.`;
-  if (year) return `Also a ${year}.`;
   return null;
 }
 
@@ -68,7 +66,6 @@ export default async function RightRail() {
   const schoolPeople = (schoolRows ?? []).map(toSuggestedProfile);
 
   const viewerSignal: MatchSignal = {
-    year: profile?.year ?? null,
     major: profile?.major ?? null,
     goals: profile?.goals ?? null,
     bio: profile?.bio ?? null,

@@ -33,7 +33,6 @@ export default async function OnboardingPage() {
     .limit(30);
 
   const viewerSignal: MatchSignal = {
-    year: profile.year,
     major: profile.major,
     goals: null,
     bio: profile.bio,
@@ -43,7 +42,6 @@ export default async function OnboardingPage() {
     .map((s) => ({
       ...s,
       _score: scoreOverlap(viewerSignal, {
-        year: s.year,
         major: s.major,
         goals: s.goals,
         bio: s.bio,

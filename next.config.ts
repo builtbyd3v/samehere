@@ -23,7 +23,7 @@ const csp = [
   `default-src 'self'`,
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://va.vercel-scripts.com`,
   `style-src 'self' 'unsafe-inline'`,
-  `img-src 'self' data: blob:${supabaseHttps ? ` ${supabaseHttps}` : ""}`,
+  `img-src 'self' data: blob:${supabaseHttps ? ` ${supabaseHttps}` : ""} https://storage.googleapis.com https://img.logo.dev https://www.google.com https://*.gstatic.com`,
   `media-src 'self'${supabaseHttps ? ` ${supabaseHttps}` : ""}`,
   `connect-src 'self' https://va.vercel-scripts.com${supabaseHttps ? ` ${supabaseHttps}` : ""}${supabaseWss ? ` ${supabaseWss}` : ""}`,
   `frame-ancestors 'none'`,

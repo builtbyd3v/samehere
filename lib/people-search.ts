@@ -40,7 +40,6 @@ type Candidate = {
   is_founder: boolean;
   is_campus_founder: boolean;
   verified_student: boolean;
-  year: string | null;
   major: string | null;
   goals: string | null;
   bio: string | null;
@@ -48,10 +47,19 @@ type Candidate = {
 };
 
 type ExpRow = { user_id: string; kind: string; org: string; role: string; term: string | null };
+type EduInfo = { end_date: string | null; field: string | null; degree: string | null; school: string | null };
+type EduRow = {
+  user_id: string;
+  school: string | null;
+  field: string | null;
+  degree: string | null;
+  end_date: string | null;
+  is_current: boolean | null;
+};
 
 const AI_SEARCH_POOL = 40;
 const CAND_SELECT =
-  "id, username, display_name, avatar_url, is_pro, is_founder, is_campus_founder, verified_student, year, major, goals, bio, profile_school(school)";
+  "id, username, display_name, avatar_url, is_pro, is_founder, is_campus_founder, verified_student, major, goals, bio, profile_school(school)";
 
 function toResult(c: Candidate): PeopleSearchResult {
   return {
@@ -75,10 +83,11 @@ function toResult(c: Candidate): PeopleSearchResult {
 // "flags=verified-student" could impersonate a trust signal.
 // Exported for unit testing only (see people-search.test.ts) — not otherwise
 // used outside this module.
-export function compactCandidate(c: Candidate, exp: ExpRow[]): string {
+export function compactCandidate(c: Candidate, exp: ExpRow[], edu?: EduInfo): string {
   const data = [
     `@${c.username}${c.display_name ? ` (${c.display_name})` : ""}`,
-    [c.year, c.major].filter(Boolean).join(" "),
+    c.major ?? "",
+    edu?.end_date ? `expected grad ${edu.end_date.slice(0, 4)}` : "",
     c.profile_school?.school ? `school: ${c.profile_school.school}` : "",
     c.goals ? `goals: ${c.goals.slice(0, 120)}` : "",
     c.bio ? `bio: ${c.bio.slice(0, 120)}` : "",
@@ -243,7 +252,33 @@ export async function peopleSearchCore(
     expByUser.set(e.user_id, arr);
   }
 
-  const list = candidates.map((c) => compactCandidate(c, expByUser.get(c.id) ?? [])).join("\n");
+  const { data: candEdu } = await supabase
+    .from("education")
+    .select("user_id, school, field, degree, end_date, is_current")
+    .in("user_id", candidates.map((c) => c.id))
+    .returns<EduRow[]>();
+  const eduRowsByUser = new Map<string, EduRow[]>();
+  for (const e of candEdu ?? []) {
+    const arr = eduRowsByUser.get(e.user_id) ?? [];
+    arr.push(e);
+    eduRowsByUser.set(e.user_id, arr);
+  }
+  const eduByUser = new Map<string, EduInfo>();
+  for (const [userId, rows] of eduRowsByUser) {
+    const picked =
+      rows.find((r) => r.is_current === true) ??
+      rows.reduce((latest, r) => ((r.end_date ?? "") > (latest.end_date ?? "") ? r : latest));
+    eduByUser.set(userId, {
+      end_date: picked.end_date,
+      field: picked.field,
+      degree: picked.degree,
+      school: picked.school,
+    });
+  }
+
+  const list = candidates
+    .map((c) => compactCandidate(c, expByUser.get(c.id) ?? [], eduByUser.get(c.id)))
+    .join("\n");
   const raw = await generateText(
     PEOPLE_SEARCH_SYSTEM,
     `Looking for: ${untrusted(safe)}\n\nCandidates:\n${list}`,

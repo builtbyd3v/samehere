@@ -29,6 +29,9 @@ export default function SchoolAutocomplete({
   placeholder,
   maxLength,
   className,
+  domainName,
+  defaultDomain,
+  onChoose,
 }: {
   name: string;
   id?: string;
@@ -36,12 +39,18 @@ export default function SchoolAutocomplete({
   placeholder?: string;
   maxLength?: number;
   className?: string;
+  domainName?: string;
+  defaultDomain?: string;
+  onChoose?: (school: School) => void;
 }) {
   const [value, setValue] = useState(defaultValue ?? "");
   const [list, setList] = useState<School[]>([]);
   const [results, setResults] = useState<School[]>([]);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
+  // Seed from the saved domain so editing an entry without re-picking the
+  // school keeps its logo. Cleared only when the user hand-edits the name.
+  const [domain, setDomain] = useState(defaultDomain ?? "");
   const wrapRef = useRef<HTMLDivElement>(null);
 
   function update(next: string, loaded = list) {
@@ -49,12 +58,15 @@ export default function SchoolAutocomplete({
     setResults(searchSchools(next, loaded));
     setActive(-1);
     setOpen(true);
+    setDomain("");
   }
 
   function choose(school: School) {
     setValue(school.name);
     setOpen(false);
     setActive(-1);
+    setDomain(school.domains?.[0] ?? "");
+    onChoose?.(school);
   }
 
   // Close when clicking outside.
@@ -84,6 +96,7 @@ export default function SchoolAutocomplete({
 
   return (
     <div ref={wrapRef} className="relative">
+      {domainName && <input type="hidden" name={domainName} value={domain} />}
       <input
         id={id}
         name={name}

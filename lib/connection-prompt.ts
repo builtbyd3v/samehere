@@ -78,17 +78,15 @@ export async function connectionPrompt(
 
   const school = norm(viewer.school) && norm(viewer.school) === norm(candidate.school) ? candidate.school : null;
   const major = norm(viewer.major) && norm(viewer.major) === norm(candidate.major) ? candidate.major : null;
-  const year = norm(viewer.year) && norm(viewer.year) === norm(candidate.year) ? candidate.year : null;
 
   const template = (): string | null => {
     if (school && major) return `Also studies ${major} at ${school}.`;
     if (major) return `Also studies ${major}.`;
     if (school) return `Also at ${school}.`;
-    if (year) return `Also a ${year}.`;
     return null;
   };
 
-  const hasSharedFact = !!(school || major || year);
+  const hasSharedFact = !!(school || major);
 
   if (aiEnabled() && hasSharedFact) {
     const { data: withinCap } = await supabase.rpc("use_ai_quota", { p_kind: "connection_prompt" });
@@ -96,7 +94,6 @@ export async function connectionPrompt(
       const facts = [
         school && `same school: ${school}`,
         major && `same major: ${major}`,
-        year && `same year: ${year}`,
       ]
         .filter(Boolean)
         .join("; ");
