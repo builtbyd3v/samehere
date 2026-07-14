@@ -2462,18 +2462,21 @@ reset role;
 -- handle_email_confirmed fires on the auth.users email-confirmation UPDATE,
 -- which the test harness cannot trigger directly (auth.users is GoTrue-owned),
 -- and insert_notification's EXECUTE is revoked from authenticated (trigger-bound
--- only). So this calls insert_notification as the connecting superuser --
--- same privilege level the trigger runs at -- to seed the row (mirrors how
--- other trigger-only effects are seeded/verified elsewhere in this file, e.g.
--- M8_snapshot), then checks the notification lands for the recipient and
--- nobody else can read it.
+-- only). This test verifies ONLY the notifications SELECT RLS (owner reads the
+-- row, the actor does not), so it seeds the row with a DIRECT insert as the
+-- connecting superuser. It deliberately does NOT go through insert_notification:
+-- earlier assertions in this file (H5/M8) leave a block between fixture users a
+-- and b, and insert_notification correctly block-skips blocked pairs -- which
+-- would seed nothing and leave the SELECT policy untested (the original cause of
+-- the REFERRAL_JOINED_owner_select regression).
 set local role postgres;
 do $$
 declare
   v_a uuid := (select id from tests_fixture where key = 'a');
   v_b uuid := (select id from tests_fixture where key = 'b');
 begin
-  perform public.insert_notification(v_a, v_b, 'referral_joined');
+  insert into public.notifications (user_id, type, actor_id)
+  values (v_a, v_b, 'referral_joined');
 end $$;
 reset role;
 
