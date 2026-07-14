@@ -1,8 +1,8 @@
 # samehere
 
-samehere is a verified-student social platform for students who want real peer connections instead of recruiter noise. It uses `.edu` email verification as the access gate and Claude to power AI-driven peer matching from student profiles.
+samehere is a student network for people who want real peer connections instead of recruiter noise. Anyone can sign up; a `.edu` email earns a **Verified Student** badge, and Claude powers AI peer matching, natural-language people search, and a jobs layer built from student profiles.
 
-**Status: v1 shipped and live**, with Pro billing wired. Core platform, AI features, trust & safety, moderation, and Stripe billing are all in production.
+**Status: v1 shipped and live, in invite-only beta** (`INVITE_ONLY=1` gates signup behind a member's invite code; beta accounts are granted Pro for the duration). Core platform, AI features, jobs board, clubs, trust & safety, moderation, and Stripe billing are all in production.
 
 **Live on Vercel** — every push to `main` auto-redeploys.
 
@@ -13,13 +13,13 @@ Students don't have a dedicated space that combines verified peer identity, real
 ## What's built
 
 ### Authentication and access
-- `.edu` email verification enforced **in the database**, by the `handle_new_user` trigger on `auth.users`, so a signup with a non-`.edu` address aborts the transaction. The check in the signup Server Action is UX only — the anon key is public, so any control that lives only in app code can be skipped by talking to Supabase directly. Out-of-band accounts (a dashboard invite) are exempted through a definer-only `signup_allowlist` table, not an env var
+- Open signup (email or OAuth) — the `.edu` gate was retired in favor of an earned **Verified Student** badge, set in the database by the `handle_new_user` trigger from the confirmed email domain and frozen against client writes. During the invite-only beta, `INVITE_ONLY=1` additionally requires a valid member invite code, validated pre-auth by a boolean-only `SECURITY DEFINER` function so codes can't be enumerated
 - Supabase Auth: sign up, sign in, email confirmation, password reset (forgot / update)
 - Logged-out visitors reach the landing, auth routes, `/profile/[username]`, and `/post/[id]` — nothing else. Profiles show identity, school, year, major, bio, goals, counts and the heatmap, never posts; a single post shows its content, author and reaction counts, never comments or media. Private accounts expose identity and counts only. Both surfaces are served by `SECURITY DEFINER` functions that return one row for one id; the `posts` SELECT policy still requires `auth.uid() is not null`, so the anon key cannot enumerate the corpus. Both carry `robots: noindex` — link previews do not consult it
 - Suspension is a read gate as well as a write gate: a suspended account is redirected out of every content route and cannot record a profile view
 
 ### Student profiles
-- Username, display name, school, year, major, bio, skills, goals, courses
+- Username, display name, bio, goals, plus structured **experience** entries (internships, jobs, research, club roles) and **education** entries with date ranges; the current education entry back-fills `major` and school so match signals never go stale
 - Public profile at `/profile/[username]`, editable at `/profile/edit`
 - Avatar upload via Supabase Storage
 - Privacy: private accounts (follow approval), hideable school (separate RLS-gated table), per-profile heatmap visibility
@@ -32,7 +32,7 @@ Students don't have a dedicated space that combines verified peer identity, real
 ### Social feed
 - Latest + Following tabs, chronological, cursor pagination with infinite scroll and a "N new posts" pill
 - Composer collapsed behind a trigger (expands and focuses inline); image/video upload (private bucket, signed URLs), live point counter, and @mention autocomplete
-- Reactions: Like, SameHere, Repost, Bookmark
+- Reactions: SameHere, Repost, Bookmark (Like was retired — one resonance reaction, named for the product)
 - Comments, quote-reposts and plain reposts (surfaced on the reposter's profile) with engagement counts, individual post pages
 - Pending follow requests and onboarding checklist surface inline; "Looking for teammate" post type
 - Report button and post menus
@@ -57,25 +57,35 @@ A GitHub-style activity heatmap on every profile showing daily engagement, track
 
 | Action | Minimum requirement | Points |
 |---|---|---|
-| Profile update | Meaningful field updated (bio, skills — not avatar) | 1 |
-| Connection accepted | Mutual acceptance by both users | 2 |
-| Comment | 50+ characters | 3 |
-| Post published | 150+ characters | 5 |
+| Post published | 150+ characters | 4 (6 at 600+) |
+| Post with media | Qualifying post carrying an image/video | +1 |
+| Comment | 50+ characters, not on your own post | 3 (4 at 250+) |
+| Quote repost | 50+ characters of quote text | 3 |
+| Profile update | Meaningful field updated (bio, goals — not avatar) | 1 |
+| Referral converted | Your referee publishes their first qualifying post | 3 |
 
-Each action type counts once per day. Daily square intensity reflects total points. Profile updates have a weekly cooldown. All scoring is enforced server-side in `SECURITY DEFINER` functions — points are never trusted from the client. Day boundaries use midnight America/New_York.
+Each action type counts once per day. Daily square intensity reflects total points. Profile updates have a weekly cooldown; referral credit is once ever per referee. All scoring is enforced server-side in `SECURITY DEFINER` triggers with matching same-day revocation on delete — points are never trusted from the client. Day boundaries use midnight America/New_York.
 
 - **Streaks**: consecutive days with activity, plus a saver nudge when today has no point yet
 - **Leaderboard**: global and per-school boards ranked by weekly points (schools canonicalized server-side so "UF" and "University of Florida" don't split)
 - **Shareable OG card** with the heatmap for each profile
 
 ### AI features (Claude via the `openai` SDK)
-- Peer matching: suggested users ranked by profile-signal overlap (school, year, major, goals, bio), recency fallback on thin data
+- Peer matching: suggested users ranked by profile-signal overlap (school, major, goals, bio), recency fallback on thin data
 - Connection prompts: one AI sentence per suggested-follow card explaining the fit (cached)
-- Natural-language people search ("cs juniors at UF who know rust") — parsed server-side into structured filters
-- Composer writing prompts, weekly prompt + weekly recap, profile-completion nudges
-- "Improve my post" and DM icebreaker drafts (Pro)
+- Natural-language people search ("cs juniors who interned somewhere and know rust") — SQL prefilter, then LLM re-rank over profiles, experience entries, and expected grad year, one grounded reason per result
+- Jobs AI: rank the board against your profile ("find my matches") and a Pro pitch generator that tailors resume bullets to one listing (both cached)
+- Composer writing prompts, profile-completion nudges, AI bio/goals drafting
+- "Improve my post" (Pro) and DM icebreaker drafts
 - Tiered models: free users get a fast model, Pro users get a stronger one; metered per user with a cap-hit upsell
 - All calls server-side; the provider/model is swappable by env with no code change; AI output is rendered as plain text only
+
+### Community: clubs & jobs
+- **Clubs** (`/community`): open directory with tags and avatars, per-club channels with realtime chat, roles (owner/officer/member), announcements, bans, and per-creator rate limits. An optional AI host bot ("Eve") can welcome new members and post discussion prompts in clubs where it holds an officer role — RLS-bound to its own session, never awarded contribution points
+- **Jobs board** (`/jobs`): listings ingested and enriched by a daily cron, with detail pages, saves, AI fit-ranking against your profile, and a Pro pitch generator
+
+### Emails
+- Resend transactional email on a shared branded layout: welcome, daily unread digest, and a weekly "people to meet" matches email — all with HMAC-signed one-click unsubscribe
 
 ### Trust, safety & moderation
 - Reports, blocks, feedback, account settings, delete-account (edge function for the auth-user purge)
@@ -92,8 +102,8 @@ Each action type counts once per day. Daily square intensity reflects total poin
 - Referrals: each user gets a referral link/code, tracks progress to 100, and earns a Social Butterfly badge. The first 100 signups platform-wide get the Founder badge (live "spots left" counter on the landing and signup pages)
 
 ### Onboarding & growth
-- Dismissable onboarding checklist (avatar, bio, first post, first follow)
-- Empty-feed AI suggestions, positioning copy ("verified students only")
+- First-run onboarding wizard: profile basics, education, then AI-matched people to follow before landing on the feed
+- Empty-feed AI suggestions; referral links with a joined-notification when your invite converts
 
 ### Landing & legal
 - Full landing page (light + dark) with live product demos, pricing, FAQ, OG image
@@ -103,10 +113,9 @@ Each action type counts once per day. Daily square intensity reflects total poin
 - Vercel Analytics + Speed Insights (traffic, Web Vitals) and PostHog (product funnels, error capture)
 
 ## What's not built yet
-- Weekly "people to meet" email digest
-- PWA + web push (DB scaffold only — `push_subscriptions` table exists; no manifest, service worker, or web-push dependency yet)
-- Job board
-- Inline natural-language people-search on the redesigned feed — the AI search action still exists, but its on-feed UI is being re-wired for the new three-column layout
+- Web push / PWA (deliberately dropped after a scaffold spike — realtime covers open tabs; revisit post-launch)
+- Native mobile app
+- Experience/education entries feeding the suggested-peers scorer (they already feed AI people search) and earning heatmap points
 
 ## Tech stack
 
