@@ -1578,6 +1578,7 @@ export type Database = {
         Args: { p_conversation_id: string; p_member_id: string }
         Returns: undefined
       }
+      admin_delete_post: { Args: { p_post_id: string }; Returns: string[] }
       admin_hide_post: { Args: { p_post_id: string }; Returns: undefined }
       admin_list_feedback: {
         Args: never
@@ -1587,6 +1588,14 @@ export type Database = {
           created_at: string
           feedback_id: string
           message: string
+        }[]
+      }
+      admin_list_referrers: {
+        Args: never
+        Returns: {
+          invited: number
+          qualified: number
+          username: string
         }[]
       }
       admin_list_reports: {
@@ -1617,7 +1626,10 @@ export type Database = {
         Args: { p_report_id: string }
         Returns: undefined
       }
-      admin_suspend_user: { Args: { p_user: string }; Returns: undefined }
+      admin_suspend_user: {
+        Args: { p_post_id?: string | null; p_user: string }
+        Returns: undefined
+      }
       admin_unhide_post: { Args: { p_post_id: string }; Returns: undefined }
       admin_unsuspend_user: { Args: { p_user: string }; Returns: undefined }
       block_user: { Args: { target: string }; Returns: undefined }

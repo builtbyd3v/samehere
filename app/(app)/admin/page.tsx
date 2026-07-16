@@ -20,12 +20,14 @@ export default async function AdminPage() {
   const { data: isAdmin } = await supabase.rpc("current_is_admin");
   if (!isAdmin) redirect("/feed");
 
-  const [{ data: reports }, { data: feedback }] = await Promise.all([
+  const [{ data: reports }, { data: feedback }, { data: referrers }] = await Promise.all([
     supabase.rpc("admin_list_reports"),
     supabase.rpc("admin_list_feedback"),
+    supabase.rpc("admin_list_referrers"),
   ]);
   const rows = reports ?? [];
   const feedbackRows = feedback ?? [];
+  const referrerRows = referrers ?? [];
 
   return (
     <main className="page-enter mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8">
@@ -142,6 +144,28 @@ export default async function AdminPage() {
               </div>
               <p className="mb-3 whitespace-pre-wrap text-sm text-[var(--ink)]">{f.message}</p>
               <FeedbackActions feedbackId={f.feedback_id} />
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <h2 className="mt-8 mb-1 text-xl font-semibold tracking-[-0.02em] text-[var(--ink)]">Referrers</h2>
+      <p className="mb-4 text-sm text-[var(--ink-muted)]">
+        Top {referrerRows.length} referrer{referrerRows.length === 1 ? "" : "s"}
+      </p>
+
+      {referrerRows.length === 0 ? (
+        <div className="card px-4 py-8 text-center text-sm text-[var(--ink-muted)]">No referrals yet.</div>
+      ) : (
+        <ul className="space-y-2">
+          {referrerRows.map((r) => (
+            <li key={r.username} className="card flex items-center justify-between p-4">
+              <Link href={`/profile/${r.username}`} className="text-sm text-[var(--ink)] hover:underline">
+                @{r.username}
+              </Link>
+              <span className="text-xs text-[var(--ink-muted)]">
+                {r.invited} invited · {r.qualified} qualified
+              </span>
             </li>
           ))}
         </ul>
