@@ -81,21 +81,24 @@ async function FeedHeader({ tab, userId }: { tab: "latest" | "following"; userId
 
   let counts: Awaited<ReturnType<typeof getViewerProfileCounts>> = null;
   let inClub = false;
+  let isSuspended = false;
   if (userId) {
     const { supabase } = await getViewer();
-    const [countsResult, clubsResult] = await Promise.all([
+    const [countsResult, clubsResult, suspendedResult] = await Promise.all([
       getViewerProfileCounts(),
       supabase.from("club_members").select("club_id", { count: "exact", head: true }).eq("user_id", userId),
+      supabase.rpc("current_is_suspended"),
     ]);
     counts = countsResult;
     inClub = (clubsResult.count ?? 0) > 0;
+    isSuspended = suspendedResult.data ?? false;
   }
 
   return (
     <>
       <div className="sticky top-14 z-30 mb-4 -mt-2 border-b border-[var(--border)] bg-[var(--canvas)]/95 pt-2 pb-3 backdrop-blur">
         <h1 className="sr-only">Feed</h1>
-        <ComposerToggle isPro={composerPro} avatarUrl={composerProfile?.avatar_url ?? null} />
+        <ComposerToggle isPro={composerPro} avatarUrl={composerProfile?.avatar_url ?? null} isSuspended={isSuspended} />
         <div className="mt-3">
           <FeedTabs tab={tab} basePath="/feed" />
         </div>

@@ -9,6 +9,7 @@ import TabTitleNotifier from "@/components/layout/TabTitleNotifier";
 import { getUnreadCounts } from "@/lib/unread";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import PostHogUserIdentification from "@/components/providers/PostHogUserIdentification";
+import SuspendedBanner from "@/components/layout/SuspendedBanner";
 import { isPro } from "@/lib/pro";
 
 // Combined DM + notification unread badge for the browser tab title. Shares the
@@ -27,9 +28,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const { supabase, user } = await getViewer();
   const profile = await getViewerProfile();
 
-  // is_admin is a privileged column (revoked from the authenticated role); read
-  // it through the own-status definer instead, same as app/(app)/admin/page.tsx.
-  const { data: isAdmin } = user ? await supabase.rpc("current_is_admin") : { data: false };
+  // is_admin / is_suspended are privileged columns (revoked from the
+  // authenticated role); read them through the own-status definer RPCs
+  // instead, same as app/(app)/admin/page.tsx. Resolved concurrently since
+  // neither depends on the other.
+  const [{ data: isAdmin }, { data: isSuspended }] = user
+    ? await Promise.all([supabase.rpc("current_is_admin"), supabase.rpc("current_is_suspended")])
+    : [{ data: false }, { data: false }];
 
   const navbarProps = {
     username: profile?.username ?? null,
@@ -48,6 +53,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         />
       )}
       <Navbar {...navbarProps} />
+      {isSuspended && <SuspendedBanner />}
       {user && (
         <Suspense fallback={null}>
           <TabTitleUnread userId={user.id} />

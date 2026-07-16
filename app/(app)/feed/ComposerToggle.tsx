@@ -14,8 +14,19 @@ const PostComposer = dynamic(() => import("@/components/feed/PostComposer"), {
   ),
 });
 
-export default function ComposerToggle({ isPro, avatarUrl }: { isPro: boolean; avatarUrl: string | null }) {
+type ComposerToggleProps = {
+  isPro: boolean;
+  avatarUrl: string | null;
+  isSuspended: boolean;
+};
+
+export default function ComposerToggle({ isPro, avatarUrl, isSuspended }: ComposerToggleProps) {
   const [open, setOpen] = useState(false);
+
+  // Suspension blocks the post INSERT at the RLS layer, so opening the
+  // composer can only end in a failed submit. The shell banner already
+  // explains why; just don't render the trigger.
+  if (isSuspended) return null;
 
   if (open) {
     return (

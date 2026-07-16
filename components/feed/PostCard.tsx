@@ -12,7 +12,7 @@ import type { PostMedia } from "@/lib/media";
 import type { ViewerMineState } from "@/lib/feed-engagement";
 
 export const POST_SELECT =
-  "id, content, created_at, user_id, media, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, is_private, is_pro, is_founder, is_campus_founder, verified_student, profile_school(school)), reactions(count), reposts(count), comments(count)";
+  "id, content, created_at, user_id, media, hidden, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, is_private, is_pro, is_founder, is_campus_founder, verified_student, profile_school(school)), reactions(count), reposts(count), comments(count)";
 
 export const PAGE = 20;
 
@@ -37,6 +37,7 @@ export type PostRow = {
   created_at: string;
   user_id: string;
   media: PostMedia[];
+  hidden: boolean;
   author: Author;
   reactions: { count: number }[];
   reposts: { count: number }[];
@@ -52,6 +53,7 @@ export type FeedPost = {
   created_at: string;
   user_id: string;
   media: PostMedia[];
+  hidden: boolean;
   author: Author;
   samehere_count: number;
   repost_count: number;
@@ -68,6 +70,7 @@ export function withEngagement(rows: PostRow[], mine: ViewerMineState): FeedPost
     created_at: r.created_at,
     user_id: r.user_id,
     media: r.media,
+    hidden: r.hidden,
     author: r.author,
     samehere_count: r.reactions?.[0]?.count ?? 0,
     repost_count: r.reposts?.[0]?.count ?? 0,
@@ -165,6 +168,11 @@ export default function PostCard({
                     <span className="font-semibold">{name}</span>
                   )}
                   {a && <UserBadges isPro={a.is_pro} isFounder={a.is_founder} isCampusFounder={a.is_campus_founder} isVerifiedStudent={a.verified_student} />}
+                  {post.hidden && (
+                    <span className="rounded-full bg-[var(--danger)]/[0.06] px-2 py-0.5 text-xs font-medium text-[var(--danger)]">
+                      Hidden
+                    </span>
+                  )}
                 </div>
                 <p className="mt-0.5 text-[12.5px] text-[var(--ink-faint)]">
                   {a && <span>@{a.username}</span>}
