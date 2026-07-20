@@ -210,7 +210,6 @@ export default function PostCard({
       {!embedded && (
         <ReactionRow
           postId={post.id}
-          post={post}
           viewerId={viewerId}
           authorPrivate={!!a?.is_private}
           samehere={post.samehere_count}

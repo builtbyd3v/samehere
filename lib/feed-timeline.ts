@@ -19,15 +19,30 @@ export function itemId(item: FeedTimelineItem): string {
   return item.repost.id;
 }
 
+// A plain repost renders the original post whole, reaction row and all. So one
+// post can otherwise land on the page three times over -- as its own row, and
+// once per person who reposted it -- each copy showing the same repost button.
+// Collapse to one: the post itself wins, else the newest repost of it (reposts
+// arrive created_at desc). Quotes are exempt: they carry their own commentary.
+function dedupeReposts(posts: FeedPost[], reposts: PlainRepost[]): PlainRepost[] {
+  const seen = new Set(posts.map((p) => p.id));
+  return reposts.filter((r) => {
+    if (seen.has(r.original.id)) return false;
+    seen.add(r.original.id);
+    return true;
+  });
+}
+
 export function mergeFeedTimeline(
   posts: FeedPost[],
   quotes: QuotedRepost[],
   reposts: PlainRepost[] = [],
 ): FeedTimelineItem[] {
+  const uniqueReposts = dedupeReposts(posts, reposts);
   return [
     ...posts.map((post) => ({ kind: "post" as const, created_at: post.created_at, post })),
     ...quotes.map((quote) => ({ kind: "quote" as const, created_at: quote.created_at, quote })),
-    ...reposts.map((repost) => ({ kind: "repost" as const, created_at: repost.created_at, repost })),
+    ...uniqueReposts.map((repost) => ({ kind: "repost" as const, created_at: repost.created_at, repost })),
   ].sort((a, b) => {
     if (a.created_at !== b.created_at) return a.created_at < b.created_at ? 1 : -1;
     const aId = itemId(a);

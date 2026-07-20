@@ -107,7 +107,6 @@ export default function QuotedRepostCard({
           <ReactionRow
             quoteId={item.id}
             postId={original.id}
-            post={original}
             viewerId={viewerId}
             authorPrivate={authorPrivate}
             samehere={item.samehere_count}

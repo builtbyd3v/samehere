@@ -5,13 +5,11 @@ import { useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { getBrowserClient } from "@/lib/supabase/client";
 import { IconSame, IconComment, IconRepost, IconBookmark } from "@/components/icons";
-import Menu from "@/components/ui/Menu";
-import type { FeedPost } from "./PostCard";
+import { useRepostState, setRepostState } from "@/lib/repost-store";
 
 type Props = {
   postId: string;
   quoteId?: string;
-  post?: FeedPost;
   viewerId: string | null;
   authorPrivate: boolean;
   samehere: number;
@@ -66,21 +64,20 @@ function ActionButton({
 }
 
 export default function ReactionRow(props: Props) {
-  const { postId, quoteId, post, viewerId, authorPrivate, commentCount, compact = false, hideComments = false } = props;
+  const { postId, quoteId, viewerId, authorPrivate, commentCount, compact = false, hideComments = false } = props;
   const [supabase] = useState(getBrowserClient);
   const targetCol = quoteId ? ("repost_id" as const) : ("post_id" as const);
   const targetId = quoteId ?? postId;
   const commentsHref = quoteId ? `/quote/${quoteId}` : `/post/${postId}`;
-  const [repostMenu, setRepostMenu] = useState(false);
   const [pop, setPop] = useState(false);
   const reduceMotion = useReducedMotion();
   const [s, setS] = useState({
     samehere: props.samehere,
-    repost: props.repost,
     mineSamehere: props.mineSamehere,
-    mineRepost: props.mineRepost,
     mineBookmark: props.mineBookmark,
   });
+  // Repost lives in a shared store, not local state -- see lib/repost-store.ts.
+  const repostState = useRepostState(postId, { mine: props.mineRepost, count: props.repost });
 
   async function toggleReaction(type: "samehere") {
     if (!viewerId) return;
@@ -104,14 +101,14 @@ export default function ReactionRow(props: Props) {
 
   async function toggleRepost() {
     if (!viewerId || authorPrivate) return;
-    setRepostMenu(false);
-    const mine = s.mineRepost;
-    const d = mine ? -1 : 1;
-    setS((p) => ({ ...p, mineRepost: !mine, repost: p.repost + d }));
+    const { mine, count } = repostState;
+    setRepostState(postId, { mine: !mine, count: count + (mine ? -1 : 1) });
+    // quote_text IS NULL so undoing a repost can never delete a legacy quote
+    // repost, which shares this table under unique(post_id, user_id).
     const { error } = mine
-      ? await supabase.from("reposts").delete().eq("post_id", postId).eq("user_id", viewerId)
+      ? await supabase.from("reposts").delete().eq("post_id", postId).eq("user_id", viewerId).is("quote_text", null)
       : await supabase.from("reposts").insert({ post_id: postId, user_id: viewerId });
-    if (error) setS((p) => ({ ...p, mineRepost: mine, repost: p.repost - d }));
+    if (error) setRepostState(postId, { mine, count });
   }
 
   async function toggleBookmark() {
@@ -159,38 +156,19 @@ export default function ReactionRow(props: Props) {
           </Link>
         )}
 
-        <Menu
-          placement="top"
-          align="start"
-          customTrigger
-          open={post ? repostMenu : false}
-          onOpenChange={setRepostMenu}
-          trigger={
-            <ActionButton
-              onClick={() => {
-                if (authorPrivate) return;
-                if (post) setRepostMenu((o) => !o);
-                else toggleRepost();
-              }}
-              disabled={!viewerId || authorPrivate}
-              aria-pressed={s.mineRepost}
-              aria-label={authorPrivate ? "Reposting is off for private accounts" : s.mineRepost ? "Reposted" : "Repost"}
-              title={authorPrivate ? "Private posts can't be reposted" : undefined}
-              className={`${action} ${repostColor(s.mineRepost)}`}
-            >
-              <IconRepost />
-              {s.repost > 0 && <span>{s.repost}</span>}
-            </ActionButton>
+        <ActionButton
+          onClick={toggleRepost}
+          disabled={!viewerId || authorPrivate}
+          aria-pressed={repostState.mine}
+          aria-label={
+            authorPrivate ? "Reposting is off for private accounts" : repostState.mine ? "Reposted" : "Repost"
           }
+          title={authorPrivate ? "Private posts can't be reposted" : undefined}
+          className={`${action} ${repostColor(repostState.mine)}`}
         >
-          <button
-            type="button"
-            onClick={toggleRepost}
-            className="block w-full px-3 py-2 text-left text-sm transition hover:bg-[var(--featured-surface)] active:scale-[0.98]"
-          >
-            {s.mineRepost ? "Undo repost" : "Repost"}
-          </button>
-        </Menu>
+          <IconRepost />
+          {repostState.count > 0 && <span>{repostState.count}</span>}
+        </ActionButton>
 
         <ActionButton
           onClick={toggleBookmark}

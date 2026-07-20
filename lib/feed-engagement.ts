@@ -35,8 +35,11 @@ export async function fetchViewerMineState(
     repostIds.length
       ? supabase.from("reactions").select("repost_id").eq("user_id", viewerId).eq("type", "samehere").in("repost_id", repostIds)
       : Promise.resolve({ data: [] }),
+    // quote_text IS NULL: legacy quote reposts live in this same table under
+    // unique(post_id, user_id). Without the filter, having quoted a post lights
+    // up its plain-repost button, and "undo" then deletes the quote.
     postIds.length
-      ? supabase.from("reposts").select("post_id").eq("user_id", viewerId).in("post_id", postIds)
+      ? supabase.from("reposts").select("post_id").eq("user_id", viewerId).is("quote_text", null).in("post_id", postIds)
       : Promise.resolve({ data: [] }),
     postIds.length
       ? supabase.from("bookmarks").select("post_id").eq("user_id", viewerId).in("post_id", postIds)
