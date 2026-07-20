@@ -240,6 +240,13 @@ export default function DmChat({
             maxLength={MAX}
             placeholder="Write a message"
             onInput={(e) => resizeTextarea(e.currentTarget)}
+            onKeyDown={(e) => {
+              // Enter sends; Shift+Enter still inserts a newline. `isComposing`
+              // guards IME candidate selection, which also fires Enter.
+              if (e.key !== "Enter" || e.shiftKey || e.nativeEvent.isComposing) return;
+              e.preventDefault();
+              formRef.current?.requestSubmit();
+            }}
             className="max-h-32 min-h-[24px] flex-1 resize-none bg-transparent py-1 text-[15px] leading-relaxed text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
           />
           <button
