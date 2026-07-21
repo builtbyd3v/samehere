@@ -12,6 +12,7 @@ import { aiEnabled, generateText, modelForTier } from "@/lib/ai";
 import { PEOPLE_SEARCH_SYSTEM, untrusted } from "@/lib/ai-prompts";
 import { isPro } from "@/lib/pro";
 import { TEXT_LIMITS } from "@/lib/utils/validation";
+import { pickPrimaryEducation } from "@/lib/education-options";
 
 export type PeopleSearchResult = {
   id: string;
@@ -265,9 +266,10 @@ export async function peopleSearchCore(
   }
   const eduByUser = new Map<string, EduInfo>();
   for (const [userId, rows] of eduRowsByUser) {
-    const picked =
-      rows.find((r) => r.is_current === true) ??
-      rows.reduce((latest, r) => ((r.end_date ?? "") > (latest.end_date ?? "") ? r : latest));
+    // Latest end_date first, so pickPrimaryEducation's tie-breaks land on the
+    // furthest-along entry within a rank (no start_date in this select).
+    const byEnd = [...rows].sort((a, b) => (b.end_date ?? "").localeCompare(a.end_date ?? ""));
+    const picked = pickPrimaryEducation(byEnd) ?? byEnd[0];
     eduByUser.set(userId, {
       end_date: picked.end_date,
       field: picked.field,

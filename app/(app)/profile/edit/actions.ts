@@ -9,7 +9,7 @@ import { isPro } from "@/lib/pro";
 import { isProfileTheme } from "@/lib/themes";
 import { getPostHogServerClient } from "@/lib/posthog-server";
 import { fallbackProfileNudge, getProfileGaps } from "@/lib/profile-completion";
-import { DEGREE_VALUES as DEGREE_VALUES_RAW } from "@/lib/education-options";
+import { DEGREE_VALUES as DEGREE_VALUES_RAW, pickPrimaryEducation } from "@/lib/education-options";
 import { resolveInstitutionDomain } from "@/lib/resolve-domain";
 
 // DEGREE_VALUES infers as a narrow string-literal union array (mapped from an
@@ -494,22 +494,23 @@ export async function deleteEducation(id: string): Promise<EducationState> {
 }
 
 // Derive profiles.major / profiles.year / profile_school.school from the
-// user's current education entry, since those inputs were removed from the
-// profile form. "Current" = the entry with is_current = true (most recent by
-// start_date among those); falls back to the most recent entry by start_date
-// if none are marked current. No-op if the user has no education rows.
+// user's primary education entry, since those inputs were removed from the
+// profile form. See pickPrimaryEducation: a degree outranks a certificate, so
+// someone enrolled at a university and a bootcamp is tagged with the
+// university. Rows are sorted newest-first to break ties within a rank.
+// No-op if the user has no education rows.
 async function syncAcademicFromCurrentEducation(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
 ): Promise<void> {
   const { data: rows } = await supabase
     .from("education")
-    .select("school, field, start_date, end_date, is_current")
+    .select("school, field, degree, start_date, end_date, is_current")
     .eq("user_id", userId)
     .order("start_date", { ascending: false, nullsFirst: false });
   if (!rows || rows.length === 0) return;
 
-  const current = rows.find((r) => r.is_current) ?? rows[0];
+  const current = pickPrimaryEducation(rows) ?? rows[0];
 
   await supabase
     .from("profiles")
