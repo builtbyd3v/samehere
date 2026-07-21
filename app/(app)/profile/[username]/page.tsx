@@ -28,6 +28,7 @@ import { PROFILE_THEMES, isProfileTheme, themeCssVars } from "@/lib/themes";
 import CompanyLogo from "@/components/ui/CompanyLogo";
 import { formatDateRange, descriptionBullets } from "@/lib/experience-format";
 import { schoolLogoUrl } from "@/lib/school-logo";
+import { pickPrimaryEducation } from "@/lib/education-options";
 
 const PROFILE_SELECT =
   "id, username, display_name, avatar_url, banner_url, year, major, bio, goals, is_private, heatmap_visibility, is_pro, pro_until, is_founder, is_campus_founder, profile_theme, verified_student";
@@ -414,13 +415,16 @@ export default async function ProfilePage({
   // if several are current). Falls back to school/year/major below when the
   // user has no current roles, so profiles without experience data don't
   // regress to a blank meta line.
-  function latestCurrent<T extends { start_date: string | null; is_current: boolean }>(rows: T[]): T | null {
-    const current = rows.filter((r) => r.is_current);
-    if (current.length === 0) return null;
-    return current.reduce((latest, r) => ((r.start_date ?? "") > (latest.start_date ?? "") ? r : latest));
+  function currentNewestFirst<T extends { start_date: string | null; is_current: boolean }>(rows: T[]): T[] {
+    return rows
+      .filter((r) => r.is_current)
+      .sort((a, b) => (b.start_date ?? "").localeCompare(a.start_date ?? ""));
   }
-  const currentExp = latestCurrent(experiences);
-  const currentEdu = latestCurrent(education);
+  const currentExp = currentNewestFirst(experiences)[0] ?? null;
+  // Newest-first is wrong for education on its own: a bootcamp taken alongside
+  // a degree starts later and would win. Rank a degree above a certificate
+  // first, same rule that picks profile_school -- see pickPrimaryEducation.
+  const currentEdu = pickPrimaryEducation(currentNewestFirst(education)) ?? null;
   const expPhrase = currentExp ? `${currentExp.role} at ${currentExp.org}` : null;
   // "Software Engineering at Western Governors University" (field, else degree).
   const eduPhrase = currentEdu
