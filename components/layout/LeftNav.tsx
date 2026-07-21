@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { IconBell, IconMail, IconCommunity, IconBookmark, IconBolt, IconBriefcase } from "@/components/icons";
+import FeedbackButton from "@/components/feedback/FeedbackButton";
 
 export default function LeftNav({
   username,
@@ -77,6 +78,26 @@ export default function LeftNav({
           </Link>
         );
       })}
+
+      {/* Not a nav item, so it breaks every nav-item rule: a bordered card
+          instead of a transparent pill, squared corners instead of rounded-full,
+          and a subtitle. Mirrors the "Invite friends" card in NavMenu. A solid
+          blue fill was the first try -- white/--canvas label on --blue only
+          reaches 4.16:1, under AA, and --blue is too light in dark mode to
+          carry white text at all. Accent-on-surface clears AA in both themes. */}
+      <div className="mt-3 border-t border-[var(--border)] pt-3">
+        <FeedbackButton className="flex w-full cursor-pointer items-start gap-3 rounded-xl border border-[var(--blue)] bg-[var(--featured-surface)] px-4 py-3 text-left text-[var(--ink)] transition duration-200 ease-out hover:bg-[var(--blue-glow)] active:scale-[0.98]">
+          <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center text-[var(--blue)]">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.3-.6L3 21l1.7-4.4A8.4 8.4 0 0 1 4 11.6a8.4 8.4 0 0 1 8.5-8.4h.5a8.4 8.4 0 0 1 8 8.3Z" />
+            </svg>
+          </span>
+          <span className="flex min-w-0 flex-col gap-0.5">
+            <span className="text-[15px] font-semibold leading-tight">Send feedback</span>
+            <span className="text-xs leading-tight text-[var(--ink-muted)]">Found a bug? Tell us.</span>
+          </span>
+        </FeedbackButton>
+      </div>
     </nav>
   );
 }

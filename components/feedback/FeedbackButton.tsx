@@ -113,7 +113,14 @@ export function FeedbackModal({ open, onClose }: { open: boolean; onClose: () =>
 }
 
 // Standalone trigger + modal (kept for reuse outside the nav menu).
-export default function FeedbackButton({ className }: { className?: string }) {
+export default function FeedbackButton({
+  className,
+  children,
+}: {
+  className?: string;
+  /** Replaces the plain "Feedback" label, e.g. to prefix an icon. */
+  children?: React.ReactNode;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -123,7 +130,7 @@ export default function FeedbackButton({ className }: { className?: string }) {
         onClick={() => setOpen(true)}
         className={className ?? "cursor-pointer text-[var(--ink-muted)] hover:text-[var(--ink)]"}
       >
-        Feedback
+        {children ?? "Feedback"}
       </button>
       <FeedbackModal open={open} onClose={() => setOpen(false)} />
     </>

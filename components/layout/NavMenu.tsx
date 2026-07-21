@@ -1,11 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import posthog from "posthog-js";
 import Menu, { useMenuClose } from "@/components/ui/Menu";
 import AvatarBase from "@/components/ui/Avatar";
-import { FeedbackModal } from "@/components/feedback/FeedbackButton";
+import FeedbackButton from "@/components/feedback/FeedbackButton";
 import { signOut } from "@/app/(auth)/actions";
 
 import { menuItemClass } from "@/lib/ui/menu-styles";
@@ -19,13 +18,7 @@ function MenuLink({ href, children }: { href: string; children: React.ReactNode 
   );
 }
 
-function MenuItems({
-  isAdmin,
-  onFeedback,
-}: {
-  isAdmin: boolean;
-  onFeedback: () => void;
-}) {
+function MenuItems({ isAdmin }: { isAdmin: boolean }) {
   const close = useMenuClose();
 
   return (
@@ -39,22 +32,14 @@ function MenuItems({
         <span className="text-xs text-[var(--ink-muted)]">Share your link, race to 100</span>
       </Link>
       {/* Saved is in the desktop left nav but NOT the mobile bottom bar, so it
-          stays here on mobile only. Profile lives in both navs — dropped. */}
+          stays here on mobile only. Profile lives in both navs — dropped.
+          Feedback is the same deal: it lives in the desktop left nav. */}
       <div className="lg:hidden">
         <MenuLink href="/saved">Saved</MenuLink>
+        <FeedbackButton className={menuItemClass} />
       </div>
       <MenuLink href="/settings">Settings</MenuLink>
       {isAdmin && <MenuLink href="/admin">Admin</MenuLink>}
-      <button
-        type="button"
-        className={menuItemClass}
-        onClick={() => {
-          close?.();
-          onFeedback();
-        }}
-      >
-        Feedback
-      </button>
       <form
         action={async () => {
           posthog.capture("user_logged_out", {
@@ -83,20 +68,15 @@ export default function NavMenu({
   isAdmin: boolean;
   isPro: boolean;
 }) {
-  const [feedbackOpen, setFeedbackOpen] = useState(false);
-
   return (
-    <>
-      <Menu
-        align="end"
-        variant="avatar"
-        trigger={
-          <AvatarBase src={avatarUrl} seed={username} name={username} className="h-full w-full text-xs" pro={isPro} />
-        }
-      >
-        <MenuItems isAdmin={isAdmin} onFeedback={() => setFeedbackOpen(true)} />
-      </Menu>
-      <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
-    </>
+    <Menu
+      align="end"
+      variant="avatar"
+      trigger={
+        <AvatarBase src={avatarUrl} seed={username} name={username} className="h-full w-full text-xs" pro={isPro} />
+      }
+    >
+      <MenuItems isAdmin={isAdmin} />
+    </Menu>
   );
 }
