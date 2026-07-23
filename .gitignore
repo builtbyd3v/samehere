@@ -62,3 +62,4 @@ FABLE_PLAN.md
 FIX_PLAN.md
 CHANGES_PLAN.md
 .impeccable/
+.claude/settings.local.json
