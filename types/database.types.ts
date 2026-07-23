@@ -1203,6 +1203,7 @@ export type Database = {
           hide_school: boolean
           id: string
           is_admin: boolean
+          is_bot: boolean
           is_campus_founder: boolean
           is_founder: boolean
           is_private: boolean
@@ -1236,6 +1237,7 @@ export type Database = {
           hide_school?: boolean
           id: string
           is_admin?: boolean
+          is_bot?: boolean
           is_campus_founder?: boolean
           is_founder?: boolean
           is_private?: boolean
@@ -1269,6 +1271,7 @@ export type Database = {
           hide_school?: boolean
           id?: string
           is_admin?: boolean
+          is_bot?: boolean
           is_campus_founder?: boolean
           is_founder?: boolean
           is_private?: boolean
