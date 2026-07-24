@@ -92,6 +92,7 @@ type PublicPost = {
   author_is_founder: boolean;
   author_is_campus_founder: boolean;
   author_verified_student: boolean;
+  author_is_bot: boolean;
   samehere_count: number;
   repost_count: number;
 };
@@ -135,7 +136,7 @@ async function PublicPostView({ id }: { id: string }) {
               >
                 {name}
               </ProfileHoverLink>
-              <UserBadges isPro={post.author_is_pro} isFounder={post.author_is_founder} isCampusFounder={post.author_is_campus_founder} isVerifiedStudent={post.author_verified_student} />
+              <UserBadges isPro={post.author_is_pro} isFounder={post.author_is_founder} isCampusFounder={post.author_is_campus_founder} isVerifiedStudent={post.author_verified_student} isBot={post.author_is_bot} />
             </div>
             <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">
               <span>@{post.author_username}</span>

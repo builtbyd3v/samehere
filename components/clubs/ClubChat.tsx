@@ -21,6 +21,7 @@ type Sender = {
   display_name: string | null;
   avatar_url: string | null;
   is_pro: boolean;
+  is_bot: boolean;
 };
 
 type ClubMessage = {
@@ -169,7 +170,7 @@ function ChannelMessages({
         supabase
           .from("messages")
           .select(
-            "id, sender_id, content, created_at, sender:profiles!messages_sender_id_fkey(username, display_name, avatar_url, is_pro)",
+            "id, sender_id, content, created_at, sender:profiles!messages_sender_id_fkey(username, display_name, avatar_url, is_pro, is_bot)",
           )
           .eq("conversation_id", conversationId)
           // LIMIT applies after ORDER BY, so fetch newest-first to get the
@@ -179,7 +180,7 @@ function ChannelMessages({
           .returns<ClubMessage[]>(),
         supabase
           .from("profiles")
-          .select("username, display_name, avatar_url, is_pro")
+          .select("username, display_name, avatar_url, is_pro, is_bot")
           .eq("id", viewerId)
           .single(),
       ]);
@@ -223,7 +224,7 @@ function ChannelMessages({
           if (!cached) {
             supabase
               .from("profiles")
-              .select("username, display_name, avatar_url, is_pro")
+              .select("username, display_name, avatar_url, is_pro, is_bot")
               .eq("id", m.sender_id)
               .single()
               .then(({ data }) => {
@@ -340,7 +341,7 @@ function ChannelMessages({
                     {!mine && !grouped && (
                       <div className="mb-0.5 flex items-center gap-1 px-1 text-xs font-medium text-[var(--ink-muted)]">
                         <span>{name}</span>
-                        {m.sender && <UserBadges isPro={m.sender.is_pro} className="h-3 w-3" />}
+                        {m.sender && <UserBadges isPro={m.sender.is_pro} isBot={m.sender.is_bot} className="h-3 w-3" />}
                       </div>
                     )}
                     <div

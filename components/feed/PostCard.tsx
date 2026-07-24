@@ -12,7 +12,7 @@ import type { PostMedia } from "@/lib/media";
 import type { ViewerMineState } from "@/lib/feed-engagement";
 
 export const POST_SELECT =
-  "id, content, created_at, user_id, media, hidden, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, is_private, is_pro, is_founder, is_campus_founder, verified_student, profile_school(school)), reactions(count), reposts(count), comments(count)";
+  "id, content, created_at, user_id, media, hidden, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, is_private, is_pro, is_founder, is_campus_founder, verified_student, is_bot, profile_school(school)), reactions(count), reposts(count), comments(count)";
 
 export const PAGE = 20;
 
@@ -25,6 +25,7 @@ type Author = {
   is_founder: boolean;
   is_campus_founder: boolean;
   verified_student: boolean;
+  is_bot: boolean;
   profile_school: { school: string | null } | null;
 } | null;
 
@@ -167,7 +168,7 @@ export default function PostCard({
                   ) : (
                     <span className="font-semibold">{name}</span>
                   )}
-                  {a && <UserBadges isPro={a.is_pro} isFounder={a.is_founder} isCampusFounder={a.is_campus_founder} isVerifiedStudent={a.verified_student} />}
+                  {a && <UserBadges isPro={a.is_pro} isFounder={a.is_founder} isCampusFounder={a.is_campus_founder} isVerifiedStudent={a.verified_student} isBot={a.is_bot} />}
                   {post.hidden && (
                     <span className="rounded-full bg-[var(--danger)]/[0.06] px-2 py-0.5 text-xs font-medium text-[var(--danger)]">
                       Hidden

@@ -31,7 +31,7 @@ import { schoolLogoUrl } from "@/lib/school-logo";
 import { pickPrimaryEducation } from "@/lib/education-options";
 
 const PROFILE_SELECT =
-  "id, username, display_name, avatar_url, banner_url, year, major, bio, goals, is_private, heatmap_visibility, is_pro, pro_until, is_founder, is_campus_founder, profile_theme, verified_student";
+  "id, username, display_name, avatar_url, banner_url, year, major, bio, goals, is_private, heatmap_visibility, is_pro, pro_until, is_founder, is_campus_founder, profile_theme, verified_student, is_bot";
 
 // Shared by generateMetadata and the page component so they hit one query
 // instead of two — React's cache() dedupes by argument (username) within a
@@ -136,6 +136,7 @@ type PublicProfile = {
   goals: string | null;
   school: string | null;
   verified_student: boolean;
+  is_bot: boolean;
 };
 
 type PublicCounts = { posts: number; followers: number; following: number };
@@ -192,7 +193,7 @@ async function PublicProfileView({ username }: { username: string }) {
           <div className="mt-3">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
               <h1 className="text-2xl font-semibold tracking-[-0.025em] sm:text-[28px]">{displayName}</h1>
-              <UserBadges isPro={profile.is_pro} isFounder={profile.is_founder} isCampusFounder={profile.is_campus_founder} isVerifiedStudent={profile.verified_student} />
+              <UserBadges isPro={profile.is_pro} isFounder={profile.is_founder} isCampusFounder={profile.is_campus_founder} isVerifiedStudent={profile.verified_student} isBot={profile.is_bot} />
             </div>
             <p className="mt-0.5 text-[15px] text-[var(--ink-muted)]">@{profile.username}</p>
             {metaLine && <p className="mt-2 text-sm text-[var(--ink-muted)]">{metaLine}</p>}
@@ -553,7 +554,7 @@ export default async function ProfilePage({
           <div className="mt-3">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
               <h1 className="text-2xl font-semibold tracking-[-0.025em] sm:text-[28px]">{displayName}</h1>
-              <UserBadges isPro={profile.is_pro} isFounder={profile.is_founder} isCampusFounder={profile.is_campus_founder} isVerifiedStudent={profile.verified_student} />
+              <UserBadges isPro={profile.is_pro} isFounder={profile.is_founder} isCampusFounder={profile.is_campus_founder} isVerifiedStudent={profile.verified_student} isBot={profile.is_bot} />
             </div>
             <p className="mt-0.5 text-[15px] text-[var(--ink-muted)]">@{profile.username}</p>
 
