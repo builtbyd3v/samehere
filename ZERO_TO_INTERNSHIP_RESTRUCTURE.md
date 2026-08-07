@@ -232,11 +232,15 @@ v1: normalize via `job_companies.slug` when possible; store `company_slug` on ex
 ```text
 profiles.open_to_help boolean not null default false
 
+experiences.company_slug text null references job_companies(slug)
+
 intake_responses (
   id uuid pk,
-  user_id uuid references profiles unique or multi-version,
+  user_id uuid not null references profiles on delete cascade,
+  version int not null,
   answers jsonb not null,
-  created_at timestamptz
+  created_at timestamptz not null,
+  unique (user_id, version)
 )
 
 learner_profiles (
@@ -250,7 +254,7 @@ path_plans (
   user_id uuid pk references profiles,
   ui jsonb not null,         -- PathPlanUi
   rationale text,
-  source_intake_id uuid,
+  source_intake_id uuid references intake_responses(id) on delete set null,
   updated_at timestamptz
 )
 
@@ -277,6 +281,11 @@ applications (
   updated_at, created_at
 )
 ```
+
+`intake_responses` is append-only per submission: re-intake inserts the next
+`version` instead of overwriting raw answers. `learner_profiles.version` records
+which diagnosis version is current, while `path_plans.source_intake_id` points
+to the exact intake that produced the active plan.
 
 RLS: user can CRUD own rows only. No anon access.
 
@@ -308,8 +317,15 @@ Regenerate or hand-update `types/database.types.ts` after migrations.
 ### Guardrails
 - Always `untrusted()` wrap user text  
 - Render AI as plain text only  
-- Server-side only; quota via `use_ai_quota` with new kinds: `intake_diagnosis`, `rediagnosis`, `project_plan`, `interview_prep`  
+- Server-side only; quota via `use_ai_quota` with new kinds: `intake_diagnosis`, `rediagnosis`, `project_plan`, `interview_prep`, `path_task_nudge`
 - Free: 1 diagnosis + limited weekly nudges; Pro: unlimited re-diagnosis, pitch, interview packs  
+
+The foundation migration must extend `ai_usage.kind` before any new kind is
+called and replace `use_ai_quota(text)` with explicit caps. Suggested v1 caps:
+`intake_diagnosis` 1/day free and 150/day Pro; `rediagnosis` 0/day free and
+150/day Pro; `project_plan` 1/day free and 150/day Pro; `interview_prep` 0/day
+free and 150/day Pro; `path_task_nudge` 1/day free and 150/day Pro. “Unlimited”
+in product copy means the existing 150/day abuse ceiling for Pro.
 
 ### Recipe selection constraint
 Model must choose `ui_recipe` from the enum only. Validate server-side; fallback heuristic if invalid:
@@ -428,10 +444,12 @@ Execute as **separate PRs / agent tasks**. Dependencies noted. Each stream lists
 - Add columns/tables from §7  
 - RLS policies (own rows)  
 - Indexes: `applications(user_id, status)`, `path_tasks(user_id, status)`, experiences org/slug lookup  
+- Extend the `ai_usage.kind` check and `use_ai_quota(text)` for every new path quota kind in §8
 **Acceptance:**
 - Migration applies cleanly  
-- Authenticated user can insert/select own `applications` / `path_*`  
-- Anon cannot read learner data  
+- Authenticated user can CRUD own `intake_responses`, `learner_profiles`, `path_plans`, `path_tasks`, and `applications`
+- A second authenticated user cannot read or mutate any of those rows; anon cannot read them
+- New quota kinds are accepted and enforce their free/Pro caps without a constraint error
 - Types compile  
 
 ---
@@ -577,7 +595,9 @@ Execute as **separate PRs / agent tasks**. Dependencies noted. Each stream lists
 **Depends on:** ongoing  
 **Known issue:** `lib/people-search.test.ts` fails when `OPENAI_API_KEY` is set (fake client missing `use_ai_quota`). Fix if people-search remains; otherwise delete with WS10/C.  
 **Do:**
-- Tests for diagnosis JSON validation, recipe fallback, applications RLS (SQL), recipe render smoke  
+- Tests for diagnosis JSON validation, recipe fallback, recipe render smoke
+- SQL RLS tests for owner CRUD, cross-user read/write denial, and anon denial on every new learner-data table
+- SQL quota tests covering every new kind and its free/Pro boundary
 - Ensure CI doesn’t rely on piping that swallows exit codes  
 **Acceptance:**
 - `npm test`, `npm run typecheck`, `npm run build` (with env) green on Node 24  
@@ -641,7 +661,7 @@ Wave F:  WS12 tests harden  →  WS13 delete later
 ## 16. Agent prompt templates (copy/paste)
 
 ### Schema agent
-> Implement WS1 from `ZERO_TO_INTERNSHIP_RESTRUCTURE.md`. Add migration + RLS for intake_responses, learner_profiles, path_plans, path_tasks, applications, profiles.open_to_help. Update `types/database.types.ts`. Do not build UI. Open PR against `main`.
+> Implement WS1 from `ZERO_TO_INTERNSHIP_RESTRUCTURE.md`. Add migration + RLS for versioned intake_responses, learner_profiles, path_plans, path_tasks, applications, profiles.open_to_help, and experiences.company_slug. Extend ai_usage.kind and use_ai_quota for every new path quota kind. Add owner/cross-user/anon SQL tests and update types/database.types.ts. Do not build UI. Open PR against main.
 
 ### Intake agent
 > Implement WS2 from `ZERO_TO_INTERNSHIP_RESTRUCTURE.md`. Replace social onboarding with struggle-aware intake; add INTAKE_DIAGNOSIS_SYSTEM; persist learner_profiles + path_plans; validate ui_recipe enum with heuristic fallback. Depends on WS1 merged.
