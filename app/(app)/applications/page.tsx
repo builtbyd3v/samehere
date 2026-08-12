@@ -35,15 +35,18 @@ export default async function ApplicationsPage() {
 
   return (
     <main className="page-enter mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8">
-      <h1 className="mb-2 text-2xl font-semibold tracking-[-0.02em] text-[var(--ink)]">
+      <p className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--accent-blue-strong)]">
+        Pipeline
+      </p>
+      <h1 className="mt-2 text-[2rem] font-medium leading-[1.1] tracking-[-0.03em] text-[var(--ink)]">
         Applications
       </h1>
-      <p className="mb-6 text-sm text-[var(--ink-muted)]">
+      <p className="mb-6 mt-2 text-sm text-[var(--ink-muted)]">
         Wishlist → applied → OA → interview → offer. Move rows as you go.
       </p>
 
       {unavailable && (
-        <p className="mb-4 rounded-lg border border-[var(--border)] bg-[var(--featured-surface)] px-3 py-2 text-sm text-[var(--ink-muted)]">
+        <p className="mb-4 rounded-[var(--landing-radius-sm)] border border-[var(--border)] bg-[var(--featured-surface)] px-3 py-2 text-sm text-[var(--ink-muted)]">
           Tracker is warming up — you can still browse opportunities meanwhile.
         </p>
       )}

@@ -50,14 +50,14 @@ export default function InterviewAnswerBox({
           onChange={(e) => setAnswer(e.target.value)}
           rows={5}
           placeholder="Write your approach or full answer here…"
-          className="mt-1.5 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)] focus:border-[var(--border-strong)] focus:ring-2 focus:ring-[#3b82f6]/40"
+          className="input-base mt-1.5 resize-y"
         />
       </label>
       <button type="submit" className="btn-primary" disabled={pending || !answer.trim()}>
         {pending ? "Checking…" : "Get feedback"}
       </button>
       {overCap && (
-        <p className="rounded-lg border border-[var(--border)] bg-[var(--featured-surface)] px-3 py-2 text-sm text-[var(--ink-muted)]">
+        <p className="rounded-[var(--landing-radius-sm)] border border-[var(--border)] bg-[var(--featured-surface)] px-3 py-2 text-sm text-[var(--ink-muted)]">
           You&apos;ve used today&apos;s free interview feedback.{" "}
           <Link href="/pro" className="font-medium text-[var(--ink)] underline">
             Go Pro for more
@@ -71,7 +71,7 @@ export default function InterviewAnswerBox({
         </p>
       )}
       {feedback && (
-        <pre className="whitespace-pre-wrap rounded-lg border border-[var(--border)] bg-[var(--featured-surface)] px-3 py-2 font-sans text-sm text-[var(--ink-muted)]">
+        <pre className="whitespace-pre-wrap rounded-[var(--landing-radius-sm)] border border-[var(--border)] bg-[var(--canvas)] px-3 py-3 font-sans text-sm leading-relaxed text-[var(--ink-muted)]">
           {feedback}
         </pre>
       )}

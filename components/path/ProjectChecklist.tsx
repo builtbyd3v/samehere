@@ -81,46 +81,58 @@ export default function ProjectChecklist({
   const requiredDone = required.filter((i) => done[i.id]).length;
 
   return (
-    <section className="card p-5 sm:p-6" aria-labelledby="build-checklist-heading">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 id="build-checklist-heading" className="text-lg font-semibold text-[var(--ink)]">
-            Build checklist
-          </h2>
-          <p className="mt-1 text-sm text-[var(--ink-muted)]">
-            Work these steps in-app. This is the primary path — not an external tutorial.
+    <section
+      className="landing-xai-card-hover rounded-[var(--landing-radius)] border border-[var(--border)] bg-[var(--surface)] p-5 sm:p-6"
+      aria-labelledby="build-checklist-heading"
+    >
+      <div className="landing-xai-card-content">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2
+              id="build-checklist-heading"
+              className="text-lg font-medium tracking-[-0.02em] text-[var(--ink)]"
+            >
+              Build checklist
+            </h2>
+            <p className="mt-1 text-sm text-[var(--ink-muted)]">
+              Work these steps in-app. This is the primary path — not an external tutorial.
+            </p>
+          </div>
+          <p className="text-sm tabular-nums text-[var(--accent-blue-strong)]">
+            {completed}/{items.length} · {requiredDone}/{required.length} required
           </p>
         </div>
-        <p className="text-sm text-[var(--ink-muted)]">
-          {completed}/{items.length} · {requiredDone}/{required.length} required
-        </p>
-      </div>
 
-      <ul className="mt-5 space-y-2">
-        {items.map((item) => {
-          const checked = !!done[item.id];
-          return (
-            <li key={item.id}>
-              <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-[var(--border)] px-3 py-3 hover:border-[var(--border-strong)]">
-                <input
-                  type="checkbox"
-                  className="mt-1 h-4 w-4 accent-[var(--blue)]"
-                  checked={checked}
-                  onChange={() => toggle(item.id)}
-                />
-                <span className="min-w-0 flex-1">
-                  <span className={`text-sm ${checked ? "text-[var(--ink-muted)] line-through" : "text-[var(--ink)]"}`}>
-                    {item.title}
+        <ul className="mt-5 space-y-2">
+          {items.map((item) => {
+            const checked = !!done[item.id];
+            return (
+              <li key={item.id}>
+                <label className="flex cursor-pointer items-start gap-3 rounded-[var(--landing-radius-sm)] border border-[var(--border)] px-3 py-3 transition-colors hover:border-[var(--border-strong)] hover:bg-[var(--featured-surface)]">
+                  <input
+                    type="checkbox"
+                    className="mt-1 h-4 w-4 accent-[var(--accent-blue)]"
+                    checked={checked}
+                    onChange={() => toggle(item.id)}
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span
+                      className={`text-sm ${checked ? "text-[var(--ink-muted)] line-through" : "text-[var(--ink)]"}`}
+                    >
+                      {item.title}
+                    </span>
+                    {item.optional && (
+                      <span className="ml-2 text-xs uppercase tracking-wide text-[var(--ink-faint)]">
+                        optional
+                      </span>
+                    )}
                   </span>
-                  {item.optional && (
-                    <span className="ml-2 text-xs uppercase tracking-wide text-[var(--ink-faint)]">optional</span>
-                  )}
-                </span>
-              </label>
-            </li>
-          );
-        })}
-      </ul>
+                </label>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
     </section>
   );
 }
