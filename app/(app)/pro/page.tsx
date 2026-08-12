@@ -8,31 +8,32 @@ const BILLING_ENABLED = process.env.NEXT_PUBLIC_BILLING_ENABLED === "true";
 
 const GROUPS: { title: string; subtitle: string; features: string[] }[] = [
   {
-    title: "Express",
-    subtitle: "Make your profile yours",
+    title: "Path velocity",
+    subtitle: "Move faster when it matters",
+    features: [
+      "Unlimited path re-diagnosis when something changes",
+      "Deeper project plan regen for studio weeks",
+      "Stronger model for diagnosis and coaching",
+      "Priority helper icebreakers on target companies",
+    ],
+  },
+  {
+    title: "Apply & prep",
+    subtitle: "High-stakes moments unlocked",
+    features: [
+      "Unlimited listing pitches (resume bullets for one role)",
+      "Full company interview practice + AI answer feedback",
+      "Higher daily caps on fit ranking and path nudges",
+      "Job fit with the Pro model tier",
+    ],
+  },
+  {
+    title: "Profile extras",
+    subtitle: "Optional polish",
     features: [
       "Pro badge on your profile",
       "Custom profile accent color",
       "Profile banner",
-      "Animated profile picture (GIF / animated-webp)",
-    ],
-  },
-  {
-    title: "Connect",
-    subtitle: "Let AI find your people",
-    features: [
-      "150 natural-language people searches a day",
-      "A stronger AI model, 150 uses a day",
-      "Improve my post: AI rewrites your draft",
-      "150 AI icebreakers a day",
-      "Weekly “5 people to meet” email, with AI reasons",
-    ],
-  },
-  {
-    title: "Belong",
-    subtitle: "See and be seen",
-    features: [
-      "Profile themes",
       "See who viewed your profile",
     ],
   },
@@ -41,13 +42,13 @@ const GROUPS: { title: string; subtitle: string; features: string[] }[] = [
 const COMING_SOON_TO_PRO: string[] = [];
 
 const NEVER_GATED = [
-  "student verification",
-  "posting",
-  "following",
+  "first path diagnosis",
+  "recipe home",
+  "core path tasks",
+  "browsing opportunities",
+  "basic application tracker",
+  "opt-in helper visibility",
   "DMs",
-  "private accounts",
-  "feed",
-  "reactions",
 ];
 
 // Inline check glyph — matches the project's inline-SVG icon convention.
@@ -97,7 +98,8 @@ export default async function ProPage({
       </div>
 
       <p className="mb-6 text-[15px] leading-relaxed text-[var(--ink-muted)]">
-        Express who you are. Let AI find your people.
+        Mission stays free. Pro buys velocity on your internship path — pitches,
+        interview packs, and re-diagnosis when the plan needs to move.
       </p>
 
       {/* Pricing */}
