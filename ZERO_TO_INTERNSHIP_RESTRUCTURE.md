@@ -598,13 +598,13 @@ Update meta in `app/page.tsx`, `app/layout.tsx`, OG copy.
 - Browse jobs + basic tracker  
 - Limited AI (e.g. 1 diagnosis/day, 3 fits/day — tune to cost)  
 
-### Pro (velocity) — **$12/mo · $29/semester**
+### Pro (velocity) — **$12/mo · $99/year**
 - Unlimited re-diagnosis / recipe switches  
 - Unlimited pitches per listing  
 - Interview prep packs + AI feedback  
 - Stronger model tier / higher daily caps  
 
-### Ultra (interview season) — **$29/mo · $79/semester** (~2.4× Pro)
+### Ultra (interview season) — **$29/mo · $249/year** (~2.4× Pro)
 - Everything in Pro  
 - Unlimited interview packs and feedback  
 - Priority helper icebreakers on target orgs  

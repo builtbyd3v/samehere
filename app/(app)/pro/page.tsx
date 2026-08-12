@@ -6,8 +6,9 @@ import { openBillingPortal, startCheckout } from "./actions";
 import { PRICING, formatUsd } from "@/lib/pricing";
 
 const BILLING_ENABLED = process.env.NEXT_PUBLIC_BILLING_ENABLED === "true";
+const YEARLY_BILLING_READY = Boolean(process.env.STRIPE_PRICE_YEARLY);
 const ULTRA_BILLING_READY = Boolean(
-  process.env.STRIPE_PRICE_ULTRA_MONTHLY || process.env.STRIPE_PRICE_ULTRA_SEMESTER,
+  process.env.STRIPE_PRICE_ULTRA_MONTHLY || process.env.STRIPE_PRICE_ULTRA_YEARLY,
 );
 
 const NEVER_GATED = [
@@ -125,7 +126,7 @@ export default async function ProPage({
             <span className="text-base font-normal text-[var(--ink-muted)]">/mo</span>
           </p>
           <p className="text-sm text-[var(--ink-muted)]">
-            or {formatUsd(proPlan.semester)} / semester (one payment, 6 months)
+            or {formatUsd(proPlan.yearly)} / year
           </p>
           <ul className="mt-4 space-y-2">
             {proPlan.features.map((f) => (
@@ -156,12 +157,18 @@ export default async function ProPage({
                     Pro monthly
                   </button>
                 </form>
-                <form action={startCheckout} className="flex-1">
-                  <input type="hidden" name="plan" value="semester" />
-                  <button type="submit" className="btn-ghost w-full">
-                    Pro semester
-                  </button>
-                </form>
+                {YEARLY_BILLING_READY ? (
+                  <form action={startCheckout} className="flex-1">
+                    <input type="hidden" name="plan" value="yearly" />
+                    <button type="submit" className="btn-ghost w-full">
+                      Pro yearly
+                    </button>
+                  </form>
+                ) : (
+                  <p className="flex flex-1 items-center text-sm text-[var(--ink-muted)]">
+                    Yearly checkout when Stripe yearly price is live.
+                  </p>
+                )}
               </div>
             ) : (
               <p className="text-sm text-[var(--ink-muted)]">Checkout coming soon.</p>
@@ -186,7 +193,7 @@ export default async function ProPage({
             <span className="text-base font-normal text-[var(--ink-muted)]">/mo</span>
           </p>
           <p className="text-sm text-[var(--ink-muted)]">
-            or {formatUsd(ultra.semester)} / semester (one payment, 6 months)
+            or {formatUsd(ultra.yearly)} / year
           </p>
           <ul className="mt-4 space-y-2">
             {ultra.features.map((f) => (
@@ -206,9 +213,9 @@ export default async function ProPage({
                   </button>
                 </form>
                 <form action={startCheckout} className="flex-1">
-                  <input type="hidden" name="plan" value="ultra_semester" />
+                  <input type="hidden" name="plan" value="ultra_yearly" />
                   <button type="submit" className="btn-ghost w-full">
-                    Ultra semester
+                    Ultra yearly
                   </button>
                 </form>
               </div>
@@ -233,9 +240,9 @@ export default async function ProPage({
           title="Why the gap"
           subtitle="Pro vs Ultra"
           features={[
-            "Pro ($12) is everyday recruiting velocity without feeling expensive",
-            "Ultra ($29) is ~2.4× Pro — priced for live interview loops, not cosmetics",
-            "Semester options keep a recruiting cycle prepaid without monthly churn anxiety",
+            "Pro ($12/mo) is everyday recruiting velocity without feeling expensive",
+            "Ultra ($29/mo) is ~2.4× Pro — priced for live interview loops, not cosmetics",
+            "Yearly locks in ~2 months free (Pro $99, Ultra $249) without semester one-offs",
           ]}
         />
       </div>

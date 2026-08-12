@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { LazyMotion, domMax, m, useReducedMotion } from "motion/react";
 import { useEffect, useState } from "react";
 import AppBrandLink from "@/components/brand/AppBrandLink";
+import BrandChrome from "@/components/brand/BrandChrome";
 import NavMenu from "@/components/layout/NavMenu";
 import { IconBolt } from "@/components/icons";
 
@@ -114,14 +115,9 @@ export default function PathAppNav({
       )}
 
       <header className="landing-nav path-app-nav fixed inset-x-0 top-0 z-50">
-        <div
-          className={`landing-nav-shell relative mx-auto max-w-[1280px] transition-[background-color,border-color] duration-200 ${
-            scrolled ? "landing-nav-scrolled" : ""
-          }`}
-        >
-          <div className="relative flex h-16 items-center justify-between gap-4 px-4 lg:px-6">
-            <AppBrandLink href={username ? "/home" : "/"} />
-
+        <BrandChrome
+          scrolled={scrolled}
+          center={
             <nav
               className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 md:flex"
               aria-label="Path"
@@ -157,7 +153,8 @@ export default function PathAppNav({
                 );
               })}
             </nav>
-
+          }
+          right={
             <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
               {isPro ? (
                 <Link
@@ -186,49 +183,52 @@ export default function PathAppNav({
                 <MenuIcon open={menuOpen} />
               </button>
             </div>
-          </div>
-
-          {menuOpen && (
-            <nav
-              id="path-mobile-menu"
-              className="origin-top border-t border-[var(--border)] px-3 py-3 md:hidden animate-[menu-pop_150ms_var(--ease-out)] motion-reduce:animate-none"
-              aria-label="Path"
-            >
-              <ul className="flex flex-col gap-0.5">
-                {links.map((link) => {
-                  const active = current === link.id;
-                  return (
-                    <li key={link.id}>
-                      <Link
-                        href={link.href}
-                        className={`flex items-center rounded-lg px-3 py-2.5 text-[15px] transition ${
-                          active
-                            ? "bg-[var(--featured-surface)] font-medium text-[var(--accent-blue-strong)]"
-                            : "text-[var(--ink-muted)] hover:bg-[var(--featured-surface)] hover:text-[var(--ink)]"
-                        }`}
-                      >
-                        {link.label}
-                        {link.id === "messages" && dmUnread > 0 ? (
-                          <span className="ml-auto text-xs tabular-nums text-[var(--accent-blue-strong)]">
-                            {dmUnread}
-                          </span>
-                        ) : null}
-                      </Link>
-                    </li>
-                  );
-                })}
-                <li className="mt-2 border-t border-[var(--border)] pt-2">
-                  <Link
-                    href="/pro"
-                    className="flex items-center rounded-lg px-3 py-2.5 text-[15px] text-[var(--ink-muted)] transition hover:bg-[var(--featured-surface)] hover:text-[var(--ink)]"
-                  >
-                    {isPro ? "Manage plan" : "Upgrade"}
-                  </Link>
-                </li>
-              </ul>
-            </nav>
-          )}
-        </div>
+          }
+          below={
+            menuOpen ? (
+              <nav
+                id="path-mobile-menu"
+                className="origin-top border-t border-[var(--border)] px-3 py-3 md:hidden animate-[menu-pop_150ms_var(--ease-out)] motion-reduce:animate-none"
+                aria-label="Path"
+              >
+                <ul className="flex flex-col gap-0.5">
+                  {links.map((link) => {
+                    const active = current === link.id;
+                    return (
+                      <li key={link.id}>
+                        <Link
+                          href={link.href}
+                          className={`flex items-center rounded-lg px-3 py-2.5 text-[15px] transition ${
+                            active
+                              ? "bg-[var(--featured-surface)] font-medium text-[var(--accent-blue-strong)]"
+                              : "text-[var(--ink-muted)] hover:bg-[var(--featured-surface)] hover:text-[var(--ink)]"
+                          }`}
+                        >
+                          {link.label}
+                          {link.id === "messages" && dmUnread > 0 ? (
+                            <span className="ml-auto text-xs tabular-nums text-[var(--accent-blue-strong)]">
+                              {dmUnread}
+                            </span>
+                          ) : null}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                  <li className="mt-2 border-t border-[var(--border)] pt-2">
+                    <Link
+                      href="/pro"
+                      className="flex items-center rounded-lg px-3 py-2.5 text-[15px] text-[var(--ink-muted)] transition hover:bg-[var(--featured-surface)] hover:text-[var(--ink)]"
+                    >
+                      {isPro ? "Manage plan" : "Upgrade"}
+                    </Link>
+                  </li>
+                </ul>
+              </nav>
+            ) : null
+          }
+        >
+          <AppBrandLink href={username ? "/home" : "/"} />
+        </BrandChrome>
       </header>
     </LazyMotion>
   );

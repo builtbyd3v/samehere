@@ -83,7 +83,7 @@ export default function TermsPage() {
           <h2 className="text-lg font-semibold text-[var(--ink)]">6. Paid plans &amp; billing</h2>
           <p className="mt-2">
             samehere offers optional paid plans (Pro and Ultra). Current list pricing is Pro at $12 per
-            month or $29 per semester, and Ultra at $29 per month or $79 per semester, billed in advance
+            month or $99 per year, and Ultra at $29 per month or $249 per year, billed in advance
             through our payment processor, Stripe. Subscriptions renew automatically for the same term
             until cancelled. You can cancel anytime from your account settings or the Stripe customer
             portal; cancellation stops future renewals and paid access continues through the end of the

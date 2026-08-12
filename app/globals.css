@@ -929,9 +929,30 @@ summary {
 
 .landing-nav {
   min-height: 64px;
-  padding-inline: 16px;
+  /* Horizontal inset lives on .brand-chrome-row so logo x-position matches
+     across landing, auth, pricing, and the path app. */
   background: rgba(10, 10, 10, 0.85);
   backdrop-filter: blur(12px);
+}
+
+.brand-chrome-row {
+  padding-inline: 1rem;
+}
+
+@media (min-width: 1024px) {
+  .brand-chrome-row {
+    padding-inline: 1.5rem;
+  }
+}
+
+/* Reserve full morph width so the mark's left edge never drifts. */
+.brand-slot {
+  display: flex;
+  width: 5.75rem;
+  height: 2.75rem;
+  flex-shrink: 0;
+  align-items: center;
+  overflow: visible;
 }
 
 .landing-nav-shell {

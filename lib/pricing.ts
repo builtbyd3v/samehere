@@ -9,7 +9,7 @@ export const PRICING = {
     kicker: "Mission",
     tagline: "Diagnose the gap and make the next useful move.",
     monthly: 0,
-    semester: 0,
+    yearly: 0,
     features: [
       "Initial diagnosis and adaptive path home",
       "Core path tasks and application tracking",
@@ -25,7 +25,7 @@ export const PRICING = {
     tagline: "Move faster when an application or interview matters now.",
     /** Recommended list price — update Stripe prices to match before enabling billing. */
     monthly: 12,
-    semester: 29,
+    yearly: 99,
     features: [
       "Everything in Free",
       "Unlimited path re-diagnosis",
@@ -40,7 +40,7 @@ export const PRICING = {
     kicker: "Interview season",
     tagline: "Full coach intensity when the cycle is live.",
     monthly: 29,
-    semester: 79,
+    yearly: 249,
     features: [
       "Everything in Pro",
       "Unlimited interview packs and feedback",
@@ -58,15 +58,14 @@ export function formatUsd(amount: number): string {
 
 /**
  * Pricing rationale (for humans + agents):
- * - Pro at $12/mo (~2.4× old $4.99) stays impulse-affordable for students
- *   while signaling a real product; semester $29 ≈ $4.80/mo.
- * - Ultra at $29/mo (~2.4× Pro) matches ResuMax-class interview intensity
- *   without jumping to $49; semester $79 ≈ $13/mo for recruiting season.
- * - Gap is large enough that Ultra feels like a deliberate upgrade, not a
- *   rounding error — sell outcome velocity, not cosmetics.
+ * - Pro at $12/mo stays impulse-affordable; yearly $99 ≈ $8.25/mo (~2 months free).
+ * - Ultra at $29/mo (~2.4× Pro); yearly $249 ≈ $20.75/mo — keeps a clear gap.
+ * - Monthly vs yearly only (no semester one-time): both are Stripe subscriptions.
  */
 export const PRICING_RATIONALE = {
   proMonthly: 12,
+  proYearly: 99,
   ultraMonthly: 29,
+  ultraYearly: 249,
   multiple: "Ultra ≈ 2.4× Pro monthly",
 } as const;

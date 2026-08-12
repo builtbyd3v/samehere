@@ -133,12 +133,11 @@ export async function POST(req: Request) {
 
         const admin = createAdminClient();
 
-        // One-time semester purchase: no subscription exists, so Stripe will
-        // never tell us it lapsed. Stamp a fixed term and record pro_source, which
-        // is what expire_lapsed_pro() (nightly pg_cron) sweeps on and what hides
-        // the billing-portal button. Do NOT infer either from stripe_customer_id:
-        // a user who once subscribed keeps that id forever, so a later one-time
-        // purchase would look like a subscription and never expire.
+        // Legacy one-time purchase (old semester price): no subscription exists,
+        // so Stripe will never tell us it lapsed. Stamp a fixed term and record
+        // pro_source, which is what expire_lapsed_pro() (nightly pg_cron) sweeps
+        // on and what hides the billing-portal button. New checkouts are monthly
+        // or yearly subscriptions (mode === "subscription") and skip this branch.
         if (session.mode === "payment") {
           // Anchor the term to the session's own creation time, not to now().
           // Stripe redelivers events on retry, and `new Date()` would push
@@ -155,7 +154,7 @@ export async function POST(req: Request) {
           posthog?.capture({
             distinctId: supabaseId,
             event: "stripe_checkout_completed",
-            properties: { billing_provider: "stripe", plan: "semester", has_subscription: false },
+            properties: { billing_provider: "stripe", plan: "one_time", has_subscription: false },
           });
           break;
         }

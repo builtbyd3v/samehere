@@ -4,6 +4,7 @@ import Link from "next/link";
 import { LazyMotion, domMax, m, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import AppBrandLink from "@/components/brand/AppBrandLink";
+import BrandChrome from "@/components/brand/BrandChrome";
 import { signupCtaSm } from "./cta";
 
 const LINKS = [
@@ -193,15 +194,13 @@ export default function LandingNav() {
       )}
 
       <header ref={headerRef} className="landing-nav fixed inset-x-0 top-0 z-50">
-        <div
-          className={`landing-nav-shell relative mx-auto max-w-[1280px] transition-[background-color,border-color] duration-200 ${
-            scrolled ? "landing-nav-scrolled" : ""
-          }`}
-        >
-          <div className="relative flex h-16 items-center justify-between gap-4 px-4 lg:px-6">
-            <AppBrandLink href="/" onClick={scrollToTop} />
-
-            <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 md:flex" aria-label="Page sections">
+        <BrandChrome
+          scrolled={scrolled}
+          center={
+            <nav
+              className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 md:flex"
+              aria-label="Page sections"
+            >
               {LINKS.map((link) => (
                 <a
                   key={link.id}
@@ -221,24 +220,16 @@ export default function LandingNav() {
                 </a>
               ))}
             </nav>
-
+          }
+          right={
             <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-              <Link
-                href="/login"
-                className="landing-nav-secondary hidden md:inline-flex"
-              >
+              <Link href="/login" className="landing-nav-secondary hidden md:inline-flex">
                 Log in
               </Link>
-              <Link
-                href="/signup"
-                className={`${signupCtaSm} landing-nav-mobile-primary md:hidden`}
-              >
+              <Link href="/signup" className={`${signupCtaSm} landing-nav-mobile-primary md:hidden`}>
                 Join
               </Link>
-              <Link
-                href="/signup"
-                className="landing-nav-primary-single hidden md:inline-flex"
-              >
+              <Link href="/signup" className="landing-nav-primary-single hidden md:inline-flex">
                 Join free
               </Link>
               <button
@@ -252,43 +243,46 @@ export default function LandingNav() {
                 <MenuIcon open={menuOpen} />
               </button>
             </div>
-          </div>
-
-          {menuOpen && (
-            <nav
-              id="landing-mobile-menu"
-              className="origin-top border-t border-[var(--border)] px-3 py-3 md:hidden animate-[menu-pop_150ms_var(--ease-out)] motion-reduce:animate-none"
-              aria-label="Page sections"
-            >
-              <ul className="flex flex-col gap-0.5">
-                {LINKS.map((link) => (
-                  <li key={link.id}>
-                    <a
-                      href={link.href}
-                      onClick={(e) => scrollToSection(e, link.id)}
-                      className={`flex items-center rounded-lg px-3 py-2.5 text-[15px] transition ${
-                        activeId === link.id
-                          ? "bg-[var(--featured-surface)] font-medium text-[var(--accent-blue-strong)]"
-                          : "text-[var(--ink-muted)] hover:bg-[var(--featured-surface)] hover:text-[var(--ink)]"
-                      }`}
+          }
+          below={
+            menuOpen ? (
+              <nav
+                id="landing-mobile-menu"
+                className="origin-top border-t border-[var(--border)] px-3 py-3 md:hidden animate-[menu-pop_150ms_var(--ease-out)] motion-reduce:animate-none"
+                aria-label="Page sections"
+              >
+                <ul className="flex flex-col gap-0.5">
+                  {LINKS.map((link) => (
+                    <li key={link.id}>
+                      <a
+                        href={link.href}
+                        onClick={(e) => scrollToSection(e, link.id)}
+                        className={`flex items-center rounded-lg px-3 py-2.5 text-[15px] transition ${
+                          activeId === link.id
+                            ? "bg-[var(--featured-surface)] font-medium text-[var(--accent-blue-strong)]"
+                            : "text-[var(--ink-muted)] hover:bg-[var(--featured-surface)] hover:text-[var(--ink)]"
+                        }`}
+                      >
+                        {link.label}
+                      </a>
+                    </li>
+                  ))}
+                  <li className="mt-2 border-t border-[var(--border)] pt-2">
+                    <Link
+                      href="/login"
+                      className="flex items-center rounded-lg px-3 py-2.5 text-[15px] text-[var(--ink-muted)] transition hover:bg-[var(--featured-surface)] hover:text-[var(--ink)]"
+                      onClick={closeMenu}
                     >
-                      {link.label}
-                    </a>
+                      Log in
+                    </Link>
                   </li>
-                ))}
-                <li className="mt-2 border-t border-[var(--border)] pt-2">
-                  <Link
-                    href="/login"
-                    className="flex items-center rounded-lg px-3 py-2.5 text-[15px] text-[var(--ink-muted)] transition hover:bg-[var(--featured-surface)] hover:text-[var(--ink)]"
-                    onClick={closeMenu}
-                  >
-                    Log in
-                  </Link>
-                </li>
-              </ul>
-            </nav>
-          )}
-        </div>
+                </ul>
+              </nav>
+            ) : null
+          }
+        >
+          <AppBrandLink href="/" onClick={scrollToTop} />
+        </BrandChrome>
       </header>
     </LazyMotion>
   );

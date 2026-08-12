@@ -69,7 +69,7 @@ export default function Pricing() {
             <p className="landing-plan-price">
               {formatUsd(pro.monthly)}
               <span>
-                /mo · {formatUsd(pro.semester)}/semester
+                /mo · {formatUsd(pro.yearly)}/year
               </span>
             </p>
             <div className="landing-pricing-rule" />
@@ -95,7 +95,7 @@ export default function Pricing() {
             <p className="landing-plan-price">
               {formatUsd(ultra.monthly)}
               <span>
-                /mo · {formatUsd(ultra.semester)}/semester
+                /mo · {formatUsd(ultra.yearly)}/year
               </span>
             </p>
             <div className="landing-pricing-rule" />

@@ -10,22 +10,21 @@ import { SITE_URL } from "@/lib/site";
 // ponytail: live price ids inline, env override for test mode. Same call the
 // old hardcoded payment links made — price ids are not secrets.
 //
-// monthly is a recurring subscription: Stripe drives expiry via
-// customer.subscription.deleted. semester is a ONE-TIME charge, so no
-// subscription exists and nothing revokes Pro on its own — the webhook stamps
-// pro_until and a nightly pg_cron job flips is_pro off once it lapses.
+// All current plans are recurring subscriptions (monthly or yearly). Stripe
+// drives expiry via customer.subscription.deleted. Legacy one-time semester
+// checkouts still grant via webhook payment mode if any old price is hit.
 const PRICES = {
   monthly: process.env.STRIPE_PRICE_MONTHLY ?? "price_1Tq3OeIKoFZaqPVsqyJtUpFU",
-  semester: process.env.STRIPE_PRICE_SEMESTER ?? "price_1Tr8OTIKoFZaqPVsVIo2Z35s",
+  yearly: process.env.STRIPE_PRICE_YEARLY,
   ultra_monthly: process.env.STRIPE_PRICE_ULTRA_MONTHLY,
-  ultra_semester: process.env.STRIPE_PRICE_ULTRA_SEMESTER,
+  ultra_yearly: process.env.STRIPE_PRICE_ULTRA_YEARLY,
 } as const;
 
 const MODES = {
   monthly: "subscription",
-  semester: "payment",
+  yearly: "subscription",
   ultra_monthly: "subscription",
-  ultra_semester: "payment",
+  ultra_yearly: "subscription",
 } as const;
 
 // L7: the /pro page hides the checkout/portal buttons when billing is off, but the
@@ -38,9 +37,9 @@ type Plan = keyof typeof PRICES;
 
 const isPlan = (v: FormDataEntryValue | null): v is Plan =>
   v === "monthly" ||
-  v === "semester" ||
+  v === "yearly" ||
   v === "ultra_monthly" ||
-  v === "ultra_semester";
+  v === "ultra_yearly";
 
 // Creates a Stripe Checkout Session for the signed-in user.
 //
@@ -69,8 +68,6 @@ export async function startCheckout(formData: FormData) {
   const priceId = PRICES[plan];
   if (!priceId) redirect("/pro");
 
-  const isSubscription = plan === "monthly" || plan === "ultra_monthly";
-
   const session = await stripe.checkout.sessions.create({
     mode: MODES[plan],
     line_items: [{ price: priceId, quantity: 1 }],
@@ -92,12 +89,8 @@ export async function startCheckout(formData: FormData) {
     //    a promotion code takes the total to $0. Stripe only accepts it in
     //    subscription mode; a payment-mode session with a $0 total already
     //    collects nothing, so both plans get the behavior.
-    ...(isSubscription
-      ? {
-          subscription_data: { metadata: { supabase_id: user.id } },
-          payment_method_collection: "if_required" as const,
-        }
-      : {}),
+    subscription_data: { metadata: { supabase_id: user.id } },
+    payment_method_collection: "if_required",
     // automatic_tax needs an address on the customer. When we pass an existing
     // customer, Stripe requires explicit permission to write the one collected
     // at checkout back onto it, or the session errors.
@@ -143,7 +136,7 @@ export async function openBillingPortal() {
   // authenticated role); read own billing state through the definer.
   const { data: profile } = await supabase.rpc("get_my_billing").maybeSingle();
 
-  // A one-time semester buyer may still carry a customer id from an earlier
+  // A legacy one-time buyer may still carry a customer id from an earlier
   // subscription. The portal would open on past receipts with nothing to manage,
   // so only an actual subscriber gets in — the page hides the button, this is the
   // server-side half of the same rule.

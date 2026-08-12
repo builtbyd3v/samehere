@@ -1,6 +1,7 @@
 "use client";
 
 import AppBrandLink from "@/components/brand/AppBrandLink";
+import BrandChrome from "@/components/brand/BrandChrome";
 
 function Accent({ children }: { children: React.ReactNode }) {
   return <span className="text-[var(--accent-blue-strong)]">{children}</span>;
@@ -54,10 +55,14 @@ export default function AuthShell({ variant, children, footer, aside, asideExtra
 
   return (
     <main className="landing-xai path-app relative min-h-[100dvh] overflow-hidden">
-      <div className="relative mx-auto flex min-h-[100dvh] max-w-[1200px] flex-col px-5 py-6 md:py-12 lg:px-8">
-        <AppBrandLink href="/" />
+      <header className="landing-nav fixed inset-x-0 top-0 z-50">
+        <BrandChrome>
+          <AppBrandLink href="/" />
+        </BrandChrome>
+      </header>
 
-        <div className="mt-4 flex flex-1 flex-col justify-center gap-5 md:mt-12 md:grid md:grid-cols-2 md:items-center md:gap-16 lg:gap-20">
+      <div className="relative mx-auto flex min-h-[100dvh] max-w-[1280px] flex-col px-4 pb-6 pt-[4.5rem] md:pb-12 lg:px-6">
+        <div className="mt-4 flex flex-1 flex-col justify-center gap-5 md:mt-8 md:grid md:grid-cols-2 md:items-center md:gap-16 lg:gap-20">
           <div className="max-w-md">
             <h2 className="text-balance text-[25px] font-medium leading-[1.05] tracking-[-0.03em] md:text-[40px] lg:text-[44px] lg:tracking-[-0.04em]">
               {headline}
