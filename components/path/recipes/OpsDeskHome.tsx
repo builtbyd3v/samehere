@@ -13,6 +13,7 @@ export default function OpsDeskHome({
   plan,
   listings,
   applicationStages,
+  context,
   nextTask,
   taskHref,
 }: PathHomeData) {
@@ -49,7 +50,7 @@ export default function OpsDeskHome({
         <ApplicationsStub stages={applicationStages} />
         <OpportunitiesStub listings={listings} />
         <PitchStub listingId={top?.id} />
-        <HelpersStub helpers={[]} />
+        <HelpersStub helpers={context.helpers} />
       </div>
     </div>
   );

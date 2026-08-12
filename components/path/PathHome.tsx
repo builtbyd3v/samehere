@@ -87,6 +87,6 @@ function hrefForTask(
         ? `/prep/${encodeURIComponent(context.interview.bankSlug)}`
         : "/prep";
     case "helpers":
-      return "/messages";
+      return context.helpers[0]?.href ?? "/messages";
   }
 }

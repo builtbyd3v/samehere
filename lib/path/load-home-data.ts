@@ -1,7 +1,16 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { DiagnosisBlob } from "./diagnose";
+import {
+  loadHomeHelpers,
+  resolveHelperCompanies,
+  targetCompaniesFromAnswersJson,
+  type HelperCompanySource,
+  type HomeHelper,
+} from "./home-helpers";
 import { getInterviewBank, getProjectBySlug, getSkillTrack } from "./seeds";
 import type { ModuleId } from "./types";
+
+export type { HomeHelper, HelperCompanySource };
 
 export type PathTaskSummary = {
   id: string;
@@ -40,6 +49,15 @@ export type HomePathContext = {
   interview: InterviewContext | null;
   diagnosis: Pick<DiagnosisBlob, "strengths" | "gaps" | "blockers"> | null;
   skillStage: SkillStageSummary | null;
+  helpers: HomeHelper[];
+};
+
+export type LoadHomePathContextOpts = {
+  /**
+   * Opportunity company slug/org pairs already loaded for home.
+   * Used when intake target_companies are missing (see resolveHelperCompanies).
+   */
+  companies?: readonly HelperCompanySource[] | null;
 };
 
 const MODULE_IDS = new Set<ModuleId>([
@@ -186,16 +204,44 @@ async function loadInterview(
   };
 }
 
+/**
+ * Soft-load intake target_companies. On missing/unparseable intake, return []
+ * so callers fall back to opportunity companies passed via opts.companies.
+ */
+async function loadIntakeTargetCompanies(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("intake_responses")
+    .select("answers")
+    .eq("user_id", userId)
+    .order("version", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data) return [];
+  return targetCompaniesFromAnswersJson(data.answers);
+}
+
 export async function loadHomePathContext(
   supabase: SupabaseClient,
   userId: string,
+  opts?: LoadHomePathContextOpts,
 ): Promise<HomePathContext> {
-  const [tasks, project, learner, interview] = await Promise.all([
+  const [tasks, project, learner, interview, targetCompanies] = await Promise.all([
     loadTasks(supabase, userId),
     loadProject(supabase, userId),
     loadLearner(supabase, userId),
     loadInterview(supabase, userId),
+    loadIntakeTargetCompanies(supabase, userId),
   ]);
+
+  const companies = resolveHelperCompanies({
+    targetCompanies,
+    listings: opts?.companies ?? null,
+  });
+  const helpers = await loadHomeHelpers(supabase, userId, companies);
 
   return {
     tasks,
@@ -203,5 +249,6 @@ export async function loadHomePathContext(
     interview,
     diagnosis: learner.diagnosis,
     skillStage: learner.skillStage,
+    helpers,
   };
 }

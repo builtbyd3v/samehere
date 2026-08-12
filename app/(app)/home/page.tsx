@@ -15,11 +15,19 @@ export default async function HomePage() {
   const planFromDb = await loadViewerPathPlanUi(supabase, user.id);
   if (!planFromDb) redirect("/onboarding");
 
-  const [listings, applicationStages, context] = await Promise.all([
+  const [listings, applicationStages] = await Promise.all([
     loadOpportunities(supabase, user.id),
     loadApplicationStages(supabase, user.id),
-    loadHomePathContext(supabase, user.id),
   ]);
+
+  // Pass opportunity company slug/org into home context so helpers can fall
+  // back when intake target_companies are missing (see lib/path/home-helpers.ts).
+  const context = await loadHomePathContext(supabase, user.id, {
+    companies: listings.map((row) => ({
+      org: row.org,
+      company_slug: row.company_slug,
+    })),
+  });
 
   return (
     <PathHome

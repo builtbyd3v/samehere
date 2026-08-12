@@ -251,19 +251,36 @@ export function InterviewPrepStub({
 export function HelpersStub({
   helpers = [],
 }: {
-  helpers?: { name: string; org: string; note: string }[];
+  helpers?: {
+    username: string;
+    name: string;
+    org: string;
+    note: string;
+    href: string;
+  }[];
 }) {
+  const primaryHref = helpers[0]?.href ?? "/messages";
   return (
     <ModuleSection id="helpers">
       {helpers.length ? (
         <ul className="space-y-3">
           {helpers.map((helper) => (
-            <li key={helper.name} className="flex items-baseline justify-between gap-3 text-sm">
-              <div>
-                <p className="font-medium text-[var(--ink)]">{helper.name}</p>
+            <li
+              key={helper.username}
+              className="flex items-baseline justify-between gap-3 text-sm"
+            >
+              <div className="min-w-0">
+                <Link
+                  href={helper.href}
+                  className="font-medium text-[var(--ink)] hover:underline"
+                >
+                  {helper.name}
+                </Link>
                 <p className="text-[var(--ink-muted)]">{helper.org}</p>
               </div>
-              <span className="landing-fit">{helper.note}</span>
+              <Link href={helper.href} className="landing-fit shrink-0 hover:underline">
+                {helper.note || "Ask for help"}
+              </Link>
             </li>
           ))}
         </ul>
@@ -273,10 +290,10 @@ export function HelpersStub({
         </p>
       )}
       <Link
-        href="/messages"
+        href={primaryHref}
         className="mt-4 inline-flex text-sm font-medium text-[var(--accent-blue-strong)] hover:underline"
       >
-        Draft an icebreaker
+        {helpers.length ? "Ask for help" : "Draft an icebreaker"}
       </Link>
     </ModuleSection>
   );
