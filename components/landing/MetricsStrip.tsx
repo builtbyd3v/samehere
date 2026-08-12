@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import gsap from "gsap";
 import { useLayoutEffect, useRef } from "react";
+import { signupCta } from "./cta";
 
 type Metric =
   | {
@@ -17,28 +19,24 @@ type Metric =
     };
 
 /**
- * Sell the internship outcome. Keep inventory counts out — they read small.
+ * Conversion strip — reasons to sign up, not abstract product poetry.
  * Middle slot stays the accent figure in CSS (:nth-child(2)).
- *
- * Sides: blank resume → apply proof, and interview-loop prep.
- * Labels are full phrases so the strip reads without decoding.
  */
 const METRICS: readonly Metric[] = [
   {
     kind: "text",
-    display: "0 to 1",
-    label: "From a blank resume to apply-ready proof",
+    display: "Free",
+    label: "Diagnose where you're stuck and get a path today",
   },
   {
-    kind: "count",
-    value: 100,
-    suffix: "%",
-    label: "Build, apply, and prepare fully in-app",
+    kind: "text",
+    display: "Ship",
+    label: "Build real projects in-app that go on your resume",
   },
   {
     kind: "text",
     display: "Prep",
-    label: "Takes over the moment you land an interview",
+    label: "Company interview banks ready when you get the email",
   },
 ];
 
@@ -142,7 +140,7 @@ export default function MetricsStrip() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="landing-metrics" aria-label="Why samehere for internships">
+    <section ref={sectionRef} className="landing-metrics" aria-label="Why join samehere">
       <div aria-hidden className="landing-metrics-grid" />
       <div aria-hidden className="landing-metrics-streaks">
         <span className="landing-metrics-streak landing-metrics-streak-h1" />
@@ -171,6 +169,11 @@ export default function MetricsStrip() {
             </p>
           </div>
         ))}
+      </div>
+      <div className="landing-metrics-cta">
+        <Link href="/signup" className={signupCta}>
+          Join free
+        </Link>
       </div>
     </section>
   );
