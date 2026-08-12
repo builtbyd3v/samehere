@@ -1,11 +1,12 @@
 "use client";
 
 import {
+  SandpackLayout,
   SandpackPreview,
   SandpackProvider,
   useSandpack,
 } from "@codesandbox/sandpack-react";
-import { useEffect, useMemo, useRef, type RefObject } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, type RefObject } from "react";
 
 const HARNESS_APP = `import Page from "./StudentPage";
 
@@ -22,8 +23,8 @@ function StudioPreviewLifecycle({
   const { listen } = useSandpack();
 
   useEffect(() => {
-    const unsubscribe = listen((event) => {
-      if (event.type === "done" && event.compilatonError === false) {
+    const unsubscribe = listen((message) => {
+      if (message.type === "done" && message.compilatonError === false) {
         hostRef.current
           ?.querySelector<HTMLElement>(".sp-overlay.sp-loading")
           ?.style.setProperty("display", "none", "important");
@@ -50,12 +51,13 @@ export default function StudioUiPreview({
   headingId?: string;
 }) {
   const previewHostRef = useRef<HTMLDivElement>(null);
+  const previewCode = useDeferredValue(pageCode);
   const files = useMemo(
     () => ({
       "/App.tsx": HARNESS_APP,
-      "/StudentPage.tsx": pageCode || "export default function Page() { return null; }\n",
+      "/StudentPage.tsx": previewCode || "export default function Page() { return null; }\n",
     }),
-    [pageCode],
+    [previewCode],
   );
 
   return (
@@ -78,22 +80,24 @@ export default function StudioUiPreview({
       </div>
       <div ref={previewHostRef} className="studio-sandpack">
         <SandpackProvider
+          key={previewCode}
           template="react-ts"
           theme="dark"
           files={files}
           options={{
-            recompileMode: "delayed",
-            recompileDelay: 400,
+            initMode: "lazy",
             externalResources: [],
           }}
         >
-          <StudioPreviewLifecycle hostRef={previewHostRef} />
-          <SandpackPreview
-            showNavigator={false}
-            showOpenInCodeSandbox={false}
-            showRefreshButton
-            style={{ height: "100%", minHeight: "14rem" }}
-          />
+          <SandpackLayout>
+            <StudioPreviewLifecycle hostRef={previewHostRef} />
+            <SandpackPreview
+              showNavigator={false}
+              showOpenInCodeSandbox={false}
+              showRefreshButton
+              style={{ height: "100%", minHeight: "14rem" }}
+            />
+          </SandpackLayout>
         </SandpackProvider>
       </div>
     </section>
