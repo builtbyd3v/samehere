@@ -19,11 +19,36 @@ const DEGREE_VALUES: readonly string[] = DEGREE_VALUES_RAW;
 import type { TablesUpdate } from "@/types/database.types";
 
 const EXPERIENCE_KINDS = ["internship", "job", "research", "club_role"];
+const HELP_KINDS = new Set(["internship", "job", "research"]);
 
 const ALLOWED_AVATAR_MIME = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 const ALLOWED_BANNER_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_BANNER_BYTES = 4 * 1024 * 1024;
+
+type ExpClient = Awaited<ReturnType<typeof createClient>>;
+
+// Best-effort slug from job_companies by name. Null when WS1 company_slug
+// isn't wired yet or no company row matches — org ilike remains the fallback
+// on listing peer queries.
+async function resolveCompanySlug(supabase: ExpClient, org: string): Promise<string | null> {
+  const cleaned = org.replace(/[,()%*]/g, "").trim();
+  if (!cleaned) return null;
+  const { data } = await supabase
+    .from("job_companies")
+    .select("slug")
+    .ilike("name", cleaned)
+    .limit(1)
+    .maybeSingle();
+  return data?.slug ?? null;
+}
+
+async function maybeOptInHelp(supabase: ExpClient, userId: string, kind: string, formData: FormData) {
+  if (!HELP_KINDS.has(kind)) return;
+  if (formData.get("open_to_help") !== "on") return;
+  // Soft-fail if column missing (WS1 mid-rollout).
+  await supabase.from("profiles").update({ open_to_help: true }).eq("id", userId);
+}
 
 export type EditState = { error?: string };
 export type AvatarState = { error?: string; url?: string };
@@ -287,17 +312,42 @@ export async function addExperience(_prev: ExperienceState, formData: FormData):
 
   const note = str("note", 600) || null;
   const isCurrent = formData.get("is_current") === "on";
+  const company_slug = HELP_KINDS.has(kind) ? await resolveCompanySlug(supabase, org) : null;
 
   const { error } = await supabase
     .from("experiences")
-    .insert({ user_id: user.id, kind, org, role, start_date, end_date, note, is_current: isCurrent });
+    .insert({
+      user_id: user.id,
+      kind,
+      org,
+      role,
+      start_date,
+      end_date,
+      note,
+      is_current: isCurrent,
+      company_slug,
+    });
   if (error) {
-    if (error.message.includes("limit: at most 10 experiences")) return { error: "Max 10 experiences." };
-    return { error: "Could not add experience. Try again." };
+    // Retry without company_slug if the column isn't live yet (WS1 parallel).
+    if (error.message.includes("company_slug") || error.code === "PGRST204") {
+      const retry = await supabase
+        .from("experiences")
+        .insert({ user_id: user.id, kind, org, role, start_date, end_date, note, is_current: isCurrent });
+      if (retry.error) {
+        if (retry.error.message.includes("limit: at most 10 experiences")) return { error: "Max 10 experiences." };
+        return { error: "Could not add experience. Try again." };
+      }
+    } else {
+      if (error.message.includes("limit: at most 10 experiences")) return { error: "Max 10 experiences." };
+      return { error: "Could not add experience. Try again." };
+    }
   }
+
+  await maybeOptInHelp(supabase, user.id, kind, formData);
 
   const { data: prof } = await supabase.from("profiles").select("username").eq("id", user.id).single();
   revalidatePath("/profile/edit");
+  revalidatePath("/settings");
   if (prof?.username) revalidatePath(`/profile/${prof.username}`);
 
   return {};
@@ -333,15 +383,38 @@ export async function updateExperience(
 
   const note = str("note", 600) || null;
   const isCurrent = formData.get("is_current") === "on";
+  const company_slug = HELP_KINDS.has(kind) ? await resolveCompanySlug(supabase, org) : null;
 
   const { error } = await supabase
     .from("experiences")
-    .update({ kind, org, role, start_date, end_date, note, is_current: isCurrent })
+    .update({
+      kind,
+      org,
+      role,
+      start_date,
+      end_date,
+      note,
+      is_current: isCurrent,
+      company_slug,
+    })
     .eq("id", id);
-  if (error) return { error: "Could not update experience. Try again." };
+  if (error) {
+    if (error.message.includes("company_slug") || error.code === "PGRST204") {
+      const retry = await supabase
+        .from("experiences")
+        .update({ kind, org, role, start_date, end_date, note, is_current: isCurrent })
+        .eq("id", id);
+      if (retry.error) return { error: "Could not update experience. Try again." };
+    } else {
+      return { error: "Could not update experience. Try again." };
+    }
+  }
+
+  await maybeOptInHelp(supabase, user.id, kind, formData);
 
   const { data: prof } = await supabase.from("profiles").select("username").eq("id", user.id).single();
   revalidatePath("/profile/edit");
+  revalidatePath("/settings");
   if (prof?.username) revalidatePath(`/profile/${prof.username}`);
 
   return {};

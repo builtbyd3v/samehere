@@ -34,6 +34,7 @@ function MenuItems({ isAdmin }: { isAdmin: boolean }) {
       {/* Saved is no longer primary nav (WS4). Keep it reachable from the
           avatar menu on mobile. Feedback lives in the desktop left nav. */}
       <div className="lg:hidden">
+        <MenuLink href="/applications">Applications</MenuLink>
         <MenuLink href="/saved">Saved</MenuLink>
         <FeedbackButton className={menuItemClass} />
       </div>

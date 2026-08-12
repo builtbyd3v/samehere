@@ -79,7 +79,7 @@ export type Database = {
           },
         ]
       }
-      applications: {
+applications: {
         Row: {
           created_at: string
           id: string
@@ -98,7 +98,7 @@ export type Database = {
           notes?: string | null
           org: string
           role: string
-          status: string
+          status?: string
           updated_at?: string
           user_id: string
         }

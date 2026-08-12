@@ -4,12 +4,14 @@ import { getViewer } from "@/lib/viewer";
 import { isPro } from "@/lib/pro";
 import PitchButton from "../PitchButton";
 import SaveJobButton from "@/components/jobs/SaveJobButton";
+import TrackListingButton from "@/components/applications/TrackListingButton";
 import FitCheck from "./FitCheck";
 import { relAge, isNew } from "../format";
 import { IconGraduationCap, IconPin } from "@/components/icons";
 import AvatarBase from "@/components/ui/Avatar";
 
 const PEERS_LIMIT = 6;
+const HELP_KINDS = ["internship", "job", "research"] as const;
 
 type PeerRow = {
   id: string;
@@ -36,6 +38,14 @@ type ListingRow = {
   description: string | null;
   company_slug: string | null;
   active: boolean;
+};
+
+type ExpPeerRow = {
+  user_id: string;
+  role: string;
+  term: string | null;
+  kind: string;
+  company_slug?: string | null;
 };
 
 const DESC_PREVIEW = 900;
@@ -96,66 +106,107 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
   const listing = await getListing(id);
   if (!listing || !listing.active) notFound();
 
-  const [{ data: company }, { data: fit }, profile, { data: moreListings }, { data: save }] = await Promise.all([
-    listing.company_slug
-      ? supabase.from("job_companies").select("name, logo_url, description").eq("slug", listing.company_slug).maybeSingle()
-      : Promise.resolve({ data: null }),
-    user
-      ? supabase.from("job_fit").select("reason").eq("listing_id", id).maybeSingle()
-      : Promise.resolve({ data: null }),
-    user
-      ? supabase.from("profiles").select("is_pro, pro_until").eq("id", user.id).single()
-      : Promise.resolve(null),
-    supabase
-      .from("job_listings")
-      .select("id, title, term, locations, posted_at")
-      .eq("active", true)
-      .eq("org", listing.org)
-      .neq("id", id)
-      .order("posted_at", { ascending: false, nullsFirst: false })
-      .limit(5),
-    user
-      ? supabase.from("job_saves").select("listing_id").eq("user_id", user.id).eq("listing_id", id).maybeSingle()
-      : Promise.resolve({ data: null }),
-  ]);
+  const [{ data: company }, { data: fit }, profile, { data: moreListings }, { data: save }, { data: tracked }] =
+    await Promise.all([
+      listing.company_slug
+        ? supabase.from("job_companies").select("name, logo_url, description").eq("slug", listing.company_slug).maybeSingle()
+        : Promise.resolve({ data: null }),
+      user
+        ? supabase.from("job_fit").select("reason").eq("listing_id", id).maybeSingle()
+        : Promise.resolve({ data: null }),
+      user
+        ? supabase.from("profiles").select("is_pro, pro_until").eq("id", user.id).single()
+        : Promise.resolve(null),
+      supabase
+        .from("job_listings")
+        .select("id, title, term, locations, posted_at")
+        .eq("active", true)
+        .eq("org", listing.org)
+        .neq("id", id)
+        .order("posted_at", { ascending: false, nullsFirst: false })
+        .limit(5),
+      user
+        ? supabase.from("job_saves").select("listing_id").eq("user_id", user.id).eq("listing_id", id).maybeSingle()
+        : Promise.resolve({ data: null }),
+      user
+        ? supabase
+            .from("applications")
+            .select("id")
+            .eq("user_id", user.id)
+            .eq("listing_id", id)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+    ]);
   const pro = isPro(profile?.data ?? { is_pro: false, pro_until: null });
   const saved = !!save;
+  const isTracked = !!tracked;
   const more = moreListings ?? [];
 
-  // "Students with a path here": real peers, not just a count -- distinct
-  // user_id + role + term from experiences at this org, blocked-viewer ids
-  // excluded (get_blocked_ids, same pattern as lib/people-search.ts), then
-  // profile shells fetched for whoever's left. studentCount is derived from
-  // this same post-filter list so the chip and the panel never disagree.
+  // Opt-in company helpers: internship/job/research experience at this org,
+  // plus profiles.open_to_help. Prefer experiences.company_slug when both
+  // listing and experience have it; fall back to org ilike. Soft-empty if
+  // WS1 columns aren't live yet (never show unfiltered peers).
   let peers: PeerRow[] = [];
   {
-    const [{ data: expRows }, { data: blocked }] = await Promise.all([
+    const orgSafe = listing.org.replace(/[,()%*]/g, "");
+    const expSelect = "user_id, role, term, kind";
+    const [{ data: blocked }, slugRes, ilikeRes] = await Promise.all([
+      user ? supabase.rpc("get_blocked_ids") : Promise.resolve({ data: [] as string[] }),
+      listing.company_slug
+        ? supabase
+            .from("experiences")
+            .select(expSelect)
+            .eq("company_slug", listing.company_slug)
+            .in("kind", [...HELP_KINDS])
+            .order("created_at", { ascending: false })
+            .limit(50)
+        : Promise.resolve({ data: null as ExpPeerRow[] | null, error: null }),
       supabase
         .from("experiences")
-        .select("user_id, role, term")
-        .ilike("org", listing.org.replace(/[,()%*]/g, ""))
+        .select(expSelect)
+        .ilike("org", orgSafe)
+        .in("kind", [...HELP_KINDS])
         .order("created_at", { ascending: false })
         .limit(50),
-      user ? supabase.rpc("get_blocked_ids") : Promise.resolve({ data: [] }),
     ]);
+
+    // Prefer slug matches when the query succeeded with rows; otherwise use
+    // ilike. If both fail (schema mid-rollout), leave peers empty.
+    const slugRows = !slugRes.error && slugRes.data?.length ? (slugRes.data as ExpPeerRow[]) : null;
+    const ilikeRows = !ilikeRes.error ? ((ilikeRes.data ?? []) as ExpPeerRow[]) : [];
+    const expRows = slugRows ?? ilikeRows;
 
     const blockedSet = new Set((blocked ?? []) as string[]);
     const byUser = new Map<string, { role: string; term: string | null }>();
-    for (const e of expRows ?? []) {
+    for (const e of expRows) {
       if (blockedSet.has(e.user_id) || e.user_id === user?.id || byUser.has(e.user_id)) continue;
       byUser.set(e.user_id, { role: e.role, term: e.term });
     }
-    const peerIds = [...byUser.keys()].slice(0, PEERS_LIMIT);
+    const peerIds = [...byUser.keys()].slice(0, PEERS_LIMIT * 3);
 
     if (peerIds.length) {
-      const { data: profiles } = await supabase
+      const { data: profiles, error: profErr } = await supabase
         .from("profiles")
-        .select("id, username, display_name, avatar_url, is_pro")
-        .in("id", peerIds);
-      peers = (profiles ?? []).map((p) => ({ ...p, ...byUser.get(p.id)! }));
+        .select("id, username, display_name, avatar_url, is_pro, open_to_help")
+        .in("id", peerIds)
+        .eq("open_to_help", true);
+
+      if (!profErr) {
+        peers = (profiles ?? [])
+          .filter((p) => byUser.has(p.id))
+          .slice(0, PEERS_LIMIT)
+          .map((p) => ({
+            id: p.id,
+            username: p.username,
+            display_name: p.display_name,
+            avatar_url: p.avatar_url,
+            is_pro: p.is_pro,
+            ...byUser.get(p.id)!,
+          }));
+      }
     }
   }
-  const studentCount = peers.length;
+  const helperCount = peers.length;
 
   const location = listing.locations ? listing.locations.slice(0, 80) : null;
   const kindLabel = listing.kind === "internship" ? "Internship" : "New grad";
@@ -230,12 +281,12 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
           )}
         </div>
 
-        {studentCount > 0 && (
+        {helperCount > 0 && (
           <a
             href="#peers"
             className="mt-3 inline-flex items-center gap-1 rounded-full bg-[var(--blue-glow)] px-2.5 py-1 text-xs font-medium text-[var(--blue)] transition hover:opacity-80"
           >
-            {studentCount} student{studentCount === 1 ? "" : "s"} with a path here
+            {helperCount} {helperCount === 1 ? "person" : "people"} open to help who&apos;ve been here
           </a>
         )}
 
@@ -256,6 +307,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
             </svg>
           </a>
           {user && <SaveJobButton listingId={listing.id} initialSaved={saved} />}
+          {user && <TrackListingButton listingId={listing.id} initialTracked={isTracked} />}
           {user && <PitchButton listingId={listing.id} pro={pro} block />}
         </div>
         {desc === "" && (
@@ -281,7 +333,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
           className="cascade-up mt-4 rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] p-5 shadow-paper"
           style={{ "--delay": "90ms" } as React.CSSProperties}
         >
-          <h2 className="text-sm font-semibold text-[var(--ink)]">Students with a path here</h2>
+          <h2 className="text-sm font-semibold text-[var(--ink)]">People open to help who&apos;ve been here</h2>
           <ul className="mt-3 flex flex-col gap-2">
             {peers.map((p) => {
               const nm = p.display_name ?? p.username;
@@ -301,8 +353,13 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
                       {meta && <p className="truncate text-xs text-[var(--ink-muted)]">{meta}</p>}
                     </div>
                   </Link>
-                  <Link href={`/messages?to=${encodeURIComponent(p.username)}`} className="btn-ghost shrink-0 rounded-md px-3 py-1.5 text-sm">
-                    Say hi
+                  {/* Reuses ?to= DM deep link; empty threads show “Draft an intro”
+                      (ICEBREAKER_SYSTEM) so help asks stay 1:1 without a new path. */}
+                  <Link
+                    href={`/messages?to=${encodeURIComponent(p.username)}`}
+                    className="btn-ghost shrink-0 rounded-md px-3 py-1.5 text-sm"
+                  >
+                    Ask for help
                   </Link>
                 </li>
               );

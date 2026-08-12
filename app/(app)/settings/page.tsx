@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import PrivacyForm from "@/components/settings/PrivacyForm";
+import OpenToHelpForm from "@/components/settings/OpenToHelpForm";
 import ChangePasswordForm from "@/components/settings/ChangePasswordForm";
 import UsernameForm from "@/components/settings/UsernameForm";
 import DeleteAccountSection from "@/components/settings/DeleteAccountSection";
@@ -76,12 +77,16 @@ export default async function SettingsPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  // open_to_help may be absent until WS1; default false if the select omits it
+  // or the row shape is partial during rollout.
   const { data: profile } = await supabase
     .from("profiles")
-    .select("username, is_private, hide_school, heatmap_visibility, leaderboard_opt_out, email_digest_opt_out, verified_student")
+    .select("username, is_private, hide_school, heatmap_visibility, leaderboard_opt_out, email_digest_opt_out, verified_student, open_to_help")
     .eq("id", user.id)
     .single();
   if (!profile) redirect("/login");
+
+  const openToHelp = "open_to_help" in profile ? !!profile.open_to_help : false;
 
   return (
     <main className="page-enter mx-auto max-w-xl px-5 py-10">
@@ -102,6 +107,14 @@ export default async function SettingsPage() {
         <section className="card p-6">
           <h2 className="mb-4 text-lg font-semibold text-[var(--ink)]">Student verification</h2>
           <StudentVerification verified={profile.verified_student} />
+        </section>
+
+        <section className="card p-6">
+          <h2 className="mb-1 text-lg font-semibold text-[var(--ink)]">Company helpers</h2>
+          <p className="mb-4 text-sm text-[var(--ink-muted)]">
+            Appear on listings for orgs you&apos;ve interned or worked at, so seekers can DM you.
+          </p>
+          <OpenToHelpForm initial={openToHelp} />
         </section>
 
         <section className="card p-6">
