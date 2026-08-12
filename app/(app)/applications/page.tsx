@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getViewer } from "@/lib/viewer";
+import { AppNotice, AppPage, AppPageHeader } from "@/components/app/AppPrimitives";
 import ApplicationBoard from "@/components/applications/ApplicationBoard";
 import {
   APPLICATION_STATUSES,
@@ -34,24 +35,22 @@ export default async function ApplicationsPage() {
   }));
 
   return (
-    <main className="page-enter mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8">
-      <p className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--accent-blue-strong)]">
-        Pipeline
-      </p>
-      <h1 className="mt-2 text-[2rem] font-medium leading-[1.1] tracking-[-0.03em] text-[var(--ink)]">
-        Applications
-      </h1>
-      <p className="mb-6 mt-2 text-sm text-[var(--ink-muted)]">
-        Wishlist → applied → OA → interview → offer. Move rows as you go.
-      </p>
+    <AppPage width="medium">
+      <AppPageHeader
+        kicker="Pipeline"
+        title="Applications"
+        description="Track the roles that matter. When one moves to an assessment or interview, your path switches into prep."
+      />
 
       {unavailable && (
-        <p className="mb-4 rounded-[var(--landing-radius-sm)] border border-[var(--border)] bg-[var(--featured-surface)] px-3 py-2 text-sm text-[var(--ink-muted)]">
+        <div className="mb-4">
+          <AppNotice>
           Tracker is warming up — you can still browse opportunities meanwhile.
-        </p>
+          </AppNotice>
+        </div>
       )}
 
       <ApplicationBoard initial={initial} />
-    </main>
+    </AppPage>
   );
 }

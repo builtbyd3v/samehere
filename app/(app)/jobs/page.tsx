@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { getViewer } from "@/lib/viewer";
 import { isPro } from "@/lib/pro";
-import EmptyState from "@/components/ui/EmptyState";
-import { IconBriefcase, IconGraduationCap, IconPin } from "@/components/icons";
+import { AppEmptyState, AppPage, AppPageHeader } from "@/components/app/AppPrimitives";
+import { IconGraduationCap, IconPin } from "@/components/icons";
 import { TEXT_LIMITS } from "@/lib/utils/validation";
 import MatchesSection from "./MatchesSection";
 import FilterForm from "./FilterForm";
@@ -203,11 +203,12 @@ export default async function JobsPage({
   const anyFilter = !!(q || kind || location || category || sponsorship || sort !== "newest" || savedOnly);
 
   return (
-    <main className="page-enter mx-auto max-w-2xl px-4 py-8">
-      <div className="mb-6 flex items-center gap-2">
-        <IconBriefcase className="h-5 w-5 text-[var(--blue)]" />
-        <h1 className="text-2xl font-semibold tracking-[-0.02em] text-[var(--ink)]">Jobs</h1>
-      </div>
+    <AppPage width="medium">
+      <AppPageHeader
+        kicker="Apply"
+        title="Opportunities"
+        description="Target internships that fit your current proof, then track the ones worth your time."
+      />
 
       <MatchesSection initialResults={initialResults} pro={pro} />
 
@@ -233,7 +234,7 @@ export default async function JobsPage({
 
       <div className="mt-2 flex flex-col gap-2">
         {listings.length === 0 ? (
-          <EmptyState
+          <AppEmptyState
             title={savedOnly ? "No saved listings" : "No listings yet"}
             description={
               savedOnly
@@ -254,7 +255,7 @@ export default async function JobsPage({
             return (
               <div
                 key={l.id}
-                className="cascade-up relative rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] p-5 shadow-paper transition hover:-translate-y-[1px] hover:border-[var(--border-strong)]"
+                className="cascade-up app-panel relative p-5 transition hover:-translate-y-[1px] hover:border-[var(--border-strong)]"
                 style={{ "--delay": `${Math.min(i, 10) * 60}ms` } as React.CSSProperties}
               >
                 {/* Stretched link (on the title): whole card clicks through to the
@@ -366,6 +367,6 @@ export default async function JobsPage({
           )}
         </div>
       )}
-    </main>
+    </AppPage>
   );
 }
