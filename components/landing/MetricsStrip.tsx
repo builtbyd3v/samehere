@@ -4,8 +4,8 @@ import gsap from "gsap";
 import { useLayoutEffect, useRef } from "react";
 
 const METRICS = [
-  { value: 9, label: "in-app projects that fill a blank resume" },
-  { value: 10, label: "company interview packs ready before the OA" },
+  { value: 9, label: "projects that fill a blank resume" },
+  { value: 10, label: "company interview packs before the OA" },
   { value: 0, label: "connections required to start" },
 ] as const;
 
