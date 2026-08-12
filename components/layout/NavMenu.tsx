@@ -31,9 +31,8 @@ function MenuItems({ isAdmin }: { isAdmin: boolean }) {
         <span className="text-sm font-medium text-[var(--ink)]">Invite friends</span>
         <span className="text-xs text-[var(--ink-muted)]">Share your link, race to 100</span>
       </Link>
-      {/* Saved is in the desktop left nav but NOT the mobile bottom bar, so it
-          stays here on mobile only. Profile lives in both navs — dropped.
-          Feedback is the same deal: it lives in the desktop left nav. */}
+      {/* Saved is no longer primary nav (WS4). Keep it reachable from the
+          avatar menu on mobile. Feedback lives in the desktop left nav. */}
       <div className="lg:hidden">
         <MenuLink href="/saved">Saved</MenuLink>
         <FeedbackButton className={menuItemClass} />

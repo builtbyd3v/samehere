@@ -2,8 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { IconBell, IconMail, IconCommunity, IconBookmark, IconBolt, IconBriefcase } from "@/components/icons";
+import { IconBell, IconMail, IconBolt, IconBriefcase } from "@/components/icons";
 import FeedbackButton from "@/components/feedback/FeedbackButton";
+
+function IconApplications() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <rect x="4" y="3" width="16" height="18" rx="2" />
+      <path d="M8 8h8M8 12h8M8 16h5" />
+    </svg>
+  );
+}
 
 export default function LeftNav({
   username,
@@ -18,10 +27,12 @@ export default function LeftNav({
 }) {
   const pathname = usePathname();
 
+  // IA: Home · Notifications · Opportunities · Applications · Messages · Profile · Pro
+  // Community / Saved / Feed removed from primary (WS4 / WS10).
   const items = [
     {
       label: "Home",
-      href: "/feed",
+      href: "/home",
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
           <path d="M3 10.5 12 3l9 7.5" />
@@ -30,10 +41,9 @@ export default function LeftNav({
       ),
     },
     { label: "Notifications", href: "/notifications", icon: <IconBell />, badge: notifUnread },
+    { label: "Opportunities", href: "/jobs", icon: <IconBriefcase /> },
+    { label: "Applications", href: "/applications", icon: <IconApplications /> },
     { label: "Messages", href: "/messages", icon: <IconMail />, badge: dmUnread },
-    { label: "Community", href: "/community", icon: <IconCommunity /> },
-    { label: "Jobs", href: "/jobs", icon: <IconBriefcase /> },
-    { label: "Saved", href: "/saved", icon: <IconBookmark /> },
     {
       label: "Profile",
       href: username ? `/profile/${username}` : "#",
@@ -54,7 +64,7 @@ export default function LeftNav({
           item.href === "#"
             ? false
             : item.label === "Home"
-              ? pathname === "/feed" || pathname.startsWith("/feed/")
+              ? pathname === "/home" || pathname.startsWith("/home/")
               : pathname === item.href || pathname.startsWith(item.href + "/");
         const badge = ("badge" in item ? item.badge : 0) ?? 0;
 
