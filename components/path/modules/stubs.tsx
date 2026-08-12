@@ -3,42 +3,59 @@ import Link from "next/link";
 import ModuleSection from "./ModuleSection";
 
 export function ProjectPlanStub({
-  projectTitle = "Campus events API",
-  tasks = [
-    { label: "Sketch the data model", done: true },
-    { label: "Ship the read endpoints", done: false },
-    { label: "Write the README story", done: false },
-  ],
+  projectTitle,
+  projectSlug,
+  checked = 0,
+  total = 0,
+  tasks = [],
 }: {
-  projectTitle?: string;
+  projectTitle?: string | null;
+  projectSlug?: string | null;
+  checked?: number;
+  total?: number;
   tasks?: { label: string; done: boolean }[];
 }) {
+  if (!projectTitle || !projectSlug) {
+    return (
+      <ModuleSection id="project_plan">
+        <p className="text-sm leading-relaxed text-[var(--ink-muted)]">
+          Your next project will appear here after the path intake.
+        </p>
+      </ModuleSection>
+    );
+  }
+
   return (
     <ModuleSection id="project_plan">
       <p className="text-base font-medium tracking-[-0.02em] text-[var(--ink)]">
         {projectTitle}
       </p>
-      <ol className="mt-4 space-y-2.5">
-        {tasks.map((task) => (
-          <li key={task.label} className="flex items-start gap-3 text-sm text-[var(--ink)]">
-            <span
-              aria-hidden
-              className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border text-[10px] ${
-                task.done
-                  ? "border-[var(--accent-blue)] bg-[var(--accent-blue-soft)] text-[var(--accent-blue-strong)]"
-                  : "border-[var(--border-strong)] text-transparent"
-              }`}
-            >
-              ✓
-            </span>
-            <span className={task.done ? "text-[var(--ink-muted)] line-through" : undefined}>
-              {task.label}
-            </span>
-          </li>
-        ))}
-      </ol>
+      <p className="mt-2 text-sm text-[var(--ink-muted)]">
+        {checked} of {total} required checkpoints complete
+      </p>
+      {tasks.length ? (
+        <ol className="mt-4 space-y-2.5">
+          {tasks.map((task) => (
+            <li key={task.label} className="flex items-start gap-3 text-sm text-[var(--ink)]">
+              <span
+                aria-hidden
+                className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border text-[10px] ${
+                  task.done
+                    ? "border-[var(--accent-blue)] bg-[var(--accent-blue-soft)] text-[var(--accent-blue-strong)]"
+                    : "border-[var(--border-strong)] text-transparent"
+                }`}
+              >
+                ✓
+              </span>
+              <span className={task.done ? "text-[var(--ink-muted)] line-through" : undefined}>
+                {task.label}
+              </span>
+            </li>
+          ))}
+        </ol>
+      ) : null}
       <Link
-        href="/projects/url-shortener"
+        href={`/projects/${projectSlug}`}
         className="mt-4 inline-flex text-sm font-medium text-[var(--accent-blue-strong)] hover:underline"
       >
         Open project workspace
@@ -82,22 +99,18 @@ export type OpportunityRow = {
   fit?: string | null;
 };
 
-const DEFAULT_OPPORTUNITIES: OpportunityRow[] = [
-  { org: "Stripe", title: "Software Engineering Intern", fit: "Strong fit" },
-  { org: "Notion", title: "Product Engineering Intern", fit: "Good fit" },
-];
-
 export function OpportunitiesStub({
   listings,
 }: {
   listings?: OpportunityRow[];
 }) {
-  const rows = listings?.length ? listings : DEFAULT_OPPORTUNITIES;
+  const rows = listings ?? [];
 
   return (
     <ModuleSection id="opportunities">
-      <ul className="divide-y divide-[var(--border)]">
-        {rows.map((listing) => {
+      {rows.length ? (
+        <ul className="divide-y divide-[var(--border)]">
+          {rows.map((listing) => {
           const href = listing.id ? `/jobs/${listing.id}` : "/jobs";
           const action = listing.id ? "Open" : "Browse";
           return (
@@ -130,8 +143,13 @@ export function OpportunitiesStub({
               </Link>
             </li>
           );
-        })}
-      </ul>
+          })}
+        </ul>
+      ) : (
+        <p className="text-sm leading-relaxed text-[var(--ink-muted)]">
+          No matched opportunities yet. Browse the board to set your first target.
+        </p>
+      )}
       <Link
         href="/jobs"
         className="mt-4 inline-flex text-sm font-medium text-[var(--accent-blue-strong)] hover:underline"
@@ -142,18 +160,16 @@ export function OpportunitiesStub({
   );
 }
 
-const DEFAULT_STAGES = [
-  { label: "Wishlist", count: 4 },
-  { label: "Applied", count: 2 },
-  { label: "Interview", count: 1 },
-];
-
 export function ApplicationsStub({
   stages,
 }: {
   stages?: { label: string; count: number }[];
 }) {
-  const rows = stages ?? DEFAULT_STAGES;
+  const rows = stages ?? [
+    { label: "Wishlist", count: 0 },
+    { label: "Applied", count: 0 },
+    { label: "Interview", count: 0 },
+  ];
 
   return (
     <ModuleSection id="applications">
@@ -203,50 +219,59 @@ export function PitchStub({ listingId }: { listingId?: string }) {
 }
 
 export function InterviewPrepStub({
-  company = "Target company",
-  prompt = "Tell me about a time you shipped under a deadline.",
+  company,
+  prompt,
+  href = "/prep",
 }: {
-  company?: string;
-  prompt?: string;
+  company?: string | null;
+  prompt?: string | null;
+  href?: string;
 }) {
   return (
     <ModuleSection id="interview_prep">
-      <p className="text-xs font-medium text-[var(--accent-blue-strong)]">{company}</p>
-      <p className="mt-2 text-base font-medium leading-snug text-[var(--ink)]">{prompt}</p>
+      <p className="text-xs font-medium text-[var(--accent-blue-strong)]">
+        {company ?? "Company practice"}
+      </p>
+      <p className="mt-2 text-base font-medium leading-snug text-[var(--ink)]">
+        {prompt ?? "Pick a company bank and start one practice answer."}
+      </p>
       <p className="mt-3 text-sm text-[var(--ink-muted)]">
         Write a short answer, then get feedback on structure and signal.
       </p>
       <Link
-        href="/prep"
+        href={href}
         className="mt-4 inline-flex text-sm font-medium text-[var(--accent-blue-strong)] hover:underline"
       >
-        Open company practice banks
+        {company ? `Practice for ${company}` : "Open company practice"}
       </Link>
     </ModuleSection>
   );
 }
 
 export function HelpersStub({
-  helpers = [
-    { name: "Maya R.", org: "Stripe", note: "Open to intros" },
-    { name: "Jordan K.", org: "Notion", note: "Same major" },
-  ],
+  helpers = [],
 }: {
   helpers?: { name: string; org: string; note: string }[];
 }) {
   return (
     <ModuleSection id="helpers">
-      <ul className="space-y-3">
-        {helpers.map((helper) => (
-          <li key={helper.name} className="flex items-baseline justify-between gap-3 text-sm">
-            <div>
-              <p className="font-medium text-[var(--ink)]">{helper.name}</p>
-              <p className="text-[var(--ink-muted)]">{helper.org}</p>
-            </div>
-            <span className="landing-fit">{helper.note}</span>
-          </li>
-        ))}
-      </ul>
+      {helpers.length ? (
+        <ul className="space-y-3">
+          {helpers.map((helper) => (
+            <li key={helper.name} className="flex items-baseline justify-between gap-3 text-sm">
+              <div>
+                <p className="font-medium text-[var(--ink)]">{helper.name}</p>
+                <p className="text-[var(--ink-muted)]">{helper.org}</p>
+              </div>
+              <span className="landing-fit">{helper.note}</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm leading-relaxed text-[var(--ink-muted)]">
+          Helpers appear on opportunities when someone at that company opts in.
+        </p>
+      )}
       <Link
         href="/messages"
         className="mt-4 inline-flex text-sm font-medium text-[var(--accent-blue-strong)] hover:underline"
@@ -258,16 +283,36 @@ export function HelpersStub({
 }
 
 export function SkillStagesStub({
-  stage = "Foundations",
-  next = "Finish one backend project checklist item",
+  track,
+  stage,
+  description,
+  next,
 }: {
-  stage?: string;
-  next?: string;
+  track?: string | null;
+  stage?: string | null;
+  description?: string | null;
+  next?: string | null;
 }) {
   return (
     <ModuleSection id="skill_stages">
-      <p className="text-sm font-medium text-[var(--ink)]">Current stage · {stage}</p>
-      <p className="mt-2 text-sm text-[var(--ink-muted)]">Next checkpoint: {next}</p>
+      {stage ? (
+        <>
+          {track ? <p className="text-xs text-[var(--ink-faint)]">{track}</p> : null}
+          <p className="mt-1 text-sm font-medium text-[var(--ink)]">{stage}</p>
+          {description ? (
+            <p className="mt-2 text-sm leading-relaxed text-[var(--ink-muted)]">{description}</p>
+          ) : null}
+          {next ? (
+            <p className="mt-3 text-sm text-[var(--ink)]">
+              Next skill: <span className="text-[var(--ink-muted)]">{next}</span>
+            </p>
+          ) : null}
+        </>
+      ) : (
+        <p className="text-sm text-[var(--ink-muted)]">
+          Your current skill stage will appear after diagnosis.
+        </p>
+      )}
     </ModuleSection>
   );
 }

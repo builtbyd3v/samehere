@@ -1,10 +1,6 @@
 import Link from "next/link";
 import { signupCta } from "@/components/landing/cta";
-import type {
-  ApplicationStageCount,
-  OpportunityListing,
-} from "@/lib/path/load-opportunities";
-import type { PathPlanUi } from "@/lib/path/types";
+import type { PathHomeData } from "../PathHome";
 import PathHero from "../PathHero";
 import {
   DossierStub,
@@ -16,37 +12,41 @@ import {
 export default function StudioHome({
   plan,
   listings,
-}: {
-  plan: PathPlanUi;
-  listings?: OpportunityListing[];
-  applicationStages?: ApplicationStageCount[];
-}) {
+  context,
+  nextTask,
+  taskHref,
+}: PathHomeData) {
+  const project = context.project;
+  const projectTasks = context.tasks
+    .filter((task) => task.moduleId === "project_plan")
+    .map((task) => ({ label: task.title, done: false }));
+  const skill = context.skillStage;
+
   return (
     <div className="mx-auto w-full max-w-3xl py-5 md:py-6">
-      <PathHero plan={plan}>
-        <Link href="/projects/url-shortener" className={signupCta}>
-          Continue this week&apos;s project
+      <PathHero plan={plan} nextTask={nextTask} taskHref={taskHref}>
+        <Link href={project ? `/projects/${project.slug}` : "/home"} className={signupCta}>
+          {project ? "Open assigned project" : "Review your path"}
         </Link>
       </PathHero>
 
       <div id="project-plan" className="mt-6 space-y-4">
-        <ProjectPlanStub />
-        <DossierStub />
-        <SkillStagesStub />
+        <ProjectPlanStub
+          projectTitle={project?.title}
+          projectSlug={project?.slug}
+          checked={project?.checked}
+          total={project?.total}
+          tasks={projectTasks}
+        />
+        <DossierStub gaps={context.diagnosis?.gaps} />
+        <SkillStagesStub
+          track={skill?.track}
+          stage={skill?.stage}
+          description={skill?.description}
+          next={skill?.nextSkill}
+        />
         <div className="opacity-70">
-          <OpportunitiesStub
-            listings={
-              listings?.length
-                ? listings
-                : [
-                    {
-                      org: "Later",
-                      title: "Apply after you have one solid project",
-                      fit: "Demoted",
-                    },
-                  ]
-            }
-          />
+          <OpportunitiesStub listings={listings} />
         </div>
       </div>
     </div>

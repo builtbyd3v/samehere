@@ -14,7 +14,6 @@ import {
 } from "@/app/(app)/profile/edit/actions";
 import {
   saveOnboardingBasics,
-  finishOnboarding,
   submitPathIntake,
   type PathIntakeState,
 } from "@/app/(app)/onboarding/actions";
@@ -142,13 +141,6 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
   const [intakeState, setIntakeState] = useState<PathIntakeState>({});
   const [diagnosing, setDiagnosing] = useState(false);
   const [intakePending, startIntake] = useTransition();
-  const [finishing, startFinish] = useTransition();
-
-  function onFinish() {
-    startFinish(async () => {
-      await finishOnboarding();
-    });
-  }
 
   function onSubmitIntake(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -169,7 +161,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
 
   return (
     <main className="mx-auto max-w-xl px-5 py-10">
-      <div className="mb-6 flex items-center justify-between gap-4">
+      <div className="mb-6">
         <div className="min-w-0 flex-1">
           <p className="font-display text-2xl italic tracking-[-0.03em] text-[var(--ink)]">
             samehere
@@ -187,14 +179,6 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
             />
           </div>
         </div>
-        <button
-          type="button"
-          onClick={onFinish}
-          disabled={finishing || intakePending || diagnosing}
-          className="shrink-0 text-sm text-[var(--ink-muted)] underline disabled:opacity-50"
-        >
-          Skip for now
-        </button>
       </div>
 
       <AnimatePresence mode="wait">

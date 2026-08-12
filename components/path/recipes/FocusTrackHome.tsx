@@ -1,19 +1,13 @@
 import Link from "next/link";
 import { signupCta } from "@/components/landing/cta";
-import type {
-  ApplicationStageCount,
-  OpportunityListing,
-} from "@/lib/path/load-opportunities";
-import type { PathPlanUi } from "@/lib/path/types";
+import type { PathHomeData } from "../PathHome";
 import PathHero from "../PathHero";
 
 export default function FocusTrackHome({
   plan,
-}: {
-  plan: PathPlanUi;
-  listings?: OpportunityListing[];
-  applicationStages?: ApplicationStageCount[];
-}) {
+  nextTask,
+  taskHref,
+}: PathHomeData) {
   const nextHref =
     plan.module_order[0] === "applications"
       ? "/applications"
@@ -23,7 +17,7 @@ export default function FocusTrackHome({
 
   return (
     <div className="mx-auto w-full max-w-xl py-5 md:py-6">
-      <PathHero plan={plan}>
+      <PathHero plan={plan} nextTask={nextTask} taskHref={taskHref}>
         <div id="focus-action" className="path-hero-listing">
           <p className="landing-demo-meta">Only next action</p>
           <p className="landing-opportunity-role mt-2 text-lg">

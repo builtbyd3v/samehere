@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
+import type { PathTaskSummary } from "@/lib/path/load-home-data";
 import type { PathPlanUi, UiRecipe } from "@/lib/path/types";
+import PathTaskAction from "./PathTaskAction";
 
 const RECIPE_ID: Record<UiRecipe, string> = {
   studio: "studio",
@@ -59,9 +61,13 @@ function modifierFor(plan: PathPlanUi) {
 
 export default function PathHero({
   plan,
+  nextTask,
+  taskHref,
   children,
 }: {
   plan: PathPlanUi;
+  nextTask?: PathTaskSummary;
+  taskHref?: string;
   children?: ReactNode;
 }) {
   const stageIndex = RECIPE_STAGE[plan.ui_recipe];
@@ -80,10 +86,10 @@ export default function PathHero({
 
       <div className="landing-path-next">
         <span>Next move</span>
-        <p>{plan.headline}</p>
+        <p>{nextTask?.title ?? plan.headline}</p>
       </div>
 
-      <p className="path-hero-why">{plan.why}</p>
+      <p className="path-hero-why">{nextTask?.detail ?? plan.why}</p>
 
       <div className="landing-path-track" aria-label="Path stage">
         {STAGES.map((stage, index) => (
@@ -104,7 +110,13 @@ export default function PathHero({
         {modifier.detail}
       </div>
 
-      {children ? <div className="path-hero-actions">{children}</div> : null}
+      {nextTask && taskHref ? (
+        <div className="path-hero-actions">
+          <PathTaskAction taskId={nextTask.id} href={taskHref} status={nextTask.status} />
+        </div>
+      ) : children ? (
+        <div className="path-hero-actions">{children}</div>
+      ) : null}
     </div>
   );
 }

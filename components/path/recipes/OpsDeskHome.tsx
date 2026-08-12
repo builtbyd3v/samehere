@@ -1,10 +1,6 @@
 import Link from "next/link";
 import { ghostCta, signupCta } from "@/components/landing/cta";
-import type {
-  ApplicationStageCount,
-  OpportunityListing,
-} from "@/lib/path/load-opportunities";
-import type { PathPlanUi } from "@/lib/path/types";
+import type { PathHomeData } from "../PathHome";
 import PathHero from "../PathHero";
 import {
   ApplicationsStub,
@@ -17,17 +13,15 @@ export default function OpsDeskHome({
   plan,
   listings,
   applicationStages,
-}: {
-  plan: PathPlanUi;
-  listings?: OpportunityListing[];
-  applicationStages?: ApplicationStageCount[];
-}) {
+  nextTask,
+  taskHref,
+}: PathHomeData) {
   const top = listings?.[0];
   const listingHref = top ? `/jobs/${top.id}` : "/jobs";
 
   return (
     <div className="mx-auto w-full max-w-3xl py-5 md:py-6">
-      <PathHero plan={plan}>
+      <PathHero plan={plan} nextTask={nextTask} taskHref={taskHref}>
         <div className="landing-opportunity path-hero-listing">
           <div>
             <p className="landing-demo-meta">Next listing</p>
@@ -55,7 +49,7 @@ export default function OpsDeskHome({
         <ApplicationsStub stages={applicationStages} />
         <OpportunitiesStub listings={listings} />
         <PitchStub listingId={top?.id} />
-        <HelpersStub />
+        <HelpersStub helpers={[]} />
       </div>
     </div>
   );

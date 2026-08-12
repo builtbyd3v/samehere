@@ -2,8 +2,6 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import OnboardingWizard from "@/components/onboarding/OnboardingWizard";
 
-// First-run path intake, redirected into from auth confirm on a fresh signup.
-// Skippable — onboarded_at is only set by finishOnboarding / submitPathIntake.
 export default async function OnboardingPage() {
   const supabase = await createClient();
   const {
@@ -19,7 +17,15 @@ export default async function OnboardingPage() {
     .eq("id", user.id)
     .single();
   if (!profile) redirect("/login");
-  if (profile.onboarded_at) redirect("/home");
+
+  if (profile.onboarded_at) {
+    const { data: plan } = await supabase
+      .from("path_plans")
+      .select("user_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (plan) redirect("/home");
+  }
 
   return (
     <OnboardingWizard

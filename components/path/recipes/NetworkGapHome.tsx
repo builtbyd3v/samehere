@@ -1,10 +1,6 @@
 import Link from "next/link";
 import { ghostCta, signupCta } from "@/components/landing/cta";
-import type {
-  ApplicationStageCount,
-  OpportunityListing,
-} from "@/lib/path/load-opportunities";
-import type { PathPlanUi } from "@/lib/path/types";
+import type { PathHomeData } from "../PathHome";
 import PathHero from "../PathHero";
 import {
   ApplicationsStub,
@@ -16,14 +12,12 @@ export default function NetworkGapHome({
   plan,
   listings,
   applicationStages,
-}: {
-  plan: PathPlanUi;
-  listings?: OpportunityListing[];
-  applicationStages?: ApplicationStageCount[];
-}) {
+  nextTask,
+  taskHref,
+}: PathHomeData) {
   return (
     <div className="mx-auto w-full max-w-3xl py-5 md:py-6">
-      <PathHero plan={plan}>
+      <PathHero plan={plan} nextTask={nextTask} taskHref={taskHref}>
         <div className="flex flex-wrap gap-2">
           <Link href="/messages" className={signupCta}>
             Draft warm intros
@@ -35,25 +29,8 @@ export default function NetworkGapHome({
       </PathHero>
 
       <div className="mt-6 space-y-4">
-        <HelpersStub />
-        <OpportunitiesStub
-          listings={
-            listings?.length
-              ? listings
-              : [
-                  {
-                    org: "Stripe",
-                    title: "Software Engineering Intern",
-                    fit: "Helper available",
-                  },
-                  {
-                    org: "Notion",
-                    title: "Product Engineering Intern",
-                    fit: "Helper available",
-                  },
-                ]
-          }
-        />
+        <HelpersStub helpers={[]} />
+        <OpportunitiesStub listings={listings} />
         <div className="opacity-70">
           <ApplicationsStub stages={applicationStages} />
         </div>
