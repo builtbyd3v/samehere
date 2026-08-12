@@ -7,7 +7,9 @@ import { isPro } from "@/lib/pro";
 import { getInterviewBank } from "@/lib/path/seeds";
 import {
   formatInterviewFeedback,
+  heuristicInterviewFeedback,
   parseInterviewFeedbackJson,
+  type InterviewFeedbackJson,
 } from "@/lib/path/interview-feedback";
 
 export type SubmitInterviewAnswerResult =
@@ -36,42 +38,45 @@ export async function submitInterviewAnswer(input: {
   } = await supabase.auth.getUser();
   if (!user) return { error: "You must be logged in." };
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("is_pro, pro_until")
-    .eq("id", user.id)
-    .maybeSingle();
-  const pro = isPro(profile ?? { is_pro: false, pro_until: null });
+  let parsed: InterviewFeedbackJson;
+  if (aiEnabled()) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("is_pro, pro_until")
+      .eq("id", user.id)
+      .maybeSingle();
+    const pro = isPro(profile ?? { is_pro: false, pro_until: null });
 
-  if (!aiEnabled()) return { error: "Feedback is temporarily unavailable." };
+    const { data: allowed } = await supabase.rpc("use_ai_quota", {
+      p_kind: "interview_feedback",
+    });
+    if (!allowed) {
+      if (!pro) return { overCap: true };
+      return { error: "Daily feedback limit reached. Try again tomorrow." };
+    }
 
-  const { data: allowed } = await supabase.rpc("use_ai_quota", {
-    p_kind: "interview_feedback",
-  });
-  if (!allowed) {
-    if (!pro) return { overCap: true };
-    return { error: "Daily feedback limit reached. Try again tomorrow." };
+    const prompt = [
+      `Company: ${bank.company_name}`,
+      `Question type: ${question.type}`,
+      `Difficulty: ${question.difficulty}`,
+      `Prompt: ${question.prompt}`,
+      `Approach: ${question.approach}`,
+      `Evaluating: ${question.evaluating}`,
+      "",
+      `Student answer: ${untrusted(answer)}`,
+    ].join("\n");
+
+    const raw = await generateText(INTERVIEW_FEEDBACK_SYSTEM, prompt, {
+      model: modelForTier(pro),
+      maxTokens: 500,
+      temperature: 0.3,
+    });
+    parsed =
+      parseInterviewFeedbackJson(raw) ??
+      heuristicInterviewFeedback({ answer, question });
+  } else {
+    parsed = heuristicInterviewFeedback({ answer, question });
   }
-
-  const prompt = [
-    `Company: ${bank.company_name}`,
-    `Question type: ${question.type}`,
-    `Difficulty: ${question.difficulty}`,
-    `Prompt: ${question.prompt}`,
-    `Approach: ${question.approach}`,
-    `Evaluating: ${question.evaluating}`,
-    "",
-    `Student answer: ${untrusted(answer)}`,
-  ].join("\n");
-
-  const raw = await generateText(INTERVIEW_FEEDBACK_SYSTEM, prompt, {
-    model: modelForTier(pro),
-    maxTokens: 500,
-    temperature: 0.3,
-  });
-
-  const parsed = parseInterviewFeedbackJson(raw);
-  if (!parsed) return { error: "Couldn't grade that answer. Try again." };
 
   const feedback = formatInterviewFeedback(parsed);
 
