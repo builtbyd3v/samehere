@@ -503,6 +503,10 @@ Screenshots:
 /opt/cursor/artifacts/screenshots/z2i_dossier_logged_out.webp
 /opt/cursor/artifacts/screenshots/z2i_feedback_adapted_final.webp
 /opt/cursor/artifacts/z2i_adaptive_feedback_loop.mp4
+/opt/cursor/artifacts/screenshots/z2i_adaptive_prep_redesign.webp
+/opt/cursor/artifacts/screenshots/z2i_adaptive_prep_mobile_final.webp
+/opt/cursor/artifacts/screenshots/z2i_adaptive_ops_redesign.webp
+/opt/cursor/artifacts/z2i_adaptive_workspace_preview.mp4
 ```
 
 ## 10. Known gaps and risks
@@ -690,6 +694,26 @@ Acceptance:
 - Invalid outcomes cannot persist.
 
 Avoid a generic analytics event bus. A focused path-feedback table is enough for this phase.
+
+### Adaptive workspace visual pass
+
+**Done** on 2026-08-12.
+
+The five recipes no longer share one generic centered card stack:
+
+- `studio` is a wide build workspace. Project plan dominates; dossier and skill stage support it.
+- `ops_desk` is an application desk with an interactive Pipeline/Matches switchboard. Pitch and helpers sit beside the queue.
+- `prep_room` is an interview command center. Company practice dominates; helpers and tracker stay secondary.
+- `focus_track` enlarges one action and flattens secondary context below it.
+- `network_gap` makes the helper desk dominant, with opportunities and pipeline supporting.
+
+Reference use:
+
+- Interior's MIT Loading Button and Segmented Control are copied into `components/interior/`, adapted to samehere tokens, and accompanied by the upstream license notice.
+- Beautiful UI's Recommendation Card and Task Rows are interaction references. That site does not expose component source, so samehere owns the implementation.
+- ResuMax remains a flow reference only. Do not copy its score rings, pink/purple glow, roadmap catalog, or resume-first hierarchy.
+
+The visual acceptance test is unchanged: a stranger should infer different user stages from the workspace composition without reading a bio.
 
 ### Phase 4: close automatic re-diagnosis triggers
 
