@@ -6,7 +6,8 @@ import {
 } from "@/lib/path/load-opportunities";
 import { loadHomePathContext } from "@/lib/path/load-home-data";
 import { loadViewerPathPlanUi } from "@/lib/path/load-plan";
-import { getViewer } from "@/lib/viewer";
+import { isPro } from "@/lib/pro";
+import { getViewer, getViewerProfile } from "@/lib/viewer";
 
 export default async function HomePage() {
   const { supabase, user } = await getViewer();
@@ -29,12 +30,16 @@ export default async function HomePage() {
     })),
   });
 
+  const profile = await getViewerProfile();
+  const showProUpsell = profile ? !isPro(profile) : false;
+
   return (
     <PathHome
       plan={planFromDb}
       listings={listings.length ? listings : undefined}
       applicationStages={applicationStages ?? undefined}
       context={context}
+      showProUpsell={showProUpsell}
     />
   );
 }

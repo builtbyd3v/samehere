@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState, useState, useTransition, type FormEvent } from "react";
-import Link from "next/link";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import {
   uploadAvatar,
@@ -12,16 +11,12 @@ import {
   type ExperienceState,
   type EducationState,
 } from "@/app/(app)/profile/edit/actions";
-import {
-  saveOnboardingBasics,
-  submitPathIntake,
-  type PathIntakeState,
-} from "@/app/(app)/onboarding/actions";
+import { saveOnboardingBasics } from "@/app/(app)/onboarding/actions";
 import AvatarBase from "@/components/ui/Avatar";
 import SchoolAutocomplete from "@/components/profile/SchoolAutocomplete";
 import DateRangePicker from "@/components/profile/DateRangePicker";
 import Select from "@/components/ui/Select";
-import LoadingState from "@/components/landing/LoadingState";
+import PathIntakeForm from "@/components/path/PathIntakeForm";
 import { DEGREE_OPTIONS } from "@/lib/education-options";
 
 export type OnboardingProfile = {
@@ -39,33 +34,9 @@ const KIND_OPTIONS = [
   { value: "job", label: "Job" },
   { value: "research", label: "Research" },
   { value: "club_role", label: "Club role" },
+  { value: "project", label: "Project" },
 ];
 const DEGREE_SELECT_OPTIONS = [...DEGREE_OPTIONS];
-
-const STAGE_OPTIONS = [
-  { value: "no_experience", label: "No experience yet" },
-  { value: "building", label: "Building projects / skills" },
-  { value: "applying", label: "Actively applying" },
-  { value: "interviewing", label: "Interviewing" },
-  { value: "offers", label: "Have offers / deciding" },
-] as const;
-
-const TIMELINE_OPTIONS = [
-  { value: "this_cycle", label: "This recruiting cycle" },
-  { value: "next_cycle", label: "Next cycle" },
-  { value: "exploring", label: "Still exploring" },
-] as const;
-
-const CONSTRAINT_OPTIONS = [
-  { value: "first_gen", label: "First-gen" },
-  { value: "transfer", label: "Transfer" },
-  { value: "commuter", label: "Commuter" },
-  { value: "international", label: "International" },
-  { value: "limited_network", label: "Limited network" },
-  { value: "working_job", label: "Working a job" },
-  { value: "career_switch", label: "Career switch" },
-  { value: "overwhelmed", label: "Feeling overwhelmed" },
-] as const;
 
 const TOTAL_STEPS = 4;
 
@@ -138,24 +109,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
     });
   }
 
-  const [intakeState, setIntakeState] = useState<PathIntakeState>({});
   const [diagnosing, setDiagnosing] = useState(false);
-  const [intakePending, startIntake] = useTransition();
-
-  function onSubmitIntake(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    setIntakeState({});
-    setDiagnosing(true);
-    startIntake(async () => {
-      const result = await submitPathIntake({}, fd);
-      if (result?.overCap || result?.error) {
-        setIntakeState(result);
-        setDiagnosing(false);
-      }
-      // success → server redirect to /home
-    });
-  }
 
   const progressStep = diagnosing ? TOTAL_STEPS : step;
 
@@ -183,7 +137,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
 
       <AnimatePresence mode="wait">
         <motion.div
-          key={diagnosing ? "diagnose" : step}
+          key={step}
           className={panel}
           initial={reduce ? undefined : { opacity: 0, x: 24 }}
           animate={{ opacity: 1, x: 0 }}
@@ -428,186 +382,19 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
           )}
 
           {step === 4 && (
-            <>
-              <form
-                onSubmit={onSubmitIntake}
-                className={diagnosing ? "hidden" : undefined}
-                aria-hidden={diagnosing}
-              >
-                <h2 className="mb-1 text-xl font-medium tracking-[-0.025em] text-[var(--ink)]">
-                  Where are you stuck?
-                </h2>
-                <p className="mb-4 text-sm text-[var(--ink-muted)]">
-                  Honest answers get you a path that fits. Not a generic dashboard.
-                </p>
-
-                {intakeState.error && (
-                  <p role="alert" className="mb-3 text-sm text-[var(--danger)]">
-                    {intakeState.error}
-                  </p>
-                )}
-                {intakeState.overCap && (
-                  <div className="mb-4 rounded-[var(--landing-radius-sm)] border border-[var(--border)] bg-[var(--featured-surface)] px-4 py-3 text-sm">
-                    <p className="text-[var(--ink)]">
-                      You&apos;ve used today&apos;s free diagnosis.
-                    </p>
-                    <Link href="/pro" className="mt-1 inline-block text-[var(--ink-muted)] underline">
-                      Go Pro for more diagnoses
-                    </Link>
-                  </div>
-                )}
-
-                <div className="flex flex-col gap-5">
-                  <fieldset>
-                    <legend className={label}>Stage</legend>
-                    <div className="mt-2 flex flex-col gap-2">
-                      {STAGE_OPTIONS.map((opt) => (
-                        <label
-                          key={opt.value}
-                          className="flex cursor-pointer items-center gap-2 text-sm text-[var(--ink)]"
-                        >
-                          <input
-                            type="radio"
-                            name="stage"
-                            value={opt.value}
-                            required
-                            className="accent-[var(--accent-blue)]"
-                          />
-                          {opt.label}
-                        </label>
-                      ))}
-                    </div>
-                  </fieldset>
-
-                  <fieldset>
-                    <legend className={label}>What shapes your search? (optional)</legend>
-                    <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                      {CONSTRAINT_OPTIONS.map((opt) => (
-                        <label
-                          key={opt.value}
-                          className="flex cursor-pointer items-center gap-2 text-sm text-[var(--ink)]"
-                        >
-                          <input
-                            type="checkbox"
-                            name="constraints"
-                            value={opt.value}
-                            className="accent-[var(--accent-blue)]"
-                          />
-                          {opt.label}
-                        </label>
-                      ))}
-                    </div>
-                  </fieldset>
-
-                  <div>
-                    <label htmlFor="target_roles" className={label}>
-                      Target roles
-                    </label>
-                    <input
-                      id="target_roles"
-                      name="target_roles"
-                      type="text"
-                      maxLength={240}
-                      placeholder="e.g. SWE intern, data analyst"
-                      className={field}
-                    />
-                    <p className="mt-1 text-xs text-[var(--ink-muted)]">Comma-separated</p>
-                  </div>
-
-                  <div>
-                    <label htmlFor="target_companies" className={label}>
-                      Target companies
-                    </label>
-                    <input
-                      id="target_companies"
-                      name="target_companies"
-                      type="text"
-                      maxLength={240}
-                      placeholder="e.g. Stripe, local startups"
-                      className={field}
-                    />
-                    <p className="mt-1 text-xs text-[var(--ink-muted)]">Comma-separated</p>
-                  </div>
-
-                  <fieldset>
-                    <legend className={label}>Timeline</legend>
-                    <div className="mt-2 flex flex-col gap-2">
-                      {TIMELINE_OPTIONS.map((opt) => (
-                        <label
-                          key={opt.value}
-                          className="flex cursor-pointer items-center gap-2 text-sm text-[var(--ink)]"
-                        >
-                          <input
-                            type="radio"
-                            name="timeline"
-                            value={opt.value}
-                            required
-                            className="accent-[var(--accent-blue)]"
-                          />
-                          {opt.label}
-                        </label>
-                      ))}
-                    </div>
-                  </fieldset>
-
-                  <div>
-                    <label htmlFor="blocker" className={label}>
-                      Main blocker right now
-                    </label>
-                    <textarea
-                      id="blocker"
-                      name="blocker"
-                      required
-                      rows={3}
-                      maxLength={400}
-                      placeholder="e.g. No projects to show, freezing on applications, no referrals"
-                      className={`${field} resize-y`}
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="resume_or_projects" className={label}>
-                      Resume or projects (optional)
-                    </label>
-                    <textarea
-                      id="resume_or_projects"
-                      name="resume_or_projects"
-                      rows={3}
-                      maxLength={2000}
-                      placeholder="Paste a short resume blurb or list what you've built"
-                      className={`${field} resize-y`}
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-6 flex items-center justify-between">
-                  <button
-                    type="button"
-                    onClick={() => setStep(3)}
-                    disabled={intakePending || diagnosing}
-                    className="btn-ghost"
-                  >
-                    Back
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={intakePending || diagnosing}
-                    className="btn-primary"
-                  >
-                    {intakePending || diagnosing ? "Diagnosing…" : "Diagnose my path"}
-                  </button>
-                </div>
-              </form>
-
-              {diagnosing && (
-                <div className="flex flex-col items-center py-10 text-center" aria-live="polite">
-                  <LoadingState label="Building your path" variant="Orbit" />
-                  <p className="mx-auto mt-5 max-w-sm text-sm text-[var(--ink-muted)]">
-                    Reading where you are, naming the blocker, and choosing a home that fits.
-                  </p>
-                </div>
-              )}
-            </>
+            <PathIntakeForm
+              onDiagnosingChange={setDiagnosing}
+              footer={
+                <button
+                  type="button"
+                  onClick={() => setStep(3)}
+                  disabled={diagnosing}
+                  className="btn-ghost"
+                >
+                  Back
+                </button>
+              }
+            />
           )}
         </motion.div>
       </AnimatePresence>

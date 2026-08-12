@@ -18,7 +18,7 @@ import { resolveInstitutionDomain } from "@/lib/resolve-domain";
 const DEGREE_VALUES: readonly string[] = DEGREE_VALUES_RAW;
 import type { TablesUpdate } from "@/types/database.types";
 
-const EXPERIENCE_KINDS = ["internship", "job", "research", "club_role"];
+const EXPERIENCE_KINDS = ["internship", "job", "research", "club_role", "project"];
 const HELP_KINDS = new Set(["internship", "job", "research"]);
 
 const ALLOWED_AVATAR_MIME = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);

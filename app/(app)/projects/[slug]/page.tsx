@@ -9,6 +9,7 @@ import {
 import ProjectChecklist from "@/components/path/ProjectChecklist";
 import { createClient } from "@/lib/supabase/server";
 import { getProjectBySlug, listProjectSlugs } from "@/lib/path/seeds";
+import { draftDossierFromProject, matchesProjectExperience } from "@/lib/path/dossier-draft";
 import { getUserProjectState } from "../actions";
 
 export function generateStaticParams() {
@@ -25,6 +26,17 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
     data: { user },
   } = await supabase.auth.getUser();
   const initialDone = user ? ((await getUserProjectState(project.slug)) ?? {}) : undefined;
+  const draft = draftDossierFromProject(project);
+
+  let inDossier = false;
+  if (user) {
+    const { data: experiences } = await supabase
+      .from("experiences")
+      .select("kind, role")
+      .eq("user_id", user.id)
+      .eq("kind", draft.kind);
+    inDossier = (experiences ?? []).some((row) => matchesProjectExperience(row, project.title));
+  }
 
   return (
     <AppPage width="wide">
@@ -79,6 +91,8 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
           items={project.build_checklist}
           initialDone={initialDone}
           persistServer={!!user}
+          dossierDraft={draft}
+          inDossier={inDossier}
         />
       </div>
 

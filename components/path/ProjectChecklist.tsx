@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { PathProject } from "@/lib/path/types";
 import { saveProjectChecklist } from "@/app/(app)/projects/actions";
 import ProjectCompletionPanel from "@/components/path/ProjectCompletionPanel";
+import type { DossierExperienceDraft } from "@/lib/path/dossier-draft";
 
 type Item = PathProject["build_checklist"][number];
 type ChecklistState = Record<string, boolean>;
@@ -37,6 +38,8 @@ export default function ProjectChecklist({
   items,
   initialDone,
   persistServer = false,
+  dossierDraft,
+  inDossier = false,
 }: {
   projectSlug: string;
   items: Item[];
@@ -44,6 +47,8 @@ export default function ProjectChecklist({
   initialDone?: ChecklistState;
   /** When true, toggles upsert user_projects (logged-in viewers). */
   persistServer?: boolean;
+  dossierDraft: DossierExperienceDraft;
+  inDossier?: boolean;
 }) {
   const router = useRouter();
   const storageKey = `path-project-checklist:${projectSlug}`;
@@ -177,7 +182,14 @@ export default function ProjectChecklist({
           })}
         </ul>
 
-        {allRequiredDone ? <ProjectCompletionPanel /> : null}
+        {allRequiredDone ? (
+          <ProjectCompletionPanel
+            draft={dossierDraft}
+            inDossier={inDossier}
+            projectSlug={projectSlug}
+            persistServer={persistServer}
+          />
+        ) : null}
       </div>
     </section>
   );

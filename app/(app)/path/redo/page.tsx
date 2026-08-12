@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import {
+  AppPage,
+  AppPageHeader,
+  AppPanel,
+} from "@/components/app/AppPrimitives";
+import PathIntakeForm from "@/components/path/PathIntakeForm";
+import { intakeFromAnswersJson } from "@/lib/path/diagnose";
 import { createClient } from "@/lib/supabase/server";
-import RediagnoseForm from "@/components/path/RediagnoseForm";
 
 export default async function PathRedoPage() {
   const supabase = await createClient();
@@ -12,7 +18,7 @@ export default async function PathRedoPage() {
 
   const { data: intake } = await supabase
     .from("intake_responses")
-    .select("id")
+    .select("id, answers")
     .eq("user_id", user.id)
     .order("version", { ascending: false })
     .limit(1)
@@ -28,28 +34,31 @@ export default async function PathRedoPage() {
     redirect("/onboarding");
   }
 
-  return (
-    <main className="page-enter mx-auto max-w-lg px-5 py-10">
-      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
-        Path
-      </p>
-      <h1 className="mt-2 text-2xl font-semibold tracking-[-0.02em] text-[var(--ink)]">
-        Something changed
-      </h1>
-      <p className="mt-2 text-sm leading-relaxed text-[var(--ink-muted)]">
-        Re-run your path from your latest intake and applications. Optional: name what is stuck
-        now.
-      </p>
+  const defaults = intakeFromAnswersJson(intake?.answers);
 
-      <div className="mt-8">
-        <RediagnoseForm showBlocker />
-      </div>
+  return (
+    <AppPage width="narrow">
+      <AppPageHeader
+        kicker="Path"
+        title="Something changed"
+        description="Update where you are, then diagnose again. This writes a new intake version."
+      />
+
+      <AppPanel className="p-6">
+        <PathIntakeForm
+          defaults={defaults}
+          heading="Where are you now?"
+          description="Change stage, timeline, or the blocker. Your path home will match the new diagnosis."
+          submitLabel="Diagnose my path again"
+          pendingLabel="Diagnosing…"
+        />
+      </AppPanel>
 
       <p className="mt-6 text-sm text-[var(--ink-muted)]">
         <Link href="/home" className="underline hover:text-[var(--ink)]">
           Back to home
         </Link>
       </p>
-    </main>
+    </AppPage>
   );
 }

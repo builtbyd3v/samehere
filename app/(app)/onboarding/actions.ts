@@ -14,6 +14,7 @@ import {
   type DiagnosisResult,
   type IntakeAnswers,
 } from "@/lib/path/diagnose";
+import { CONSTRAINT_VALUES } from "@/lib/path/intake-options";
 import { isPro } from "@/lib/pro";
 import type { Json } from "@/types/database.types";
 
@@ -58,17 +59,6 @@ export type PathIntakeState = {
   overCap?: boolean;
 };
 
-const CONSTRAINT_OPTIONS = new Set([
-  "first_gen",
-  "transfer",
-  "commuter",
-  "international",
-  "limited_network",
-  "working_job",
-  "career_switch",
-  "overwhelmed",
-]);
-
 function splitList(raw: string): string[] {
   return raw
     .split(/[,;\n]/)
@@ -86,7 +76,7 @@ function parseIntakeForm(formData: FormData): IntakeAnswers | { error: string } 
   const constraints = formData
     .getAll("constraints")
     .map((v) => String(v))
-    .filter((c) => CONSTRAINT_OPTIONS.has(c));
+    .filter((c) => CONSTRAINT_VALUES.has(c));
 
   const blocker = String(formData.get("blocker") ?? "").trim().slice(0, 400);
   if (!blocker) return { error: "Name the main thing blocking you right now." };

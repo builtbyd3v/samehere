@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import type {
   ApplicationStageCount,
   OpportunityListing,
@@ -32,12 +33,21 @@ const RECIPES: Record<
   network_gap: NetworkGapHome,
 };
 
+const RECIPE_UPSELL: Record<UiRecipe, string> = {
+  studio: "Pro unlocks extra project depth when you want a second build in parallel.",
+  ops_desk: "Pro writes listing pitches from your dossier.",
+  prep_room: "Pro unlocks full company banks and written interview feedback.",
+  focus_track: "Pro lets you re-diagnose without waiting when the blocker shifts.",
+  network_gap: "Pro drafts helper icebreakers for target orgs.",
+};
+
 export default function PathHome({
   plan,
   listings,
   applicationStages,
   context,
-}: PathHomeData) {
+  showProUpsell = false,
+}: PathHomeData & { showProUpsell?: boolean }) {
   const Recipe = RECIPES[plan.ui_recipe] ?? StudioHome;
   const nextTask = context.tasks[0];
   const taskHref = nextTask
@@ -58,8 +68,16 @@ export default function PathHome({
         nextTask={nextTask}
         taskHref={taskHref}
       />
-      <div className="mx-auto w-full max-w-3xl px-5 pb-10 pt-2 md:px-0">
+      <div className="mx-auto w-full max-w-3xl space-y-3 px-5 pb-10 pt-2 md:px-0">
         <RediagnoseForm compact />
+        {showProUpsell ? (
+          <p className="text-sm text-[var(--ink-muted)]">
+            {RECIPE_UPSELL[plan.ui_recipe]}{" "}
+            <Link href="/pro" className="underline hover:text-[var(--ink)]">
+              See Pro
+            </Link>
+          </p>
+        ) : null}
       </div>
     </main>
   );
@@ -72,7 +90,9 @@ function hrefForTask(
 ): string {
   switch (moduleId) {
     case "dossier":
-      return "/profile/edit";
+      return context.project?.status === "done"
+        ? `/projects/${context.project.slug}`
+        : "/profile/edit";
     case "opportunities":
       return listings?.[0] ? `/jobs/${listings[0].id}` : "/jobs";
     case "applications":

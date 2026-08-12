@@ -25,6 +25,7 @@ const KIND_OPTIONS: [string, string][] = [
   ["job", "Job"],
   ["research", "Research"],
   ["club_role", "Club role"],
+  ["project", "Project"],
 ];
 const KIND_SELECT_OPTIONS = [
   { value: "", label: "Select type" },

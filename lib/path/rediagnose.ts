@@ -5,8 +5,7 @@ import { isPro } from "@/lib/pro";
 import type { Database, Json } from "@/types/database.types";
 import {
   heuristicDiagnosis,
-  isPathStage,
-  isPathTimeline,
+  intakeFromAnswersJson,
   parseDiagnosisJson,
   type DiagnosisResult,
   type IntakeAnswers,
@@ -54,28 +53,6 @@ function stringList(value: unknown, max = 12): string[] {
     .filter((v): v is string => typeof v === "string" && v.trim().length > 0)
     .map((v) => v.trim().slice(0, 80))
     .slice(0, max);
-}
-
-/** Narrow intake_responses.answers JSON into IntakeAnswers when possible. */
-export function intakeFromAnswersJson(raw: unknown): IntakeAnswers | null {
-  if (!raw || typeof raw !== "object") return null;
-  const row = raw as Record<string, unknown>;
-  if (!isPathStage(row.stage)) return null;
-  if (!isPathTimeline(row.timeline)) return null;
-  const blocker = typeof row.blocker === "string" ? row.blocker.trim() : "";
-  if (!blocker) return null;
-  return {
-    stage: row.stage,
-    timeline: row.timeline,
-    constraints: stringList(row.constraints, 16),
-    target_roles: stringList(row.target_roles),
-    target_companies: stringList(row.target_companies),
-    blocker: blocker.slice(0, 400),
-    resume_or_projects:
-      typeof row.resume_or_projects === "string" && row.resume_or_projects.trim()
-        ? row.resume_or_projects.trim().slice(0, 2000)
-        : undefined,
-  };
 }
 
 /**

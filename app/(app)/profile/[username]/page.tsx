@@ -71,6 +71,7 @@ const EXPERIENCE_GROUPS: { kind: string; label: string }[] = [
   { kind: "internship", label: "Internships" },
   { kind: "job", label: "Jobs" },
   { kind: "research", label: "Research" },
+  { kind: "project", label: "Projects" },
   { kind: "club_role", label: "Leadership & Clubs" },
 ];
 

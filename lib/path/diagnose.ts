@@ -78,6 +78,28 @@ export function isPathTimeline(value: unknown): value is PathTimeline {
   return typeof value === "string" && TIMELINES.has(value as PathTimeline);
 }
 
+/** Narrow intake_responses.answers JSON into IntakeAnswers when possible. */
+export function intakeFromAnswersJson(raw: unknown): IntakeAnswers | null {
+  if (!raw || typeof raw !== "object") return null;
+  const row = raw as Record<string, unknown>;
+  if (!isPathStage(row.stage)) return null;
+  if (!isPathTimeline(row.timeline)) return null;
+  const blocker = typeof row.blocker === "string" ? row.blocker.trim() : "";
+  if (!blocker) return null;
+  return {
+    stage: row.stage,
+    timeline: row.timeline,
+    constraints: stringArray(row.constraints, 16).map((s) => s.slice(0, 80)),
+    target_roles: stringArray(row.target_roles).map((s) => s.slice(0, 80)),
+    target_companies: stringArray(row.target_companies).map((s) => s.slice(0, 80)),
+    blocker: blocker.slice(0, 400),
+    resume_or_projects:
+      typeof row.resume_or_projects === "string" && row.resume_or_projects.trim()
+        ? row.resume_or_projects.trim().slice(0, 2000)
+        : undefined,
+  };
+}
+
 function isModuleId(value: unknown): value is ModuleId {
   return typeof value === "string" && MODULE_IDS.has(value as ModuleId);
 }

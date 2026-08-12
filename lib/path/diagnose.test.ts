@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   heuristicDiagnosis,
+  intakeFromAnswersJson,
   isPathStage,
   isPathTimeline,
   parseDiagnosisJson,
@@ -99,6 +100,27 @@ describe("parseDiagnosisJson", () => {
     expect(result.ui.ui_recipe).toBe("focus_track");
     expect(result.ui.module_order.length).toBeGreaterThan(0);
     expect(result.tasks.length).toBeGreaterThan(0);
+  });
+});
+
+describe("intakeFromAnswersJson", () => {
+  it("parses valid intake answers", () => {
+    const intake = intakeFromAnswersJson({
+      stage: "applying",
+      timeline: "next_cycle",
+      constraints: ["transfer"],
+      target_roles: ["SWE"],
+      target_companies: ["Adobe"],
+      blocker: "Stuck on resume",
+    });
+    expect(intake?.stage).toBe("applying");
+    expect(intake?.timeline).toBe("next_cycle");
+    expect(intake?.blocker).toBe("Stuck on resume");
+  });
+
+  it("rejects incomplete answers", () => {
+    expect(intakeFromAnswersJson({ stage: "applying" })).toBeNull();
+    expect(intakeFromAnswersJson(null)).toBeNull();
   });
 });
 

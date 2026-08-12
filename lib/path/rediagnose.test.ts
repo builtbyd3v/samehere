@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { IntakeAnswers } from "./diagnose";
-import {
-  applicationsNeedPrepRoom,
-  heuristicInterviewFlip,
-  intakeFromAnswersJson,
-} from "./rediagnose";
+import { applicationsNeedPrepRoom, heuristicInterviewFlip } from "./rediagnose";
 
 const baseIntake: IntakeAnswers = {
   stage: "applying",
@@ -37,26 +33,5 @@ describe("applicationsNeedPrepRoom", () => {
     expect(applicationsNeedPrepRoom(["wishlist", "applied"])).toBe(false);
     expect(applicationsNeedPrepRoom(["applied", "oa"])).toBe(true);
     expect(applicationsNeedPrepRoom(["interview"])).toBe(true);
-  });
-});
-
-describe("intakeFromAnswersJson", () => {
-  it("parses valid intake answers", () => {
-    const intake = intakeFromAnswersJson({
-      stage: "applying",
-      timeline: "next_cycle",
-      constraints: ["transfer"],
-      target_roles: ["SWE"],
-      target_companies: ["Adobe"],
-      blocker: "Stuck on resume",
-    });
-    expect(intake?.stage).toBe("applying");
-    expect(intake?.timeline).toBe("next_cycle");
-    expect(intake?.blocker).toBe("Stuck on resume");
-  });
-
-  it("rejects incomplete answers", () => {
-    expect(intakeFromAnswersJson({ stage: "applying" })).toBeNull();
-    expect(intakeFromAnswersJson(null)).toBeNull();
   });
 });

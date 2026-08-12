@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getProjectBySlug } from "@/lib/path/seeds";
 import {
+  draftDossierFromProject,
+  PROJECT_EXPERIENCE_KIND,
+} from "@/lib/path/dossier-draft";
+import {
   choosePathTaskToAdvance,
   isFirstProjectCompletion,
   type LinkedPathTask,
@@ -209,4 +213,87 @@ export async function saveProjectChecklist(
     firstCompletion,
     pathAdvanced,
   };
+}
+
+export type DossierActionState = {
+  error?: string;
+  success?: boolean;
+  already?: boolean;
+};
+
+function monthStartIso(d = new Date()): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  return `${y}-${m}-01`;
+}
+
+/**
+ * Insert a project experience from the native path spec.
+ * Idempotent on kind=project + role=title. Marks open dossier tasks done.
+ */
+export async function addProjectToDossier(
+  projectSlug: string,
+): Promise<DossierActionState> {
+  const project = getProjectBySlug(projectSlug);
+  if (!project) return { error: "Unknown project." };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be logged in." };
+
+  const draft = draftDossierFromProject(project);
+
+  const { data: existing } = await supabase
+    .from("experiences")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("kind", PROJECT_EXPERIENCE_KIND)
+    .eq("role", draft.role)
+    .maybeSingle();
+
+  if (existing) return { already: true, success: true };
+
+  const start_date = monthStartIso();
+  const { error } = await supabase.from("experiences").insert({
+    user_id: user.id,
+    kind: PROJECT_EXPERIENCE_KIND,
+    org: draft.org,
+    role: draft.role,
+    note: draft.note || null,
+    start_date,
+    end_date: start_date,
+    is_current: false,
+  });
+
+  if (error) {
+    if (error.message.includes("limit: at most 10 experiences")) {
+      return { error: "Dossier is full (10 experiences). Remove one, then add this project." };
+    }
+    if (error.message.includes("experiences_kind_check") || error.code === "23514") {
+      return { error: "Could not save as a project yet. Add it from your dossier." };
+    }
+    return { error: "Could not add this project to your dossier." };
+  }
+
+  const now = new Date().toISOString();
+  await supabase
+    .from("path_tasks")
+    .update({ status: "done", updated_at: now })
+    .eq("user_id", user.id)
+    .eq("module_id", "dossier")
+    .in("status", ["todo", "doing"]);
+
+  revalidatePath("/home");
+  revalidatePath("/profile/edit");
+  revalidatePath(`/projects/${projectSlug}`);
+  const { data: prof } = await supabase
+    .from("profiles")
+    .select("username")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (prof?.username) revalidatePath(`/profile/${prof.username}`);
+
+  return { success: true };
 }
