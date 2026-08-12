@@ -1,38 +1,77 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { PathProject } from "@/lib/path/types";
+import { saveProjectChecklist } from "@/app/(app)/projects/actions";
 
 type Item = PathProject["build_checklist"][number];
 
 export default function ProjectChecklist({
   projectSlug,
   items,
+  initialDone,
+  persistServer = false,
 }: {
   projectSlug: string;
   items: Item[];
+  /** Server checklist_state when logged in; preferred over localStorage. */
+  initialDone?: Record<string, boolean>;
+  /** When true, toggles upsert user_projects (logged-in viewers). */
+  persistServer?: boolean;
 }) {
   const storageKey = `path-project-checklist:${projectSlug}`;
-  const [done, setDone] = useState<Record<string, boolean>>({});
+  const [done, setDone] = useState<Record<string, boolean>>(initialDone ?? {});
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hydrated = useRef(false);
 
   useEffect(() => {
+    if (hydrated.current) return;
+    hydrated.current = true;
+    // Prefer server state; localStorage is offline cache fallback only.
+    if (initialDone && Object.keys(initialDone).length > 0) {
+      setDone(initialDone);
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(initialDone));
+      } catch {
+        /* ignore quota */
+      }
+      return;
+    }
     try {
       const raw = localStorage.getItem(storageKey);
       if (raw) setDone(JSON.parse(raw) as Record<string, boolean>);
     } catch {
       /* ignore */
     }
-  }, [storageKey]);
+  }, [initialDone, storageKey]);
 
-  // TODO: persist checklist_state to user_projects when auth path wiring lands
+  useEffect(() => {
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+    };
+  }, []);
+
+  function persist(next: Record<string, boolean>) {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(next));
+    } catch {
+      /* ignore quota */
+    }
+    if (!persistServer) return;
+
+    const required = items.filter((i) => !i.optional);
+    const markDone = required.length > 0 && required.every((i) => next[i.id]);
+
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      void saveProjectChecklist(projectSlug, next, markDone);
+    }, 400);
+  }
+
   function toggle(id: string) {
     setDone((prev) => {
       const next = { ...prev, [id]: !prev[id] };
-      try {
-        localStorage.setItem(storageKey, JSON.stringify(next));
-      } catch {
-        /* ignore quota */
-      }
+      persist(next);
       return next;
     });
   }

@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import { getProjectBySlug, listProjectSlugs } from "@/lib/path/seeds";
 import ProjectChecklist from "@/components/path/ProjectChecklist";
+import { getUserProjectState } from "../actions";
 
 export function generateStaticParams() {
   return listProjectSlugs().map((slug) => ({ slug }));
@@ -12,11 +14,17 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
   const project = getProjectBySlug(slug);
   if (!project) notFound();
 
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const initialDone = user ? ((await getUserProjectState(project.slug)) ?? {}) : undefined;
+
   return (
     <main className="page-enter mx-auto max-w-3xl px-4 py-8">
       <p className="text-sm text-[var(--ink-muted)]">
-        <Link href="/prep" className="hover:text-[var(--ink)]">
-          Prep
+        <Link href="/home" className="hover:text-[var(--ink)]">
+          Home
         </Link>
         <span className="mx-1.5">/</span>
         <span>Projects</span>
@@ -40,7 +48,12 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
       </header>
 
       <div className="mt-8">
-        <ProjectChecklist projectSlug={project.slug} items={project.build_checklist} />
+        <ProjectChecklist
+          projectSlug={project.slug}
+          items={project.build_checklist}
+          initialDone={initialDone}
+          persistServer={!!user}
+        />
       </div>
 
       <section className="mt-8 grid gap-6 sm:grid-cols-2">
