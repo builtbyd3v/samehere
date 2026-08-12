@@ -3988,3 +3988,319 @@ summary {
   }
 }
 
+
+/* Project Studio Wave 2 -------------------------------------------------------
+   Compact toolbar, narrow milestone rail, Monaco/Sandpack surfaces.
+   Append-only: do not alter rules above this section. */
+.project-studio {
+  --studio-panel-h: 40rem;
+  gap: 0.75rem;
+}
+
+.studio-toolbar-compact {
+  display: block;
+  padding: 0.55rem 0.85rem;
+  background:
+    linear-gradient(90deg, var(--accent-blue-soft), transparent 42%),
+    var(--surface);
+  box-shadow: none;
+}
+
+.studio-toolbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 0.85rem;
+  min-width: 0;
+}
+
+.studio-toolbar-identity {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 12rem;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.65rem;
+}
+
+.studio-toolbar-compact .studio-toolbar-kicker {
+  margin: 0;
+  font-size: 0.68rem;
+}
+
+.studio-toolbar-compact .studio-toolbar-title {
+  margin: 0;
+  font-size: clamp(1.05rem, 2.2vw, 1.35rem);
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.studio-toolbar-compact .studio-tech-list {
+  flex: 0 1 auto;
+  gap: 0.3rem;
+}
+
+.studio-toolbar-compact .studio-tech-mark {
+  padding: 0.18rem 0.5rem 0.18rem 0.3rem;
+  font-size: 0.66rem;
+}
+
+.studio-toolbar-compact .studio-check-status {
+  margin: 0;
+  gap: 0.35rem;
+  font-size: 0.74rem;
+}
+
+.studio-toolbar-compact .studio-toolbar-actions {
+  margin-left: auto;
+  gap: 0.4rem;
+}
+
+.studio-notice-compact {
+  padding: 0.55rem 0.75rem;
+  font-size: 0.78rem;
+}
+
+.studio-desktop {
+  grid-template-columns: minmax(10.5rem, 0.55fr) minmax(0, 1.85fr) minmax(16rem, 0.95fr);
+  gap: 0.65rem;
+}
+
+.studio-milestone-rail-compact {
+  padding: 0.65rem;
+}
+
+.studio-milestone-rail-compact .studio-milestone-btn {
+  padding: 0.45rem 0.5rem;
+  gap: 0.45rem;
+}
+
+.studio-milestone-rail-compact .studio-milestone-title {
+  font-size: 0.74rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.studio-milestone-rail-compact .studio-acceptance {
+  padding-top: 0.65rem;
+}
+
+.studio-milestone-rail-compact .studio-acceptance ul {
+  font-size: 0.72rem;
+}
+
+.studio-file-pane {
+  grid-template-columns: minmax(8.5rem, 0.34fr) minmax(0, 1fr);
+  gap: 0.65rem;
+}
+
+.studio-right-rail {
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--studio-radius);
+  background: var(--surface);
+  overflow: hidden;
+  min-height: var(--studio-panel-h);
+}
+
+.studio-right-rail > .studio-side-tabs {
+  flex: 0 0 auto;
+}
+
+.studio-right-rail > .studio-side-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.studio-right-rail > .studio-side-panel[hidden] {
+  display: none;
+}
+
+.studio-side-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.2rem;
+  border-bottom: 1px solid var(--border);
+  padding: 0.35rem;
+  background: color-mix(in srgb, var(--surface-raised) 70%, transparent);
+}
+
+.studio-side-tab {
+  border: 0;
+  border-radius: 0.45rem;
+  padding: 0.45rem 0.5rem;
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.studio-side-tab[data-active="true"] {
+  background: var(--accent-blue-soft);
+  color: var(--ink);
+}
+
+.studio-side-tab:focus-visible {
+  outline: 2px solid var(--accent-blue-strong);
+  outline-offset: 1px;
+}
+
+.studio-right-rail > * {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.studio-preview,
+.studio-tests {
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.studio-preview-head {
+  padding: 0.65rem 0.85rem 0;
+}
+
+.studio-preview-note {
+  margin: 0.35rem 0.85rem 0;
+  color: var(--ink-faint);
+  font-size: 0.7rem;
+  line-height: 1.4;
+}
+
+.studio-sandpack {
+  flex: 1 1 auto;
+  min-height: 14rem;
+  overflow: hidden;
+}
+
+.studio-sandpack .sp-wrapper,
+.studio-sandpack .sp-stack,
+.studio-sandpack .sp-preview-container {
+  height: 100%;
+}
+
+.studio-sandpack .sp-layout {
+  border: 0;
+  border-radius: 0;
+  height: 100%;
+}
+
+.studio-monaco {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.studio-monaco .monaco-editor,
+.studio-monaco .overflow-guard {
+  border-radius: 0 0 var(--studio-radius) var(--studio-radius);
+}
+
+.studio-monaco-loading {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  min-height: 12rem;
+  color: var(--ink-faint);
+  font-size: 0.8rem;
+}
+
+.studio-save-status {
+  margin-left: auto;
+  min-width: 5.5rem;
+  text-align: right;
+  color: var(--ink-faint);
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.studio-save-status[data-status="saved"] {
+  color: var(--accent-blue-strong);
+}
+
+.studio-save-status[data-status="saving"] {
+  color: var(--ink-muted);
+}
+
+.studio-save-status[data-status="dirty"],
+.studio-save-status[data-status="error"] {
+  color: var(--ink-muted);
+}
+
+.studio-save-status[data-status="conflict"] {
+  color: #e08a4a;
+}
+
+.studio-code-highlight {
+  display: block;
+  color: var(--ink);
+}
+
+.studio-brief {
+  padding: 0.75rem 0.9rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .studio-side-tab[data-active="true"] {
+    transition:
+      color 160ms var(--ease-out),
+      background-color 160ms var(--ease-out);
+  }
+
+  .studio-save-status {
+    transition: color 160ms var(--ease-out);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .studio-side-tab,
+  .studio-save-status {
+    transition: none;
+  }
+}
+
+@media (max-width: 1100px) {
+  .studio-desktop {
+    grid-template-columns: minmax(10rem, 0.6fr) minmax(0, 1.5fr);
+  }
+
+  .studio-right-rail {
+    grid-column: 1 / -1;
+    min-height: 22rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .studio-toolbar-compact .studio-toolbar-actions {
+    margin-left: 0;
+  }
+
+  .studio-sandpack {
+    min-height: 16rem;
+    max-width: 100%;
+  }
+
+  .studio-file-pane,
+  .studio-code-viewer,
+  .studio-preview,
+  .studio-mobile-panel {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .studio-code-pre {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+}

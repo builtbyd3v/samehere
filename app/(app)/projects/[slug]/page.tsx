@@ -12,7 +12,7 @@ import { getStudioManifest } from "@/lib/path/studio";
 import { createClient } from "@/lib/supabase/server";
 import { getProjectBySlug, listProjectSlugs } from "@/lib/path/seeds";
 import { draftDossierFromProject, matchesProjectExperience } from "@/lib/path/dossier-draft";
-import { getUserProjectState } from "../actions";
+import { getProjectWorkspace, getUserProjectState } from "../actions";
 
 export function generateStaticParams() {
   return listProjectSlugs().map((slug) => ({ slug }));
@@ -41,6 +41,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
   }
 
   const manifest = getStudioManifest(project.slug);
+  const workspaceSnapshot = user ? await getProjectWorkspace(project.slug) : null;
 
   if (manifest) {
     return (
@@ -52,6 +53,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
           initialDone={initialDone}
           dossierDraft={draft}
           inDossier={inDossier}
+          workspaceSnapshot={workspaceSnapshot}
         />
       </AppPage>
     );

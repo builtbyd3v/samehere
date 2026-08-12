@@ -1,7 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import type { StudioStarterFile } from "@/lib/path/types";
+import dynamic from "next/dynamic";
+import { useMemo } from "react";
+import type { SaveStatus } from "@/components/path/studio/useStudioWorkspace";
+
+const StudioMonacoEditor = dynamic(
+  () => import("@/components/path/studio/StudioMonacoEditor"),
+  {
+    ssr: false,
+    loading: () => <div className="studio-monaco-loading">Loading editor…</div>,
+  },
+);
 
 type TreeDir = {
   kind: "dir";
@@ -74,7 +83,10 @@ function TreeList({
       {nodes.map((node) =>
         node.kind === "dir" ? (
           <li key={node.path} role="treeitem" aria-expanded="true" aria-selected="false">
-            <span className="studio-file-tree-dir" style={{ paddingLeft: `${0.55 + depth * 0.85}rem` }}>
+            <span
+              className="studio-file-tree-dir"
+              style={{ paddingLeft: `${0.55 + depth * 0.85}rem` }}
+            >
               {node.name}/
             </span>
             <TreeList
@@ -102,34 +114,59 @@ function TreeList({
   );
 }
 
+function saveStatusLabel(status: SaveStatus): string {
+  switch (status) {
+    case "saved":
+      return "Saved";
+    case "saving":
+      return "Saving";
+    case "dirty":
+      return "Not saved";
+    case "conflict":
+      return "Conflict";
+    case "error":
+      return "Not saved";
+    default: {
+      const _exhaustive: never = status;
+      return _exhaustive;
+    }
+  }
+}
+
 /**
- * Client-only file tree + read-only source viewer.
+ * File tree + code surface.
+ * Desktop: Monaco (dynamic). Mobile: read-only highlighted source.
  * Selection stays in-component — no route changes.
  */
 export default function StudioFilePane({
   entryFile,
   visibleFiles,
-  starterFiles,
+  selectedPath,
+  onSelectPath,
+  content,
+  readOnly,
+  editable,
+  saveStatus,
+  saveMessage,
+  onContentChange,
   className = "",
 }: {
   entryFile: string;
   visibleFiles: string[];
-  starterFiles: StudioStarterFile[];
+  selectedPath: string;
+  onSelectPath: (path: string) => void;
+  content: string;
+  readOnly: boolean;
+  /** When false, never mount Monaco (mobile). */
+  editable: boolean;
+  saveStatus: SaveStatus;
+  saveMessage: string | null;
+  onContentChange: (value: string) => void;
   className?: string;
 }) {
-  const filesByPath = useMemo(() => {
-    const map = new Map<string, StudioStarterFile>();
-    for (const file of starterFiles) map.set(file.path, file);
-    return map;
-  }, [starterFiles]);
-
   const tree = useMemo(() => buildFileTree(visibleFiles), [visibleFiles]);
-  const [selectedPath, setSelectedPath] = useState(() =>
-    visibleFiles.includes(entryFile) ? entryFile : (visibleFiles[0] ?? ""),
-  );
-
-  const selected = selectedPath ? filesByPath.get(selectedPath) : undefined;
-  const lineCount = selected ? selected.code.split("\n").length : 0;
+  const lineCount = content ? content.split("\n").length : 0;
+  const statusText = saveStatusLabel(saveStatus);
 
   return (
     <div className={`studio-file-pane ${className}`.trim()}>
@@ -141,31 +178,46 @@ export default function StudioFilePane({
           <TreeList
             nodes={tree}
             depth={0}
-            selectedPath={selectedPath}
-            onSelect={setSelectedPath}
+            selectedPath={selectedPath || entryFile}
+            onSelect={onSelectPath}
           />
         )}
       </aside>
 
-      <section className="studio-code-viewer" aria-label="Source viewer">
+      <section className="studio-code-viewer" aria-label={editable ? "Code editor" : "Source viewer"}>
         <div className="studio-code-toolbar">
           <span className="studio-code-path">{selectedPath || "No file selected"}</span>
-          {selected?.readOnly ? <span className="studio-code-badge">Read-only</span> : null}
-          {selected ? (
+          {readOnly ? <span className="studio-code-badge">Read-only</span> : null}
+          {editable ? (
+            <span
+              className="studio-save-status"
+              data-status={saveStatus}
+              aria-live="polite"
+              title={saveMessage ?? undefined}
+            >
+              {statusText}
+            </span>
+          ) : (
             <span className="studio-code-meta">{lineCount} lines</span>
-          ) : null}
+          )}
         </div>
-        {selected ? (
-          <pre className="studio-code-pre app-panel-scroll">
-            <code>{selected.code}</code>
-          </pre>
+        {selectedPath ? (
+          editable ? (
+            <StudioMonacoEditor
+              path={selectedPath}
+              value={content}
+              readOnly={readOnly}
+              onChange={onContentChange}
+            />
+          ) : (
+            <pre className="studio-code-pre app-panel-scroll">
+              <code className="studio-code-highlight">{content}</code>
+            </pre>
+          )
         ) : (
           <div className="studio-empty-panel" role="status">
             <p className="studio-empty-title">No source to show</p>
-            <p className="studio-empty-copy">
-              Pick a file from the tree. Wave 1 is read-only — editing arrives with the desktop
-              editor later.
-            </p>
+            <p className="studio-empty-copy">Pick a file from the tree.</p>
           </div>
         )}
       </section>
