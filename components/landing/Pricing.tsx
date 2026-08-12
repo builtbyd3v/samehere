@@ -59,12 +59,12 @@ export default function Pricing() {
         <article className="landing-price-plan landing-price-plan-pro landing-xai-card-hover">
           <div className="landing-xai-card-content">
             <p className="landing-plan-kicker">
-              {pro.name}{" "}
+              {pro.kicker}{" "}
               <span className="inline-flex whitespace-nowrap rounded-full border border-[var(--accent-blue)] bg-[var(--accent-blue-soft)] px-2 py-1 text-[0.6875rem] font-medium text-[var(--accent-blue-strong)]">
                 Most students
               </span>
             </p>
-            <h3>{pro.kicker}</h3>
+            <h3>{pro.name}</h3>
             <p className="landing-plan-description">{pro.tagline}</p>
             <p className="landing-plan-price">
               {formatUsd(pro.monthly)}
@@ -84,13 +84,8 @@ export default function Pricing() {
 
         <article className="landing-price-plan landing-price-plan-ultra landing-xai-card-hover">
           <div className="landing-xai-card-content">
-            <p className="landing-plan-kicker">
-              {ultra.name}{" "}
-              <span className="inline-flex whitespace-nowrap rounded-full border border-[var(--accent-blue)] bg-[var(--accent-blue-soft)] px-2 py-1 text-[0.6875rem] font-medium text-[var(--accent-blue-strong)]">
-                Interview season
-              </span>
-            </p>
-            <h3>{ultra.kicker}</h3>
+            <p className="landing-plan-kicker">{ultra.kicker}</p>
+            <h3>{ultra.name}</h3>
             <p className="landing-plan-description">{ultra.tagline}</p>
             <p className="landing-plan-price">
               {formatUsd(ultra.monthly)}
