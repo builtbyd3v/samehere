@@ -1683,6 +1683,102 @@ applications: {
         }
         Relationships: []
       }
+      project_workspace_files: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          path: string
+          revision: number
+          updated_at: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          path: string
+          revision?: number
+          updated_at?: string
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          path?: string
+          revision?: number
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_workspace_files_workspace_id_user_id_fkey"
+            columns: ["workspace_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "project_workspaces"
+            referencedColumns: ["id", "user_id"]
+          },
+          {
+            foreignKeyName: "project_workspace_files_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_workspaces: {
+        Row: {
+          active_file: string | null
+          created_at: string
+          id: string
+          revision: number
+          template_version: number
+          updated_at: string
+          user_id: string
+          user_project_id: string
+        }
+        Insert: {
+          active_file?: string | null
+          created_at?: string
+          id?: string
+          revision?: number
+          template_version?: number
+          updated_at?: string
+          user_id: string
+          user_project_id: string
+        }
+        Update: {
+          active_file?: string | null
+          created_at?: string
+          id?: string
+          revision?: number
+          template_version?: number
+          updated_at?: string
+          user_id?: string
+          user_project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_workspaces_user_project_id_user_id_fkey"
+            columns: ["user_project_id", "user_id"]
+            isOneToOne: true
+            referencedRelation: "user_projects"
+            referencedColumns: ["id", "user_id"]
+          },
+          {
+            foreignKeyName: "project_workspaces_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reactions: {
         Row: {
           created_at: string | null

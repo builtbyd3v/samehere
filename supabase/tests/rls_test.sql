@@ -2821,6 +2821,321 @@ exception when others then
 end $$;
 reset role;
 
+-- ============ PROJECT STUDIO WORKSPACES — 20260812204348_project_studio_workspaces.sql ============
+-- Owner-only workspace + file rows, composite same-owner FKs, path/content bounds.
+
+-- STUDIO_WS_owner_insert_select_update — A can create/select/update her workspace + file.
+select tests.as_user(id) from tests_fixture where key = 'a';
+do $$
+declare
+  v_a uuid := (select id from tests_fixture where key = 'a');
+  v_up uuid;
+  v_ws uuid;
+  v_file uuid;
+begin
+  insert into public.user_projects (user_id, project_slug, status)
+  values (v_a, 'rls-test-project', 'assigned')
+  returning id into v_up;
+
+  insert into public.project_workspaces (
+    user_id, user_project_id, template_version, revision, active_file
+  ) values (v_a, v_up, 1, 0, 'src/index.ts')
+  returning id into v_ws;
+
+  insert into public.project_workspace_files (
+    user_id, workspace_id, path, content, revision
+  ) values (v_a, v_ws, 'src/index.ts', 'export {};', 0)
+  returning id into v_file;
+
+  update public.project_workspaces
+  set revision = 1, active_file = 'src/app.ts', updated_at = now()
+  where id = v_ws and user_id = v_a;
+
+  update public.project_workspace_files
+  set content = 'export const ok = true;', revision = 1, updated_at = now()
+  where id = v_file and user_id = v_a;
+
+  if not exists (
+    select 1
+    from public.project_workspaces
+    where id = v_ws and user_id = v_a and revision = 1 and active_file = 'src/app.ts'
+  ) then
+    raise exception 'STUDIO_WS_owner_insert_select_update REGRESSION: owner cannot select/update own workspace';
+  end if;
+
+  if not exists (
+    select 1
+    from public.project_workspace_files
+    where id = v_file and user_id = v_a and revision = 1
+      and content = 'export const ok = true;'
+  ) then
+    raise exception 'STUDIO_WS_owner_insert_select_update REGRESSION: owner cannot select/update own workspace file';
+  end if;
+
+  -- Stash ids for later forged-ownership checks (B cannot SELECT A's rows under RLS).
+  insert into tests_fixture (key, id) values
+    ('studio_user_project_a', v_up),
+    ('studio_workspace_a', v_ws),
+    ('studio_workspace_file_a', v_file);
+
+  insert into tests_results values ('STUDIO_WS_owner_insert_select_update', true, 'ok');
+exception when others then
+  insert into tests_results values ('STUDIO_WS_owner_insert_select_update', false, sqlerrm);
+end $$;
+reset role;
+
+-- STUDIO_WS_b_select_a_denied — B cannot read A's workspace or files.
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+begin
+  if exists (
+    select 1 from public.project_workspaces
+    where user_id = (select id from tests_fixture where key = 'a')
+  ) then
+    raise exception 'STUDIO_WS_b_select_a_denied REGRESSION: B selected A''s project_workspaces';
+  end if;
+  if exists (
+    select 1 from public.project_workspace_files
+    where user_id = (select id from tests_fixture where key = 'a')
+  ) then
+    raise exception 'STUDIO_WS_b_select_a_denied REGRESSION: B selected A''s project_workspace_files';
+  end if;
+  insert into tests_results values ('STUDIO_WS_b_select_a_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('STUDIO_WS_b_select_a_denied', false, sqlerrm);
+end $$;
+reset role;
+
+-- STUDIO_WS_b_update_a_denied — B cannot overwrite A's workspace or files.
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+declare
+  v_updated int;
+begin
+  update public.project_workspaces
+  set revision = 99
+  where user_id = (select id from tests_fixture where key = 'a');
+  get diagnostics v_updated = row_count;
+  if v_updated <> 0 then
+    raise exception 'STUDIO_WS_b_update_a_denied REGRESSION: B updated % of A''s workspace row(s)', v_updated;
+  end if;
+
+  update public.project_workspace_files
+  set content = 'forged'
+  where user_id = (select id from tests_fixture where key = 'a');
+  get diagnostics v_updated = row_count;
+  if v_updated <> 0 then
+    raise exception 'STUDIO_WS_b_update_a_denied REGRESSION: B updated % of A''s workspace file row(s)', v_updated;
+  end if;
+
+  insert into tests_results values ('STUDIO_WS_b_update_a_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('STUDIO_WS_b_update_a_denied', false, sqlerrm);
+end $$;
+reset role;
+
+-- STUDIO_WS_b_forge_workspace_owner_denied — composite FK/RLS block forged ownership.
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+declare
+  v_b uuid := (select id from tests_fixture where key = 'b');
+  v_a_up uuid := (select id from tests_fixture where key = 'studio_user_project_a');
+  v_a_ws uuid := (select id from tests_fixture where key = 'studio_workspace_a');
+  v_state text;
+  v_raised boolean;
+begin
+  begin
+    insert into public.project_workspaces (
+      user_id, user_project_id, template_version, revision
+    ) values (v_b, v_a_up, 1, 0);
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state not in ('23503', '42501') then
+    raise exception 'STUDIO_WS_b_forge_workspace_owner_denied REGRESSION: forged user_project owner was not rejected (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+
+  begin
+    insert into public.project_workspace_files (
+      user_id, workspace_id, path, content, revision
+    ) values (v_b, v_a_ws, 'forged.ts', 'nope', 0);
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state not in ('23503', '42501') then
+    raise exception 'STUDIO_WS_b_forge_workspace_owner_denied REGRESSION: forged workspace file owner was not rejected (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+
+  insert into tests_results values ('STUDIO_WS_b_forge_workspace_owner_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('STUDIO_WS_b_forge_workspace_owner_denied', false, sqlerrm);
+end $$;
+reset role;
+
+-- STUDIO_WS_invalid_path_content_revision_denied — checks reject bad path/content/revision.
+select tests.as_user(id) from tests_fixture where key = 'a';
+do $$
+declare
+  v_a uuid := (select id from tests_fixture where key = 'a');
+  v_ws uuid := (
+    select id from public.project_workspaces
+    where user_id = v_a
+    limit 1
+  );
+  v_state text;
+  v_raised boolean;
+begin
+  begin
+    insert into public.project_workspace_files (
+      user_id, workspace_id, path, content, revision
+    ) values (v_a, v_ws, '/abs.ts', 'x', 0);
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state <> '23514' then
+    raise exception 'STUDIO_WS_invalid_path_content_revision_denied REGRESSION: leading-slash path did not fail with 23514 (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+
+  begin
+    insert into public.project_workspace_files (
+      user_id, workspace_id, path, content, revision
+    ) values (v_a, v_ws, '../secret.ts', 'x', 0);
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state <> '23514' then
+    raise exception 'STUDIO_WS_invalid_path_content_revision_denied REGRESSION: .. path did not fail with 23514 (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+
+  begin
+    insert into public.project_workspace_files (
+      user_id, workspace_id, path, content, revision
+    ) values (v_a, v_ws, 'src//double.ts', 'x', 0);
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state <> '23514' then
+    raise exception 'STUDIO_WS_invalid_path_content_revision_denied REGRESSION: non-normalized path did not fail with 23514 (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+
+  begin
+    insert into public.project_workspace_files (
+      user_id, workspace_id, path, content, revision
+    ) values (v_a, v_ws, E'bad\000.ts', 'x', 0);
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  -- Postgres may reject NUL in text before the CHECK fires (22021), or the
+  -- CHECK itself may fire (23514). Either outcome means the path is denied.
+  if not v_raised or v_state not in ('23514', '22021') then
+    raise exception 'STUDIO_WS_invalid_path_content_revision_denied REGRESSION: null-byte path was not rejected (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+
+  begin
+    insert into public.project_workspace_files (
+      user_id, workspace_id, path, content, revision
+    ) values (v_a, v_ws, repeat('p', 241), 'x', 0);
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state <> '23514' then
+    raise exception 'STUDIO_WS_invalid_path_content_revision_denied REGRESSION: path length > 240 did not fail with 23514 (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+
+  begin
+    insert into public.project_workspace_files (
+      user_id, workspace_id, path, content, revision
+    ) values (v_a, v_ws, 'too-big.ts', repeat('a', 262145), 0);
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state <> '23514' then
+    raise exception 'STUDIO_WS_invalid_path_content_revision_denied REGRESSION: oversized content did not fail with 23514 (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+
+  begin
+    insert into public.project_workspace_files (
+      user_id, workspace_id, path, content, revision
+    ) values (v_a, v_ws, 'neg-rev.ts', 'x', -1);
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state <> '23514' then
+    raise exception 'STUDIO_WS_invalid_path_content_revision_denied REGRESSION: negative revision did not fail with 23514 (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+
+  begin
+    update public.project_workspaces
+    set template_version = 0
+    where id = v_ws and user_id = v_a;
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state <> '23514' then
+    raise exception 'STUDIO_WS_invalid_path_content_revision_denied REGRESSION: template_version < 1 did not fail with 23514 (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+
+  insert into tests_results values ('STUDIO_WS_invalid_path_content_revision_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('STUDIO_WS_invalid_path_content_revision_denied', false, sqlerrm);
+end $$;
+reset role;
+
+-- STUDIO_WS_anon_select_denied — logged-out callers have no table access.
+select tests.as_anon();
+do $$
+declare
+  v_state text;
+  v_raised boolean;
+begin
+  begin
+    perform 1 from public.project_workspaces limit 1;
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state <> '42501' then
+    raise exception 'STUDIO_WS_anon_select_denied REGRESSION: anon selecting project_workspaces did not fail with 42501 (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+
+  begin
+    perform 1 from public.project_workspace_files limit 1;
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state <> '42501' then
+    raise exception 'STUDIO_WS_anon_select_denied REGRESSION: anon selecting project_workspace_files did not fail with 42501 (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+
+  insert into tests_results values ('STUDIO_WS_anon_select_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('STUDIO_WS_anon_select_denied', false, sqlerrm);
+end $$;
+reset role;
+
 -- ============ report ============
 -- Print the PASS/FAIL table FIRST so the operator sees exactly which assertions
 -- failed, then raise so psql exits non-zero and the harness actually gates.
@@ -2838,7 +3153,7 @@ declare v_failed int;
 begin
   select count(*) into v_failed from tests_results where not passed;
   if v_failed > 0 then
-    raise exception '% assertion(s) failed — see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, CLUBS_V2_1, CLUBS_V2_2, CLUBS_V2_3, CLUBS_V2_7a, CLUBS_V2_4, CLUBS_V2_7b, CLUBS_V2_5_officer_denied, CLUBS_V2_5_owner_allowed, CLUBS_V2_6_outsider, CLUBS_V2_6_pending, CLUBS_V2_8, CLUBS_V2_9, H1_suggested_profiles, CLUBS_V2_12_outsider, CLUBS_V2_12_anon, SIGNUP_RL_anon_execute, SIGNUP_RL_no_table_access_anon, SIGNUP_RL_no_table_access_authenticated, EXPERIENCES_owner_insert, EXPERIENCES_owner_select, EXPERIENCES_owner_update, EXPERIENCES_b_select_a, EXPERIENCES_b_update_denied, EXPERIENCES_b_delete_denied, EXPERIENCES_anon_select_denied, EXPERIENCES_owner_delete, EXPERIENCES_cap, JOB_LISTINGS_authenticated_select, JOB_LISTINGS_authenticated_insert_denied, JOB_LISTINGS_anon_select_denied, JOB_FIT_owner_insert_select, JOB_FIT_b_select_a_denied, JOB_PITCHES_owner_insert_select, JOB_PITCHES_b_select_a_denied, JOB_SAVES_owner_insert_select, JOB_SAVES_b_select_a_denied, JOB_SAVES_b_delete_a_denied, JOB_SAVES_owner_delete, JOB_SAVES_anon_select_denied, REFERRAL_JOINED_owner_select, REFERRAL_JOINED_b_select_denied, PATH_intake_owner_insert_select, PATH_intake_b_select_a_denied, PATH_intake_anon_select_denied, PATH_projects_published_select, PATH_projects_authenticated_insert_denied, PATH_applications_owner_insert_select, PATH_applications_b_select_a_denied.', v_failed;
+    raise exception '% assertion(s) failed — see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, CLUBS_V2_1, CLUBS_V2_2, CLUBS_V2_3, CLUBS_V2_7a, CLUBS_V2_4, CLUBS_V2_7b, CLUBS_V2_5_officer_denied, CLUBS_V2_5_owner_allowed, CLUBS_V2_6_outsider, CLUBS_V2_6_pending, CLUBS_V2_8, CLUBS_V2_9, H1_suggested_profiles, CLUBS_V2_12_outsider, CLUBS_V2_12_anon, SIGNUP_RL_anon_execute, SIGNUP_RL_no_table_access_anon, SIGNUP_RL_no_table_access_authenticated, EXPERIENCES_owner_insert, EXPERIENCES_owner_select, EXPERIENCES_owner_update, EXPERIENCES_b_select_a, EXPERIENCES_b_update_denied, EXPERIENCES_b_delete_denied, EXPERIENCES_anon_select_denied, EXPERIENCES_owner_delete, EXPERIENCES_cap, JOB_LISTINGS_authenticated_select, JOB_LISTINGS_authenticated_insert_denied, JOB_LISTINGS_anon_select_denied, JOB_FIT_owner_insert_select, JOB_FIT_b_select_a_denied, JOB_PITCHES_owner_insert_select, JOB_PITCHES_b_select_a_denied, JOB_SAVES_owner_insert_select, JOB_SAVES_b_select_a_denied, JOB_SAVES_b_delete_a_denied, JOB_SAVES_owner_delete, JOB_SAVES_anon_select_denied, REFERRAL_JOINED_owner_select, REFERRAL_JOINED_b_select_denied, PATH_intake_owner_insert_select, PATH_intake_b_select_a_denied, PATH_intake_anon_select_denied, PATH_projects_published_select, PATH_projects_authenticated_insert_denied, PATH_applications_owner_insert_select, PATH_applications_b_select_a_denied, PATH_FEEDBACK_owner_insert_select, PATH_FEEDBACK_invalid_outcome_denied, PATH_FEEDBACK_b_select_a_denied, PATH_FEEDBACK_b_update_a_denied, PATH_FEEDBACK_b_forge_task_owner_denied, PATH_FEEDBACK_anon_select_denied, STUDIO_WS_owner_insert_select_update, STUDIO_WS_b_select_a_denied, STUDIO_WS_b_update_a_denied, STUDIO_WS_b_forge_workspace_owner_denied, STUDIO_WS_invalid_path_content_revision_denied, STUDIO_WS_anon_select_denied.', v_failed;
 
   end if;
 end $$;
