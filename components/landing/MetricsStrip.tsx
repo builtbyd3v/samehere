@@ -3,11 +3,31 @@
 import gsap from "gsap";
 import { useLayoutEffect, useRef } from "react";
 
+/**
+ * Proof points for landing — sell the internship outcome, not inventory.
+ * Avoid small catalog counts (they read as "that's all?").
+ */
 const METRICS = [
-  { value: 9, label: "projects that fill a blank resume" },
-  { value: 10, label: "company interview packs before the OA" },
-  { value: 0, label: "connections required to start" },
+  {
+    value: 1,
+    suffix: "",
+    label: "path that rebuilds when you get the OA or interview",
+  },
+  {
+    value: 0,
+    suffix: "",
+    label: "network required — start solo, get unstuck today",
+  },
+  {
+    value: 100,
+    suffix: "%",
+    label: "in-app coaching: build, apply, and prepare",
+  },
 ] as const;
+
+function formatMetric(value: number, suffix: string) {
+  return `${Math.round(value)}${suffix}`;
+}
 
 export default function MetricsStrip() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -26,7 +46,9 @@ export default function MetricsStrip() {
 
     if (reduced) {
       figures.forEach((figure) => {
-        figure.textContent = figure.dataset.metricValue ?? "0";
+        const target = Number(figure.dataset.metricValue ?? 0);
+        const suffix = figure.dataset.metricSuffix ?? "";
+        figure.textContent = formatMetric(target, suffix);
       });
       return;
     }
@@ -59,6 +81,7 @@ export default function MetricsStrip() {
 
     const counters = figures.map((figure) => {
       const target = Number(figure.dataset.metricValue ?? 0);
+      const suffix = figure.dataset.metricSuffix ?? "";
       const state = { value: 0 };
       return gsap.to(state, {
         value: target,
@@ -67,7 +90,7 @@ export default function MetricsStrip() {
         snap: { value: 1 },
         ease: "power3.out",
         onUpdate: () => {
-          figure.textContent = String(Math.round(state.value));
+          figure.textContent = formatMetric(state.value, suffix);
         },
       });
     });
@@ -91,7 +114,7 @@ export default function MetricsStrip() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="landing-metrics" aria-label="Why students use samehere">
+    <section ref={sectionRef} className="landing-metrics" aria-label="Why samehere for internships">
       <div aria-hidden className="landing-metrics-grid" />
       <div aria-hidden className="landing-metrics-streaks">
         <span className="landing-metrics-streak landing-metrics-streak-h1" />
@@ -104,9 +127,10 @@ export default function MetricsStrip() {
           <div key={metric.label} className="landing-metric">
             <p
               data-metric-value={metric.value}
+              data-metric-suffix={metric.suffix}
               className="landing-metric-value"
             >
-              {metric.value}
+              {formatMetric(metric.value, metric.suffix)}
             </p>
             <p data-metric-label className="landing-metric-label">
               {metric.label}
