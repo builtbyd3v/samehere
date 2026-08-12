@@ -7,6 +7,8 @@ import {
   AppPanel,
 } from "@/components/app/AppPrimitives";
 import ProjectChecklist from "@/components/path/ProjectChecklist";
+import { ProjectStudio } from "@/components/path/studio";
+import { getStudioManifest } from "@/lib/path/studio";
 import { createClient } from "@/lib/supabase/server";
 import { getProjectBySlug, listProjectSlugs } from "@/lib/path/seeds";
 import { draftDossierFromProject, matchesProjectExperience } from "@/lib/path/dossier-draft";
@@ -36,6 +38,23 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
       .eq("user_id", user.id)
       .eq("kind", draft.kind);
     inDossier = (experiences ?? []).some((row) => matchesProjectExperience(row, project.title));
+  }
+
+  const manifest = getStudioManifest(project.slug);
+
+  if (manifest) {
+    return (
+      <AppPage width="full" className="project-studio-page">
+        <ProjectStudio
+          project={project}
+          manifest={manifest}
+          signedIn={!!user}
+          initialDone={initialDone}
+          dossierDraft={draft}
+          inDossier={inDossier}
+        />
+      </AppPage>
+    );
   }
 
   return (

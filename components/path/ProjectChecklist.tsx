@@ -40,6 +40,7 @@ export default function ProjectChecklist({
   persistServer = false,
   dossierDraft,
   inDossier = false,
+  onStateChange,
 }: {
   projectSlug: string;
   items: Item[];
@@ -49,6 +50,7 @@ export default function ProjectChecklist({
   persistServer?: boolean;
   dossierDraft: DossierExperienceDraft;
   inDossier?: boolean;
+  onStateChange?: (state: Record<string, boolean>) => void;
 }) {
   const router = useRouter();
   const storageKey = `path-project-checklist:${projectSlug}`;
@@ -119,6 +121,7 @@ export default function ProjectChecklist({
   function toggle(id: string) {
     setDone((prev) => {
       const next = { ...prev, [id]: !prev[id] };
+      onStateChange?.(next);
       persist(next);
       return next;
     });

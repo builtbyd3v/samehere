@@ -58,6 +58,46 @@ export type PathProject = {
   target_role_tags: string[];
 };
 
+/** In-app Project Studio runtime. Classic Sandpack vs remote Node evaluation. */
+export type StudioRuntime = "browser_react" | "remote_node";
+
+export type StudioStarterFile = {
+  path: string;
+  code: string;
+  readOnly?: boolean;
+};
+
+export type StudioMilestone = {
+  id: string;
+  /** Must match a `PathProject.build_checklist` item id. */
+  checklistId: string;
+  title: string;
+  acceptance: string[];
+  testIds?: string[];
+};
+
+export type StudioCommands = {
+  preview?: string;
+  visibleTests?: string;
+  submission?: string;
+};
+
+/**
+ * Versioned starter workspace for an assigned path project.
+ * Curated application code in Wave 1 — not remotely authored.
+ */
+export type StudioManifest = {
+  version: number;
+  runtime: StudioRuntime;
+  language: string;
+  technologies: string[];
+  entryFile: string;
+  visibleFiles: string[];
+  starterFiles: StudioStarterFile[];
+  milestones: StudioMilestone[];
+  commands: StudioCommands;
+};
+
 export type SkillPriority = "essential" | "recommended" | "optional";
 
 export type SkillTrack = {
