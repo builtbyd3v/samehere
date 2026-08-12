@@ -1,16 +1,32 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useReducedMotion } from "motion/react";
 import SameHereMark from "@/components/SameHereMark";
 
 export default function LandingFooter() {
+  const pathname = usePathname();
+  const reduceMotion = useReducedMotion();
+  const scrollBehavior = reduceMotion ? "auto" : "smooth";
+
+  function goHome(e: React.MouseEvent<HTMLAnchorElement>) {
+    if (pathname !== "/") return;
+    e.preventDefault();
+    window.scrollTo({ top: 0, behavior: scrollBehavior });
+    window.history.replaceState(null, "", "/");
+  }
+
   return (
     <footer className="landing-footer">
       <div className="flex min-w-0 flex-col gap-2">
         <Link
           href="/"
-          aria-label="SameHere home"
+          aria-label="samehere home"
           className="landing-brand-link w-fit"
+          onClick={goHome}
         >
-          <SameHereMark className="size-8" title="SameHere" />
+          <SameHereMark className="size-8" title="samehere" />
         </Link>
         <p className="max-w-[18rem] text-balance">
           One next move toward your internship.
