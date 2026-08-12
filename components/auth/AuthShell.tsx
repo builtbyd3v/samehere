@@ -55,8 +55,8 @@ export default function AuthShell({ variant, children, footer, aside, asideExtra
 
   return (
     <main className="landing-xai path-app relative min-h-[100dvh] overflow-hidden">
-      <header className="landing-nav fixed inset-x-0 top-0 z-50">
-        <BrandChrome>
+      <header className="landing-nav landing-nav--bare fixed inset-x-0 top-0 z-50">
+        <BrandChrome showDivider={false}>
           <AppBrandLink href="/" />
         </BrandChrome>
       </header>

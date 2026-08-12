@@ -935,6 +935,12 @@ summary {
   backdrop-filter: blur(12px);
 }
 
+/* Auth: logo only — no bar fill or hairline. */
+.landing-nav.landing-nav--bare {
+  background: transparent;
+  backdrop-filter: none;
+}
+
 .brand-chrome-row {
   padding-inline: 1rem;
 }
