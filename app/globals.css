@@ -995,7 +995,7 @@ summary {
     cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* Once-per-session settle: jump to mark end-state without replaying. */
+/* Once-per-load settle: jump to mark end-state without replaying. */
 .landing-nav-brand-link--settled {
   width: 2.75rem;
   animation: none;
@@ -1009,18 +1009,6 @@ summary {
 .landing-nav-brand-link--settled .landing-nav-brand-mark {
   clip-path: inset(0 0 0 0);
   opacity: 1;
-  animation: none;
-}
-
-/* Pre-hydration placeholder: reserve mark width, hide until session known. */
-.landing-nav-brand-link--pending {
-  width: 2.75rem;
-  animation: none;
-  opacity: 0;
-}
-
-.landing-nav-brand-link--pending .landing-nav-brand-wordmark,
-.landing-nav-brand-link--pending .landing-nav-brand-mark {
   animation: none;
 }
 
