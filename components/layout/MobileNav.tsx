@@ -2,23 +2,33 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { IconBell, IconMail, IconCommunity, IconSearch, IconBriefcase } from "@/components/icons";
+import { IconMail, IconBriefcase } from "@/components/icons";
+
+function IconApplications() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <rect x="4" y="3" width="16" height="18" rx="2" />
+      <path d="M8 8h8M8 12h8M8 16h5" />
+    </svg>
+  );
+}
 
 export default function MobileNav({
   username,
   dmUnread = 0,
-  notifUnread = 0,
 }: {
   username: string | null;
   dmUnread?: number;
+  /** Kept for LeftNavUnread parity; notifications are not primary mobile IA. */
   notifUnread?: number;
 }) {
   const pathname = usePathname();
 
+  // Mobile IA: Home · Opportunities · Applications · Messages · Profile
   const items = [
     {
       label: "Home",
-      href: "/feed",
+      href: "/home",
       icon: (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
           <path d="M3 10.5 12 3l9 7.5" />
@@ -26,11 +36,9 @@ export default function MobileNav({
         </svg>
       ),
     },
-    { label: "Search", href: "/search", icon: <IconSearch /> },
-    { label: "Notifications", href: "/notifications", icon: <IconBell />, dot: notifUnread > 0 },
+    { label: "Opportunities", href: "/jobs", icon: <IconBriefcase /> },
+    { label: "Applications", href: "/applications", icon: <IconApplications /> },
     { label: "Messages", href: "/messages", icon: <IconMail />, dot: dmUnread > 0 },
-    { label: "Community", href: "/community", icon: <IconCommunity /> },
-    { label: "Jobs", href: "/jobs", icon: <IconBriefcase /> },
     {
       label: "Profile",
       href: username ? `/profile/${username}` : "#",
@@ -45,7 +53,7 @@ export default function MobileNav({
     ...item,
     active:
       item.label === "Home"
-        ? pathname === "/feed" || pathname.startsWith("/feed/")
+        ? pathname === "/home" || pathname.startsWith("/home/")
         : pathname === item.href || pathname.startsWith(item.href + "/"),
   }));
 
