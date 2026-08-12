@@ -4,10 +4,10 @@ import { IconCrown } from "@/components/icons";
 export function SignupFounderPill({ spotsLeft }: { spotsLeft?: number }) {
   if (spotsLeft == null || spotsLeft <= 0) return null;
   return (
-    <p className="mt-5 inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface-raised)] px-3.5 py-1.5 text-sm shadow-paper">
+    <p className="mt-5 inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3.5 py-1.5 text-sm">
       <IconCrown className="h-4 w-4 text-[var(--founder)]" />
       <span>
-        <span className="font-semibold text-[var(--founder)]">{spotsLeft}</span>
+        <span className="font-medium text-[var(--founder)]">{spotsLeft}</span>
         <span className="text-[var(--ink-muted)]"> of 100 founding spots left</span>
       </span>
     </p>
@@ -16,16 +16,25 @@ export function SignupFounderPill({ spotsLeft }: { spotsLeft?: number }) {
 
 function Check() {
   return (
-    <svg viewBox="0 0 24 24" className="mt-0.5 h-4 w-4 shrink-0 text-[var(--blue)]" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <svg
+      viewBox="0 0 24 24"
+      className="mt-0.5 h-4 w-4 shrink-0 text-[var(--accent-blue-strong)]"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
       <path d="M20 6 9 17l-5-5" />
     </svg>
   );
 }
 
 const POINTS = [
-  "Sign up with .edu and you're a verified student",
-  "Free forever: post, follow, and discover",
-  "Any email works. Verify with .edu anytime in settings",
+  "Free first diagnosis — see your path in one session",
+  "Native projects, applications, and company interview prep",
+  "Helpers only when someone opts in at a company you've targeted",
 ] as const;
 
 // Reassurance bullets — left column on desktop, below the form on mobile.

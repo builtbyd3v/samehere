@@ -111,7 +111,7 @@ export async function updateSession(request: NextRequest) {
 
   if (user && (path === '/' || path === '/login' || path === '/signup')) {
     const url = request.nextUrl.clone()
-    url.pathname = '/feed'
+    url.pathname = '/home'
     return NextResponse.redirect(url)
   }
 

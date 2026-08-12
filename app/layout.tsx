@@ -15,8 +15,9 @@ const fraunces = Fraunces({
   variable: "--font-display",
 });
 
-const TITLE = "samehere: the social network built for students";
-const DESCRIPTION = "Built for students. Join free, post what's real, and find people who get it. A .edu email gets you the verified student badge.";
+const TITLE = "samehere: from zero to internship";
+const DESCRIPTION =
+  "An adaptive AI internship coach for students. Build proof, apply with intent, prep interviews, and ask helpers who opt in — solo-first.";
 
 // No `images` in either block on purpose. Next merges the file-based
 // opengraph-image / twitter-image routes in automatically, and an explicit

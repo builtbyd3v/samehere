@@ -108,7 +108,7 @@ export async function logIn(_prev: AuthState, formData: FormData): Promise<AuthS
     return { error: "Invalid email or password." };
   }
 
-  redirect("/feed");
+  redirect("/home");
 }
 
 // Sign out and return to login. Used as a <form action> in the navbar.

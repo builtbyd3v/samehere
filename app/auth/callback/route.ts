@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     : { data: null, error: new Error("missing code") };
   const ok = !error;
 
-  let dest = "/feed";
+  let dest = "/home";
   if (ok && data?.user) {
     const { data: profile } = await supabase
       .from("profiles")
