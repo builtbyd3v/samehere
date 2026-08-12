@@ -3,30 +3,49 @@
 import gsap from "gsap";
 import { useLayoutEffect, useRef } from "react";
 
+type Metric =
+  | {
+      kind: "count";
+      value: number;
+      suffix: string;
+      label: string;
+    }
+  | {
+      kind: "text";
+      display: string;
+      label: string;
+    };
+
 /**
- * Proof points for landing — sell the internship outcome, not inventory.
- * Avoid small catalog counts (they read as "that's all?").
+ * Sell the internship outcome. Keep inventory counts out — they read small.
+ * Middle slot stays the accent figure in CSS (:nth-child(2)).
  */
-const METRICS = [
+const METRICS: readonly Metric[] = [
   {
-    value: 1,
-    suffix: "",
-    label: "path that rebuilds when you get the OA or interview",
+    kind: "text",
+    display: "0→1",
+    label: "blank resume to proof you can put on applications",
   },
   {
+    kind: "count",
     value: 100,
     suffix: "%",
     label: "in-app coaching: build, apply, and prepare",
   },
   {
-    value: 0,
-    suffix: "",
-    label: "network required — start solo, get unstuck today",
+    kind: "text",
+    display: "OA",
+    label: "or interview — path flips into prep when it counts",
   },
-] as const;
+];
 
-function formatMetric(value: number, suffix: string) {
+function formatCount(value: number, suffix: string) {
   return `${Math.round(value)}${suffix}`;
+}
+
+function initialText(metric: Metric) {
+  if (metric.kind === "text") return metric.display;
+  return formatCount(metric.value, metric.suffix);
 }
 
 export default function MetricsStrip() {
@@ -37,7 +56,7 @@ export default function MetricsStrip() {
     if (!section) return;
 
     const figures = Array.from(
-      section.querySelectorAll<HTMLElement>("[data-metric-value]"),
+      section.querySelectorAll<HTMLElement>("[data-metric-figure]"),
     );
     const labels = Array.from(
       section.querySelectorAll<HTMLElement>("[data-metric-label]"),
@@ -46,9 +65,13 @@ export default function MetricsStrip() {
 
     if (reduced) {
       figures.forEach((figure) => {
-        const target = Number(figure.dataset.metricValue ?? 0);
-        const suffix = figure.dataset.metricSuffix ?? "";
-        figure.textContent = formatMetric(target, suffix);
+        if (figure.dataset.metricKind === "count") {
+          const target = Number(figure.dataset.metricValue ?? 0);
+          const suffix = figure.dataset.metricSuffix ?? "";
+          figure.textContent = formatCount(target, suffix);
+        } else {
+          figure.textContent = figure.dataset.metricDisplay ?? "";
+        }
       });
       return;
     }
@@ -79,21 +102,23 @@ export default function MetricsStrip() {
       "-=0.42",
     );
 
-    const counters = figures.map((figure) => {
-      const target = Number(figure.dataset.metricValue ?? 0);
-      const suffix = figure.dataset.metricSuffix ?? "";
-      const state = { value: 0 };
-      return gsap.to(state, {
-        value: target,
-        duration: 1.25,
-        paused: true,
-        snap: { value: 1 },
-        ease: "power3.out",
-        onUpdate: () => {
-          figure.textContent = formatMetric(state.value, suffix);
-        },
+    const counters = figures
+      .filter((figure) => figure.dataset.metricKind === "count")
+      .map((figure) => {
+        const target = Number(figure.dataset.metricValue ?? 0);
+        const suffix = figure.dataset.metricSuffix ?? "";
+        const state = { value: 0 };
+        return gsap.to(state, {
+          value: target,
+          duration: 1.25,
+          paused: true,
+          snap: { value: 1 },
+          ease: "power3.out",
+          onUpdate: () => {
+            figure.textContent = formatCount(state.value, suffix);
+          },
+        });
       });
-    });
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -126,11 +151,17 @@ export default function MetricsStrip() {
         {METRICS.map((metric) => (
           <div key={metric.label} className="landing-metric">
             <p
-              data-metric-value={metric.value}
-              data-metric-suffix={metric.suffix}
+              data-metric-figure
+              data-metric-kind={metric.kind}
+              {...(metric.kind === "count"
+                ? {
+                    "data-metric-value": metric.value,
+                    "data-metric-suffix": metric.suffix,
+                  }
+                : { "data-metric-display": metric.display })}
               className="landing-metric-value"
             >
-              {formatMetric(metric.value, metric.suffix)}
+              {initialText(metric)}
             </p>
             <p data-metric-label className="landing-metric-label">
               {metric.label}
