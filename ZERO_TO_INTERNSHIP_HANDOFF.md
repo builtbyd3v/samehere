@@ -32,7 +32,7 @@ Do not restart the product from scratch. Continue the existing branch and preser
 - Draft pull request: `https://github.com/builtbyd3v/samehere/pull/19`
 - Product plan: `ZERO_TO_INTERNSHIP_RESTRUCTURE.md`
 
-Phase 1 core-loop verification is done on this branch. Continue from Phase 2.
+Phase 1 core-loop verification and Phase 2 dossier profile are done on this branch. Continue from Phase 3.
 
 ## 3. Agent operating model
 
@@ -449,12 +449,12 @@ Do not confuse removal from navigation with complete Phase C deletion. Much of t
 
 ## 9. Current verification baseline
 
-After Phase 1:
+After Phase 2:
 
 ```text
 npm test
-24 test files passed
-145 tests passed
+26 test files passed
+156 tests passed
 
 npm run typecheck
 passed
@@ -496,6 +496,11 @@ Screenshots:
 /opt/cursor/artifacts/screenshots/z2i_application_interview.webp
 /opt/cursor/artifacts/screenshots/z2i_prep_room_home.webp
 /opt/cursor/artifacts/screenshots/z2i_interview_feedback.webp
+/opt/cursor/artifacts/screenshots/z2i_dossier_desktop.webp
+/opt/cursor/artifacts/screenshots/z2i_dossier_mobile.webp
+/opt/cursor/artifacts/screenshots/z2i_dossier_edit.webp
+/opt/cursor/artifacts/screenshots/z2i_dossier_edit_projects.webp
+/opt/cursor/artifacts/screenshots/z2i_dossier_logged_out.webp
 ```
 
 ## 10. Known gaps and risks
@@ -509,13 +514,14 @@ Screenshots:
 
 ### Product gaps
 
-- The public/private profile still reads like a social profile. Posts, followers, and heatmap remain prominent.
 - Recommendation feedback does not exist. The coach cannot yet learn whether the previous move helped.
 - Project completion updates path tasks but does not automatically re-diagnose readiness.
 - The first application and stalled-application triggers are incomplete.
 - Weekly re-diagnosis is not implemented.
 - Ultra is mostly pricing copy. Runtime entitlements do not clearly distinguish it from Pro.
 - Old social routes, crons, emails, and modules remain in the repository.
+- Logged-out visitors cannot see experiences (existing RLS). They see identity, bio, and a sign-in prompt. Intake `target_roles` are owner-only; public seeking uses `profiles.goals`.
+- `/profile/[username]/followers` and `/following` still exist. They are no longer linked from the primary profile.
 
 ### Architecture risks
 
@@ -531,7 +537,7 @@ Work in this order. Each phase should leave a usable product and a reviewable co
 
 ### Phase 1: verify and harden the complete core loop
 
-**Done** on 2026-08-12. Do not repeat it. Next work is Phase 2.
+**Done** on 2026-08-12. Do not repeat it. Phase 2 is also done. Next work is Phase 3.
 
 Goal: prove the current product works as one story before adding more behavior.
 
@@ -581,7 +587,20 @@ Do not parallelize browser state mutation against the same test account.
 
 ### Phase 2: turn profile into the internship dossier
 
+**Done** on 2026-08-12. Do not repeat it. Next work is Phase 3.
+
 Goal: make the user's proof, not social activity, the main profile.
+
+Shipped:
+
+- `/profile/[username]` leads with name, seeking line, education/school meta, bio, then education and kind-grouped proof. Projects are their own section.
+- Posts, follower counts, heatmap, and match prompt are gone from the primary layout.
+- Follow, message, report, and block remain for trust and private-account access.
+- `/profile/edit` is labeled Edit dossier. Goals is Target role. Experience is grouped, project bullets stay line-editable, helper opt-in hides for project/club rows.
+- Share image is identity + seeking, not heatmap/counts.
+- Followers/following URLs still resolve. They are not linked from the dossier.
+
+Verified as `z2iwalk12` at desktop 1280 and ~390px, plus logged-out identity view.
 
 Scope:
 
@@ -775,7 +794,7 @@ Safe early split after Phase 1:
 
 Do not start paid entitlement implementation until the audit identifies the current subscription source of truth.
 
-Do not start Phase C social deletion while profile redesign still imports feed and heatmap components. Let the profile diff land first.
+Do not start Phase C social deletion until the dossier profile no longer imports feed and heatmap components. That import removal landed in Phase 2. Followers/following routes can wait for Phase 6.
 
 ## 13. Testing requirements
 
@@ -855,18 +874,21 @@ Read ZERO_TO_INTERNSHIP_HANDOFF.md and ZERO_TO_INTERNSHIP_RESTRUCTURE.md first. 
 
 Phase 1 is done: project-kind migration is on the live samehere Supabase project, the authenticated core loop was walked, and interview feedback has a local rubric fallback. Do not repeat that work.
 
+Phase 2 is done: `/profile/[username]` is the internship dossier (seeking, education, labeled projects, no posts/heatmap/social counts). Follow, message, report, and block remain. Do not repeat that work.
+
 This parent chat coordinates. If the Task API lists cursor-grok-4.6-xhigh-fast, use it for implementation. If not, inherit the parent and do not substitute Grok 4.5.
 
-Start Phase 2: turn the public/private profile into the internship dossier. Keep the existing dev server if it is healthy. Delegate bounded implementation to Grok 4.6 (or inherit), review every diff here, run the full checks, commit, push, and update PR 19.
+Start Phase 3: add recommendation feedback and learner memory (`helped` / `not_relevant` / `stuck`). Keep the existing dev server if it is healthy. Delegate bounded implementation to Grok 4.6 (or inherit), review every diff here, run the full checks, commit, push, and update PR 19.
 ```
 
 ## 16. Handoff completion state
 
 At the time this document was written:
 
-- Branch changes through the Phase 1 interview-feedback fallback and this handoff update were committed and pushed.
+- Branch changes through the Phase 2 dossier profile and this handoff update were committed and pushed.
 - Pull request 19 was updated.
 - Dev server was healthy in tmux `samehere-dev`.
-- Tests (145), typecheck, lint (0 errors / 10 warnings), and production build passed.
+- Tests (156), typecheck, lint (0 errors / 10 warnings), and production build passed.
 - Phase 1 core-loop verification is done.
-- Next task is Phase 2: internship dossier profile.
+- Phase 2 internship dossier profile is done.
+- Next task is Phase 3: recommendation feedback and learner memory.
