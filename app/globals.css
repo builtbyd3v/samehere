@@ -4193,6 +4193,10 @@ summary {
   height: 100%;
 }
 
+.studio-sandpack .sp-preview-iframe {
+  background: #fff;
+}
+
 .studio-monaco {
   flex: 1 1 auto;
   min-height: 0;

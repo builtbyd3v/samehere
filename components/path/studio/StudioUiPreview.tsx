@@ -3,8 +3,9 @@
 import {
   SandpackPreview,
   SandpackProvider,
+  useSandpack,
 } from "@codesandbox/sandpack-react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, type RefObject } from "react";
 
 const HARNESS_APP = `import Page from "./StudentPage";
 
@@ -12,6 +13,28 @@ export default function App() {
   return <Page />;
 }
 `;
+
+function StudioPreviewLifecycle({
+  hostRef,
+}: {
+  hostRef: RefObject<HTMLDivElement | null>;
+}) {
+  const { listen } = useSandpack();
+
+  useEffect(() => {
+    const unsubscribe = listen((event) => {
+      if (event.type === "done" && event.compilatonError === false) {
+        hostRef.current
+          ?.querySelector<HTMLElement>(".sp-overlay.sp-loading")
+          ?.style.setProperty("display", "none", "important");
+      }
+    });
+
+    return unsubscribe;
+  }, [hostRef, listen]);
+
+  return null;
+}
 
 /**
  * Classic Sandpack React/TypeScript UI preview only.
@@ -26,6 +49,7 @@ export default function StudioUiPreview({
   runtime: "browser_react" | "remote_node";
   headingId?: string;
 }) {
+  const previewHostRef = useRef<HTMLDivElement>(null);
   const files = useMemo(
     () => ({
       "/App.tsx": HARNESS_APP,
@@ -52,7 +76,7 @@ export default function StudioUiPreview({
         <span className="studio-browser-dot" />
         <span className="studio-browser-url">localhost · classic Sandpack React/TS</span>
       </div>
-      <div className="studio-sandpack">
+      <div ref={previewHostRef} className="studio-sandpack">
         <SandpackProvider
           template="react-ts"
           theme="dark"
@@ -63,6 +87,7 @@ export default function StudioUiPreview({
             externalResources: [],
           }}
         >
+          <StudioPreviewLifecycle hostRef={previewHostRef} />
           <SandpackPreview
             showNavigator={false}
             showOpenInCodeSandbox={false}

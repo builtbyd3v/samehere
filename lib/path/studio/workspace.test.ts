@@ -5,6 +5,7 @@ import {
   buildSeededWorkspaceFiles,
   findWritableStarterFile,
   isCreateWorkspaceRevision,
+  normalizeStudioFileContent,
   parseSaveProjectWorkspaceFileInput,
   shapeSaveConflict,
   shapeSaveError,
@@ -18,6 +19,9 @@ const starters: StudioStarterFile[] = [
   { path: "lib/links.ts", code: "export {}" },
 ];
 
+const escapedPage =
+  '// TODO: build the page.\\n\\nexport default function Page() {\\n  return <h1>URL Shortener</h1>;\\n}\\n';
+
 function validSaveInput(overrides: Record<string, unknown> = {}) {
   return {
     projectSlug: "url-shortener",
@@ -29,6 +33,24 @@ function validSaveInput(overrides: Record<string, unknown> = {}) {
     ...overrides,
   };
 }
+
+describe("normalizeStudioFileContent", () => {
+  it("repairs an escaped source file whose leading comment hides its default export", () => {
+    const normalized = normalizeStudioFileContent("app/page.tsx", escapedPage);
+
+    expect(normalized).toContain("// TODO: build the page.\n\nexport default function Page()");
+    expect(normalized).not.toContain("\\n");
+  });
+
+  it("preserves real newlines, non-source files, and intentional escaped strings", () => {
+    const validSource = '// TODO: build the page.\nexport default function Page() { return null; }\n';
+    const intentionalEscape = 'const lineBreak = "\\n"; export default lineBreak;';
+
+    expect(normalizeStudioFileContent("app/page.tsx", validSource)).toBe(validSource);
+    expect(normalizeStudioFileContent("README.md", escapedPage)).toBe(escapedPage);
+    expect(normalizeStudioFileContent("app/page.tsx", intentionalEscape)).toBe(intentionalEscape);
+  });
+});
 
 describe("parseSaveProjectWorkspaceFileInput", () => {
   it("accepts a well-formed payload", () => {
@@ -91,6 +113,14 @@ describe("parseSaveProjectWorkspaceFileInput", () => {
       validSaveInput({ content: "a".repeat(MAX_WORKSPACE_FILE_CONTENT_CHARS) }),
     );
     expect(result.ok).toBe(true);
+  });
+
+  it("normalizes escaped source before saving it", () => {
+    const result = parseSaveProjectWorkspaceFileInput(validSaveInput({ content: escapedPage }));
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.content).toContain("\nexport default function Page()");
   });
 });
 
@@ -180,5 +210,16 @@ describe("toProjectWorkspaceSnapshot", () => {
         { path: "lib/links.ts", content: "b", revision: 2 },
       ],
     });
+  });
+
+  it("normalizes escaped source loaded from a saved snapshot", () => {
+    const snapshot = toProjectWorkspaceSnapshot({
+      templateVersion: 1,
+      workspaceRevision: 3,
+      activeFile: "app/page.tsx",
+      files: [{ path: "app/page.tsx", content: escapedPage, revision: 2 }],
+    });
+
+    expect(snapshot.files[0]?.content).toContain("\nexport default function Page()");
   });
 });

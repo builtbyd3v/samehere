@@ -53,6 +53,29 @@ export type SeedWorkspaceFile = {
   revision: number;
 };
 
+/**
+ * Repairs source pasted or restored with escaped newlines. A leading line
+ * comment otherwise swallows the whole module and makes its default import an
+ * object at runtime.
+ */
+export function normalizeStudioFileContent(path: string, content: string): string {
+  if (
+    !/\.[cm]?[jt]sx?$/i.test(path) ||
+    /[\r\n]/.test(content) ||
+    !content.includes("\\n")
+  ) {
+    return content;
+  }
+
+  const lines = content.split(/\\r\\n|\\n|\\r/);
+  const startsWithLineComment = lines[0]?.trimStart().startsWith("//") === true;
+  const hasDefaultExport = lines
+    .slice(1)
+    .some((line) => /^\s*export\s+default\b/.test(line));
+
+  return startsWithLineComment && hasDefaultExport ? lines.join("\n") : content;
+}
+
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -107,7 +130,7 @@ export function parseSaveProjectWorkspaceFileInput(
       projectSlug,
       templateVersion,
       path,
-      content,
+      content: normalizeStudioFileContent(path, content),
       expectedWorkspaceRevision,
       expectedFileRevision,
     },
@@ -135,7 +158,11 @@ export function buildSeededWorkspaceFiles(input: {
 }): SeedWorkspaceFile[] {
   return input.starterFiles.map((file) => {
     if (file.path === input.path) {
-      return { path: file.path, content: input.content, revision: 1 };
+      return {
+        path: file.path,
+        content: normalizeStudioFileContent(file.path, input.content),
+        revision: 1,
+      };
     }
     return { path: file.path, content: file.code, revision: 0 };
   });
@@ -187,7 +214,7 @@ export function toProjectWorkspaceSnapshot(input: {
   const files = [...input.files]
     .map((file) => ({
       path: file.path,
-      content: file.content,
+      content: normalizeStudioFileContent(file.path, file.content),
       revision: file.revision,
     }))
     .sort((a, b) => a.path.localeCompare(b.path));
