@@ -14,14 +14,14 @@ const METRICS = [
     label: "path that rebuilds when you get the OA or interview",
   },
   {
-    value: 0,
-    suffix: "",
-    label: "network required — start solo, get unstuck today",
-  },
-  {
     value: 100,
     suffix: "%",
     label: "in-app coaching: build, apply, and prepare",
+  },
+  {
+    value: 0,
+    suffix: "",
+    label: "network required — start solo, get unstuck today",
   },
 ] as const;
 
