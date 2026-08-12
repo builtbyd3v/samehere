@@ -20,25 +20,25 @@ type Metric =
  * Sell the internship outcome. Keep inventory counts out — they read small.
  * Middle slot stays the accent figure in CSS (:nth-child(2)).
  *
- * Sides stay in the 0→1 / OA scope: blank resume → apply proof, and
- * interview-loop readiness — without cryptic codes.
+ * Sides: blank resume → apply proof, and interview-loop prep.
+ * Labels are full phrases so the strip reads without decoding.
  */
 const METRICS: readonly Metric[] = [
   {
     kind: "text",
-    display: "0 → 1",
-    label: "blank resume to proof you can actually apply with",
+    display: "0 to 1",
+    label: "From a blank resume to apply-ready proof",
   },
   {
     kind: "count",
     value: 100,
     suffix: "%",
-    label: "in-app coaching: build, apply, and prepare",
+    label: "Build, apply, and prepare fully in-app",
   },
   {
     kind: "text",
-    display: "Interview",
-    label: "hits — path flips into company prep automatically",
+    display: "Prep",
+    label: "Takes over the moment you land an interview",
   },
 ];
 
