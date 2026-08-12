@@ -4,13 +4,13 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import LandingNavBrand from "@/components/landing/LandingNavBrand";
 
-const SESSION_KEY = "samehere-brand-animated";
-
 /**
- * Persistent product wordmark → mark animation (same as landing).
- * Plays once per browser session, then settles on the mark so navigations
- * don't re-run the contract every time.
+ * Wordmark → mark plays on each full page load / refresh.
+ * In-app client navigations reuse this module flag so the morph doesn't
+ * restart on every route change.
  */
+let brandAnimatedThisLoad = false;
+
 export default function AppBrandLink({
   href = "/",
   className = "",
@@ -23,23 +23,19 @@ export default function AppBrandLink({
   const [settled, setSettled] = useState<boolean | null>(null);
 
   useEffect(() => {
-    let already = false;
+    // Drop the old sessionStorage latch if present (it skipped the morph on refresh).
     try {
-      already = sessionStorage.getItem(SESSION_KEY) === "1";
+      sessionStorage.removeItem("samehere-brand-animated");
     } catch {
-      already = false;
+      /* ignore */
     }
-    setSettled(already);
+    setSettled(brandAnimatedThisLoad);
   }, []);
 
   useEffect(() => {
     if (settled !== false) return;
     const t = window.setTimeout(() => {
-      try {
-        sessionStorage.setItem(SESSION_KEY, "1");
-      } catch {
-        /* ignore */
-      }
+      brandAnimatedThisLoad = true;
       setSettled(true);
     }, 1550);
     return () => window.clearTimeout(t);
