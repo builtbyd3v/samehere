@@ -30,39 +30,37 @@ Do not restart the product from scratch. Continue the existing branch and preser
 - Base branch: `feat/zero-to-internship`
 - Working branch: `cursor/z2i-implementation-b75f`
 - Draft pull request: `https://github.com/builtbyd3v/samehere/pull/19`
-- Handoff revision: `d638267f3f1d131f627d80aea882aca766c03bff`
+- Handoff revision: `70b7dde` (`fix(prep): grade answers without AI`)
 - Product plan: `ZERO_TO_INTERNSHIP_RESTRUCTURE.md`
 
-The branch was clean and pushed when this handoff was started.
+Phase 1 core-loop verification is done on this branch. Continue from Phase 2.
 
 ## 3. Agent operating model
 
 The main chat is the coordinator:
 
-- Model: GPT-5.6 Sol
+- This Cloud Agent parent is Grok 4.6 High Fast (`cursor-grok-4.6-high-fast`)
 - Responsibilities: product planning, task boundaries, architecture decisions, reviewing diffs, integration, testing decisions, and final sign-off
 - It should avoid doing broad implementation work when a bounded implementation task can be delegated safely.
 
 Implementation agents:
 
-- Required model: Grok 4.6 Extra High Fast
-- Previously observed internal model name: `cursor-grok-4.6-xhigh-fast`
-- Use it for implementation, refactoring, bug fixes, and bounded investigations that lead directly to code.
-- Do not silently substitute Grok 4.5.
-- Confirm the Grok 4.6 slug appears in the new chat's subagent model list before writing an active pstack rule.
-- Once confirmed, make it the default implementation model in `~/.cursor/rules/pstack-models.mdc`.
+- Prefer Grok 4.6 Extra High Fast when the Task API lists `cursor-grok-4.6-xhigh-fast`.
+- On Cloud Agents, the Task allowlist still omits Grok 4.6 slugs even when the parent is Grok 4.6. Do not substitute Grok 4.5.
+- In that case, omit Task `model` so workers inherit the parent (`inherit-parent` in `~/.cursor/rules/pstack-models.mdc`).
+- Desktop/non-cloud chats can pin Extra High Fast directly when the slug is listed.
 
-Desired role policy:
+Desired Cloud Agent role policy until the Task catalog includes Grok 4.6:
 
 ```text
-feature, refactoring: cursor-grok-4.6-xhigh-fast
-bug-fix: cursor-grok-4.6-xhigh-fast
-perf-issue: cursor-grok-4.6-xhigh-fast
-hillclimb: cursor-grok-4.6-xhigh-fast
-swarm workers: cursor-grok-4.6-xhigh-fast
+feature, refactoring: inherit-parent
+bug-fix: inherit-parent
+perf-issue: inherit-parent
+hillclimb: inherit-parent
+swarm workers: inherit-parent
 ```
 
-Keep planning, judgment, synthesis, and final review in the Sol main thread.
+Keep planning, judgment, synthesis, and final review in the parent thread.
 
 Delegation rules:
 
@@ -380,7 +378,7 @@ Required migration:
 
 This migration adds `project` to the `experiences.kind` constraint.
 
-The migration is committed, but this handoff does not claim it has been applied to the linked Supabase project. Verify the target project before applying it. Then test the insert and confirm RLS still limits writes to the owner.
+Applied to the live samehere project `gannghfikhikdeqvyrwc` as `experience_project_kind` (schema_migrations version `20260812163907`). Rolled-back SQL checks passed: owner can insert `kind=project`; invalid kinds still fail `23514`; a second user cannot insert/update/delete another user's project row; anon cannot select; project rows are excluded from helper-matching kinds (`internship|job|research`).
 
 ### Opportunities and AI fit
 
@@ -412,7 +410,8 @@ Walkthrough artifact:
 - Applications support listing-linked and manual rows.
 - OA and interview statuses trigger best-effort re-diagnosis.
 - An OA or interview can switch the user into `prep_room`.
-- Prep shows company interview banks, written answers, and AI feedback.
+- Prep shows company interview banks, written answers, and feedback.
+- If the model is unset or `generateText` returns nothing, `submitInterviewAnswer` uses a local rubric from the bank's approach/evaluating text instead of failing closed.
 - Projects are not presented as a prep catalog.
 
 Main files:
@@ -451,12 +450,12 @@ Do not confuse removal from navigation with complete Phase C deletion. Much of t
 
 ## 9. Current verification baseline
 
-At handoff:
+After Phase 1:
 
 ```text
 npm test
 24 test files passed
-142 tests passed
+145 tests passed
 
 npm run typecheck
 passed
@@ -469,25 +468,45 @@ npm run lint
 10 warnings
 ```
 
-The lint warnings predate the latest path loop and are not blockers. Do not turn the next product slice into an unrelated lint cleanup.
+The lint warnings predate the path loop and are not blockers. Do not turn the next product slice into an unrelated lint cleanup.
 
-Recent authenticated route logs from the dev server returned 200 for:
+Authenticated core loop was exercised in the browser:
 
-- `/home`
-- `/jobs`
-- `/applications`
-- `/prep`
+```text
+login
+  -> onboarding intake (no_experience, Google, this cycle)
+  -> studio home + URL Shortener API
+  -> required checklist complete
+  -> Add to dossier (idempotent; one project experience)
+  -> Google SWE Intern -> Interview
+  -> home recipe prep_room
+  -> /prep/Google answer + rubric feedback
+```
 
-The complete intake-to-dossier-to-application-to-prep story has not yet been captured in one authenticated walkthrough. That is the first release task.
+Walkthrough artifact:
+
+```text
+/opt/cursor/artifacts/z2i_core_loop_walkthrough.mp4
+```
+
+Screenshots:
+
+```text
+/opt/cursor/artifacts/screenshots/z2i_studio_home.webp
+/opt/cursor/artifacts/screenshots/z2i_project_complete_dossier.webp
+/opt/cursor/artifacts/screenshots/z2i_application_interview.webp
+/opt/cursor/artifacts/screenshots/z2i_prep_room_home.webp
+/opt/cursor/artifacts/screenshots/z2i_interview_feedback.webp
+```
 
 ## 10. Known gaps and risks
 
 ### Release and data risks
 
-- The `project` experience migration must be applied and verified against the intended Supabase project.
-- The new dossier action handles a missing migration with a friendly error, but that is not a release substitute.
-- Full SQL RLS coverage should include the current path tables and the new experience kind behavior.
-- The complete path loop has not yet been exercised in one browser recording.
+- The `project` experience migration is applied on the live samehere project. Other environments still need the same constraint if they are not that project.
+- The new dossier action still handles a missing migration with a friendly error.
+- `supabase/tests/rls_test.sql` covers owner/cross-user/anon on `experiences`, but does not yet have a dedicated `kind=project` case. Live rolled-back checks passed.
+- Interview feedback is computed in the request and stored on `interview_practice`, but the prep page does not rehydrate prior answers after refresh. The in-session grade still works.
 
 ### Product gaps
 
@@ -512,6 +531,8 @@ The complete intake-to-dossier-to-application-to-prep story has not yet been cap
 Work in this order. Each phase should leave a usable product and a reviewable commit.
 
 ### Phase 1: verify and harden the complete core loop
+
+**Done** on 2026-08-12. Do not repeat it. Next work is Phase 2.
 
 Goal: prove the current product works as one story before adding more behavior.
 
@@ -833,20 +854,20 @@ Continue the samehere zero-to-internship implementation.
 
 Read ZERO_TO_INTERNSHIP_HANDOFF.md and ZERO_TO_INTERNSHIP_RESTRUCTURE.md first. Stay on cursor/z2i-implementation-b75f and use feat/zero-to-internship as the PR base. PR: https://github.com/builtbyd3v/samehere/pull/19.
 
-This Sol chat is the planning, coordination, review, and integration thread. Make Grok 4.6 Extra High Fast the default implementation subagent model. The previously observed internal name is cursor-grok-4.6-xhigh-fast. Confirm it is accepted by the subagent API, write the pstack implementation-role defaults, and do not substitute Grok 4.5.
+Phase 1 is done: project-kind migration is on the live samehere Supabase project, the authenticated core loop was walked, and interview feedback has a local rubric fallback. Do not repeat that work.
 
-Start with Phase 1 in the handoff: verify and harden the authenticated core loop, including applying and checking the project-experience migration against the correct Supabase project. Keep the existing dev server if it is healthy. Delegate bounded implementation fixes to Grok 4.6, review every diff here, run the full checks, commit, push, and update PR 19.
+This parent chat coordinates. If the Task API lists cursor-grok-4.6-xhigh-fast, use it for implementation. If not, inherit the parent and do not substitute Grok 4.5.
+
+Start Phase 2: turn the public/private profile into the internship dossier. Keep the existing dev server if it is healthy. Delegate bounded implementation to Grok 4.6 (or inherit), review every diff here, run the full checks, commit, push, and update PR 19.
 ```
 
 ## 16. Handoff completion state
 
 At the time this document was written:
 
-- Branch changes through `d638267` were committed and pushed.
+- Branch changes through `70b7dde` were committed and pushed.
 - Pull request 19 was updated.
-- Dev server was healthy.
-- Tests, typecheck, lint, and production build passed.
-- The next task is Phase 1 core-loop verification.
-- No active pstack model rule was written because the current Sol turn's subagent API did not expose Grok 4.6, despite the model being available in the chat selector and observed in run metadata.
-
-The new chat should resolve the model rule first, then proceed without repeating completed implementation.
+- Dev server was healthy in tmux `samehere-dev`.
+- Tests (145), typecheck, lint (0 errors / 10 warnings), and production build passed.
+- Phase 1 core-loop verification is done.
+- Next task is Phase 2: internship dossier profile.
