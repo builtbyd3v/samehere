@@ -2110,7 +2110,7 @@ summary {
   margin-inline: auto;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0;
-  padding: clamp(4.5rem, 8vw, 7rem) 1.5rem;
+  padding: clamp(4.5rem, 8vw, 7rem) 1.5rem 2rem;
   text-align: center;
 }
 
@@ -2137,6 +2137,14 @@ summary {
   font-size: 1rem;
   font-weight: 500;
   line-height: 1.4;
+}
+
+.landing-metrics-cta {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  padding: 0 1.5rem clamp(3.5rem, 7vw, 5.5rem);
 }
 
 .landing-demo-panel,
