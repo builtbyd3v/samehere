@@ -12,6 +12,20 @@ import {
   isFirstProjectCompletion,
   type LinkedPathTask,
 } from "@/lib/path/project-completion";
+import { getStudioManifest } from "@/lib/path/studio";
+import {
+  buildSeededWorkspaceFiles,
+  findWritableStarterFile,
+  isCreateWorkspaceRevision,
+  parseSaveProjectWorkspaceFileInput,
+  shapeSaveConflict,
+  shapeSaveError,
+  shapeSaveSuccess,
+  toProjectWorkspaceSnapshot,
+  type ProjectWorkspaceSnapshot,
+  type SaveProjectWorkspaceFileInput,
+  type SaveProjectWorkspaceFileResult,
+} from "@/lib/path/studio/workspace";
 
 export type ProjectChecklistState = Record<string, boolean>;
 
@@ -296,4 +310,364 @@ export async function addProjectToDossier(
   if (prof?.username) revalidatePath(`/profile/${prof.username}`);
 
   return { success: true };
+}
+
+export type {
+  ProjectWorkspaceSnapshot,
+  SaveProjectWorkspaceFileInput,
+  SaveProjectWorkspaceFileResult,
+};
+
+/**
+ * Owner workspace checkpoint, or null before the first edit / when unavailable.
+ * Always scopes by auth user_id; RLS remains the final trust boundary.
+ */
+export async function getProjectWorkspace(
+  projectSlug: string,
+): Promise<ProjectWorkspaceSnapshot | null> {
+  if (!projectSlug || !getProjectBySlug(projectSlug)) return null;
+  const manifest = getStudioManifest(projectSlug);
+  if (!manifest) return null;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data: assignment } = await supabase
+    .from("user_projects")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("project_slug", projectSlug)
+    .maybeSingle();
+  if (!assignment) return null;
+
+  const { data: workspace } = await supabase
+    .from("project_workspaces")
+    .select("id, template_version, revision, active_file")
+    .eq("user_id", user.id)
+    .eq("user_project_id", assignment.id)
+    .maybeSingle();
+  if (!workspace) return null;
+
+  const { data: files } = await supabase
+    .from("project_workspace_files")
+    .select("path, content, revision")
+    .eq("user_id", user.id)
+    .eq("workspace_id", workspace.id)
+    .order("path", { ascending: true });
+
+  return toProjectWorkspaceSnapshot({
+    templateVersion: workspace.template_version,
+    workspaceRevision: workspace.revision,
+    activeFile: workspace.active_file,
+    files: files ?? [],
+  });
+}
+
+async function ensureUserProjectId(
+  supabase: DbClient,
+  userId: string,
+  projectSlug: string,
+): Promise<string | null> {
+  const { data: existing } = await supabase
+    .from("user_projects")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("project_slug", projectSlug)
+    .maybeSingle();
+  if (existing) return existing.id;
+
+  const { data: created, error } = await supabase
+    .from("user_projects")
+    .insert({
+      user_id: userId,
+      project_slug: projectSlug,
+      status: "doing",
+      checklist_state: {},
+    })
+    .select("id")
+    .maybeSingle();
+
+  if (created) return created.id;
+
+  // Concurrent insert race on (user_id, project_slug) — re-read.
+  if (error?.code === "23505") {
+    const { data: raced } = await supabase
+      .from("user_projects")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("project_slug", projectSlug)
+      .maybeSingle();
+    return raced?.id ?? null;
+  }
+
+  return null;
+}
+
+async function loadWorkspaceConflictState(
+  supabase: DbClient,
+  userId: string,
+  workspaceId: string,
+  path: string,
+): Promise<{ workspaceRevision: number; fileRevision: number | null }> {
+  const [{ data: workspace }, { data: file }] = await Promise.all([
+    supabase
+      .from("project_workspaces")
+      .select("revision")
+      .eq("user_id", userId)
+      .eq("id", workspaceId)
+      .maybeSingle(),
+    supabase
+      .from("project_workspace_files")
+      .select("revision")
+      .eq("user_id", userId)
+      .eq("workspace_id", workspaceId)
+      .eq("path", path)
+      .maybeSingle(),
+  ]);
+
+  return {
+    workspaceRevision: workspace?.revision ?? 0,
+    fileRevision: file?.revision ?? null,
+  };
+}
+
+/**
+ * Canonical file checkpoint with optimistic concurrency.
+ * First save seeds the full starter tree; later saves never silently overwrite.
+ */
+export async function saveProjectWorkspaceFile(
+  rawInput: SaveProjectWorkspaceFileInput,
+): Promise<SaveProjectWorkspaceFileResult> {
+  const parsed = parseSaveProjectWorkspaceFileInput(rawInput);
+  if (!parsed.ok) return shapeSaveError(parsed.error);
+
+  const input = parsed.value;
+  if (!getProjectBySlug(input.projectSlug)) {
+    return shapeSaveError("Unknown project.");
+  }
+
+  const manifest = getStudioManifest(input.projectSlug);
+  if (!manifest) return shapeSaveError("Studio is not available for this project.");
+
+  if (input.templateVersion !== manifest.version) {
+    return shapeSaveError("Template version mismatch. Reload the project studio.");
+  }
+
+  if (!findWritableStarterFile(manifest.starterFiles, input.path)) {
+    return shapeSaveError("That file cannot be edited.");
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return shapeSaveError("You must be logged in.");
+
+  const userProjectId = await ensureUserProjectId(
+    supabase,
+    user.id,
+    input.projectSlug,
+  );
+  if (!userProjectId) {
+    return shapeSaveError("Could not open your project assignment. Try again.");
+  }
+
+  const { data: existingWorkspace } = await supabase
+    .from("project_workspaces")
+    .select("id, template_version, revision")
+    .eq("user_id", user.id)
+    .eq("user_project_id", userProjectId)
+    .maybeSingle();
+
+  const now = new Date().toISOString();
+
+  if (!existingWorkspace) {
+    if (!isCreateWorkspaceRevision(input)) {
+      return shapeSaveConflict({
+        workspaceRevision: 0,
+        fileRevision: 0,
+        error: "Workspace was reset or never saved. Reload and try again.",
+      });
+    }
+
+    const { data: createdWorkspace, error: createWorkspaceError } = await supabase
+      .from("project_workspaces")
+      .insert({
+        user_id: user.id,
+        user_project_id: userProjectId,
+        template_version: manifest.version,
+        revision: 1,
+        active_file: input.path,
+        updated_at: now,
+      })
+      .select("id, revision")
+      .maybeSingle();
+
+    if (createWorkspaceError?.code === "23505") {
+      // Another request created the workspace first — fall through to update path.
+      const { data: racedWorkspace } = await supabase
+        .from("project_workspaces")
+        .select("id, template_version, revision")
+        .eq("user_id", user.id)
+        .eq("user_project_id", userProjectId)
+        .maybeSingle();
+      if (!racedWorkspace) {
+        return shapeSaveError("Could not create workspace. Try again.");
+      }
+      return saveExistingWorkspaceFile({
+        supabase,
+        userId: user.id,
+        workspace: racedWorkspace,
+        input,
+        manifestVersion: manifest.version,
+        now,
+      });
+    }
+
+    if (createWorkspaceError || !createdWorkspace) {
+      return shapeSaveError("Could not create workspace. Try again.");
+    }
+
+    const seedFiles = buildSeededWorkspaceFiles({
+      starterFiles: manifest.starterFiles,
+      path: input.path,
+      content: input.content,
+    });
+
+    const { error: seedError } = await supabase.from("project_workspace_files").insert(
+      seedFiles.map((file) => ({
+        user_id: user.id,
+        workspace_id: createdWorkspace.id,
+        path: file.path,
+        content: file.content,
+        revision: file.revision,
+        updated_at: now,
+      })),
+    );
+
+    if (seedError) {
+      // Best-effort cleanup so a retry can recreate cleanly.
+      await supabase
+        .from("project_workspaces")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("id", createdWorkspace.id);
+      return shapeSaveError("Could not seed workspace files. Try again.");
+    }
+
+    const edited = seedFiles.find((file) => file.path === input.path);
+    return shapeSaveSuccess({
+      workspaceRevision: createdWorkspace.revision,
+      fileRevision: edited?.revision ?? 1,
+    });
+  }
+
+  return saveExistingWorkspaceFile({
+    supabase,
+    userId: user.id,
+    workspace: existingWorkspace,
+    input,
+    manifestVersion: manifest.version,
+    now,
+  });
+}
+
+async function saveExistingWorkspaceFile(args: {
+  supabase: DbClient;
+  userId: string;
+  workspace: { id: string; template_version: number; revision: number };
+  input: SaveProjectWorkspaceFileInput;
+  manifestVersion: number;
+  now: string;
+}): Promise<SaveProjectWorkspaceFileResult> {
+  const { supabase, userId, workspace, input, manifestVersion, now } = args;
+
+  if (workspace.template_version !== input.templateVersion) {
+    return shapeSaveError("Template version mismatch. Reload the project studio.");
+  }
+  if (workspace.template_version !== manifestVersion) {
+    return shapeSaveError("Template version mismatch. Reload the project studio.");
+  }
+
+  const { data: existingFile } = await supabase
+    .from("project_workspace_files")
+    .select("id, revision")
+    .eq("user_id", userId)
+    .eq("workspace_id", workspace.id)
+    .eq("path", input.path)
+    .maybeSingle();
+
+  if (
+    workspace.revision !== input.expectedWorkspaceRevision ||
+    !existingFile ||
+    existingFile.revision !== input.expectedFileRevision
+  ) {
+    return shapeSaveConflict({
+      workspaceRevision: workspace.revision,
+      fileRevision: existingFile?.revision ?? null,
+    });
+  }
+
+  // Claim workspace revision first so a failed file write remains retryable
+  // with the returned revisions (file still at the expected revision).
+  const nextWorkspaceRevision = workspace.revision + 1;
+  const { data: updatedWorkspace, error: workspaceError } = await supabase
+    .from("project_workspaces")
+    .update({
+      revision: nextWorkspaceRevision,
+      active_file: input.path,
+      updated_at: now,
+    })
+    .eq("user_id", userId)
+    .eq("id", workspace.id)
+    .eq("revision", input.expectedWorkspaceRevision)
+    .select("revision")
+    .maybeSingle();
+
+  if (workspaceError || !updatedWorkspace) {
+    const current = await loadWorkspaceConflictState(
+      supabase,
+      userId,
+      workspace.id,
+      input.path,
+    );
+    return shapeSaveConflict(current);
+  }
+
+  const nextFileRevision = existingFile.revision + 1;
+  const { data: updatedFile, error: fileError } = await supabase
+    .from("project_workspace_files")
+    .update({
+      content: input.content,
+      revision: nextFileRevision,
+      updated_at: now,
+    })
+    .eq("user_id", userId)
+    .eq("workspace_id", workspace.id)
+    .eq("path", input.path)
+    .eq("revision", input.expectedFileRevision)
+    .select("revision")
+    .maybeSingle();
+
+  if (fileError || !updatedFile) {
+    const current = await loadWorkspaceConflictState(
+      supabase,
+      userId,
+      workspace.id,
+      input.path,
+    );
+    return shapeSaveConflict({
+      ...current,
+      error:
+        "File changed while saving. Reload and retry with the latest revisions.",
+    });
+  }
+
+  return shapeSaveSuccess({
+    workspaceRevision: updatedWorkspace.revision,
+    fileRevision: updatedFile.revision,
+  });
 }
