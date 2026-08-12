@@ -2,6 +2,10 @@
 
 Last updated: 2026-08-12
 
+Status: Wave 1 foundation completed on 2026-08-12. The URL Shortener now has
+a visual read-only Studio, versioned manifest, vendored technology marks, and
+owner-only workspace/file persistence. Wave 2 is next.
+
 ## 1. Product goal
 
 Turn assigned path projects into a visual, in-app build environment with real

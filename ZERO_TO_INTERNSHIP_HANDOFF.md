@@ -453,8 +453,8 @@ After Phase 3:
 
 ```text
 npm test
-27 test files passed
-167 tests passed
+28 test files passed
+184 tests passed
 
 npm run typecheck
 passed
@@ -507,6 +507,9 @@ Screenshots:
 /opt/cursor/artifacts/screenshots/z2i_adaptive_prep_mobile_final.webp
 /opt/cursor/artifacts/screenshots/z2i_adaptive_ops_redesign.webp
 /opt/cursor/artifacts/z2i_adaptive_workspace_preview.mp4
+/opt/cursor/artifacts/screenshots/z2i_project_studio_desktop.webp
+/opt/cursor/artifacts/screenshots/z2i_project_studio_mobile_final.webp
+/opt/cursor/artifacts/z2i_project_studio_preview.mp4
 ```
 
 ## 10. Known gaps and risks
@@ -714,6 +717,30 @@ Reference use:
 - ResuMax remains a flow reference only. Do not copy its score rings, pink/purple glow, roadmap catalog, or resume-first hierarchy.
 
 The visual acceptance test is unchanged: a stranger should infer different user stages from the workspace composition without reading a bio.
+
+### Project Studio Wave 1
+
+**Done** on 2026-08-12. Continue from Wave 2 in
+`PROJECT_STUDIO_IMPLEMENTATION_PLAN.md`.
+
+- URL Shortener has a versioned `remote_node` Studio manifest with starter
+  files and checklist-linked milestones.
+- The assigned project route renders a responsive three-pane Studio with real
+  TypeScript, Next.js, PostgreSQL, Node.js, and Git marks.
+- File and milestone selection update in place. Mobile uses Build, Files,
+  Preview, and Evidence modes with read-only code.
+- Preview and Tests stay honest. Wave 1 does not fake a running app or passed
+  tests.
+- Existing checklist persistence, project completion, and dossier write-back
+  remain intact.
+- `project_workspaces` and `project_workspace_files` are live on the samehere
+  Supabase project with owner-only RLS and composite same-owner foreign keys.
+- Rolled-back live checks passed for owner access, cross-user denial, forged
+  ownership, path validation, and anonymous denial.
+
+Wave 2 adds Monaco, canonical file checkpoints, and one deliberately
+browser-compatible React/TypeScript pilot. Existing Next.js/PostgreSQL projects
+must not run through classic Sandpack.
 
 ### Phase 4: close automatic re-diagnosis triggers
 
