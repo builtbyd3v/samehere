@@ -79,6 +79,58 @@ export type Database = {
           },
         ]
       }
+      // Hand-added ahead of / beside WS1 migration (applications tracker).
+      applications: {
+        Row: {
+          created_at: string
+          id: string
+          listing_id: string | null
+          notes: string | null
+          org: string
+          role: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          listing_id?: string | null
+          notes?: string | null
+          org: string
+          role: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          listing_id?: string | null
+          notes?: string | null
+          org?: string
+          role?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "applications_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "job_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "applications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blocks: {
         Row: {
           blocked_id: string | null
@@ -678,6 +730,7 @@ export type Database = {
       }
       experiences: {
         Row: {
+          company_slug: string | null
           created_at: string
           end_date: string | null
           id: string
@@ -691,6 +744,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          company_slug?: string | null
           created_at?: string
           end_date?: string | null
           id?: string
@@ -704,6 +758,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          company_slug?: string | null
           created_at?: string
           end_date?: string | null
           id?: string
@@ -717,6 +772,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "experiences_company_slug_fkey"
+            columns: ["company_slug"]
+            isOneToOne: false
+            referencedRelation: "job_companies"
+            referencedColumns: ["slug"]
+          },
           {
             foreignKeyName: "experiences_user_id_fkey"
             columns: ["user_id"]
@@ -1213,6 +1275,7 @@ export type Database = {
           leaderboard_opt_out: boolean
           major: string | null
           onboarded_at: string | null
+          open_to_help: boolean
           pro_source: string | null
           pro_until: string | null
           profile_theme: string | null
@@ -1247,6 +1310,7 @@ export type Database = {
           leaderboard_opt_out?: boolean
           major?: string | null
           onboarded_at?: string | null
+          open_to_help?: boolean
           pro_source?: string | null
           pro_until?: string | null
           profile_theme?: string | null
@@ -1281,6 +1345,7 @@ export type Database = {
           leaderboard_opt_out?: boolean
           major?: string | null
           onboarded_at?: string | null
+          open_to_help?: boolean
           pro_source?: string | null
           pro_until?: string | null
           profile_theme?: string | null

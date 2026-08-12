@@ -83,6 +83,17 @@ function ExperienceForm({ entry, action, pending, error, currentYear, submitLabe
         <label className={label} htmlFor="exp-note">Description (optional)</label>
         <textarea id="exp-note" name="note" maxLength={600} rows={3} placeholder="One line per bullet" defaultValue={entry?.note ?? ""} className={field} />
       </div>
+      {/* Consent: only meaningful for internship/job/research. Club roles never
+          surface as helpers. Settings owns the global off switch. */}
+      <label className="mt-3 flex items-start gap-2.5 text-sm text-[var(--ink)]">
+        <input type="checkbox" name="open_to_help" className="mt-0.5 h-4 w-4 accent-[var(--ink)]" />
+        <span>
+          Open to help people applying here
+          <span className="mt-0.5 block text-[var(--ink-muted)]">
+            Turns on helper matching for internship, job, and research roles. Change anytime in Settings.
+          </span>
+        </span>
+      </label>
       <div className="mt-3 flex items-center gap-3">
         <button type="submit" disabled={pending} className="btn-ghost !rounded-full !px-4 !py-1.5 text-sm">
           {pending ? pendingLabel : submitLabel}

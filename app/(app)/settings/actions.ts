@@ -62,6 +62,34 @@ export async function updatePrivacy(_prev: PrivacyState, formData: FormData): Pr
   return { success: true };
 }
 
+export type OpenToHelpState = { error?: string; success?: boolean };
+
+// Explicit consent to appear as a company helper on matching listings.
+// Column lands with WS1; treat missing-column failures as a soft error so
+// settings still works if schema is mid-rollout.
+export async function updateOpenToHelp(
+  _prev: OpenToHelpState,
+  formData: FormData,
+): Promise<OpenToHelpState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be logged in." };
+
+  const open_to_help = formData.get("open_to_help") === "on";
+  const { error } = await supabase.from("profiles").update({ open_to_help }).eq("id", user.id);
+  if (error) {
+    if (error.message.includes("open_to_help") || error.code === "PGRST204") {
+      return { error: "Helper preference isn’t available yet. Try again shortly." };
+    }
+    return { error: "Could not save your preference. Try again." };
+  }
+
+  revalidatePath("/settings");
+  return { success: true };
+}
+
 // Plain RLS delete, scoped to the caller's own blocker_id — block-create +
 // follow-cleanup lands in a later step.
 export async function unblockUser(blockedId: string, _formData: FormData) {

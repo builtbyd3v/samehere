@@ -35,6 +35,7 @@ function MenuItems({ isAdmin }: { isAdmin: boolean }) {
           stays here on mobile only. Profile lives in both navs — dropped.
           Feedback is the same deal: it lives in the desktop left nav. */}
       <div className="lg:hidden">
+        <MenuLink href="/applications">Applications</MenuLink>
         <MenuLink href="/saved">Saved</MenuLink>
         <FeedbackButton className={menuItemClass} />
       </div>

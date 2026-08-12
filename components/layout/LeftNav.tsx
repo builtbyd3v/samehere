@@ -33,6 +33,16 @@ export default function LeftNav({
     { label: "Messages", href: "/messages", icon: <IconMail />, badge: dmUnread },
     { label: "Community", href: "/community", icon: <IconCommunity /> },
     { label: "Jobs", href: "/jobs", icon: <IconBriefcase /> },
+    {
+      label: "Applications",
+      href: "/applications",
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M9 5h11M9 12h11M9 19h11" />
+          <path d="M4 5h.01M4 12h.01M4 19h.01" />
+        </svg>
+      ),
+    },
     { label: "Saved", href: "/saved", icon: <IconBookmark /> },
     {
       label: "Profile",
