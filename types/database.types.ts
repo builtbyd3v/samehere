@@ -79,6 +79,57 @@ export type Database = {
           },
         ]
       }
+      applications: {
+        Row: {
+          created_at: string
+          id: string
+          listing_id: string | null
+          notes: string | null
+          org: string
+          role: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          listing_id?: string | null
+          notes?: string | null
+          org: string
+          role: string
+          status: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          listing_id?: string | null
+          notes?: string | null
+          org?: string
+          role?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "applications_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "job_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "applications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blocks: {
         Row: {
           blocked_id: string | null
@@ -422,6 +473,38 @@ export type Database = {
           },
         ]
       }
+      company_interview_banks: {
+        Row: {
+          company_slug: string
+          process_summary: string
+          published: boolean
+          questions: Json
+          updated_at: string
+        }
+        Insert: {
+          company_slug: string
+          process_summary: string
+          published?: boolean
+          questions: Json
+          updated_at?: string
+        }
+        Update: {
+          company_slug?: string
+          process_summary?: string
+          published?: boolean
+          questions?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_interview_banks_company_slug_fkey"
+            columns: ["company_slug"]
+            isOneToOne: true
+            referencedRelation: "job_companies"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
       comments: {
         Row: {
           content: string
@@ -678,6 +761,7 @@ export type Database = {
       }
       experiences: {
         Row: {
+          company_slug: string | null
           created_at: string
           end_date: string | null
           id: string
@@ -691,6 +775,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          company_slug?: string | null
           created_at?: string
           end_date?: string | null
           id?: string
@@ -704,6 +789,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          company_slug?: string | null
           created_at?: string
           end_date?: string | null
           id?: string
@@ -717,6 +803,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "experiences_company_slug_fkey"
+            columns: ["company_slug"]
+            isOneToOne: false
+            referencedRelation: "job_companies"
+            referencedColumns: ["slug"]
+          },
           {
             foreignKeyName: "experiences_user_id_fkey"
             columns: ["user_id"]
@@ -794,6 +887,83 @@ export type Database = {
           {
             foreignKeyName: "follows_following_id_fkey"
             columns: ["following_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      intake_responses: {
+        Row: {
+          answers: Json
+          created_at: string
+          id: string
+          user_id: string
+          version: number
+        }
+        Insert: {
+          answers: Json
+          created_at?: string
+          id?: string
+          user_id: string
+          version: number
+        }
+        Update: {
+          answers?: Json
+          created_at?: string
+          id?: string
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intake_responses_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      interview_practice: {
+        Row: {
+          ai_feedback: string | null
+          answer: string | null
+          company_slug: string
+          created_at: string
+          id: string
+          question_id: string
+          user_id: string
+        }
+        Insert: {
+          ai_feedback?: string | null
+          answer?: string | null
+          company_slug: string
+          created_at?: string
+          id?: string
+          question_id: string
+          user_id: string
+        }
+        Update: {
+          ai_feedback?: string | null
+          answer?: string | null
+          company_slug?: string
+          created_at?: string
+          id?: string
+          question_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interview_practice_company_slug_fkey"
+            columns: ["company_slug"]
+            isOneToOne: false
+            referencedRelation: "company_interview_banks"
+            referencedColumns: ["company_slug"]
+          },
+          {
+            foreignKeyName: "interview_practice_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -989,6 +1159,48 @@ export type Database = {
           },
         ]
       }
+      learner_profiles: {
+        Row: {
+          diagnosis: Json
+          skill_stage_id: string | null
+          skill_track_id: string | null
+          updated_at: string
+          user_id: string
+          version: number
+        }
+        Insert: {
+          diagnosis: Json
+          skill_stage_id?: string | null
+          skill_track_id?: string | null
+          updated_at?: string
+          user_id: string
+          version: number
+        }
+        Update: {
+          diagnosis?: Json
+          skill_stage_id?: string | null
+          skill_track_id?: string | null
+          updated_at?: string
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learner_profiles_skill_track_id_fkey"
+            columns: ["skill_track_id"]
+            isOneToOne: false
+            referencedRelation: "skill_tracks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "learner_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string
@@ -1086,6 +1298,137 @@ export type Database = {
           },
           {
             foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      path_plans: {
+        Row: {
+          rationale: string | null
+          source_intake_id: string | null
+          ui: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          rationale?: string | null
+          source_intake_id?: string | null
+          ui: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          rationale?: string | null
+          source_intake_id?: string | null
+          ui?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "path_plans_source_intake_id_fkey"
+            columns: ["source_intake_id"]
+            isOneToOne: false
+            referencedRelation: "intake_responses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "path_plans_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      path_projects: {
+        Row: {
+          body: Json
+          difficulty: string
+          domain: string
+          fits_stages: string[]
+          languages: string[]
+          published: boolean
+          slug: string
+          stack: string[]
+          target_role_tags: string[]
+          time_hours: number[]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body: Json
+          difficulty: string
+          domain: string
+          fits_stages?: string[]
+          languages?: string[]
+          published?: boolean
+          slug: string
+          stack?: string[]
+          target_role_tags?: string[]
+          time_hours: number[]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          body?: Json
+          difficulty?: string
+          domain?: string
+          fits_stages?: string[]
+          languages?: string[]
+          published?: boolean
+          slug?: string
+          stack?: string[]
+          target_role_tags?: string[]
+          time_hours?: number[]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      path_tasks: {
+        Row: {
+          created_at: string
+          detail: string | null
+          due_on: string | null
+          id: string
+          module_id: string
+          sort_index: number
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          detail?: string | null
+          due_on?: string | null
+          id?: string
+          module_id: string
+          sort_index?: number
+          status: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          detail?: string | null
+          due_on?: string | null
+          id?: string
+          module_id?: string
+          sort_index?: number
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "path_tasks_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -1213,6 +1556,7 @@ export type Database = {
           leaderboard_opt_out: boolean
           major: string | null
           onboarded_at: string | null
+          open_to_help: boolean
           pro_source: string | null
           pro_until: string | null
           profile_theme: string | null
@@ -1247,6 +1591,7 @@ export type Database = {
           leaderboard_opt_out?: boolean
           major?: string | null
           onboarded_at?: string | null
+          open_to_help?: boolean
           pro_source?: string | null
           pro_until?: string | null
           profile_theme?: string | null
@@ -1281,6 +1626,7 @@ export type Database = {
           leaderboard_opt_out?: boolean
           major?: string | null
           onboarded_at?: string | null
+          open_to_help?: boolean
           pro_source?: string | null
           pro_until?: string | null
           profile_theme?: string | null
@@ -1543,6 +1889,27 @@ export type Database = {
         }
         Relationships: []
       }
+      skill_tracks: {
+        Row: {
+          body: Json
+          id: string
+          published: boolean
+          title: string
+        }
+        Insert: {
+          body: Json
+          id: string
+          published?: boolean
+          title: string
+        }
+        Update: {
+          body?: Json
+          id?: string
+          published?: boolean
+          title?: string
+        }
+        Relationships: []
+      }
       stripe_events: {
         Row: {
           created_at: string
@@ -1560,6 +1927,64 @@ export type Database = {
           type?: string
         }
         Relationships: []
+      }
+      user_projects: {
+        Row: {
+          checklist_state: Json
+          completed_at: string | null
+          created_at: string
+          id: string
+          linked_path_task_id: string | null
+          project_slug: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          checklist_state?: Json
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          linked_path_task_id?: string | null
+          project_slug: string
+          status: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          checklist_state?: Json
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          linked_path_task_id?: string | null
+          project_slug?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_projects_linked_path_task_id_fkey"
+            columns: ["linked_path_task_id"]
+            isOneToOne: false
+            referencedRelation: "path_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_projects_project_slug_fkey"
+            columns: ["project_slug"]
+            isOneToOne: false
+            referencedRelation: "path_projects"
+            referencedColumns: ["slug"]
+          },
+          {
+            foreignKeyName: "user_projects_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

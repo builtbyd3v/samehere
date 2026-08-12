@@ -2517,6 +2517,157 @@ exception when others then
 end $$;
 reset role;
 
+-- ============ PATH FOUNDATION — 20260812040000_path_foundation.sql ============
+-- Owner ALL on progress tables; published SELECT on catalogs; anon denied.
+
+-- PATH_intake_owner_insert_select — A can insert/select own intake_responses.
+select tests.as_user(id) from tests_fixture where key = 'a';
+do $$
+declare
+  v_a uuid := (select id from tests_fixture where key = 'a');
+begin
+  insert into public.intake_responses (user_id, version, answers)
+  values (v_a, 1, '{"stage":"building"}'::jsonb);
+  if not exists (
+    select 1 from public.intake_responses where user_id = v_a and version = 1
+  ) then
+    raise exception 'PATH_intake_owner_insert_select REGRESSION: owner cannot select own intake_responses';
+  end if;
+  insert into tests_results values ('PATH_intake_owner_insert_select', true, 'ok');
+exception when others then
+  insert into tests_results values ('PATH_intake_owner_insert_select', false, sqlerrm);
+end $$;
+reset role;
+
+-- PATH_intake_b_select_a_denied — B cannot read A's intake.
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+begin
+  if exists (
+    select 1 from public.intake_responses
+    where user_id = (select id from tests_fixture where key = 'a')
+  ) then
+    raise exception 'PATH_intake_b_select_a_denied REGRESSION: non-owner B selected A''s intake_responses';
+  end if;
+  insert into tests_results values ('PATH_intake_b_select_a_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('PATH_intake_b_select_a_denied', false, sqlerrm);
+end $$;
+reset role;
+
+-- PATH_intake_anon_select_denied — anon cannot select intake_responses.
+select tests.as_anon();
+do $$
+declare
+  v_state text;
+  v_raised boolean;
+begin
+  begin
+    perform 1 from public.intake_responses limit 1;
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state <> '42501' then
+    raise exception 'PATH_intake_anon_select_denied REGRESSION: anon selecting intake_responses did not fail with 42501 (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+  insert into tests_results values ('PATH_intake_anon_select_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('PATH_intake_anon_select_denied', false, sqlerrm);
+end $$;
+reset role;
+
+-- Seed a published path_project as superuser (catalog writes are admin-only).
+set local role postgres;
+do $$
+begin
+  insert into public.path_projects (
+    slug, title, difficulty, time_hours, domain, body, published
+  ) values (
+    'rls-test-project', 'RLS Test Project', 'easy', array[2,4], 'web',
+    '{"what_you_build":"x"}'::jsonb, true
+  );
+end $$;
+reset role;
+
+-- PATH_projects_published_select — authenticated can read published catalog.
+select tests.as_user(id) from tests_fixture where key = 'a';
+do $$
+begin
+  if not exists (
+    select 1 from public.path_projects where slug = 'rls-test-project' and published
+  ) then
+    raise exception 'PATH_projects_published_select REGRESSION: authenticated cannot select published path_projects';
+  end if;
+  insert into tests_results values ('PATH_projects_published_select', true, 'ok');
+exception when others then
+  insert into tests_results values ('PATH_projects_published_select', false, sqlerrm);
+end $$;
+reset role;
+
+-- PATH_projects_authenticated_insert_denied — no client insert policy on catalog.
+select tests.as_user(id) from tests_fixture where key = 'a';
+do $$
+declare
+  v_state text;
+  v_raised boolean;
+begin
+  begin
+    insert into public.path_projects (
+      slug, title, difficulty, time_hours, domain, body
+    ) values (
+      'rls-client-insert', 'Nope', 'easy', array[1,2], 'web', '{}'::jsonb
+    );
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state <> '42501' then
+    raise exception 'PATH_projects_authenticated_insert_denied REGRESSION: authenticated insert into path_projects did not fail with 42501 (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+  insert into tests_results values ('PATH_projects_authenticated_insert_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('PATH_projects_authenticated_insert_denied', false, sqlerrm);
+end $$;
+reset role;
+
+-- PATH_applications_owner_insert_select — A can CRUD own applications.
+select tests.as_user(id) from tests_fixture where key = 'a';
+do $$
+declare
+  v_a uuid := (select id from tests_fixture where key = 'a');
+begin
+  insert into public.applications (user_id, org, role, status)
+  values (v_a, 'Acme', 'SWE Intern', 'wishlist');
+  if not exists (
+    select 1 from public.applications where user_id = v_a and org = 'Acme'
+  ) then
+    raise exception 'PATH_applications_owner_insert_select REGRESSION: owner cannot select own applications';
+  end if;
+  insert into tests_results values ('PATH_applications_owner_insert_select', true, 'ok');
+exception when others then
+  insert into tests_results values ('PATH_applications_owner_insert_select', false, sqlerrm);
+end $$;
+reset role;
+
+-- PATH_applications_b_select_a_denied — B cannot read A's applications.
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+begin
+  if exists (
+    select 1 from public.applications
+    where user_id = (select id from tests_fixture where key = 'a')
+  ) then
+    raise exception 'PATH_applications_b_select_a_denied REGRESSION: non-owner B selected A''s applications';
+  end if;
+  insert into tests_results values ('PATH_applications_b_select_a_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('PATH_applications_b_select_a_denied', false, sqlerrm);
+end $$;
+reset role;
+
 -- ============ report ============
 -- Print the PASS/FAIL table FIRST so the operator sees exactly which assertions
 -- failed, then raise so psql exits non-zero and the harness actually gates.
@@ -2534,7 +2685,7 @@ declare v_failed int;
 begin
   select count(*) into v_failed from tests_results where not passed;
   if v_failed > 0 then
-    raise exception '% assertion(s) failed — see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, CLUBS_V2_1, CLUBS_V2_2, CLUBS_V2_3, CLUBS_V2_7a, CLUBS_V2_4, CLUBS_V2_7b, CLUBS_V2_5_officer_denied, CLUBS_V2_5_owner_allowed, CLUBS_V2_6_outsider, CLUBS_V2_6_pending, CLUBS_V2_8, CLUBS_V2_9, H1_suggested_profiles, CLUBS_V2_12_outsider, CLUBS_V2_12_anon, SIGNUP_RL_anon_execute, SIGNUP_RL_no_table_access_anon, SIGNUP_RL_no_table_access_authenticated, EXPERIENCES_owner_insert, EXPERIENCES_owner_select, EXPERIENCES_owner_update, EXPERIENCES_b_select_a, EXPERIENCES_b_update_denied, EXPERIENCES_b_delete_denied, EXPERIENCES_anon_select_denied, EXPERIENCES_owner_delete, EXPERIENCES_cap, JOB_LISTINGS_authenticated_select, JOB_LISTINGS_authenticated_insert_denied, JOB_LISTINGS_anon_select_denied, JOB_FIT_owner_insert_select, JOB_FIT_b_select_a_denied, JOB_PITCHES_owner_insert_select, JOB_PITCHES_b_select_a_denied, JOB_SAVES_owner_insert_select, JOB_SAVES_b_select_a_denied, JOB_SAVES_b_delete_a_denied, JOB_SAVES_owner_delete, JOB_SAVES_anon_select_denied, REFERRAL_JOINED_owner_select, REFERRAL_JOINED_b_select_denied.', v_failed;
+    raise exception '% assertion(s) failed — see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, CLUBS_V2_1, CLUBS_V2_2, CLUBS_V2_3, CLUBS_V2_7a, CLUBS_V2_4, CLUBS_V2_7b, CLUBS_V2_5_officer_denied, CLUBS_V2_5_owner_allowed, CLUBS_V2_6_outsider, CLUBS_V2_6_pending, CLUBS_V2_8, CLUBS_V2_9, H1_suggested_profiles, CLUBS_V2_12_outsider, CLUBS_V2_12_anon, SIGNUP_RL_anon_execute, SIGNUP_RL_no_table_access_anon, SIGNUP_RL_no_table_access_authenticated, EXPERIENCES_owner_insert, EXPERIENCES_owner_select, EXPERIENCES_owner_update, EXPERIENCES_b_select_a, EXPERIENCES_b_update_denied, EXPERIENCES_b_delete_denied, EXPERIENCES_anon_select_denied, EXPERIENCES_owner_delete, EXPERIENCES_cap, JOB_LISTINGS_authenticated_select, JOB_LISTINGS_authenticated_insert_denied, JOB_LISTINGS_anon_select_denied, JOB_FIT_owner_insert_select, JOB_FIT_b_select_a_denied, JOB_PITCHES_owner_insert_select, JOB_PITCHES_b_select_a_denied, JOB_SAVES_owner_insert_select, JOB_SAVES_b_select_a_denied, JOB_SAVES_b_delete_a_denied, JOB_SAVES_owner_delete, JOB_SAVES_anon_select_denied, REFERRAL_JOINED_owner_select, REFERRAL_JOINED_b_select_denied, PATH_intake_owner_insert_select, PATH_intake_b_select_a_denied, PATH_intake_anon_select_denied, PATH_projects_published_select, PATH_projects_authenticated_insert_denied, PATH_applications_owner_insert_select, PATH_applications_b_select_a_denied.', v_failed;
 
   end if;
 end $$;
