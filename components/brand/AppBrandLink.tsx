@@ -30,10 +30,8 @@ export default function AppBrandLink({
       /* ignore */
     }
 
-    if (brandAnimatedThisLoad) {
-      setSettled(true);
-      return;
-    }
+    // Settled on remount is already correct via useState(brandAnimatedThisLoad).
+    if (brandAnimatedThisLoad) return;
 
     const t = window.setTimeout(() => {
       brandAnimatedThisLoad = true;
