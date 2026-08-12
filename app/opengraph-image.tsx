@@ -74,7 +74,7 @@ function IconComment({ color }: { color: string }) {
   );
 }
 
-// Four-point sparkle, echoing the AI-search affordance in HeroSearchDemo.
+// Four-point sparkle for the AI-assisted product affordance.
 // Drawn as a path rather than a unicode glyph (✦) — Figtree has no glyph for
 // it in Satori's renderer, which draws a missing-glyph box instead.
 function IconSparkle({ color }: { color: string }) {

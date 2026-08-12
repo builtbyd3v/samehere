@@ -7,8 +7,7 @@ import posthog from "posthog-js";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { rankJobs, type JobFitResult, type RankJobsState } from "./actions";
 
-// "FIT" pill — same motif as landing's AiTag (components/landing/AiTag.tsx),
-// copied rather than imported since landing components are read-only here.
+// Compact marker for AI-ranked fit results.
 function FitTag() {
   return (
     <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[var(--blue-glow)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.04em] text-[var(--blue)]">

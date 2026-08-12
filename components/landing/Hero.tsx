@@ -1,73 +1,100 @@
 "use client";
 
 import Link from "next/link";
-import HeroSearchDemo from "./HeroSearchDemo";
+import {
+  useLayoutEffect,
+  useRef,
+  type CSSProperties,
+} from "react";
+import AdaptiveWorkbench from "./AdaptiveWorkbench";
 import { ghostCta, signupCta } from "./cta";
 
-// Word-by-word headline reveal. "people." and "path." carry the Fraunces
-// italic accent (both have descenders — their wrap spans reserve bottom padding).
-const LINE_1 = [{ w: "Find", accent: false }, { w: "your", accent: false }, { w: "people.", accent: true }] as const;
-const LINE_2 = [{ w: "Find", accent: false }, { w: "your", accent: false }, { w: "path.", accent: true }] as const;
+const LINE_ONE = ["Your", "next", "move,"] as const;
+const LINE_TWO = ["built", "for", "where", "you", "are."] as const;
 
-function Word({ w, delay, accent = false, descender = false }: { w: string; delay: number; accent?: boolean; descender?: boolean }) {
-  return (
-    <span className={`word-wrap mr-[0.22em] align-top ${descender ? "pb-[0.12em]" : ""}`}>
+function RevealWords({
+  words,
+  offset,
+}: {
+  words: readonly string[];
+  offset: number;
+}) {
+  return words.map((word, index) => (
+    <span key={word}>
+      {index > 0 ? " " : null}
       <span
-        className={`word-slide inline-block will-change-transform ${accent ? "font-display italic text-[var(--blue)]" : ""}`}
-        style={{ ["--delay" as string]: `${delay}s` }}
+        className="landing-hero-word"
+        style={{ "--word-index": offset + index } as CSSProperties}
       >
-        {w}
+        {word}
       </span>
     </span>
-  );
+  ));
 }
 
 export default function Hero() {
-  return (
-    <section className="hero-grain relative flex min-h-[100dvh] items-center overflow-hidden">
-      {/* static ambient presence: one slow-breathing blue field centered behind
-          the search bar, so the hero reads lit even before anything types */}
-      <div aria-hidden className="hero-ambient pointer-events-none absolute" />
+  const heroRef = useRef<HTMLElement>(null);
 
-      <div className="relative z-10 mx-auto flex w-full max-w-[820px] flex-col items-center px-5 py-10 text-center">
-        <h1 className="text-balance text-[38px] font-semibold leading-[1.1] tracking-[-0.03em] sm:text-[52px] md:text-[60px] md:tracking-[-0.04em]">
-          {LINE_1.map((item, i) => (
-            <Word key={item.w} w={item.w} delay={0.1 + i * 0.07} accent={item.accent} descender={item.accent} />
-          ))}
-          <br className="hidden sm:block" />
-          {LINE_2.map((item, i) => (
-            <Word
-              key={item.w}
-              w={item.w}
-              delay={0.1 + (LINE_1.length + i) * 0.07}
-              accent={item.accent}
-              descender={item.accent}
-            />
-          ))}
+  useLayoutEffect(() => {
+    const hero = heroRef.current;
+    if (!hero) return;
+
+    function skipIntroWhenHidden() {
+      const bounds = hero?.getBoundingClientRect();
+      if (
+        document.visibilityState === "hidden" ||
+        !bounds ||
+        bounds.top >= window.innerHeight - 40 ||
+        bounds.bottom <= 40
+      ) {
+        hero?.classList.add("landing-hero-skip-intro");
+      }
+    }
+
+    skipIntroWhenHidden();
+    document.addEventListener("visibilitychange", skipIntroWhenHidden);
+    return () =>
+      document.removeEventListener("visibilitychange", skipIntroWhenHidden);
+  }, []);
+
+  return (
+    <section ref={heroRef} className="landing-hero">
+      <div className="landing-hero-copy">
+        <div className="landing-hero-announcement">
+          <Link href="#product" className="landing-announce">
+            <span>Early access</span>
+            samehere is rebuilding around your internship path
+            <span aria-hidden>→</span>
+          </Link>
+        </div>
+
+        <h1>
+          <RevealWords words={LINE_ONE} offset={0} />
+          <br />
+          <RevealWords words={LINE_TWO} offset={LINE_ONE.length} />
         </h1>
 
-        <p
-          className="cascade-up mt-5 max-w-[52ch] text-balance text-base leading-relaxed text-[var(--ink-muted)] md:text-lg"
-          style={{ ["--delay" as string]: "0.42s" }}
-        >
-          One AI-native network for students. Post what&apos;s real, find who gets it, land what&apos;s next.
+        <p className="landing-hero-subhead">
+          Tell samehere where you&apos;re stuck. Get a focused path for building
+          experience, applying with intent, or preparing for the interview.
         </p>
 
-        <div className="cascade-up mt-8 w-full" style={{ ["--delay" as string]: "0.55s" }}>
-          <HeroSearchDemo />
+        <div className="landing-hero-actions">
+          <div className="landing-hero-action landing-hero-action-primary">
+            <Link href="/signup" className={signupCta}>
+              Join free
+            </Link>
+          </div>
+          <div className="landing-hero-action landing-hero-action-secondary">
+            <Link href="#product" className={ghostCta}>
+              See the path
+            </Link>
+          </div>
         </div>
+      </div>
 
-        <div
-          className="cascade-up mt-10 flex flex-wrap items-center justify-center gap-3"
-          style={{ ["--delay" as string]: "0.7s" }}
-        >
-          <Link href="/signup" className={signupCta}>
-            Join free
-          </Link>
-          <Link href="/login" className={ghostCta}>
-            Log in
-          </Link>
-        </div>
+      <div className="landing-hero-workbench">
+        <AdaptiveWorkbench />
       </div>
     </section>
   );

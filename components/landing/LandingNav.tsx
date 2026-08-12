@@ -4,11 +4,12 @@ import Link from "next/link";
 import { LazyMotion, domMax, m, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { signupCtaSm } from "./cta";
+import LandingNavBrand from "./LandingNavBrand";
 
 const LINKS = [
-  { href: "#how", id: "how", label: "Product" },
+  { href: "#product", id: "product", label: "Product" },
+  { href: "#how", id: "how", label: "Path" },
   { href: "#pricing", id: "pricing", label: "Pricing" },
-  { href: "#faq", id: "faq", label: "FAQ" },
 ] as const;
 
 const HERO_CLEARANCE = 80;
@@ -53,8 +54,7 @@ export default function LandingNav() {
   }, []);
 
   const updateActive = useCallback(() => {
-    // Nav lifts off the page once you leave the very top (blends into the hero,
-    // then gains the warm paper shadow) — ties into the landing's depth system.
+    // Strengthen the x.ai-style inset divider once content scrolls beneath it.
     setScrolled(window.scrollY > 8);
 
     // Click-driven scroll in flight — keep the clicked link active, ignore spy.
@@ -177,7 +177,9 @@ export default function LandingNav() {
   }
 
   const linkText = (id: string) =>
-    activeId === id ? "font-medium text-[var(--blue)]" : "text-[var(--ink-muted)] hover:text-[var(--ink)]";
+    activeId === id
+      ? "landing-nav-active"
+      : "landing-nav-link";
 
   return (
     <LazyMotion features={domMax} strict>
@@ -190,22 +192,20 @@ export default function LandingNav() {
         />
       )}
 
-      {/* top-3 = floating inset when pinned; scrolls with page until it reaches that offset */}
-      <header ref={headerRef} className="sticky top-3 z-50 px-4 pb-2">
+      <header ref={headerRef} className="landing-nav fixed inset-x-0 top-0 z-50">
         <div
-          className={`relative mx-auto max-w-[1200px] overflow-hidden rounded-2xl border border-[var(--border)] backdrop-blur-md transition-[background-color,box-shadow] duration-300 ${
-            scrolled ? "bg-[var(--canvas)]/95 shadow-paper" : "bg-[var(--canvas)]/60"
+          className={`landing-nav-shell relative mx-auto max-w-[1280px] transition-[background-color,border-color] duration-200 ${
+            scrolled ? "landing-nav-scrolled" : ""
           }`}
         >
-          <div className="relative flex h-14 items-center justify-between gap-3 px-4 sm:px-5">
+          <div className="relative flex h-16 items-center justify-between gap-4 px-4 lg:px-6">
             <Link
               href="/"
-              className="shrink-0 text-lg font-semibold tracking-[-0.03em] transition hover:opacity-80"
+              className="landing-brand-link landing-nav-brand-link"
               onClick={scrollToTop}
               aria-label="samehere home"
             >
-              <span className="text-[var(--ink)]">same</span>
-              <span className="text-[var(--blue)]">here</span>
+              <LandingNavBrand />
             </Link>
 
             <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 md:flex" aria-label="Page sections">
@@ -220,8 +220,8 @@ export default function LandingNav() {
                   {activeId === link.id && (
                     <m.span
                       layoutId="nav-underline"
-                      transition={reduceMotion ? { duration: 0 } : { type: "spring", duration: 0.4, bounce: 0.15 }}
-                      className="absolute inset-x-3 -bottom-0.5 h-[2px] rounded-full bg-[var(--blue)]"
+                      transition={reduceMotion ? { duration: 0 } : { duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                      className="absolute inset-x-3 -bottom-0.5 h-[2px] rounded-full bg-[var(--accent-blue)]"
                       aria-hidden
                     />
                   )}
@@ -232,21 +232,22 @@ export default function LandingNav() {
             <div className="flex shrink-0 items-center gap-2 sm:gap-3">
               <Link
                 href="/login"
-                className="hidden text-sm text-[var(--ink-muted)] transition hover:text-[var(--ink)] sm:inline-flex"
+                className="landing-nav-secondary hidden md:inline-flex"
               >
                 Log in
               </Link>
-              <span className="relative">
-                <span
-                  aria-hidden
-                  className="pointer-events-none absolute inset-0 -z-10 rounded-full blur-md"
-                  style={{ background: "var(--blue-glow)" }}
-                />
-                <Link href="/signup" className={signupCtaSm}>
-                  <span className="hidden sm:inline">Join free</span>
-                  <span className="sm:hidden">Join</span>
-                </Link>
-              </span>
+              <Link
+                href="/signup"
+                className={`${signupCtaSm} landing-nav-mobile-primary md:hidden`}
+              >
+                Join
+              </Link>
+              <Link
+                href="/signup"
+                className="landing-nav-primary-single hidden md:inline-flex"
+              >
+                Join free
+              </Link>
               <button
                 type="button"
                 className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[var(--border)] text-[var(--ink)] transition hover:bg-[var(--featured-surface)] md:hidden"
@@ -274,7 +275,7 @@ export default function LandingNav() {
                       onClick={(e) => scrollToSection(e, link.id)}
                       className={`flex items-center rounded-lg px-3 py-2.5 text-[15px] transition ${
                         activeId === link.id
-                          ? "bg-[var(--featured-surface)] font-medium text-[var(--blue)]"
+                          ? "bg-[var(--featured-surface)] font-medium text-[var(--accent-blue-strong)]"
                           : "text-[var(--ink-muted)] hover:bg-[var(--featured-surface)] hover:text-[var(--ink)]"
                       }`}
                     >

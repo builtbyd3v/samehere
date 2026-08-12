@@ -1,36 +1,28 @@
 import Link from "next/link";
+import SameHereMark from "@/components/SameHereMark";
 
 export default function LandingFooter() {
   return (
-    <footer className="border-t border-[var(--border)]">
-      <div className="mx-auto max-w-[1200px] px-5 py-12">
-        <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
-          <div>
-            <p className="text-lg font-semibold tracking-[-0.02em]">samehere</p>
-            <p className="mt-2 max-w-[34ch] text-sm leading-relaxed text-[var(--ink-muted)]">
-              The network for students. Built for the people figuring it out.
-            </p>
-          </div>
-          <nav className="flex flex-wrap gap-x-8 gap-y-3 text-sm text-[var(--ink-muted)]">
-            <a href="mailto:support@samehere.dev" className="underline-offset-4 hover:underline">
-              Feedback
-            </a>
-            <Link href="/pricing" className="underline-offset-4 hover:underline">
-              Pricing
-            </Link>
-            <Link href="/terms" className="underline-offset-4 hover:underline">
-              Terms
-            </Link>
-            <Link href="/privacy" className="underline-offset-4 hover:underline">
-              Privacy
-            </Link>
-            <Link href="/signup" className="underline-offset-4 hover:underline">
-              Sign up
-            </Link>
-          </nav>
-        </div>
-        <p className="mt-10 text-sm text-[var(--ink-muted)]">© 2026 samehere</p>
+    <footer className="landing-footer">
+      <div className="flex min-w-0 flex-col gap-2">
+        <Link
+          href="/"
+          aria-label="SameHere home"
+          className="landing-brand-link w-fit"
+        >
+          <SameHereMark className="size-8" title="SameHere" />
+        </Link>
+        <p className="max-w-[18rem] text-balance">
+          One next move toward your internship.
+        </p>
       </div>
+      <nav aria-label="Footer">
+        <a href="mailto:support@samehere.dev">Feedback</a>
+        <Link href="/pricing">Pricing</Link>
+        <Link href="/terms">Terms</Link>
+        <Link href="/privacy">Privacy</Link>
+      </nav>
+      <p>© 2026</p>
     </footer>
   );
 }
