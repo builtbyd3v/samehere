@@ -2131,12 +2131,12 @@ summary {
 
 .landing-metric-label {
   margin-top: 0.75rem;
-  max-width: 22ch;
+  max-width: 28ch;
   margin-inline: auto;
-  color: rgba(255, 255, 255, 0.55);
-  font-size: 0.9375rem;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 1rem;
   font-weight: 500;
-  line-height: 1.35;
+  line-height: 1.4;
 }
 
 .landing-demo-panel,
