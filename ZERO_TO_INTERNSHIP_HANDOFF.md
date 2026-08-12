@@ -30,7 +30,6 @@ Do not restart the product from scratch. Continue the existing branch and preser
 - Base branch: `feat/zero-to-internship`
 - Working branch: `cursor/z2i-implementation-b75f`
 - Draft pull request: `https://github.com/builtbyd3v/samehere/pull/19`
-- Handoff revision: `70b7dde` (`fix(prep): grade answers without AI`)
 - Product plan: `ZERO_TO_INTERNSHIP_RESTRUCTURE.md`
 
 Phase 1 core-loop verification is done on this branch. Continue from Phase 2.
@@ -865,7 +864,7 @@ Start Phase 2: turn the public/private profile into the internship dossier. Keep
 
 At the time this document was written:
 
-- Branch changes through `70b7dde` were committed and pushed.
+- Branch changes through the Phase 1 interview-feedback fallback and this handoff update were committed and pushed.
 - Pull request 19 was updated.
 - Dev server was healthy in tmux `samehere-dev`.
 - Tests (145), typecheck, lint (0 errors / 10 warnings), and production build passed.
