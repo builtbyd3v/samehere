@@ -19,12 +19,15 @@ type Metric =
 /**
  * Sell the internship outcome. Keep inventory counts out — they read small.
  * Middle slot stays the accent figure in CSS (:nth-child(2)).
+ *
+ * Prefer plain figures over clever codes (OA, 0→1) — students should get
+ * the pitch in one glance.
  */
 const METRICS: readonly Metric[] = [
   {
     kind: "text",
-    display: "0→1",
-    label: "blank resume to proof you can put on applications",
+    display: "Day 1",
+    label: "useful next move — not a week of setup first",
   },
   {
     kind: "count",
@@ -34,8 +37,8 @@ const METRICS: readonly Metric[] = [
   },
   {
     kind: "text",
-    display: "OA",
-    label: "or interview — path flips into prep when it counts",
+    display: "Offer",
+    label: "is the only scoreboard. No feed to farm.",
   },
 ];
 

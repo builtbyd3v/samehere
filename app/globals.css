@@ -2124,8 +2124,9 @@ summary {
 }
 
 .landing-metric-value[data-metric-kind="text"] {
+  font-size: clamp(2.5rem, 5vw, 3.75rem);
   font-variant-numeric: normal;
-  letter-spacing: -0.05em;
+  letter-spacing: -0.045em;
 }
 
 .landing-metric-label {
