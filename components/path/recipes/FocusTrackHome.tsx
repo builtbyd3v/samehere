@@ -16,7 +16,7 @@ export default function FocusTrackHome({
         : "#focus-action";
 
   return (
-    <div className="mx-auto w-full max-w-xl py-5 md:py-6">
+    <div className="path-recipe path-recipe-focus mx-auto w-full max-w-4xl py-5 md:py-10">
       <PathHero plan={plan} nextTask={nextTask} taskHref={taskHref}>
         <div id="focus-action" className="path-hero-listing">
           <p className="landing-demo-meta">Only next action</p>

@@ -2,12 +2,8 @@ import Link from "next/link";
 import { ghostCta, signupCta } from "@/components/landing/cta";
 import type { PathHomeData } from "../PathHome";
 import PathHero from "../PathHero";
-import {
-  ApplicationsStub,
-  HelpersStub,
-  OpportunitiesStub,
-  PitchStub,
-} from "../modules/stubs";
+import { HelpersStub, PitchStub } from "../modules/stubs";
+import OpsDeskSwitchboard from "./OpsDeskSwitchboard";
 
 export default function OpsDeskHome({
   plan,
@@ -21,7 +17,7 @@ export default function OpsDeskHome({
   const listingHref = top ? `/jobs/${top.id}` : "/jobs";
 
   return (
-    <div className="mx-auto w-full max-w-3xl py-5 md:py-6">
+    <div className="path-recipe path-recipe-ops mx-auto w-full max-w-6xl py-5 md:py-7">
       <PathHero plan={plan} nextTask={nextTask} taskHref={taskHref}>
         <div className="landing-opportunity path-hero-listing">
           <div>
@@ -46,9 +42,8 @@ export default function OpsDeskHome({
         </div>
       </PathHero>
 
-      <div className="mt-6 space-y-4">
-        <ApplicationsStub stages={applicationStages} />
-        <OpportunitiesStub listings={listings} />
+      <div className="path-workspace-grid path-workspace-ops">
+        <OpsDeskSwitchboard applicationStages={applicationStages} listings={listings} />
         <PitchStub listingId={top?.id} />
         <HelpersStub helpers={context.helpers} />
       </div>

@@ -68,7 +68,7 @@ export default function PathHome({
         nextTask={nextTask}
         taskHref={taskHref}
       />
-      <div className="mx-auto w-full max-w-3xl space-y-3 px-5 pb-10 pt-2 md:px-0">
+      <div className="mx-auto w-full max-w-6xl space-y-3 pb-10 pt-2">
         <RediagnoseForm compact />
         {showProUpsell ? (
           <p className="text-sm text-[var(--ink-muted)]">

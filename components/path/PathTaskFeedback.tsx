@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { submitPathTaskFeedback } from "@/app/(app)/home/actions";
 import type { PathFeedbackOutcome } from "@/lib/path/task-feedback";
 
@@ -13,6 +14,7 @@ export default function PathTaskFeedback({ taskId }: { taskId: string }) {
   const [pendingOutcome, setPendingOutcome] =
     useState<PathFeedbackOutcome | null>(null);
   const [pending, startTransition] = useTransition();
+  const reduced = useReducedMotion();
 
   function submit(outcome: PathFeedbackOutcome) {
     setError(null);
@@ -46,11 +48,21 @@ export default function PathTaskFeedback({ taskId }: { taskId: string }) {
   }
 
   return (
-    <div className="mt-3 border-t border-[var(--border)] pt-3">
-      <p className="text-xs font-medium text-[var(--ink-muted)]">Did this move fit?</p>
+    <div className="path-feedback">
+      <div className="path-feedback-heading">
+        <p>Did this move fit?</p>
+        <span>Your answer reshapes the next one.</span>
+      </div>
 
+      <AnimatePresence initial={false} mode="wait">
       {showStuckForm ? (
-        <div className="mt-2 space-y-2">
+        <motion.div
+          key="stuck-form"
+          initial={reduced ? { opacity: 0 } : { opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={reduced ? { opacity: 0 } : { opacity: 0, y: -4 }}
+          className="mt-3 space-y-2"
+        >
           <label
             htmlFor={`path-task-feedback-${taskId}`}
             className="block text-sm text-[var(--ink)]"
@@ -69,14 +81,15 @@ export default function PathTaskFeedback({ taskId }: { taskId: string }) {
             placeholder="Share any blocker that should change your recommendation"
           />
           <div className="flex flex-wrap items-center gap-2">
-            <button
+            <motion.button
               type="button"
               disabled={pending}
               onClick={() => submit("stuck")}
-              className="rounded-md border border-[var(--border-strong)] bg-[var(--ink)] px-3 py-1.5 text-xs font-medium text-[var(--canvas)] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+              whileTap={reduced ? undefined : { scale: 0.98 }}
+              className="path-feedback-submit"
             >
               {pendingOutcome === "stuck" ? "Changing..." : "Change my next move"}
-            </button>
+            </motion.button>
             <button
               type="button"
               disabled={pending}
@@ -86,38 +99,48 @@ export default function PathTaskFeedback({ taskId }: { taskId: string }) {
               Cancel
             </button>
           </div>
-        </div>
+        </motion.div>
       ) : (
-        <div className="mt-2 flex flex-wrap gap-2">
-          <button
+        <motion.div
+          key="choices"
+          initial={reduced ? { opacity: 0 } : { opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={reduced ? { opacity: 0 } : { opacity: 0, y: -4 }}
+          className="mt-3 flex flex-wrap gap-2"
+        >
+          <motion.button
             type="button"
             disabled={pending}
             onClick={() => submit("helped")}
-            className="rounded-md border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--ink-muted)] hover:border-[var(--border-strong)] hover:text-[var(--ink)] disabled:cursor-not-allowed disabled:opacity-50"
+            whileTap={reduced ? undefined : { scale: 0.97 }}
+            className="path-feedback-choice"
           >
             {pendingOutcome === "helped" ? "Saving..." : "Helped"}
-          </button>
-          <button
+          </motion.button>
+          <motion.button
             type="button"
             disabled={pending}
             onClick={() => submit("not_relevant")}
-            className="rounded-md border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--ink-muted)] hover:border-[var(--border-strong)] hover:text-[var(--ink)] disabled:cursor-not-allowed disabled:opacity-50"
+            whileTap={reduced ? undefined : { scale: 0.97 }}
+            className="path-feedback-choice"
           >
             {pendingOutcome === "not_relevant" ? "Saving..." : "Not relevant"}
-          </button>
-          <button
+          </motion.button>
+          <motion.button
             type="button"
             disabled={pending}
             onClick={() => {
               setError(null);
               setShowStuckForm(true);
             }}
-            className="rounded-md border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--ink-muted)] hover:border-[var(--border-strong)] hover:text-[var(--ink)] disabled:cursor-not-allowed disabled:opacity-50"
+            whileTap={reduced ? undefined : { scale: 0.97 }}
+            className="path-feedback-choice"
           >
             I&apos;m stuck
-          </button>
-        </div>
+          </motion.button>
+        </motion.div>
       )}
+      </AnimatePresence>
 
       {error ? (
         <p role="alert" className="mt-2 text-xs text-[var(--danger)]">

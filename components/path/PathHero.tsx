@@ -1,15 +1,33 @@
+"use client";
+
 import type { ReactNode } from "react";
+import { motion, useReducedMotion } from "motion/react";
 import type { PathTaskSummary } from "@/lib/path/load-home-data";
 import type { PathPlanUi, UiRecipe } from "@/lib/path/types";
 import PathTaskAction from "./PathTaskAction";
 import PathTaskFeedback from "./PathTaskFeedback";
 
-const RECIPE_ID: Record<UiRecipe, string> = {
-  studio: "studio",
-  ops_desk: "ops desk",
-  prep_room: "prep room",
-  focus_track: "focus track",
-  network_gap: "network gap",
+const RECIPE_COPY: Record<UiRecipe, { label: string; context: string }> = {
+  studio: {
+    label: "Build studio",
+    context: "Your path is prioritizing proof you can explain in an interview.",
+  },
+  ops_desk: {
+    label: "Application desk",
+    context: "Your path is prioritizing a smaller set of applications worth finishing.",
+  },
+  prep_room: {
+    label: "Interview room",
+    context: "Your live interview stays ahead of new listings and project work.",
+  },
+  focus_track: {
+    label: "Focus track",
+    context: "Secondary work is muted until this one move is out of the way.",
+  },
+  network_gap: {
+    label: "Warm intro desk",
+    context: "Your path is prioritizing useful conversations at target companies.",
+  },
 };
 
 /** Build=0, Apply=1, Prepare=2 — matches landing PathSystem track. */
@@ -73,52 +91,73 @@ export default function PathHero({
 }) {
   const stageIndex = RECIPE_STAGE[plan.ui_recipe];
   const modifier = modifierFor(plan);
+  const recipe = RECIPE_COPY[plan.ui_recipe];
+  const reduced = useReducedMotion();
+  const moveTitle = nextTask?.title ?? plan.headline;
+  const moveDetail = nextTask?.detail ?? plan.why;
 
   return (
-    <div
+    <motion.article
+      key={plan.ui_recipe}
       data-tone={plan.tone}
-      className="landing-path-preview path-hero"
+      data-recipe={plan.ui_recipe}
+      className="path-command-center"
       aria-label="Your adaptive path"
+      initial={reduced ? false : { opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 260, damping: 30 }}
     >
-      <header>
-        <span>Your path</span>
-        <span>{RECIPE_ID[plan.ui_recipe]}</span>
+      <header className="path-command-header">
+        <div>
+          <p className="path-command-kicker">Your adaptive workspace</p>
+          <p className="path-command-recipe">{recipe.label}</p>
+        </div>
+        <p className="path-command-context">{recipe.context}</p>
       </header>
 
-      <div className="landing-path-next">
-        <span>Next move</span>
-        <p>{nextTask?.title ?? plan.headline}</p>
+      <div className="path-command-grid">
+        <section className="path-command-recommendation" aria-labelledby="path-next-move">
+          <p className="path-command-label">Next move</p>
+          <h1 id="path-next-move">{moveTitle}</h1>
+          <p className="path-command-detail">{moveDetail}</p>
+
+          {nextTask && taskHref ? (
+            <div className="path-hero-actions">
+              <PathTaskAction taskId={nextTask.id} href={taskHref} status={nextTask.status} />
+              <PathTaskFeedback key={nextTask.id} taskId={nextTask.id} />
+            </div>
+          ) : children ? (
+            <div className="path-hero-actions">{children}</div>
+          ) : null}
+        </section>
+
+        <aside className="path-command-rationale" aria-label="Why the path changed">
+          <p className="path-command-label">Why now</p>
+          <p className="path-command-why">{plan.why}</p>
+
+          <div className="path-stage-rail" aria-label={`Current path stage: ${STAGES[stageIndex]}`}>
+            <div className="path-stage-track" aria-hidden>
+              <motion.span
+                initial={false}
+                animate={{ scaleX: stageIndex / (STAGES.length - 1) }}
+                transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 240, damping: 30 }}
+              />
+            </div>
+            <div className="path-stage-labels">
+              {STAGES.map((stage, index) => (
+                <span key={stage} data-current={index === stageIndex ? "true" : undefined}>
+                  {stage}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="path-command-modifier" data-tone={plan.tone}>
+            <span>{modifier.label}</span>
+            <p>{modifier.detail}</p>
+          </div>
+        </aside>
       </div>
-
-      <p className="path-hero-why">{nextTask?.detail ?? plan.why}</p>
-
-      <div className="landing-path-track" aria-label="Path stage">
-        {STAGES.map((stage, index) => (
-          <span
-            key={stage}
-            className={index === stageIndex ? "is-current" : undefined}
-          >
-            {stage}
-            {index === stageIndex ? (
-              <span className="landing-path-stage-line" aria-hidden />
-            ) : null}
-          </span>
-        ))}
-      </div>
-
-      <div className="landing-path-modifier" data-tone={plan.tone}>
-        <span>{modifier.label}</span>
-        {modifier.detail}
-      </div>
-
-      {nextTask && taskHref ? (
-        <div className="path-hero-actions">
-          <PathTaskAction taskId={nextTask.id} href={taskHref} status={nextTask.status} />
-          <PathTaskFeedback key={nextTask.id} taskId={nextTask.id} />
-        </div>
-      ) : children ? (
-        <div className="path-hero-actions">{children}</div>
-      ) : null}
-    </div>
+    </motion.article>
   );
 }

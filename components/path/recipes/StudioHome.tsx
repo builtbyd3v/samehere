@@ -23,14 +23,14 @@ export default function StudioHome({
   const skill = context.skillStage;
 
   return (
-    <div className="mx-auto w-full max-w-3xl py-5 md:py-6">
+    <div className="path-recipe path-recipe-studio mx-auto w-full max-w-6xl py-5 md:py-7">
       <PathHero plan={plan} nextTask={nextTask} taskHref={taskHref}>
         <Link href={project ? `/projects/${project.slug}` : "/home"} className={signupCta}>
           {project ? "Open assigned project" : "Review your path"}
         </Link>
       </PathHero>
 
-      <div id="project-plan" className="mt-6 space-y-4">
+      <div id="project-plan" className="path-workspace-grid path-workspace-studio">
         <ProjectPlanStub
           projectTitle={project?.title}
           projectSlug={project?.slug}
@@ -45,9 +45,7 @@ export default function StudioHome({
           description={skill?.description}
           next={skill?.nextSkill}
         />
-        <div className="opacity-70">
-          <OpportunitiesStub listings={listings} />
-        </div>
+        <OpportunitiesStub listings={listings} />
       </div>
     </div>
   );

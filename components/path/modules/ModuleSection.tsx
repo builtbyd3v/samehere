@@ -29,13 +29,8 @@ export default function ModuleSection({
       className={`landing-demo-panel path-module-panel${demoted ? " opacity-70" : ""}`}
       aria-labelledby={`module-${id}`}
     >
-      <header className="landing-demo-header">
-        <div>
-          <span className="landing-stage-mark">
-            <span aria-hidden className="landing-stage-dot" />
-            <span id={`module-${id}`}>{title ?? LABELS[id]}</span>
-          </span>
-        </div>
+      <header className="path-module-header">
+        <h2 id={`module-${id}`}>{title ?? LABELS[id]}</h2>
       </header>
       <div className="path-module-body">{children}</div>
     </section>

@@ -2752,3 +2752,450 @@ summary {
   margin-top: 0;
 }
 
+/* Adaptive path workspaces --------------------------------------------------
+   Outer workspace panels use a 16px radius, inner controls use 10-11px.
+   Each fixed recipe gets a distinct composition while sharing one blue accent. */
+.path-command-center {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background:
+    radial-gradient(circle at 8% 0%, var(--accent-blue-soft), transparent 28rem),
+    var(--surface);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--ink) 7%, transparent),
+    0 28px 70px -54px color-mix(in srgb, var(--accent-blue) 70%, transparent);
+}
+
+.path-command-center[data-recipe="ops_desk"] {
+  background:
+    linear-gradient(90deg, var(--accent-blue-soft) 0.22rem, transparent 0.22rem),
+    var(--surface);
+}
+
+.path-command-center[data-recipe="prep_room"] {
+  background:
+    radial-gradient(circle at 92% 14%, var(--accent-blue-soft), transparent 24rem),
+    var(--surface);
+}
+
+.path-command-center[data-recipe="focus_track"] {
+  background: var(--surface);
+  box-shadow: 0 36px 90px -64px color-mix(in srgb, var(--accent-blue) 60%, transparent);
+}
+
+.path-command-center[data-recipe="network_gap"] {
+  background:
+    radial-gradient(circle at 50% -20%, var(--accent-blue-soft), transparent 30rem),
+    var(--surface);
+}
+
+.path-command-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 0.75fr);
+  gap: 2rem;
+  align-items: end;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  border-bottom: 1px solid var(--border);
+}
+
+.path-command-kicker,
+.path-command-label {
+  color: var(--accent-blue-strong);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.path-command-recipe {
+  margin-top: 0.3rem;
+  color: var(--ink);
+  font-size: clamp(1.05rem, 2vw, 1.3rem);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+.path-command-context {
+  max-width: 38ch;
+  justify-self: end;
+  color: var(--ink-muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+.path-command-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(17rem, 0.75fr);
+}
+
+.path-command-recommendation {
+  min-width: 0;
+  padding: clamp(1.5rem, 4vw, 3.25rem);
+}
+
+.path-command-recommendation h1 {
+  max-width: 18ch;
+  margin-top: 0.8rem;
+  color: var(--ink);
+  font-size: clamp(2.05rem, 5vw, 3.8rem);
+  font-weight: 500;
+  letter-spacing: -0.055em;
+  line-height: 0.98;
+  text-wrap: balance;
+}
+
+.path-command-detail {
+  max-width: 55ch;
+  margin-top: 1.15rem;
+  color: var(--ink-muted);
+  font-size: 0.98rem;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.path-command-rationale {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  border-left: 1px solid var(--border);
+  padding: clamp(1.5rem, 3vw, 2.25rem);
+  background: color-mix(in srgb, var(--surface-raised) 58%, transparent);
+}
+
+.path-command-why {
+  margin-top: 0.75rem;
+  color: var(--ink);
+  font-size: 0.9rem;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+.path-stage-rail {
+  margin-top: auto;
+  padding-top: 2.25rem;
+}
+
+.path-stage-track {
+  height: 0.2rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
+}
+
+.path-stage-track > span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-origin: left center;
+  border-radius: inherit;
+  background: var(--accent-blue-strong);
+}
+
+.path-stage-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.6rem;
+  color: var(--ink-faint);
+  font-size: 0.68rem;
+}
+
+.path-stage-labels [data-current="true"] {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.path-command-modifier {
+  margin-top: 1.5rem;
+  border-radius: 0.7rem;
+  border: 1px solid var(--border);
+  padding: 0.85rem;
+  background: var(--surface);
+}
+
+.path-command-modifier > span {
+  color: var(--accent-blue-strong);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.path-command-modifier > p {
+  margin-top: 0.25rem;
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.path-app .path-hero-actions {
+  margin-top: 1.75rem;
+}
+
+.path-feedback {
+  max-width: 34rem;
+  margin-top: 1rem;
+  border-top: 1px solid var(--border);
+  padding-top: 1rem;
+}
+
+.path-feedback-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem 1rem;
+}
+
+.path-feedback-heading > p {
+  color: var(--ink);
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.path-feedback-heading > span {
+  color: var(--ink-faint);
+  font-size: 0.7rem;
+}
+
+.path-feedback-choice,
+.path-feedback-submit {
+  border-radius: 0.6rem;
+  border: 1px solid var(--border);
+  padding: 0.42rem 0.75rem;
+  color: var(--ink-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  transition:
+    border-color 180ms var(--ease-out),
+    background-color 180ms var(--ease-out),
+    color 180ms var(--ease-out);
+}
+
+.path-feedback-choice:hover {
+  border-color: var(--border-strong);
+  background: var(--featured-surface);
+  color: var(--ink);
+}
+
+.path-feedback-submit {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--canvas);
+}
+
+.path-feedback-choice:focus-visible,
+.path-feedback-submit:focus-visible {
+  outline: 2px solid var(--accent-blue-strong);
+  outline-offset: 2px;
+}
+
+.path-feedback-choice:disabled,
+.path-feedback-submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.path-workspace-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.path-app .path-module-panel.landing-demo-panel,
+.path-ops-switchboard {
+  min-height: 0;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  padding: clamp(1rem, 2.4vw, 1.5rem);
+  background: var(--surface);
+  box-shadow: 0 18px 44px -42px color-mix(in srgb, var(--ink) 55%, transparent);
+}
+
+.path-app .path-module-panel.landing-demo-panel:hover {
+  border-color: color-mix(in srgb, var(--accent-blue-strong) 42%, var(--border));
+  background: color-mix(in srgb, var(--surface-raised) 72%, var(--surface));
+}
+
+.path-module-header h2,
+.path-switchboard-header h2 {
+  color: var(--ink);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+.path-app .path-module-body {
+  margin-top: 1.25rem;
+}
+
+.path-workspace-studio > [data-module="project_plan"] {
+  grid-column: span 8;
+  grid-row: span 2;
+}
+
+.path-workspace-studio > [data-module="dossier"],
+.path-workspace-studio > [data-module="skill_stages"] {
+  grid-column: span 4;
+}
+
+.path-workspace-studio > [data-module="opportunities"] {
+  grid-column: span 12;
+  opacity: 0.72;
+}
+
+.path-workspace-ops > .path-ops-switchboard {
+  grid-column: span 8;
+  grid-row: span 2;
+}
+
+.path-workspace-ops > [data-module="pitch"],
+.path-workspace-ops > [data-module="helpers"] {
+  grid-column: span 4;
+}
+
+.path-switchboard-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.path-switchboard-header p {
+  max-width: 45ch;
+  margin-top: 0.35rem;
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.path-ops-switchboard .path-module-panel {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.path-ops-switchboard .path-module-panel:hover {
+  border-color: transparent;
+  background: transparent;
+}
+
+.path-workspace-prep > [data-module="interview_prep"] {
+  grid-column: span 8;
+  grid-row: span 2;
+  min-height: 18rem;
+}
+
+.path-workspace-prep > [data-module="helpers"],
+.path-workspace-prep > [data-module="applications"] {
+  grid-column: span 4;
+}
+
+.path-workspace-prep > [data-module="applications"] {
+  opacity: 0.72;
+}
+
+.path-workspace-network > [data-module="helpers"] {
+  grid-column: span 7;
+  grid-row: span 2;
+  min-height: 17rem;
+}
+
+.path-workspace-network > [data-module="opportunities"],
+.path-workspace-network > [data-module="applications"] {
+  grid-column: span 5;
+}
+
+.path-workspace-network > [data-module="applications"] {
+  opacity: 0.72;
+}
+
+.path-recipe-focus .path-command-header {
+  grid-template-columns: 1fr;
+}
+
+.path-recipe-focus .path-command-context {
+  max-width: 42ch;
+  justify-self: start;
+}
+
+.path-recipe-focus .path-command-grid {
+  grid-template-columns: 1fr;
+}
+
+.path-recipe-focus .path-command-recommendation {
+  padding-block: clamp(2rem, 8vw, 5rem);
+}
+
+.path-recipe-focus .path-command-recommendation h1 {
+  max-width: 14ch;
+  font-size: clamp(2.7rem, 8vw, 5.4rem);
+}
+
+.path-recipe-focus .path-command-rationale {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 0.75fr);
+  gap: 2rem;
+  border-top: 1px solid var(--border);
+  border-left: 0;
+}
+
+.path-recipe-focus .path-stage-rail {
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.path-recipe-focus .path-command-modifier {
+  grid-column: 1 / -1;
+  margin-top: 0;
+}
+
+@media (max-width: 767px) {
+  .path-command-header,
+  .path-command-grid,
+  .path-recipe-focus .path-command-rationale {
+    grid-template-columns: 1fr;
+  }
+
+  .path-command-context {
+    max-width: 42ch;
+    justify-self: start;
+  }
+
+  .path-command-rationale {
+    border-top: 1px solid var(--border);
+    border-left: 0;
+  }
+
+  .path-command-recommendation h1,
+  .path-recipe-focus .path-command-recommendation h1 {
+    max-width: 18ch;
+    font-size: clamp(2.1rem, 11vw, 3.25rem);
+  }
+
+  .path-workspace-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .path-workspace-grid > *,
+  .path-workspace-studio > [data-module],
+  .path-workspace-ops > *,
+  .path-workspace-prep > [data-module],
+  .path-workspace-network > [data-module] {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .path-switchboard-header {
+    align-items: stretch;
+  }
+
+  .path-switchboard-header [role="radiogroup"] {
+    width: 100%;
+  }
+}
+

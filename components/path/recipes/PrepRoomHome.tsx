@@ -21,7 +21,7 @@ export default function PrepRoomHome({
     : "/prep";
 
   return (
-    <div className="mx-auto w-full max-w-3xl py-5 md:py-6">
+    <div className="path-recipe path-recipe-prep mx-auto w-full max-w-6xl py-5 md:py-7">
       <PathHero plan={plan} nextTask={nextTask} taskHref={taskHref}>
         <div className="path-hero-listing">
           <p className="landing-demo-meta">
@@ -44,16 +44,14 @@ export default function PrepRoomHome({
         </div>
       </PathHero>
 
-      <div id="practice" className="mt-6 space-y-4">
+      <div id="practice" className="path-workspace-grid path-workspace-prep">
         <InterviewPrepStub
           company={interview?.org}
           prompt={interview?.question}
           href={prepHref}
         />
-        <HelpersStub helpers={[]} />
-        <div className="opacity-70">
-          <ApplicationsStub stages={applicationStages} />
-        </div>
+        <HelpersStub helpers={context.helpers} />
+        <ApplicationsStub stages={applicationStages} />
       </div>
     </div>
   );
