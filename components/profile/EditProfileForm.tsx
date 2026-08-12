@@ -200,7 +200,7 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
               name="goals"
               rows={2}
               maxLength={500}
-              defaultValue={initial.goals ?? ""}
+              defaultValue={initial.goals || initial.seekingPlaceholder || ""}
               placeholder={initial.seekingPlaceholder ?? "Software Engineering Intern"}
               className={field}
             />
