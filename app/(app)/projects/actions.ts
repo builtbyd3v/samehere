@@ -312,12 +312,6 @@ export async function addProjectToDossier(
   return { success: true };
 }
 
-export type {
-  ProjectWorkspaceSnapshot,
-  SaveProjectWorkspaceFileInput,
-  SaveProjectWorkspaceFileResult,
-};
-
 /**
  * Owner workspace checkpoint, or null before the first edit / when unavailable.
  * Always scopes by auth user_id; RLS remains the final trust boundary.
