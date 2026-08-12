@@ -72,9 +72,9 @@ export default function LeftNav({
           <Link
             key={item.label}
             href={item.href}
-            className={`relative flex items-center gap-3.5 rounded-full px-4 py-2.5 text-[15px] font-medium transition-colors duration-200 ease-out hover:bg-[var(--featured-surface)] ${active ? "bg-[var(--blue-glow)] font-semibold text-[var(--blue)]" : "text-[var(--ink)]"}`}
+            className={`relative flex items-center gap-3.5 rounded-full px-4 py-2.5 text-[15px] transition-colors duration-200 ease-out hover:bg-[var(--featured-surface)] ${active ? "bg-[var(--featured-surface)] font-semibold text-[var(--ink)]" : "font-medium text-[var(--ink-muted)]"}`}
           >
-            <span className={`grid h-6 w-6 shrink-0 place-items-center ${active ? "text-[var(--blue)]" : "text-[var(--ink-muted)]"}`}>
+            <span className={`grid h-6 w-6 shrink-0 place-items-center ${active ? "text-[var(--ink)]" : "text-[var(--ink-faint)]"}`}>
               {item.icon}
             </span>
             {item.label}

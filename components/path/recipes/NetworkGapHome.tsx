@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ghostCta, signupCta } from "@/components/landing/cta";
 import type {
   ApplicationStageCount,
   OpportunityListing,
@@ -21,25 +22,19 @@ export default function NetworkGapHome({
   applicationStages?: ApplicationStageCount[];
 }) {
   return (
-    <div className="mx-auto w-full max-w-3xl py-6 md:py-8">
+    <div className="mx-auto w-full max-w-3xl py-5 md:py-6">
       <PathHero plan={plan}>
-        <div className="flex flex-wrap gap-2 border-t border-[var(--border)] pt-5">
-          <Link
-            href="/messages"
-            className="inline-flex h-10 items-center rounded-full bg-[var(--blue)] px-4 text-sm font-semibold text-white transition hover:opacity-90"
-          >
+        <div className="flex flex-wrap gap-2">
+          <Link href="/messages" className={signupCta}>
             Draft warm intros
           </Link>
-          <Link
-            href="/jobs"
-            className="inline-flex h-10 items-center rounded-full border border-[var(--border-strong)] px-4 text-sm font-semibold text-[var(--ink)] transition hover:bg-[var(--featured-surface)]"
-          >
+          <Link href="/jobs" className={ghostCta}>
             See target companies
           </Link>
         </div>
       </PathHero>
 
-      <div className="mt-10 space-y-10">
+      <div className="mt-6 space-y-4">
         <HelpersStub />
         <OpportunitiesStub
           listings={

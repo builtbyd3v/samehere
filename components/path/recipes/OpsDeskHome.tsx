@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ghostCta, signupCta } from "@/components/landing/cta";
 import type {
   ApplicationStageCount,
   OpportunityListing,
@@ -25,40 +26,32 @@ export default function OpsDeskHome({
   const listingHref = top ? `/jobs/${top.id}` : "/jobs";
 
   return (
-    <div className="mx-auto w-full max-w-3xl py-6 md:py-8">
+    <div className="mx-auto w-full max-w-3xl py-5 md:py-6">
       <PathHero plan={plan}>
-        <div className="flex flex-wrap items-end justify-between gap-4 border-t border-[var(--border)] pt-5">
+        <div className="landing-opportunity path-hero-listing">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
-              Next listing
-            </p>
-            <p className="mt-1 text-lg font-semibold tracking-[-0.02em] text-[var(--ink)]">
+            <p className="landing-demo-meta">Next listing</p>
+            <p className="landing-opportunity-role mt-1">
               {top?.title ?? "Software Engineering Intern"}
             </p>
-            <p className="text-sm text-[var(--ink-muted)]">
+            <p className="landing-opportunity-org">
               {top
                 ? `${top.org}${top.fit ? ` · ${top.fit}` : ""}`
                 : "Target company · Strong fit"}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link
-              href={listingHref}
-              className="inline-flex h-10 items-center rounded-full bg-[var(--blue)] px-4 text-sm font-semibold text-white transition hover:opacity-90"
-            >
+            <Link href={listingHref} className={signupCta}>
               Open listing
             </Link>
-            <Link
-              href="/applications"
-              className="inline-flex h-10 items-center rounded-full border border-[var(--border-strong)] px-4 text-sm font-semibold text-[var(--ink)] transition hover:bg-[var(--featured-surface)]"
-            >
+            <Link href="/applications" className={ghostCta}>
               View pipeline
             </Link>
           </div>
         </div>
       </PathHero>
 
-      <div className="mt-10 space-y-10">
+      <div className="mt-6 space-y-4">
         <ApplicationsStub stages={applicationStages} />
         <OpportunitiesStub listings={listings} />
         <PitchStub listingId={top?.id} />

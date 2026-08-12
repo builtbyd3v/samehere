@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import ModuleSection from "./ModuleSection";
 
@@ -14,7 +15,7 @@ export function ProjectPlanStub({
 }) {
   return (
     <ModuleSection id="project_plan">
-      <p className="text-lg font-semibold tracking-[-0.02em] text-[var(--ink)]">
+      <p className="text-base font-medium tracking-[-0.02em] text-[var(--ink)]">
         {projectTitle}
       </p>
       <ol className="mt-4 space-y-2.5">
@@ -22,9 +23,9 @@ export function ProjectPlanStub({
           <li key={task.label} className="flex items-start gap-3 text-sm text-[var(--ink)]">
             <span
               aria-hidden
-              className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border ${
+              className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border text-[10px] ${
                 task.done
-                  ? "border-[var(--blue)] bg-[var(--blue-glow)] text-[var(--blue)]"
+                  ? "border-[var(--accent-blue)] bg-[var(--accent-blue-soft)] text-[var(--accent-blue-strong)]"
                   : "border-[var(--border-strong)] text-transparent"
               }`}
             >
@@ -38,7 +39,7 @@ export function ProjectPlanStub({
       </ol>
       <Link
         href="/projects/url-shortener"
-        className="mt-4 inline-flex text-sm font-semibold text-[var(--blue)] hover:underline"
+        className="mt-4 inline-flex text-sm font-medium text-[var(--accent-blue-strong)] hover:underline"
       >
         Open project workspace
       </Link>
@@ -56,7 +57,7 @@ export function DossierStub({
       <ul className="space-y-2 text-sm text-[var(--ink)]">
         {gaps.map((gap) => (
           <li key={gap} className="flex gap-2">
-            <span aria-hidden className="text-[var(--blue)]">
+            <span aria-hidden className="text-[var(--accent-blue-strong)]">
               ·
             </span>
             {gap}
@@ -65,7 +66,7 @@ export function DossierStub({
       </ul>
       <Link
         href="/profile/edit"
-        className="mt-4 inline-flex text-sm font-semibold text-[var(--blue)] hover:underline"
+        className="mt-4 inline-flex text-sm font-medium text-[var(--accent-blue-strong)] hover:underline"
       >
         Update dossier
       </Link>
@@ -95,35 +96,35 @@ export function OpportunitiesStub({
 
   return (
     <ModuleSection id="opportunities">
-      <ul className="divide-y divide-[var(--border)] border-y border-[var(--border)]">
+      <ul className="divide-y divide-[var(--border)]">
         {rows.map((listing) => {
           const href = listing.id ? `/jobs/${listing.id}` : "/jobs";
           const action = listing.id ? "Open" : "Browse";
           return (
             <li
               key={listing.id ?? `${listing.org}-${listing.title}`}
-              className="flex items-baseline justify-between gap-4 py-3"
+              className="flex items-baseline justify-between gap-4 py-3 first:pt-0 last:pb-0"
             >
               <div className="min-w-0">
                 <Link
                   href={href}
-                  className="truncate text-sm font-semibold text-[var(--ink)] hover:underline"
+                  className="truncate text-sm font-medium text-[var(--ink)] hover:underline"
                 >
                   {listing.title}
                 </Link>
-                <p className="text-sm text-[var(--ink-muted)]">
+                <p className="landing-opportunity-org">
                   {listing.org}
                   {listing.location
                     ? ` · ${listing.location.slice(0, 60)}`
                     : ""}
                 </p>
                 {listing.fit ? (
-                  <p className="mt-0.5 text-xs text-[var(--blue)]">{listing.fit}</p>
+                  <span className="landing-fit mt-1.5 inline-flex">{listing.fit}</span>
                 ) : null}
               </div>
               <Link
                 href={href}
-                className="shrink-0 text-xs font-semibold text-[var(--blue)] hover:underline"
+                className="shrink-0 text-xs font-medium text-[var(--accent-blue-strong)] hover:underline"
               >
                 {action}
               </Link>
@@ -133,7 +134,7 @@ export function OpportunitiesStub({
       </ul>
       <Link
         href="/jobs"
-        className="mt-4 inline-flex text-sm font-semibold text-[var(--blue)] hover:underline"
+        className="mt-4 inline-flex text-sm font-medium text-[var(--accent-blue-strong)] hover:underline"
       >
         Browse opportunities
       </Link>
@@ -156,21 +157,27 @@ export function ApplicationsStub({
 
   return (
     <ModuleSection id="applications">
-      <div className="flex flex-wrap gap-6">
-        {rows.map((stage) => (
-          <div key={stage.label}>
-            <p className="text-2xl font-semibold tabular-nums tracking-[-0.03em] text-[var(--ink)]">
-              {stage.count}
-            </p>
-            <p className="mt-1 text-xs font-medium uppercase tracking-[0.12em] text-[var(--ink-muted)]">
-              {stage.label}
-            </p>
+      <div className="landing-pipeline" aria-label="Application stages">
+        {rows.map((stage, index) => (
+          <div key={stage.label} className="landing-pipeline-stage">
+            <span
+              aria-hidden
+              className="landing-pipeline-dot path-pipeline-dot"
+              style={{ "--stage-index": index } as CSSProperties}
+              data-count={stage.count}
+            />
+            <div>
+              <p className="text-lg font-medium tabular-nums tracking-[-0.03em] text-[var(--ink)]">
+                {stage.count}
+              </p>
+              <p className="text-[0.75rem] text-[var(--ink-faint)]">{stage.label}</p>
+            </div>
           </div>
         ))}
       </div>
       <Link
         href="/applications"
-        className="mt-4 inline-flex text-sm font-semibold text-[var(--blue)] hover:underline"
+        className="mt-4 inline-flex text-sm font-medium text-[var(--accent-blue-strong)] hover:underline"
       >
         Open tracker
       </Link>
@@ -187,7 +194,7 @@ export function PitchStub({ listingId }: { listingId?: string }) {
       </p>
       <Link
         href={href}
-        className="mt-4 inline-flex text-sm font-semibold text-[var(--blue)] hover:underline"
+        className="mt-4 inline-flex text-sm font-medium text-[var(--accent-blue-strong)] hover:underline"
       >
         {listingId ? "Pitch this listing" : "Pick a listing to pitch"}
       </Link>
@@ -204,16 +211,14 @@ export function InterviewPrepStub({
 }) {
   return (
     <ModuleSection id="interview_prep">
-      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--blue)]">
-        {company}
-      </p>
+      <p className="text-xs font-medium text-[var(--accent-blue-strong)]">{company}</p>
       <p className="mt-2 text-base font-medium leading-snug text-[var(--ink)]">{prompt}</p>
       <p className="mt-3 text-sm text-[var(--ink-muted)]">
         Write a short answer, then get feedback on structure and signal.
       </p>
       <Link
         href="/prep"
-        className="mt-4 inline-flex text-sm font-semibold text-[var(--blue)] hover:underline"
+        className="mt-4 inline-flex text-sm font-medium text-[var(--accent-blue-strong)] hover:underline"
       >
         Open company practice banks
       </Link>
@@ -235,16 +240,16 @@ export function HelpersStub({
         {helpers.map((helper) => (
           <li key={helper.name} className="flex items-baseline justify-between gap-3 text-sm">
             <div>
-              <p className="font-semibold text-[var(--ink)]">{helper.name}</p>
+              <p className="font-medium text-[var(--ink)]">{helper.name}</p>
               <p className="text-[var(--ink-muted)]">{helper.org}</p>
             </div>
-            <span className="text-xs text-[var(--ink-muted)]">{helper.note}</span>
+            <span className="landing-fit">{helper.note}</span>
           </li>
         ))}
       </ul>
       <Link
         href="/messages"
-        className="mt-4 inline-flex text-sm font-semibold text-[var(--blue)] hover:underline"
+        className="mt-4 inline-flex text-sm font-medium text-[var(--accent-blue-strong)] hover:underline"
       >
         Draft an icebreaker
       </Link>
@@ -261,7 +266,7 @@ export function SkillStagesStub({
 }) {
   return (
     <ModuleSection id="skill_stages">
-      <p className="text-sm font-semibold text-[var(--ink)]">Current stage · {stage}</p>
+      <p className="text-sm font-medium text-[var(--ink)]">Current stage · {stage}</p>
       <p className="mt-2 text-sm text-[var(--ink-muted)]">Next checkpoint: {next}</p>
     </ModuleSection>
   );

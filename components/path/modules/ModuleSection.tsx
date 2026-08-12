@@ -26,16 +26,18 @@ export default function ModuleSection({
   return (
     <section
       data-module={id}
-      className={demoted ? "opacity-70" : undefined}
+      className={`landing-demo-panel path-module-panel${demoted ? " opacity-70" : ""}`}
       aria-labelledby={`module-${id}`}
     >
-      <h2
-        id={`module-${id}`}
-        className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]"
-      >
-        {title ?? LABELS[id]}
-      </h2>
-      <div className="mt-3">{children}</div>
+      <header className="landing-demo-header">
+        <div>
+          <span className="landing-stage-mark">
+            <span aria-hidden className="landing-stage-dot" />
+            <span id={`module-${id}`}>{title ?? LABELS[id]}</span>
+          </span>
+        </div>
+      </header>
+      <div className="path-module-body">{children}</div>
     </section>
   );
 }

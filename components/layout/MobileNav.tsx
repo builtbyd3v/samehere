@@ -64,13 +64,12 @@ export default function MobileNav({
           key={item.label}
           href={item.href}
           aria-label={item.label}
-          className={`relative flex min-h-11 flex-1 items-center justify-center py-3 transition-colors duration-200 ease-out ${item.active ? "text-[var(--blue)]" : "text-[var(--ink-muted)]"}`}
+          className={`relative flex min-h-11 flex-1 items-center justify-center py-3 transition-colors duration-200 ease-out ${item.active ? "font-semibold text-[var(--ink)]" : "text-[var(--ink-muted)]"}`}
         >
           {item.active && (
             <span
               aria-hidden
-              className="pointer-events-none absolute h-8 w-8 rounded-full blur-md"
-              style={{ background: "var(--blue-glow)" }}
+              className="pointer-events-none absolute h-9 w-9 rounded-full bg-[var(--featured-surface)]"
             />
           )}
           <span className="relative">{item.icon}</span>

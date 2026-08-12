@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ghostCta, signupCta } from "@/components/landing/cta";
 import type {
   ApplicationStageCount,
   OpportunityListing,
@@ -20,34 +21,26 @@ export default function PrepRoomHome({
   applicationStages?: ApplicationStageCount[];
 }) {
   return (
-    <div className="mx-auto w-full max-w-3xl py-6 md:py-8">
+    <div className="mx-auto w-full max-w-3xl py-5 md:py-6">
       <PathHero plan={plan}>
-        <div className="border-t border-[var(--border)] pt-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-muted)]">
-            Next interview
-          </p>
-          <p className="mt-1 text-lg font-semibold tracking-[-0.02em] text-[var(--ink)]">
+        <div className="path-hero-listing">
+          <p className="landing-demo-meta">Next interview</p>
+          <p className="landing-opportunity-role mt-1">
             Behavioral loop · Target company
           </p>
-          <p className="mt-1 text-sm text-[var(--ink-muted)]">Thursday · practice set ready</p>
+          <p className="landing-opportunity-org">Thursday · practice set ready</p>
           <div className="mt-4 flex flex-wrap gap-2">
-            <Link
-              href="/prep"
-              className="inline-flex h-10 items-center rounded-full bg-[var(--blue)] px-4 text-sm font-semibold text-white transition hover:opacity-90"
-            >
+            <Link href="/prep" className={signupCta}>
               Start practice
             </Link>
-            <Link
-              href="/messages"
-              className="inline-flex h-10 items-center rounded-full border border-[var(--border-strong)] px-4 text-sm font-semibold text-[var(--ink)] transition hover:bg-[var(--featured-surface)]"
-            >
+            <Link href="/messages" className={ghostCta}>
               Ask a helper
             </Link>
           </div>
         </div>
       </PathHero>
 
-      <div id="practice" className="mt-10 space-y-10">
+      <div id="practice" className="mt-6 space-y-4">
         <InterviewPrepStub />
         <HelpersStub
           helpers={[{ name: "Alex M.", org: "Target company", note: "Open to help" }]}

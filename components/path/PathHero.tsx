@@ -1,13 +1,61 @@
 import type { ReactNode } from "react";
-import type { PathPlanUi } from "@/lib/path/types";
+import type { PathPlanUi, UiRecipe } from "@/lib/path/types";
 
-const RECIPE_MARK: Record<PathPlanUi["ui_recipe"], string> = {
-  studio: "Studio",
-  ops_desk: "Ops desk",
-  prep_room: "Prep room",
-  focus_track: "Focus track",
-  network_gap: "Network gap",
+const RECIPE_ID: Record<UiRecipe, string> = {
+  studio: "studio",
+  ops_desk: "ops desk",
+  prep_room: "prep room",
+  focus_track: "focus track",
+  network_gap: "network gap",
 };
+
+/** Build=0, Apply=1, Prepare=2 — matches landing PathSystem track. */
+const RECIPE_STAGE: Record<UiRecipe, 0 | 1 | 2> = {
+  studio: 0,
+  ops_desk: 1,
+  network_gap: 1,
+  focus_track: 1,
+  prep_room: 2,
+};
+
+const STAGES = ["Build", "Apply", "Prepare"] as const;
+
+const RECIPE_MODIFIER: Record<UiRecipe, { label: string; detail: string }> = {
+  studio: {
+    label: "Focus mode",
+    detail: "One task stays visible. Everything else waits.",
+  },
+  ops_desk: {
+    label: "Ops desk",
+    detail: "Company helpers move forward when they can help.",
+  },
+  network_gap: {
+    label: "Network gap",
+    detail: "Company helpers move forward when they can help.",
+  },
+  focus_track: {
+    label: "Focus mode",
+    detail: "One task stays visible. Everything else waits.",
+  },
+  prep_room: {
+    label: "Interview focus",
+    detail: "The next interview stays ahead of new listings.",
+  },
+};
+
+const TONE_DETAIL: Record<PathPlanUi["tone"], string> = {
+  steady: "One clear next move. No noise.",
+  urgent: "Time-sensitive. Ship the next action first.",
+  encouraging: "You're on track. Finish the next step.",
+};
+
+function modifierFor(plan: PathPlanUi) {
+  const base = RECIPE_MODIFIER[plan.ui_recipe];
+  return {
+    label: base.label,
+    detail: plan.tone === "steady" ? base.detail : TONE_DETAIL[plan.tone],
+  };
+}
 
 export default function PathHero({
   plan,
@@ -16,29 +64,47 @@ export default function PathHero({
   plan: PathPlanUi;
   children?: ReactNode;
 }) {
+  const stageIndex = RECIPE_STAGE[plan.ui_recipe];
+  const modifier = modifierFor(plan);
+
   return (
-    <header
+    <div
       data-tone={plan.tone}
-      className="relative overflow-hidden rounded-none border-b border-[var(--border)] pb-8 pt-2 md:pb-10"
+      className="landing-path-preview path-hero"
+      aria-label="Your adaptive path"
     >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10"
-        style={{
-          background:
-            "radial-gradient(120% 80% at 0% 0%, var(--blue-glow), transparent 55%), linear-gradient(180deg, var(--featured-surface), transparent 70%)",
-        }}
-      />
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--blue)]">
-        samehere · {RECIPE_MARK[plan.ui_recipe]}
-      </p>
-      <h1 className="mt-3 max-w-2xl text-[2rem] font-semibold leading-[1.05] tracking-[-0.035em] text-[var(--ink)] md:text-[2.75rem] md:tracking-[-0.04em]">
-        {plan.headline}
-      </h1>
-      <p className="mt-3 max-w-xl text-base leading-relaxed text-[var(--ink-muted)] md:text-[17px]">
-        {plan.why}
-      </p>
-      {children ? <div className="mt-6">{children}</div> : null}
-    </header>
+      <header>
+        <span>Your path</span>
+        <span>{RECIPE_ID[plan.ui_recipe]}</span>
+      </header>
+
+      <div className="landing-path-next">
+        <span>Next move</span>
+        <p>{plan.headline}</p>
+      </div>
+
+      <p className="path-hero-why">{plan.why}</p>
+
+      <div className="landing-path-track" aria-label="Path stage">
+        {STAGES.map((stage, index) => (
+          <span
+            key={stage}
+            className={index === stageIndex ? "is-current" : undefined}
+          >
+            {stage}
+            {index === stageIndex ? (
+              <span className="landing-path-stage-line" aria-hidden />
+            ) : null}
+          </span>
+        ))}
+      </div>
+
+      <div className="landing-path-modifier" data-tone={plan.tone}>
+        <span>{modifier.label}</span>
+        {modifier.detail}
+      </div>
+
+      {children ? <div className="path-hero-actions">{children}</div> : null}
+    </div>
   );
 }

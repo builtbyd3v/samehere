@@ -895,6 +895,29 @@ summary {
   outline-offset: 3px;
 }
 
+/* Authed app shell: landing dark tokens without clipping sticky/scroll. */
+.landing-xai.path-app {
+  overflow: visible;
+  --blue: var(--accent-blue-strong);
+  --blue-2: #7ec4ff;
+  --blue-glow: var(--accent-blue-soft);
+  --surface-post: var(--surface);
+}
+
+.landing-xai.path-app .shadow-paper {
+  box-shadow: none;
+}
+
+.landing-xai.path-app .input-base {
+  border-color: var(--border-strong);
+  background: var(--surface);
+}
+
+.landing-xai.path-app .input-base:focus-visible {
+  border-color: rgba(255, 255, 255, 0.28);
+  box-shadow: 0 0 0 2px var(--accent-blue-soft);
+}
+
 .landing-nav {
   min-height: 64px;
   padding-inline: 16px;
@@ -2422,5 +2445,97 @@ summary {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Path app · reuse landing-xai chrome with tighter product density ---------- */
+.path-app.landing-xai {
+  overflow: visible;
+  --blue: var(--accent-blue);
+  --blue-glow: var(--accent-blue-soft);
+}
+
+.path-app .path-hero.landing-path-preview {
+  min-height: 0;
+}
+
+.path-app .path-hero .landing-path-next {
+  min-height: 0;
+  margin-top: 1.75rem;
+}
+
+.path-app .path-hero .landing-path-next > p {
+  max-width: 28ch;
+}
+
+.path-app .path-hero-why {
+  max-width: 36rem;
+  margin-top: 0.875rem;
+  color: var(--ink-muted);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+.path-app .path-hero .landing-path-track {
+  margin-top: 2rem;
+}
+
+.path-app .path-hero-actions {
+  margin-top: 1.25rem;
+}
+
+.path-app .path-hero-listing {
+  width: 100%;
+  margin-top: 0;
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.path-app .path-hero-listing.landing-opportunity {
+  align-items: flex-end;
+}
+
+.path-app .landing-path-modifier[data-tone="urgent"] > span {
+  color: var(--accent-blue-strong);
+}
+
+.path-app .landing-path-modifier[data-tone="encouraging"] {
+  color: var(--ink-muted);
+}
+
+.path-app .path-module-panel.landing-demo-panel {
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+  transform: none;
+  box-shadow: none;
+  transition: border-color 200ms var(--ease-out);
+}
+
+.path-app .path-module-panel.landing-demo-panel:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: var(--border-strong);
+}
+
+.path-app .path-module-panel.landing-demo-panel::after {
+  display: none;
+}
+
+.path-app .path-module-body {
+  margin-top: 1rem;
+}
+
+.path-app .path-module-panel .landing-fit {
+  border-color: color-mix(in oklch, var(--accent-blue) 45%, var(--border));
+  color: var(--accent-blue-strong);
+}
+
+.path-app .path-pipeline-dot {
+  background: color-mix(in oklch, var(--accent-blue) 35%, var(--surface-raised));
+  border-color: color-mix(in oklch, var(--accent-blue) 55%, var(--border-strong));
+}
+
+.path-app .landing-pipeline {
+  margin-top: 0;
 }
 

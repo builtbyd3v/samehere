@@ -35,7 +35,12 @@ export default function PathHome({
 }: PathHomeData) {
   const Recipe = RECIPES[plan.ui_recipe] ?? StudioHome;
   return (
-    <main data-path-home data-recipe={plan.ui_recipe} data-tone={plan.tone}>
+    <main
+      className="page-enter"
+      data-path-home
+      data-recipe={plan.ui_recipe}
+      data-tone={plan.tone}
+    >
       <Recipe
         plan={plan}
         listings={listings}

@@ -22,6 +22,7 @@ import AvatarBase from "@/components/ui/Avatar";
 import SchoolAutocomplete from "@/components/profile/SchoolAutocomplete";
 import DateRangePicker from "@/components/profile/DateRangePicker";
 import Select from "@/components/ui/Select";
+import LoadingState from "@/components/landing/LoadingState";
 import { DEGREE_OPTIONS } from "@/lib/education-options";
 
 export type OnboardingProfile = {
@@ -71,6 +72,8 @@ const TOTAL_STEPS = 4;
 
 const label = "block text-sm font-medium text-[var(--ink)]";
 const field = "input-base mt-1.5";
+const panel =
+  "rounded-[var(--landing-radius)] border border-[var(--border)] bg-[var(--surface)] p-6";
 
 // Struggle-aware path onboarding: basics → education → experience → intake →
 // diagnosis (inline splash) → /home. No follow/post steps.
@@ -168,18 +171,18 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
     <main className="mx-auto max-w-xl px-5 py-10">
       <div className="mb-6 flex items-center justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <p className="font-display text-3xl italic tracking-[-0.03em] text-[var(--blue)]">
+          <p className="font-display text-2xl italic tracking-[-0.03em] text-[var(--ink)]">
             samehere
           </p>
-          <h1 className="mt-1 text-xl font-semibold tracking-[-0.02em] text-[var(--ink)]">
+          <h1 className="mt-2 text-[1.375rem] font-medium tracking-[-0.025em] text-[var(--ink)]">
             Build your internship path
           </h1>
-          <p className="mt-1 text-sm text-[var(--ink-muted)]">
+          <p className="mt-1.5 text-sm text-[var(--ink-muted)]">
             {diagnosing ? "Diagnosing" : `Step ${progressStep} of ${TOTAL_STEPS}`}
           </p>
-          <div className="mt-2 h-1 w-40 overflow-hidden rounded-full bg-[var(--featured-surface)]">
+          <div className="mt-3 h-px w-44 overflow-hidden bg-[var(--border)]">
             <div
-              className="h-full rounded-full bg-[var(--blue)] transition-[width] duration-[400ms] ease-out"
+              className="h-full bg-[var(--accent-blue)] transition-[width] duration-[400ms] ease-out"
               style={{ width: `${(progressStep / TOTAL_STEPS) * 100}%` }}
             />
           </div>
@@ -196,19 +199,19 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
 
       <AnimatePresence mode="wait">
         <motion.div
-          key={step}
-          className="rounded-2xl border border-[var(--border)] bg-[var(--canvas)] p-6 shadow-[0_1px_0_rgba(15,23,42,0.04)]"
+          key={diagnosing ? "diagnose" : step}
+          className={panel}
           initial={reduce ? undefined : { opacity: 0, x: 24 }}
           animate={{ opacity: 1, x: 0 }}
           exit={reduce ? undefined : { opacity: 0, x: -24 }}
           transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
         >
-          {step === 1 && (
+          {step === 1 && !diagnosing && (
             <form onSubmit={onSubmitBasics}>
               {basicsError && (
                 <p
                   role="alert"
-                  className="mb-5 rounded-md border border-[var(--border-strong)] bg-[var(--featured-surface)] px-3 py-2 text-sm text-[var(--ink)]"
+                  className="mb-5 rounded-[var(--landing-radius-sm)] border border-[var(--border-strong)] bg-[var(--featured-surface)] px-3 py-2 text-sm text-[var(--ink)]"
                 >
                   {basicsError}
                 </p>
@@ -221,7 +224,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
                   className="h-16 w-16 shrink-0 rounded-full border border-[var(--border)] text-xl"
                 />
                 <div>
-                  <label className="btn-ghost inline-flex cursor-pointer !py-1.5 text-sm">
+                  <label className="btn-ghost inline-flex cursor-pointer !h-9 !min-h-9 !px-4 !py-0 text-sm">
                     <input
                       type="file"
                       accept="image/*"
@@ -282,16 +285,16 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
                 >
                   Skip for now
                 </button>
-                <button type="submit" disabled={basicsPending} className="btn-primary !py-2.5">
+                <button type="submit" disabled={basicsPending} className="btn-primary">
                   {basicsPending ? "Saving…" : "Continue"}
                 </button>
               </div>
             </form>
           )}
 
-          {step === 2 && (
+          {step === 2 && !diagnosing && (
             <form onSubmit={onSubmitEducation}>
-              <h2 className="mb-1 font-display text-2xl italic tracking-[-0.02em]">
+              <h2 className="mb-1 text-xl font-medium tracking-[-0.025em] text-[var(--ink)]">
                 Education
               </h2>
               <p className="mb-4 text-sm text-[var(--ink-muted)]">
@@ -352,16 +355,16 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
                 >
                   Skip
                 </button>
-                <button type="submit" disabled={eduPending} className="btn-primary !py-2.5">
+                <button type="submit" disabled={eduPending} className="btn-primary">
                   {eduPending ? "Saving…" : "Continue"}
                 </button>
               </div>
             </form>
           )}
 
-          {step === 3 && (
+          {step === 3 && !diagnosing && (
             <form onSubmit={onSubmitExperience}>
-              <h2 className="mb-1 font-display text-2xl italic tracking-[-0.02em]">
+              <h2 className="mb-1 text-xl font-medium tracking-[-0.025em] text-[var(--ink)]">
                 Experience
               </h2>
               <p className="mb-4 text-sm text-[var(--ink-muted)]">
@@ -433,7 +436,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
                 >
                   Skip
                 </button>
-                <button type="submit" disabled={expPending} className="btn-primary !py-2.5">
+                <button type="submit" disabled={expPending} className="btn-primary">
                   {expPending ? "Saving…" : "Continue"}
                 </button>
               </div>
@@ -447,7 +450,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
                 className={diagnosing ? "hidden" : undefined}
                 aria-hidden={diagnosing}
               >
-                <h2 className="mb-1 font-display text-2xl italic tracking-[-0.02em]">
+                <h2 className="mb-1 text-xl font-medium tracking-[-0.025em] text-[var(--ink)]">
                   Where are you stuck?
                 </h2>
                 <p className="mb-4 text-sm text-[var(--ink-muted)]">
@@ -460,7 +463,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
                   </p>
                 )}
                 {intakeState.overCap && (
-                  <div className="mb-4 rounded-lg border border-[var(--border)] bg-[var(--featured-surface)] px-4 py-3 text-sm">
+                  <div className="mb-4 rounded-[var(--landing-radius-sm)] border border-[var(--border)] bg-[var(--featured-surface)] px-4 py-3 text-sm">
                     <p className="text-[var(--ink)]">
                       You&apos;ve used today&apos;s free diagnosis.
                     </p>
@@ -484,7 +487,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
                             name="stage"
                             value={opt.value}
                             required
-                            className="accent-[var(--blue)]"
+                            className="accent-[var(--accent-blue)]"
                           />
                           {opt.label}
                         </label>
@@ -504,7 +507,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
                             type="checkbox"
                             name="constraints"
                             value={opt.value}
-                            className="accent-[var(--blue)]"
+                            className="accent-[var(--accent-blue)]"
                           />
                           {opt.label}
                         </label>
@@ -555,7 +558,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
                             name="timeline"
                             value={opt.value}
                             required
-                            className="accent-[var(--blue)]"
+                            className="accent-[var(--accent-blue)]"
                           />
                           {opt.label}
                         </label>
@@ -605,7 +608,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
                   <button
                     type="submit"
                     disabled={intakePending || diagnosing}
-                    className="btn-primary !py-2.5"
+                    className="btn-primary"
                   >
                     {intakePending || diagnosing ? "Diagnosing…" : "Diagnose my path"}
                   </button>
@@ -613,22 +616,9 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
               </form>
 
               {diagnosing && (
-                <div className="py-6 text-center" aria-live="polite">
-                  <motion.div
-                    className="mx-auto mb-5 h-1.5 w-28 overflow-hidden rounded-full bg-[var(--featured-surface)]"
-                    aria-hidden
-                  >
-                    <motion.div
-                      className="h-full w-2/5 rounded-full bg-[var(--blue)]"
-                      initial={reduce ? undefined : { x: "-120%" }}
-                      animate={reduce ? undefined : { x: "220%" }}
-                      transition={{ duration: 1.1, repeat: Infinity, ease: "easeInOut" }}
-                    />
-                  </motion.div>
-                  <h2 className="font-display text-2xl italic tracking-[-0.02em] text-[var(--ink)]">
-                    Building your path
-                  </h2>
-                  <p className="mx-auto mt-2 max-w-sm text-sm text-[var(--ink-muted)]">
+                <div className="flex flex-col items-center py-10 text-center" aria-live="polite">
+                  <LoadingState label="Building your path" variant="Orbit" />
+                  <p className="mx-auto mt-5 max-w-sm text-sm text-[var(--ink-muted)]">
                     Reading where you are, naming the blocker, and choosing a home that fits.
                   </p>
                 </div>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { signupCta } from "@/components/landing/cta";
 import type {
   ApplicationStageCount,
   OpportunityListing,
@@ -21,17 +22,14 @@ export default function StudioHome({
   applicationStages?: ApplicationStageCount[];
 }) {
   return (
-    <div className="mx-auto w-full max-w-3xl py-6 md:py-8">
+    <div className="mx-auto w-full max-w-3xl py-5 md:py-6">
       <PathHero plan={plan}>
-        <Link
-          href="/projects/url-shortener"
-          className="inline-flex h-11 items-center rounded-full bg-[var(--blue)] px-5 text-sm font-semibold text-white transition hover:opacity-90"
-        >
+        <Link href="/projects/url-shortener" className={signupCta}>
           Continue this week&apos;s project
         </Link>
       </PathHero>
 
-      <div id="project-plan" className="mt-10 space-y-10">
+      <div id="project-plan" className="mt-6 space-y-4">
         <ProjectPlanStub />
         <DossierStub />
         <SkillStagesStub />
