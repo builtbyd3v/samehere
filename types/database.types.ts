@@ -1389,6 +1389,51 @@ applications: {
         }
         Relationships: []
       }
+      path_task_feedback: {
+        Row: {
+          created_at: string
+          id: string
+          note: string | null
+          outcome: string
+          path_task_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          outcome: string
+          path_task_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          outcome?: string
+          path_task_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "path_task_feedback_path_task_id_user_id_fkey"
+            columns: ["path_task_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "path_tasks"
+            referencedColumns: ["id", "user_id"]
+          },
+          {
+            foreignKeyName: "path_task_feedback_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       path_tasks: {
         Row: {
           created_at: string

@@ -2668,6 +2668,159 @@ exception when others then
 end $$;
 reset role;
 
+-- ============ PATH TASK FEEDBACK — 20260812184318_path_task_feedback.sql ============
+-- One outcome per task, owner-only, with a composite FK that binds task owner.
+
+-- PATH_FEEDBACK_owner_insert_select — A can rate her own active task.
+select tests.as_user(id) from tests_fixture where key = 'a';
+do $$
+declare
+  v_a uuid := (select id from tests_fixture where key = 'a');
+  v_task uuid;
+begin
+  insert into public.path_tasks (user_id, module_id, title, status, sort_index)
+  values (v_a, 'project_plan', 'Ship one proof point', 'todo', 999)
+  returning id into v_task;
+
+  insert into public.path_task_feedback (user_id, path_task_id, outcome)
+  values (v_a, v_task, 'helped');
+
+  if not exists (
+    select 1
+    from public.path_task_feedback
+    where user_id = v_a
+      and path_task_id = v_task
+      and outcome = 'helped'
+  ) then
+    raise exception 'PATH_FEEDBACK_owner_insert_select REGRESSION: owner cannot select own feedback';
+  end if;
+  insert into tests_results values ('PATH_FEEDBACK_owner_insert_select', true, 'ok');
+exception when others then
+  insert into tests_results values ('PATH_FEEDBACK_owner_insert_select', false, sqlerrm);
+end $$;
+reset role;
+
+-- PATH_FEEDBACK_invalid_outcome_denied — database check rejects unknown outcomes.
+select tests.as_user(id) from tests_fixture where key = 'a';
+do $$
+declare
+  v_a uuid := (select id from tests_fixture where key = 'a');
+  v_task uuid := (
+    select id from public.path_tasks
+    where user_id = v_a and title = 'Ship one proof point'
+    limit 1
+  );
+  v_state text;
+  v_raised boolean;
+begin
+  begin
+    update public.path_task_feedback
+    set outcome = 'maybe'
+    where user_id = v_a and path_task_id = v_task;
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state <> '23514' then
+    raise exception 'PATH_FEEDBACK_invalid_outcome_denied REGRESSION: invalid outcome did not fail with 23514 (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+  insert into tests_results values ('PATH_FEEDBACK_invalid_outcome_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('PATH_FEEDBACK_invalid_outcome_denied', false, sqlerrm);
+end $$;
+reset role;
+
+-- PATH_FEEDBACK_b_select_a_denied — B cannot read A's outcome.
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+begin
+  if exists (
+    select 1
+    from public.path_task_feedback
+    where user_id = (select id from tests_fixture where key = 'a')
+  ) then
+    raise exception 'PATH_FEEDBACK_b_select_a_denied REGRESSION: B selected A''s feedback';
+  end if;
+  insert into tests_results values ('PATH_FEEDBACK_b_select_a_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('PATH_FEEDBACK_b_select_a_denied', false, sqlerrm);
+end $$;
+reset role;
+
+-- PATH_FEEDBACK_b_update_a_denied — B cannot overwrite A's outcome.
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+declare
+  v_updated int;
+begin
+  update public.path_task_feedback
+  set outcome = 'stuck', note = 'forged'
+  where user_id = (select id from tests_fixture where key = 'a');
+  get diagnostics v_updated = row_count;
+  if v_updated <> 0 then
+    raise exception 'PATH_FEEDBACK_b_update_a_denied REGRESSION: B updated % of A''s feedback row(s)', v_updated;
+  end if;
+  insert into tests_results values ('PATH_FEEDBACK_b_update_a_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('PATH_FEEDBACK_b_update_a_denied', false, sqlerrm);
+end $$;
+reset role;
+
+-- PATH_FEEDBACK_b_forge_task_owner_denied — composite FK/RLS block forged ownership.
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+declare
+  v_b uuid := (select id from tests_fixture where key = 'b');
+  v_a_task uuid := (
+    select id from public.path_tasks
+    where user_id = (select id from tests_fixture where key = 'a')
+      and title = 'Ship one proof point'
+    limit 1
+  );
+  v_state text;
+  v_raised boolean;
+begin
+  begin
+    insert into public.path_task_feedback (user_id, path_task_id, outcome)
+    values (v_b, v_a_task, 'stuck');
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state not in ('23503', '42501') then
+    raise exception 'PATH_FEEDBACK_b_forge_task_owner_denied REGRESSION: forged task owner was not rejected (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+  insert into tests_results values ('PATH_FEEDBACK_b_forge_task_owner_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('PATH_FEEDBACK_b_forge_task_owner_denied', false, sqlerrm);
+end $$;
+reset role;
+
+-- PATH_FEEDBACK_anon_select_denied — logged-out callers have no table access.
+select tests.as_anon();
+do $$
+declare
+  v_state text;
+  v_raised boolean;
+begin
+  begin
+    perform 1 from public.path_task_feedback limit 1;
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state <> '42501' then
+    raise exception 'PATH_FEEDBACK_anon_select_denied REGRESSION: anon select did not fail with 42501 (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+  insert into tests_results values ('PATH_FEEDBACK_anon_select_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('PATH_FEEDBACK_anon_select_denied', false, sqlerrm);
+end $$;
+reset role;
+
 -- ============ report ============
 -- Print the PASS/FAIL table FIRST so the operator sees exactly which assertions
 -- failed, then raise so psql exits non-zero and the harness actually gates.
