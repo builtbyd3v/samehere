@@ -36,6 +36,12 @@ export function ProjectPlanStub({
           </li>
         ))}
       </ol>
+      <Link
+        href="/projects/url-shortener"
+        className="mt-4 inline-flex text-sm font-semibold text-[var(--blue)] hover:underline"
+      >
+        Open project workspace
+      </Link>
     </ModuleSection>
   );
 }
@@ -163,6 +169,12 @@ export function InterviewPrepStub({
       <p className="mt-3 text-sm text-[var(--ink-muted)]">
         Write a short answer, then get feedback on structure and signal.
       </p>
+      <Link
+        href="/prep"
+        className="mt-4 inline-flex text-sm font-semibold text-[var(--blue)] hover:underline"
+      >
+        Open company practice banks
+      </Link>
     </ModuleSection>
   );
 }

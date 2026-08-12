@@ -3,7 +3,7 @@ import type { CompanyInterviewBank } from "@/lib/path/types";
 /** Starter banks — company_slug aligns with common job_companies-style slugs. */
 export const COMPANY_INTERVIEW_BANKS: CompanyInterviewBank[] = [
   {
-    company_slug: "google",
+    company_slug: "Google",
     company_name: "Google",
     process_summary:
       "Typical internship loop: online assessment (DSA), 1–2 technical interviews (coding + follow-ups), and a lighter Googleyness / role conversation. Expect clarity on complexity and edge cases more than framework trivia.",
@@ -42,7 +42,7 @@ export const COMPANY_INTERVIEW_BANKS: CompanyInterviewBank[] = [
     ],
   },
   {
-    company_slug: "meta",
+    company_slug: "Meta",
     company_name: "Meta",
     process_summary:
       "Often coding-heavy: OA or recruiter screen, then 2–3 interviews mixing algorithms with product sense / behavioral. Expect follow-ups that push for cleaner abstractions and tradeoff talk.",
@@ -81,7 +81,7 @@ export const COMPANY_INTERVIEW_BANKS: CompanyInterviewBank[] = [
     ],
   },
   {
-    company_slug: "amazon",
+    company_slug: "Amazon",
     company_name: "Amazon",
     process_summary:
       "Leadership Principles are first-class. Expect OA coding, then interviews pairing DSA with LP stories (Ownership, Dive Deep, Customer Obsession). Prepare concrete examples with metrics.",
@@ -120,7 +120,7 @@ export const COMPANY_INTERVIEW_BANKS: CompanyInterviewBank[] = [
     ],
   },
   {
-    company_slug: "microsoft",
+    company_slug: "Microsoft",
     company_name: "Microsoft",
     process_summary:
       "Mix of coding, design-lite, and collaborative behavioral. Teams vary widely (Azure, Office, LinkedIn, gaming). Expect readable code and questions about working across groups.",
@@ -159,7 +159,7 @@ export const COMPANY_INTERVIEW_BANKS: CompanyInterviewBank[] = [
     ],
   },
   {
-    company_slug: "apple",
+    company_slug: "Apple",
     company_name: "Apple",
     process_summary:
       "Team-dependent; often coding + deep dive into a past project, with strong emphasis on craft, privacy, and user experience detail. Bring polished project narratives.",
@@ -198,7 +198,7 @@ export const COMPANY_INTERVIEW_BANKS: CompanyInterviewBank[] = [
     ],
   },
   {
-    company_slug: "stripe",
+    company_slug: "Stripe",
     company_name: "Stripe",
     process_summary:
       "Known for practical coding, API design taste, and debugging realism. Expect careful edge-case talk (money, idempotency, retries) and clear written/verbal communication.",
@@ -237,7 +237,7 @@ export const COMPANY_INTERVIEW_BANKS: CompanyInterviewBank[] = [
     ],
   },
   {
-    company_slug: "nvidia",
+    company_slug: "NVIDIA",
     company_name: "NVIDIA",
     process_summary:
       "Role-dependent: software roles still see DSA, plus questions that probe systems performance, parallelism intuition, or domain fit (CUDA/drivers/infra). Know your resume projects cold.",
@@ -276,7 +276,7 @@ export const COMPANY_INTERVIEW_BANKS: CompanyInterviewBank[] = [
     ],
   },
   {
-    company_slug: "bloomberg",
+    company_slug: "Bloomberg",
     company_name: "Bloomberg",
     process_summary:
       "Often coding + C++/systems flavor depending on team, plus questions on reliability and data-heavy products. Expect practical debugging and clear communication under time pressure.",
@@ -315,7 +315,7 @@ export const COMPANY_INTERVIEW_BANKS: CompanyInterviewBank[] = [
     ],
   },
   {
-    company_slug: "netflix",
+    company_slug: "Netflix",
     company_name: "Netflix",
     process_summary:
       "Internship processes vary by team; expect coding, distributed-systems curiosity, and culture questions around freedom/responsibility. Be ready to discuss tradeoffs you’ve actually made.",
@@ -354,7 +354,7 @@ export const COMPANY_INTERVIEW_BANKS: CompanyInterviewBank[] = [
     ],
   },
   {
-    company_slug: "airbnb",
+    company_slug: "Airbnb",
     company_name: "Airbnb",
     process_summary:
       "Often coding + cross-functional / belonging-oriented behavioral. Product sense helps. Expect thoughtful discussion of trust, marketplace dynamics, and inclusive collaboration.",
@@ -395,7 +395,8 @@ export const COMPANY_INTERVIEW_BANKS: CompanyInterviewBank[] = [
 ];
 
 export function getInterviewBank(companySlug: string): CompanyInterviewBank | undefined {
-  return COMPANY_INTERVIEW_BANKS.find((b) => b.company_slug === companySlug);
+  const needle = companySlug.toLowerCase();
+  return COMPANY_INTERVIEW_BANKS.find((b) => b.company_slug.toLowerCase() === needle);
 }
 
 export function listInterviewBanks(): CompanyInterviewBank[] {

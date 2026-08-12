@@ -1,8 +1,9 @@
 /**
- * Prints SQL upserts for path content seeds (projects, skill tracks, interview banks).
- * Run: npx tsx scripts/seed-path-content.ts
+ * Prints SQL upserts for path content seeds matching §5A / WS1 schema.
+ * Run: npx tsx scripts/seed-path-content.ts > /tmp/seed-path.sql
  *
- * Tables assumed from ZERO_TO_INTERNSHIP_RESTRUCTURE §5A / §7 — apply migrations separately.
+ * path_projects.body jsonb holds the rich spec fields.
+ * company_interview_banks.company_slug must exist in job_companies.
  */
 import {
   PATH_PROJECTS,
@@ -18,26 +19,36 @@ function text(value: string): string {
   return `'${value.replace(/'/g, "''")}'`;
 }
 
+function textArray(values: string[]): string {
+  if (values.length === 0) return "'{}'::text[]";
+  return `array[${values.map(text).join(", ")}]::text[]`;
+}
+
 console.log("-- path_projects");
 for (const p of PATH_PROJECTS) {
+  const body = {
+    what_you_build: p.what_you_build,
+    what_it_teaches: p.what_it_teaches,
+    how_it_works: p.how_it_works,
+    build_checklist: p.build_checklist,
+    take_it_further: p.take_it_further ?? null,
+    interview_roi: p.interview_roi,
+  };
   console.log(
-    `insert into path_projects (slug, title, difficulty, time_hours, languages, stack, domain, what_you_build, what_it_teaches, how_it_works, build_checklist, take_it_further, interview_roi, fits_stages, target_role_tags)
-values (
+    `insert into public.path_projects (
+  slug, title, difficulty, time_hours, languages, stack, domain, body, fits_stages, target_role_tags, published
+) values (
   ${text(p.slug)},
   ${text(p.title)},
   ${text(p.difficulty)},
-  ${sqlLiteral(p.time_hours)},
-  ${sqlLiteral(p.languages)},
-  ${sqlLiteral(p.stack)},
+  array[${p.time_hours[0]}, ${p.time_hours[1]}]::int[],
+  ${textArray(p.languages)},
+  ${textArray(p.stack)},
   ${text(p.domain)},
-  ${sqlLiteral(p.what_you_build)},
-  ${sqlLiteral(p.what_it_teaches)},
-  ${sqlLiteral(p.how_it_works)},
-  ${sqlLiteral(p.build_checklist)},
-  ${p.take_it_further ? sqlLiteral(p.take_it_further) : "null"},
-  ${text(p.interview_roi)},
-  ${sqlLiteral(p.fits_stages)},
-  ${sqlLiteral(p.target_role_tags)}
+  ${sqlLiteral(body)},
+  ${textArray(p.fits_stages)},
+  ${textArray(p.target_role_tags)},
+  true
 )
 on conflict (slug) do update set
   title = excluded.title,
@@ -46,14 +57,11 @@ on conflict (slug) do update set
   languages = excluded.languages,
   stack = excluded.stack,
   domain = excluded.domain,
-  what_you_build = excluded.what_you_build,
-  what_it_teaches = excluded.what_it_teaches,
-  how_it_works = excluded.how_it_works,
-  build_checklist = excluded.build_checklist,
-  take_it_further = excluded.take_it_further,
-  interview_roi = excluded.interview_roi,
+  body = excluded.body,
   fits_stages = excluded.fits_stages,
-  target_role_tags = excluded.target_role_tags;
+  target_role_tags = excluded.target_role_tags,
+  published = true,
+  updated_at = now();
 `,
   );
 }
@@ -61,27 +69,29 @@ on conflict (slug) do update set
 console.log("\n-- skill_tracks");
 for (const t of SKILL_TRACKS) {
   console.log(
-    `insert into skill_tracks (id, title, stages)
-values (${text(t.id)}, ${text(t.title)}, ${sqlLiteral(t.stages)})
-on conflict (id) do update set title = excluded.title, stages = excluded.stages;
+    `insert into public.skill_tracks (id, title, body, published)
+values (${text(t.id)}, ${text(t.title)}, ${sqlLiteral({ stages: t.stages })}, true)
+on conflict (id) do update set
+  title = excluded.title,
+  body = excluded.body,
+  published = true;
 `,
   );
 }
 
-console.log("\n-- company_interview_banks");
+/** Only banks whose slug already exists in job_companies will succeed. */
+console.log("\n-- company_interview_banks (requires matching job_companies.slug)");
 for (const b of COMPANY_INTERVIEW_BANKS) {
   console.log(
-    `insert into company_interview_banks (company_slug, company_name, process_summary, questions)
-values (
-  ${text(b.company_slug)},
-  ${text(b.company_name)},
-  ${text(b.process_summary)},
-  ${sqlLiteral(b.questions)}
-)
+    `insert into public.company_interview_banks (company_slug, process_summary, questions, published)
+select jc.slug, ${text(b.process_summary)}, ${sqlLiteral(b.questions)}, true
+from public.job_companies jc
+where jc.slug = ${text(b.company_slug)}
 on conflict (company_slug) do update set
-  company_name = excluded.company_name,
   process_summary = excluded.process_summary,
-  questions = excluded.questions;
+  questions = excluded.questions,
+  published = true,
+  updated_at = now();
 `,
   );
 }

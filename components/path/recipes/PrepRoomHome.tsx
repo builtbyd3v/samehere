@@ -21,7 +21,7 @@ export default function PrepRoomHome({ plan }: { plan: PathPlanUi }) {
           <p className="mt-1 text-sm text-[var(--ink-muted)]">Thursday · practice set ready</p>
           <div className="mt-4 flex flex-wrap gap-2">
             <Link
-              href="#practice"
+              href="/prep"
               className="inline-flex h-10 items-center rounded-full bg-[var(--blue)] px-4 text-sm font-semibold text-white transition hover:opacity-90"
             >
               Start practice

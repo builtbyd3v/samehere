@@ -13,7 +13,7 @@ export default function StudioHome({ plan }: { plan: PathPlanUi }) {
     <div className="mx-auto w-full max-w-3xl py-6 md:py-8">
       <PathHero plan={plan}>
         <Link
-          href="#project-plan"
+          href="/projects/url-shortener"
           className="inline-flex h-11 items-center rounded-full bg-[var(--blue)] px-5 text-sm font-semibold text-white transition hover:opacity-90"
         >
           Continue this week&apos;s project
