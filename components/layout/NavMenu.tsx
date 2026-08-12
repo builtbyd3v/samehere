@@ -19,23 +19,11 @@ function MenuLink({ href, children }: { href: string; children: React.ReactNode 
 }
 
 function MenuItems({ isAdmin }: { isAdmin: boolean }) {
-  const close = useMenuClose();
-
   return (
     <>
-      <Link
-        href="/referrals"
-        onClick={() => close?.()}
-        className="mb-1 flex flex-col gap-0.5 rounded-md border border-[var(--border-strong)] bg-[var(--featured-surface)] px-3 py-2 transition active:scale-[0.98]"
-      >
-        <span className="text-sm font-medium text-[var(--ink)]">Invite friends</span>
-        <span className="text-xs text-[var(--ink-muted)]">Share your link, race to 100</span>
-      </Link>
-      {/* Saved is no longer primary nav (WS4). Keep it reachable from the
-          avatar menu on mobile. Feedback lives in the desktop left nav. */}
+      {/* Mobile account utilities: Feedback has no left-rail home after PathAppNav. */}
       <div className="lg:hidden">
         <MenuLink href="/applications">Applications</MenuLink>
-        <MenuLink href="/saved">Saved</MenuLink>
         <FeedbackButton className={menuItemClass} />
       </div>
       <MenuLink href="/settings">Settings</MenuLink>
