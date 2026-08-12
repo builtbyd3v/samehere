@@ -12,6 +12,12 @@ import {
   type PathTimeline,
 } from "./diagnose";
 import { fixtureForRecipe } from "./fixtures";
+import {
+  adaptDiagnosisToPathFeedback,
+  formatPathFeedbackMemory,
+  parsePathFeedbackMemoryEntry,
+  type PathFeedbackMemoryEntry,
+} from "./task-feedback";
 import type { PathStage, UiRecipe } from "./types";
 
 type DbClient = SupabaseClient<Database>;
@@ -74,13 +80,14 @@ export function applicationsNeedPrepRoom(
   return statuses.some((s) => s === "oa" || s === "interview");
 }
 
-function rediagnosisUserPrompt(input: {
+export function rediagnosisUserPrompt(input: {
   reason: string;
   intake: IntakeAnswers;
   priorDiagnosis: unknown;
   priorRecipe: string | null;
   applicationSummary: string;
   projectsSummary: string;
+  feedbackSummary: string;
 }): string {
   return [
     `reason: ${untrusted(input.reason)}`,
@@ -95,6 +102,7 @@ function rediagnosisUserPrompt(input: {
     `prior_diagnosis: ${untrusted(JSON.stringify(input.priorDiagnosis ?? {}))}`,
     `applications: ${untrusted(input.applicationSummary)}`,
     `projects: ${untrusted(input.projectsSummary)}`,
+    `feedback_memory: ${untrusted(input.feedbackSummary)}`,
   ].join("\n");
 }
 
@@ -198,6 +206,24 @@ async function loadEventSummaries(
       .slice(0, 400) || "none";
 
   return { applicationSummary, projectsSummary, statuses };
+}
+
+async function loadTaskFeedbackMemory(
+  supabase: DbClient,
+  userId: string,
+): Promise<PathFeedbackMemoryEntry[]> {
+  const { data } = await supabase
+    .from("path_task_feedback")
+    .select(
+      "path_task_id, outcome, note, updated_at, path_tasks!inner(module_id, title)",
+    )
+    .eq("user_id", userId)
+    .order("updated_at", { ascending: false })
+    .limit(12);
+
+  return (data ?? [])
+    .map(parsePathFeedbackMemoryEntry)
+    .filter((entry): entry is PathFeedbackMemoryEntry => entry !== null);
 }
 
 async function tryAiRediagnosis(
@@ -362,10 +388,12 @@ export async function rediagnoseUser(
     };
   }
 
-  const { applicationSummary, projectsSummary, statuses } = await loadEventSummaries(
-    supabase,
-    userId,
-  );
+  const [{ applicationSummary, projectsSummary, statuses }, feedbackMemory] =
+    await Promise.all([
+      loadEventSummaries(supabase, userId),
+      loadTaskFeedbackMemory(supabase, userId),
+    ]);
+  const feedbackSummary = formatPathFeedbackMemory(feedbackMemory);
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -379,7 +407,10 @@ export async function rediagnoseUser(
 
   // Free + auto interview/oa: heuristic prep_room only (rediagnosis free cap is 0).
   if (interviewSignal && !pro && !force) {
-    const result = heuristicInterviewFlip(intake);
+    const result = adaptDiagnosisToPathFeedback(
+      heuristicInterviewFlip(intake),
+      feedbackMemory,
+    );
     const wrote = await persistDiagnosis(
       supabase,
       userId,
@@ -398,6 +429,7 @@ export async function rediagnoseUser(
     priorRecipe: ctx.priorRecipe,
     applicationSummary,
     projectsSummary,
+    feedbackSummary,
   });
 
   const aiIntake = interviewSignal ? { ...intake, stage: "interviewing" as const } : intake;
@@ -432,6 +464,8 @@ export async function rediagnoseUser(
       tasks: result.tasks.length ? result.tasks : flip.tasks,
     };
   }
+
+  result = adaptDiagnosisToPathFeedback(result, feedbackMemory);
 
   const wrote = await persistDiagnosis(
     supabase,

@@ -128,9 +128,11 @@ export const INTAKE_DIAGNOSIS_SYSTEM =
 
 /** Prior profile + events → updated plan (WS9). */
 export const REDIAGNOSIS_SYSTEM =
-  "You re-diagnose a student's internship path from their prior diagnosis and recent events. " +
+  "You re-diagnose a student's internship path from their prior diagnosis, recent events, and feedback_memory. " +
   PATH_JSON_GUARD +
   " Same JSON shape as intake diagnosis. May advance stage or switch ui_recipe when facts justify it. " +
+  "Use task feedback directly: helped means progress from that move and the next task should build on it; not_relevant means avoid that recommendation; stuck means reduce or switch the move and use its note as the blocker. " +
+  "Never repeat the exact prior task title as the next task. " +
   "When applications include oa or interview, prefer ui_recipe prep_room. " +
   "Return ONLY the JSON object, no prose.";
 

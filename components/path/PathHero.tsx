@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { PathTaskSummary } from "@/lib/path/load-home-data";
 import type { PathPlanUi, UiRecipe } from "@/lib/path/types";
 import PathTaskAction from "./PathTaskAction";
+import PathTaskFeedback from "./PathTaskFeedback";
 
 const RECIPE_ID: Record<UiRecipe, string> = {
   studio: "studio",
@@ -113,6 +114,7 @@ export default function PathHero({
       {nextTask && taskHref ? (
         <div className="path-hero-actions">
           <PathTaskAction taskId={nextTask.id} href={taskHref} status={nextTask.status} />
+          <PathTaskFeedback taskId={nextTask.id} />
         </div>
       ) : children ? (
         <div className="path-hero-actions">{children}</div>
