@@ -2163,7 +2163,8 @@ summary {
 }
 
 .landing-demo-panel > *,
-.landing-xai-card-content {
+.landing-xai-card-content,
+.landing-price-plan > .landing-plan-action {
   position: relative;
   z-index: 1;
 }
@@ -2310,11 +2311,15 @@ summary {
   }
 }
 
-.landing-price-plan .landing-xai-card-content {
+/* Body grows; CTA is a sibling pinned to the card foot. */
+.landing-price-plan-body {
   display: flex;
   flex: 1 1 auto;
-  min-height: 100%;
   flex-direction: column;
+}
+
+.landing-price-plan .landing-xai-card-content {
+  min-height: 0;
 }
 
 .landing-plan-kicker {
@@ -2389,6 +2394,7 @@ summary {
 }
 
 .landing-plan-action {
+  flex-shrink: 0;
   margin-top: auto;
   padding-top: 2rem;
 }

@@ -38,7 +38,7 @@ export default function Pricing() {
 
       <div className="landing-pricing-grid landing-pricing-grid-3">
         <article className="landing-price-plan landing-xai-card-hover">
-          <div className="landing-xai-card-content">
+          <div className="landing-xai-card-content landing-price-plan-body">
             <p className="landing-plan-kicker">{free.kicker}</p>
             <h3>{free.name}</h3>
             <p className="landing-plan-description">{free.tagline}</p>
@@ -48,16 +48,16 @@ export default function Pricing() {
             </p>
             <div className="landing-pricing-rule" />
             <FeatureList items={free.features} />
-            <div className="landing-plan-action">
-              <Link href="/signup" className={`${signupCta} w-full justify-center`}>
-                Join free
-              </Link>
-            </div>
+          </div>
+          <div className="landing-plan-action">
+            <Link href="/signup" className={`${signupCta} w-full justify-center`}>
+              Join free
+            </Link>
           </div>
         </article>
 
         <article className="landing-price-plan landing-price-plan-pro landing-xai-card-hover">
-          <div className="landing-xai-card-content">
+          <div className="landing-xai-card-content landing-price-plan-body">
             <p className="landing-plan-kicker">
               {pro.kicker}{" "}
               <span className="inline-flex whitespace-nowrap rounded-full border border-[var(--accent-blue)] bg-[var(--accent-blue-soft)] px-2 py-1 text-[0.6875rem] font-medium text-[var(--accent-blue-strong)]">
@@ -74,16 +74,16 @@ export default function Pricing() {
             </p>
             <div className="landing-pricing-rule" />
             <FeatureList items={pro.features} />
-            <div className="landing-plan-action">
-              <Link href="/pro" className={`${ghostCta} w-full justify-center`}>
-                View Pro
-              </Link>
-            </div>
+          </div>
+          <div className="landing-plan-action">
+            <Link href="/pro" className={`${ghostCta} w-full justify-center`}>
+              View Pro
+            </Link>
           </div>
         </article>
 
         <article className="landing-price-plan landing-price-plan-ultra landing-xai-card-hover">
-          <div className="landing-xai-card-content">
+          <div className="landing-xai-card-content landing-price-plan-body">
             <p className="landing-plan-kicker">{ultra.kicker}</p>
             <h3>{ultra.name}</h3>
             <p className="landing-plan-description">{ultra.tagline}</p>
@@ -95,11 +95,11 @@ export default function Pricing() {
             </p>
             <div className="landing-pricing-rule" />
             <FeatureList items={ultra.features} />
-            <div className="landing-plan-action">
-              <Link href="/pro?plan=ultra" className={`${ghostCta} w-full justify-center`}>
-                View Ultra
-              </Link>
-            </div>
+          </div>
+          <div className="landing-plan-action">
+            <Link href="/pro?plan=ultra" className={`${ghostCta} w-full justify-center`}>
+              View Ultra
+            </Link>
           </div>
         </article>
       </div>
