@@ -449,12 +449,12 @@ Do not confuse removal from navigation with complete Phase C deletion. Much of t
 
 ## 9. Current verification baseline
 
-After Phase 2:
+After Phase 3:
 
 ```text
 npm test
-26 test files passed
-156 tests passed
+27 test files passed
+167 tests passed
 
 npm run typecheck
 passed
@@ -464,7 +464,7 @@ passed with Next.js 16.2.9
 
 npm run lint
 0 errors
-10 warnings
+9 warnings
 ```
 
 The lint warnings predate the path loop and are not blockers. Do not turn the next product slice into an unrelated lint cleanup.
@@ -501,6 +501,8 @@ Screenshots:
 /opt/cursor/artifacts/screenshots/z2i_dossier_edit.webp
 /opt/cursor/artifacts/screenshots/z2i_dossier_edit_projects.webp
 /opt/cursor/artifacts/screenshots/z2i_dossier_logged_out.webp
+/opt/cursor/artifacts/screenshots/z2i_feedback_adapted_final.webp
+/opt/cursor/artifacts/z2i_adaptive_feedback_loop.mp4
 ```
 
 ## 10. Known gaps and risks
@@ -508,13 +510,13 @@ Screenshots:
 ### Release and data risks
 
 - The `project` experience migration is applied on the live samehere project. Other environments still need the same constraint if they are not that project.
+- The `path_task_feedback` migration is applied on the live samehere project. Other environments still need the same table, constraints, index, grants, and RLS policy.
 - The new dossier action still handles a missing migration with a friendly error.
 - `supabase/tests/rls_test.sql` covers owner/cross-user/anon on `experiences`, but does not yet have a dedicated `kind=project` case. Live rolled-back checks passed.
 - Interview feedback is computed in the request and stored on `interview_practice`, but the prep page does not rehydrate prior answers after refresh. The in-session grade still works.
 
 ### Product gaps
 
-- Recommendation feedback does not exist. The coach cannot yet learn whether the previous move helped.
 - Project completion updates path tasks but does not automatically re-diagnose readiness.
 - The first application and stalled-application triggers are incomplete.
 - Weekly re-diagnosis is not implemented.
@@ -629,7 +631,30 @@ This is a redesign and deletion pass, not a new resume builder.
 
 ### Phase 3: add recommendation feedback and learner memory
 
+**Done** on 2026-08-12. Do not repeat it. Next work is Phase 4.
+
 Goal: let the coach learn whether its last recommendation worked.
+
+Shipped:
+
+- The active next move asks `Helped`, `Not relevant`, or `I'm stuck`.
+- `stuck` accepts an optional blocker note and refreshes the path without a re-intake.
+- Feedback is stored once per task with owner-only RLS. A composite foreign key prevents linking feedback to another user's task.
+- Helped tasks become `done`; not relevant and stuck tasks become `skipped`, preserving history.
+- The AI prompt receives up to 12 recent outcomes as untrusted text.
+- The free deterministic path uses the latest outcome and excludes every recently rated title, so it does not cycle back to an older stuck move.
+- Live OA/interview facts still keep `prep_room` while the next task gets smaller or changes.
+- The feedback form resets when a new move renders.
+
+Verified in the browser:
+
+```text
+prep_room
+  -> Update the application that has an interview
+  -> I'm stuck: "This application update feels too broad. I need one tiny field."
+  -> Complete one application field
+  -> prep_room remains active
+```
 
 Minimum feedback vocabulary:
 
@@ -676,7 +701,7 @@ Triggers:
 - Application moves to `oa`
 - Application moves to `interview`
 - Project first completes
-- Recommendation marked `stuck`
+- Recommendation marked `stuck` (**done in Phase 3**)
 - Optional weekly refresh after event-driven triggers are stable
 
 Behavior:
@@ -876,19 +901,22 @@ Phase 1 is done: project-kind migration is on the live samehere Supabase project
 
 Phase 2 is done: `/profile/[username]` is the internship dossier (seeking, education, labeled projects, no posts/heatmap/social counts). Follow, message, report, and block remain. Do not repeat that work.
 
+Phase 3 is done: active recommendations accept `helped` / `not_relevant` / `stuck`; recent outcomes feed both AI and deterministic re-diagnosis; owner-only RLS and invalid-outcome checks are live. Do not repeat that work.
+
 This parent chat coordinates. If the Task API lists cursor-grok-4.6-xhigh-fast, use it for implementation. If not, inherit the parent and do not substitute Grok 4.5.
 
-Start Phase 3: add recommendation feedback and learner memory (`helped` / `not_relevant` / `stuck`). Keep the existing dev server if it is healthy. Delegate bounded implementation to Grok 4.6 (or inherit), review every diff here, run the full checks, commit, push, and update PR 19.
+Start Phase 4: close the remaining automatic re-diagnosis triggers. First application and first project completion must refresh the path idempotently; OA/interview and stuck already trigger re-diagnosis. Keep user actions successful if refresh fails. Do not add the weekly trigger yet. Keep the existing dev server if it is healthy. Delegate bounded implementation to Grok 4.6 (or inherit), review every diff here, run the full checks, commit, push, and update PR 19.
 ```
 
 ## 16. Handoff completion state
 
 At the time this document was written:
 
-- Branch changes through the Phase 2 dossier profile and this handoff update were committed and pushed.
+- Branch changes through the Phase 3 adaptive feedback loop and this handoff update were committed and pushed.
 - Pull request 19 was updated.
 - Dev server was healthy in tmux `samehere-dev`.
-- Tests (156), typecheck, lint (0 errors / 10 warnings), and production build passed.
+- Tests (167), typecheck, lint (0 errors / 9 warnings), and production build passed.
 - Phase 1 core-loop verification is done.
 - Phase 2 internship dossier profile is done.
-- Next task is Phase 3: recommendation feedback and learner memory.
+- Phase 3 recommendation feedback and learner memory is done.
+- Next task is Phase 4: remaining automatic re-diagnosis triggers.
