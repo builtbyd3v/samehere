@@ -1,9 +1,10 @@
 # samehere → Zero-to-Internship Restructure
 
-**Status:** Agreed product plan (planning only; not yet implemented)  
-**Branch for this doc:** `cursor/zero-to-internship-plan-0889`  
+**Status:** Agreed product plan + content-substrate addendum (planning; not yet implemented)  
+**Branch for this doc:** `cursor/projects-interview-roadmaps-plan-b75f`  
 **Audience:** Humans + AI agents executing parallel workstreams  
-**Stack (unchanged):** Next.js App Router, React 19, TypeScript, Tailwind 4, Supabase (Auth/Postgres/RLS/Realtime), Claude via OpenAI-compatible SDK, Stripe, Resend, Vercel
+**Stack (unchanged):** Next.js App Router, React 19, TypeScript, Tailwind 4, Supabase (Auth/Postgres/RLS/Realtime), Claude via OpenAI-compatible SDK, Stripe, Resend, Vercel  
+**Competitive note:** ResuMax inspirations captured Aug 2026 — steal flow patterns, not their static catalog product. See §5A.
 
 ---
 
@@ -84,13 +85,17 @@ Do **not** optimize for posts, reactions, or time-in-feed.
 | Applications | `/applications` | Tracker pipeline |
 | Opportunities | `/jobs` (rename nav label) | Board + fit |
 | Helpers (embedded) | on `/jobs/[id]` | Opt-in peers |
-| Interview module | section on home or `/prep` | Thin Q practice when recipe needs it |
-| Project plan module | section on home | Weekly builds for `studio` |
+| Interview module | section on home or `/prep` | Company banks + thin Q practice when recipe needs it |
+| Project plan module | section on home | Native project builds for `studio` / early path |
+| Project workspace | `/projects/[slug]` (in-app) | First-party project specs + progress — **never link-out as the product** |
+| Skill stages (substrate) | not a primary nav catalog | Ordered stages feed diagnosis / `project_plan`; surfaced inside recipes |
+| Company interview banks | `/prep/[company]` or embedded in `prep_room` | Company-specific Qs with approach + evaluation |
 
 **Nav (final):**
 - Desktop: Home (path) · Opportunities · Applications · Messages · Profile · Pro  
 - Mobile: Home · Opportunities · Applications · Messages · Profile  
-- Drop: Community, Saved, Feed, Search-as-people (optional later: search listings only)
+- Drop: Community, Saved, Feed, Search-as-people (optional later: search listings only)  
+- **Not primary nav:** Roadmaps catalog, Projects library browse — those are *substrates* reached from the path, not parallel products. Optional later: secondary “Build” / “Prep” entries once path home is stable.
 
 ---
 
@@ -200,9 +205,157 @@ Replace current 6-step social onboarding (`OnboardingWizard` steps: basics → f
 | `opportunities` | Ranked internships + reasons | Yes — job fit |
 | `applications` | Wishlist → applied → OA → interview → offer/rejected | **New** |
 | `pitch` | Resume bullets for one listing | Yes — Pro pitch |
-| `project_plan` | Weekly build checklist when experience is the gap | **New** |
-| `interview_prep` | Thin Q set + written feedback | **New** (not video sim) |
+| `project_plan` | Assign + track **native** project builds when experience is the gap | **New** (see §5A) |
+| `interview_prep` | Company bank Qs + written answers + AI feedback | **New** (see §5A; not video sim) |
 | `helpers` | Opt-in peers at org | Partial on job detail |
+| `skill_stages` | Current stage + why-it-matters + next checkpoint (substrate UI) | **New** (embedded, not a catalog) |
+
+---
+
+## 5A. Content substrates — steal ResuMax *flow*, keep our product
+
+ResuMax is useful as a **pattern reference**, not a twin. Observed (Aug 2026):
+
+| Surface | What they do | Gap we exploit |
+|---|---|---|
+| **Projects** | Native *specs* (WHAT / TEACHES / HOW) on-site; guides + many roadmap “BUILD IT” links still send users **out** (dev.to, etc.) | We keep the **whole build loop in-app** — spec, checklist, progress, dossier write-back |
+| **Roadmaps** | 12 static role catalogs; stages + “WHY IT MATTERS” + external resource piles; checkpoint “start applying early” | We use stages as a **substrate the diagnosis picks from**, not a browsable roadmap mall |
+| **Interview Qs** | 31 company banks; process blurb; coding/system/behavioral; approach + “what they’re evaluating”; practice box | We ship company banks as a first-class `prep_room` weapon, tied to *their* target orgs + applications |
+
+### Non-negotiable product constraint
+
+Do **not** turn samehere into:
+
+- A static roadmap catalog product (“pick Frontend”)  
+- A link aggregator to CS50 / freeCodeCamp / LeetCode as the core loop  
+- A resume-first ResuMax clone  
+
+Keep the spine: **struggle-aware intake → UI recipe → modules → events → re-diagnosis**, plus YC-thin helpers on listings. Content substrates **feed** recipes; they do not replace them.
+
+### A. Native projects (first-party, in-app)
+
+**Job:** Close the experience gap inside `studio` / early `focus_track` without bouncing users to another site.
+
+**Project record (curated seed + AI can propose variants later):**
+
+```ts
+type PathProject = {
+  slug: string;
+  title: string;
+  difficulty: "beginner" | "intermediate" | "advanced";
+  time_hours: [number, number]; // e.g. [8, 12]
+  languages: string[];
+  stack: string[];
+  domain: string; // "Backend & APIs", "AI & Agents", …
+  what_you_build: string[];
+  what_it_teaches: string[];
+  how_it_works: { step: number; title: string; detail: string }[];
+  build_checklist: { id: string; title: string; optional?: boolean }[]; // IN-APP steps
+  take_it_further?: string[];
+  interview_roi: string; // one sentence: why hireable
+  fits_stages: string[]; // skill stage ids, not marketing roadmaps
+  target_role_tags: string[]; // internship roles this supports
+};
+```
+
+**In-app loop (required):**
+1. Path assigns a project → `path_tasks` + `user_projects` row  
+2. User works checklist **inside** `/projects/[slug]` (no “open external tutorial” as primary CTA)  
+3. Optional *docs* links allowed as secondary “reference” only — never the hero action  
+4. On complete → dossier experience draft + pitch bullets + readiness signal for re-diagnosis  
+5. `studio` hero = **this week’s project**, not a grid of 40 cards  
+
+**v1 content:** seed ~8–12 opinionated beginner/intermediate projects aligned to common internship tracks (web, backend, data-lite, AI-lite). Quality over catalog size. Prefer stacks students can ship in a week.
+
+**Anti-pattern:** ResuMax-style “BUILD IT” that deep-links to another site’s tutorial as the product.
+
+### B. Skill stages (roadmap *flow* without roadmap *product*)
+
+Steal from ResuMax roadmaps:
+
+1. **Ordered stages** with ESSENTIAL / RECOMMENDED / OPTIONAL skills  
+2. **“Why it matters”** hiring-market framing per skill  
+3. **BUILD checkpoint** → assigns a *native* project (A), not an outbound tutorial  
+4. **Apply-early checkpoint** → can flip recipe toward `ops_desk` before “100% complete”  
+5. Progress that is **legible** (stage N of M) without becoming a second home
+
+**Do not ship:** `/roadmaps` as a role picker mall in v1.
+
+**Do ship:** a small set of **track templates** (e.g. `new_grad_swe`, `frontend_intern`, `data_intern`) stored as data. Diagnosis picks a track + stage index; `skill_stages` module renders only **current + next**. User request (“I want Stripe backend in 6 weeks”) can remap stage order / project picks via AI — that’s the adaptive product.
+
+```ts
+type SkillTrack = {
+  id: string; // new_grad_swe | frontend_intern | …
+  title: string;
+  stages: {
+    id: string;
+    title: string;
+    description: string;
+    skills: {
+      id: string;
+      name: string;
+      priority: "essential" | "recommended" | "optional";
+      why_it_matters: string;
+      // optional secondary references — never the primary CTA
+      refs?: { title: string; url: string }[];
+    }[];
+    build_project_slug?: string; // → PathProject
+    apply_checkpoint?: boolean; // after this stage, nudge ops_desk
+  }[];
+};
+```
+
+**Recipe mapping:**
+- `studio` — show current stage + assigned project  
+- `focus_track` — one skill or one checklist item from current stage  
+- `ops_desk` — stage progress demoted; apply checkpoint already fired  
+- `prep_room` — stage frozen; interview banks take hero  
+- `network_gap` — stage demoted; helpers hero  
+
+### C. Company interview question banks (`prep_room`)
+
+Steal from ResuMax interview banks:
+
+- Per-company **process** summary (rounds, OA style)  
+- Typed questions: `coding` | `system_design` | `behavioral` | `role_fit`  
+- For each Q: prompt, difficulty, **how to approach**, **what they’re evaluating**  
+- In-app answer box + AI feedback (metered Pro)  
+- Tie Qs to **user’s shipped projects / dossier** when possible (“explain YOUR URL shortener’s rate limit”)
+
+**Sources policy (v1):**
+- Curate a starter bank for high-frequency internship recruiters (start ~10–15 companies overlapping `job_companies` + user `target_companies`)  
+- Attribution allowed when community-sourced; we own the coaching wrapper  
+- External LeetCode links may appear as “practice this pattern” secondary refs — the **session stays on samehere**
+
+**Activation:**
+- Application moves to `interview` / `oa` → recipe → `prep_room`  
+- Bank for that org (or closest peer) loads as hero practice set  
+- If no bank yet: generate thin Q set via `INTERVIEW_PREP_SYSTEM` from JD + dossier (existing plan) and queue company for editorial seed  
+
+### D. How substrates connect (must be tight — ResuMax is siloed)
+
+```
+Intake / request (“Adobe SWE intern”)
+  → diagnosis picks skill_track + stage + ui_recipe
+  → studio: native project from stage.build_project_slug
+  → complete project → dossier + readiness
+  → apply checkpoint / ops_desk → applications
+  → interview status → prep_room company bank
+  → helpers on that org (unchanged thin multiplayer)
+  → events → re-diagnosis (may jump stages or recipes)
+```
+
+**YC-request matching stays intact:** helpers + DMs remain the only peer layer; projects/roadmaps/interview banks are **solo substrates**, not a social feed.
+
+### E. Monetization touch (extends §10)
+
+| Free | Pro velocity |
+|---|---|
+| Diagnosis + current stage + 1 active native project | More concurrent projects / plan regen |
+| Browse company bank previews (few Qs) | Full bank + AI feedback packs |
+| Apply-early checkpoint | Unlimited re-diagnosis after interviews |
+
+Still: never paywall hope / first diagnosis / knowing a path exists.
 
 ---
 
@@ -280,6 +433,66 @@ applications (
   notes text,
   updated_at, created_at
 )
+
+-- Content substrates (§5A). Seed/curated rows are readable by authenticated users;
+-- progress tables are owner-CRUD only.
+
+path_projects (
+  slug text pk,
+  title text not null,
+  difficulty text not null,
+  time_hours int[2] not null,
+  languages text[] not null,
+  stack text[] not null,
+  domain text not null,
+  body jsonb not null,       -- what_you_build, what_it_teaches, how_it_works, checklist, interview_roi, …
+  fits_stages text[] not null default '{}',
+  target_role_tags text[] not null default '{}',
+  published boolean not null default true,
+  updated_at timestamptz not null
+)
+
+user_projects (
+  id uuid pk,
+  user_id uuid not null references profiles on delete cascade,
+  project_slug text not null references path_projects(slug),
+  status text check in ('assigned','doing','done','skipped'),
+  checklist_state jsonb not null default '{}',
+  linked_path_task_id uuid null references path_tasks(id) on delete set null,
+  completed_at timestamptz null,
+  created_at, updated_at,
+  unique (user_id, project_slug)
+)
+
+skill_tracks (
+  id text pk,                -- new_grad_swe, frontend_intern, …
+  title text not null,
+  body jsonb not null,       -- stages[], skills, build_project_slug, apply_checkpoint
+  published boolean not null default true
+)
+
+learner_profiles additions:
+  skill_track_id text null references skill_tracks(id)
+  skill_stage_id text null   -- current stage within track
+  -- keep inside diagnosis jsonb if preferred in v1; columns optional
+
+company_interview_banks (
+  company_slug text pk references job_companies(slug),
+  process_summary text not null,
+  questions jsonb not null,  -- [{id,type,difficulty,prompt,approach,evaluating,source?}]
+  published boolean not null default true,
+  updated_at timestamptz not null
+)
+
+interview_practice (
+  id uuid pk,
+  user_id uuid not null references profiles on delete cascade,
+  company_slug text not null references company_interview_banks(company_slug),
+  question_id text not null,
+  answer text,
+  ai_feedback text,
+  created_at timestamptz not null
+)
 ```
 
 `intake_responses` is append-only per submission: re-intake inserts the next
@@ -287,7 +500,7 @@ applications (
 which diagnosis version is current, while `path_plans.source_intake_id` points
 to the exact intake that produced the active plan.
 
-RLS: user can CRUD own rows only. No anon access.
+RLS: user can CRUD own progress rows only (`user_projects`, `interview_practice`, path tables). Authenticated read on published `path_projects`, `skill_tracks`, `company_interview_banks`. No anon access to learner data; published content may be auth-gated in v1 (same as product).
 
 ### Soft-deprecated (stop product writes; don’t drop yet)
 `posts`, `reactions`, `comments`, `reposts`, `bookmarks` (post), `clubs*`, `contribution_log` (new writes), follow-driven notifications where unused.
@@ -302,10 +515,11 @@ Regenerate or hand-update `types/database.types.ts` after migrations.
 ### New prompts in `lib/ai-prompts.ts`
 | Export | Purpose | Output |
 |---|---|---|
-| `INTAKE_DIAGNOSIS_SYSTEM` | From intake JSON → learner profile + recipe + module_order + tone + headline/why + initial tasks | Strict JSON |
-| `REDIAGNOSIS_SYSTEM` | From prior profile + events → updated plan | Strict JSON |
-| `PROJECT_PLAN_SYSTEM` | Weekly project tasks for studio users | Strict JSON |
-| `INTERVIEW_PREP_SYSTEM` | Q set + evaluation rubric for one company/role | Strict JSON |
+| `INTAKE_DIAGNOSIS_SYSTEM` | From intake JSON → learner profile + recipe + **skill_track/stage** + module_order + tone + headline/why + initial tasks + **assigned project_slug** | Strict JSON |
+| `REDIAGNOSIS_SYSTEM` | From prior profile + events → updated plan (may advance stage / switch recipe) | Strict JSON |
+| `PROJECT_PLAN_SYSTEM` | Pick/adapt native `path_projects` into weekly checklist tasks (prefer catalog; invent only if gap) | Strict JSON |
+| `INTERVIEW_PREP_SYSTEM` | Prefer company bank Qs; else generate thin Q set + rubric from JD/dossier; always offer written feedback schema | Strict JSON |
+| `INTERVIEW_FEEDBACK_SYSTEM` | Grade one written answer vs approach/evaluating + user’s projects | Strict JSON |
 | `PATH_TASK_NUDGE_SYSTEM` | One next-action nudge | One sentence |
 
 ### Keep
@@ -317,14 +531,15 @@ Regenerate or hand-update `types/database.types.ts` after migrations.
 ### Guardrails
 - Always `untrusted()` wrap user text  
 - Render AI as plain text only  
-- Server-side only; quota via `use_ai_quota` with new kinds: `intake_diagnosis`, `rediagnosis`, `project_plan`, `interview_prep`, `path_task_nudge`
-- Free: 1 diagnosis + limited weekly nudges; Pro: unlimited re-diagnosis, pitch, interview packs  
+- Server-side only; quota via `use_ai_quota` with new kinds: `intake_diagnosis`, `rediagnosis`, `project_plan`, `interview_prep`, `interview_feedback`, `path_task_nudge`
+- Free: 1 diagnosis + limited weekly nudges + 1 active project; Pro: unlimited re-diagnosis, pitch, interview packs/feedback  
 
 The foundation migration must extend `ai_usage.kind` before any new kind is
 called and replace `use_ai_quota(text)` with explicit caps. Suggested v1 caps:
 `intake_diagnosis` 1/day free and 150/day Pro; `rediagnosis` 0/day free and
 150/day Pro; `project_plan` 1/day free and 150/day Pro; `interview_prep` 0/day
-free and 150/day Pro; `path_task_nudge` 1/day free and 150/day Pro. “Unlimited”
+free and 150/day Pro; `interview_feedback` 2/day free and 150/day Pro;
+`path_task_nudge` 1/day free and 150/day Pro. “Unlimited”
 in product copy means the existing 150/day abuse ceiling for Pro.
 
 ### Recipe selection constraint
@@ -441,14 +656,15 @@ Execute as **separate PRs / agent tasks**. Dependencies noted. Each stream lists
 **Depends on:** WS0  
 **Touch:** `supabase/migrations/YYYYMMDDHHMMSS_path_foundation.sql`, `types/database.types.ts`  
 **Do:**
-- Add columns/tables from §7  
-- RLS policies (own rows)  
-- Indexes: `applications(user_id, status)`, `path_tasks(user_id, status)`, experiences org/slug lookup  
+- Add columns/tables from §7 including §5A substrates (`path_projects`, `user_projects`, `skill_tracks`, `company_interview_banks`, `interview_practice`)  
+- RLS policies (own progress rows; authenticated read on published content)  
+- Indexes: `applications(user_id, status)`, `path_tasks(user_id, status)`, `user_projects(user_id, status)`, experiences org/slug lookup  
 - Extend the `ai_usage.kind` check and `use_ai_quota(text)` for every new path quota kind in §8
 **Acceptance:**
 - Migration applies cleanly  
-- Authenticated user can CRUD own `intake_responses`, `learner_profiles`, `path_plans`, `path_tasks`, and `applications`
+- Authenticated user can CRUD own `intake_responses`, `learner_profiles`, `path_plans`, `path_tasks`, `applications`, `user_projects`, and `interview_practice`
 - A second authenticated user cannot read or mutate any of those rows; anon cannot read them
+- Published substrate tables are readable by authenticated users when `published = true`
 - New quota kinds are accepted and enforce their free/Pro caps without a constraint error
 - Types compile  
 
@@ -539,15 +755,22 @@ Execute as **separate PRs / agent tasks**. Dependencies noted. Each stream lists
 
 ---
 
-### WS8 — Project plan + interview prep modules
-**Depends on:** WS2, WS3  
-**Touch:** prompts + path module components + actions  
+### WS8 — Native projects + skill-stage substrate + interview banks
+**Depends on:** WS2, WS3; WS1 extended with §5A tables  
+**Touch:** seeds, prompts, `components/path/**`, `/projects/[slug]`, `/prep` or prep module, actions  
 **Do:**
-- Generate tasks into `path_tasks`  
-- Thin interview Q UI with text answers + AI feedback (metered)  
+- Seed `path_projects` (8–12) with full in-app checklists (no outbound hero CTA)  
+- Seed 1–2 `skill_tracks` (at least `new_grad_swe`) with stages → `build_project_slug` + apply checkpoints  
+- Seed starter `company_interview_banks` (≥10 companies overlapping common internship orgs)  
+- Diagnosis writes `skill_track_id` / stage + assigns `user_projects`  
+- `studio` / `skill_stages` modules render current stage + project hero  
+- Project workspace: checklist progress → `user_projects.checklist_state`; complete → dossier draft hook  
+- `prep_room`: load bank for application org (fallback AI thin set); answer + `interview_feedback`  
 **Acceptance:**
-- `studio` home shows real project tasks from AI  
-- `prep_room` can run one practice set  
+- Completing a project never requires leaving samehere as the primary path  
+- Roadmap *flow* visible as stage progress inside recipe home — **no** `/roadmaps` mall in v1  
+- `prep_room` shows company-specific Qs with approach + evaluating for at least one seeded company  
+- Assigning Stripe/Adobe-like targets from intake still yields recipe + helpers path (YC matching unchanged)  
 
 ---
 
@@ -619,7 +842,7 @@ Week-shaped waves (no calendar promises — dependency waves):
 Wave A (parallel):  WS1 schema
 Wave B (parallel after A):  WS2 intake/AI  |  WS5 applications  |  WS7 helpers
 Wave C (after A+B start):   WS3 recipe home  →  WS4 nav  →  WS6 jobs wire
-Wave D:  WS8 modules  |  WS9 rediagnosis
+Wave D:  WS8 projects + skill stages + interview banks  |  WS9 rediagnosis
 Wave E:  WS10 deprecate  |  WS11 landing/README
 Wave F:  WS12 tests harden  →  WS13 delete later
 ```
@@ -641,6 +864,10 @@ Wave F:  WS12 tests harden  →  WS13 delete later
 - Freeform AI-generated HTML/CSS layouts  
 - Recruiter-paid distribution  
 - Dropping Supabase / rewriting in another framework  
+- **Static ResuMax-style roadmap catalog as primary IA** (`/roadmaps` mall, 12 role pickers)  
+- **Project product that is mostly outbound links** to third-party tutorials  
+- Replacing LeetCode / CS50 wholesale (secondary refs OK)  
+- Building 500+ question banks on day one (seed high-ROI companies; AI fallback for the rest)  
 
 ---
 
@@ -655,8 +882,12 @@ Wave F:  WS12 tests harden  →  WS13 delete later
 - [ ] Diagnosis free; Pro meters at least pitch and/or interview prep  
 - [ ] Landing + README describe zero-to-internship product  
 - [ ] Typecheck, tests, build pass on Node ≥24  
+- [ ] At least one native project completable fully in-app (checklist → done → dossier hook)  
+- [ ] Skill-stage progress visible inside `studio` without a separate roadmaps product  
+- [ ] `prep_room` loads a seeded company interview bank with approach + evaluating  
 
 ---
+
 
 ## 16. Agent prompt templates (copy/paste)
 
@@ -709,4 +940,4 @@ Wave F:  WS12 tests harden  →  WS13 delete later
 
 ## 19. Concise restatement (for kickoff messages)
 
-> Rebuild samehere into an AI-native zero-to-internship Primer: struggle-aware intake, per-user UI recipes (`studio` / `ops_desk` / `prep_room` / `focus_track` / `network_gap`), application tracker, jobs fit/pitch, and opt-in company helpers via experience + `open_to_help`. Cut feed/clubs/heatmap/follows from primary UX. Solo-first. Free diagnosis; Pro for velocity. Surgical pivot on the existing Next.js/Supabase repo — see `ZERO_TO_INTERNSHIP_RESTRUCTURE.md`.
+> Rebuild samehere into an AI-native zero-to-internship Primer: struggle-aware intake, per-user UI recipes (`studio` / `ops_desk` / `prep_room` / `focus_track` / `network_gap`), application tracker, jobs fit/pitch, and opt-in company helpers via experience + `open_to_help`. Content substrates (native in-app projects, skill-stage tracks without a roadmap mall, company interview banks) feed recipes — they are not a ResuMax clone. Cut feed/clubs/heatmap/follows from primary UX. Solo-first. Free diagnosis; Pro for velocity. Surgical pivot on the existing Next.js/Supabase repo — see `ZERO_TO_INTERNSHIP_RESTRUCTURE.md` §5A.
