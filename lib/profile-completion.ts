@@ -43,7 +43,7 @@ export function gapLabel(gap: ProfileGap): string {
     school: "School",
     major: "Major",
     bio: "Bio (20+ characters)",
-    goals: "Goals",
+    goals: "Target role",
   };
   return labels[gap];
 }
@@ -55,17 +55,17 @@ export function gapFieldId(gap: ProfileGap): string | null {
 }
 
 const FALLBACK_BY_GAP: Record<ProfileGap, string> = {
-  avatar: "Add a profile photo. It makes you recognizable when peers see your posts.",
-  display_name: "Add your display name so classmates recognize you beyond @username.",
-  school: "Confirm your school so campus peers can find you in search.",
-  major: "Add your major so others in your program can discover you.",
-  bio: "Write a short bio about what you're building or learning. It's the first thing people read.",
-  goals: "Share what you're working toward this semester so others know how to connect.",
+  avatar: "Add a photo. Recruiters recognize you faster with one.",
+  display_name: "Add the name you want on applications.",
+  school: "Add your school so education shows on your dossier.",
+  major: "Add your major or field of study.",
+  bio: "Write a short bio. It sits under your name.",
+  goals: "Add the role you are applying for. Recruiters see it first.",
 };
 
 export function fallbackProfileNudge(gaps: ProfileGap[]): string {
   if (gaps.length === 0) {
-    return "Your profile looks solid. Keep posting so peers see you in the feed.";
+    return "The basics are in. Add a project or role next so there is proof to show.";
   }
   return FALLBACK_BY_GAP[gaps[0]];
 }
