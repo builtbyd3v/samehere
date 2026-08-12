@@ -1,37 +1,44 @@
 import { Skeleton } from "@/components/ui/Skeleton";
+import { AppPage, AppPanel } from "@/components/app/AppPrimitives";
 
 export default function JobDetailLoading() {
   return (
-    <main className="page-enter mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8">
-      <Skeleton className="h-4 w-20" />
-
-      <div className="mt-4 rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] p-5 shadow-paper">
-        <div className="flex items-start gap-4">
-          <Skeleton className="h-14 w-14 shrink-0 rounded-xl" />
-          <div className="min-w-0 flex-1 space-y-1.5">
-            <Skeleton className="h-6 w-2/3" />
-            <Skeleton className="h-4 w-1/2" />
-            <Skeleton className="h-3 w-1/3" />
-          </div>
-        </div>
-        <div className="mt-4 flex flex-wrap gap-1.5">
-          <Skeleton className="h-6 w-20 rounded-full" />
-          <Skeleton className="h-6 w-24 rounded-full" />
-        </div>
-        <div className="mt-5 flex items-center gap-2 border-t border-[var(--border)] pt-4">
-          <Skeleton className="h-9 w-24 rounded-full" />
-          <Skeleton className="h-9 w-36 rounded-full" />
-        </div>
+    <AppPage width="wide">
+      <Skeleton className="mb-4 h-4 w-36" />
+      <div className="mb-2 flex items-center gap-3">
+        <Skeleton className="h-12 w-12 shrink-0 rounded-lg" />
+        <Skeleton className="h-4 w-28" />
+      </div>
+      <div className="mb-6 space-y-3">
+        <Skeleton className="h-3 w-20" />
+        <Skeleton className="h-10 w-3/4 max-w-xl" />
+        <Skeleton className="h-4 w-1/2" />
       </div>
 
-      <div className="mt-4 rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] p-5 shadow-paper">
-        <Skeleton className="h-4 w-24" />
-        <div className="mt-3 space-y-2">
-          <Skeleton className="h-[16.5px] w-full" />
-          <Skeleton className="h-[16.5px] w-full" />
-          <Skeleton className="h-[16.5px] w-4/5" />
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_16.5rem]">
+        <div className="flex flex-col gap-5">
+          <AppPanel className="p-5">
+            <Skeleton className="h-4 w-24" />
+            <div className="mt-3 space-y-2">
+              <Skeleton className="h-[16.5px] w-full" />
+              <Skeleton className="h-[16.5px] w-full" />
+              <Skeleton className="h-[16.5px] w-4/5" />
+            </div>
+          </AppPanel>
+          <AppPanel className="p-5">
+            <Skeleton className="h-4 w-28" />
+            <div className="mt-3 space-y-2">
+              <Skeleton className="h-[16.5px] w-full" />
+              <Skeleton className="h-[16.5px] w-5/6" />
+            </div>
+          </AppPanel>
         </div>
+        <AppPanel className="p-4">
+          <Skeleton className="h-3 w-28" />
+          <Skeleton className="mt-3 h-4 w-full" />
+          <Skeleton className="mt-4 h-9 w-full rounded-full" />
+        </AppPanel>
       </div>
-    </main>
+    </AppPage>
   );
 }

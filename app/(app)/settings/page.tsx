@@ -1,14 +1,18 @@
 import Link from "next/link";
-import { Suspense } from "react";
+import { Suspense, type ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import {
+  AppPage,
+  AppPageHeader,
+  AppPanel,
+} from "@/components/app/AppPrimitives";
 import PrivacyForm from "@/components/settings/PrivacyForm";
 import OpenToHelpForm from "@/components/settings/OpenToHelpForm";
 import ChangePasswordForm from "@/components/settings/ChangePasswordForm";
 import UsernameForm from "@/components/settings/UsernameForm";
 import DeleteAccountSection from "@/components/settings/DeleteAccountSection";
 import AvatarBase from "@/components/ui/Avatar";
-import ThemeToggle from "@/components/ui/ThemeToggle";
 import StudentVerification from "@/components/settings/StudentVerification";
 import RediagnoseForm from "@/components/path/RediagnoseForm";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -23,7 +27,7 @@ function BlockedUsersFallback() {
   return (
     <ul className="space-y-2">
       {[0, 1].map((i) => (
-        <li key={i} className="flex items-center gap-3 rounded-lg border border-[var(--border)] p-3">
+        <li key={i} className="flex items-center gap-3 border-b border-[var(--border)] py-3 last:border-b-0">
           <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
           <div className="min-w-0 flex-1 space-y-2">
             <Skeleton className="h-4 w-32" />
@@ -47,27 +51,61 @@ async function BlockedUsers({ userId }: { userId: string }) {
   }
 
   return (
-    <ul className="space-y-2">
+    <ul>
       {blocks.map((b) => {
         const name = b.blocked?.display_name ?? b.blocked?.username ?? "Unknown";
         return (
-          <li key={b.blocked_id} className="flex items-center gap-3 rounded-lg border border-[var(--border)] p-3 transition hover:border-[var(--border-strong)]">
-            <AvatarBase src={b.blocked?.avatar_url ?? null} seed={b.blocked?.username ?? name} name={name} className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] text-sm" pro={b.blocked?.is_pro ?? false} />
+          <li
+            key={b.blocked_id}
+            className="flex items-center gap-3 border-b border-[var(--border)] py-3 last:border-b-0"
+          >
+            <AvatarBase
+              src={b.blocked?.avatar_url ?? null}
+              seed={b.blocked?.username ?? name}
+              name={name}
+              className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] text-sm"
+              pro={b.blocked?.is_pro ?? false}
+            />
             <div className="min-w-0 flex-1 text-sm text-[var(--ink)]">
               {b.blocked ? (
-                <Link href={`/profile/${b.blocked.username}`} className="font-medium hover:underline">{name}</Link>
+                <Link href={`/profile/${b.blocked.username}`} className="font-medium hover:underline">
+                  {name}
+                </Link>
               ) : (
                 <span className="font-medium">{name}</span>
               )}
               {b.blocked && <span className="ml-1.5 text-[var(--ink-muted)]">@{b.blocked.username}</span>}
             </div>
             <form action={unblockUser.bind(null, b.blocked_id)}>
-              <button type="submit" className="cursor-pointer text-sm text-[var(--ink-muted)] underline transition hover:text-[var(--ink)]">Unblock</button>
+              <button
+                type="submit"
+                className="cursor-pointer text-sm text-[var(--ink-muted)] underline transition hover:text-[var(--ink)]"
+              >
+                Unblock
+              </button>
             </form>
           </li>
         );
       })}
     </ul>
+  );
+}
+
+function SettingsSection({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: ReactNode;
+}) {
+  return (
+    <AppPanel className="p-5 sm:p-6">
+      <h2 className="text-base font-medium tracking-[-0.02em] text-[var(--ink)]">{title}</h2>
+      {description ? <p className="mt-1.5 text-sm leading-relaxed text-[var(--ink-muted)]">{description}</p> : null}
+      <div className="mt-4">{children}</div>
+    </AppPanel>
   );
 }
 
@@ -90,55 +128,51 @@ export default async function SettingsPage() {
   const openToHelp = "open_to_help" in profile ? !!profile.open_to_help : false;
 
   return (
-    <main className="page-enter mx-auto max-w-xl px-5 py-10">
-      <h1 className="mb-6 text-2xl font-semibold tracking-[-0.02em] text-[var(--ink)]">Settings</h1>
+    <AppPage width="narrow">
+      <AppPageHeader
+        kicker="Account"
+        title="Settings"
+        description={
+          <>
+            Manage login, privacy, and path controls. Profile details live in{" "}
+            <Link href="/profile/edit" className="underline hover:text-[var(--ink)]">
+              Edit profile
+            </Link>
+            .
+          </>
+        }
+      />
 
-      <div className="space-y-5">
-        <section className="card p-6">
-          <h2 className="mb-4 text-lg font-semibold text-[var(--ink)]">Account</h2>
-          <p className="mb-4 text-sm text-[var(--ink-muted)]">
-            Other profile details live in{" "}
-            <Link href="/profile/edit" className="underline hover:text-[var(--ink)]">Edit profile</Link>.
-          </p>
+      <div className="flex flex-col gap-4">
+        <SettingsSection title="Account">
           <UsernameForm username={profile.username} />
           <div className="my-6 border-t border-[var(--border)]" />
           <ChangePasswordForm />
-        </section>
+        </SettingsSection>
 
-        <section className="card p-6">
-          <h2 className="mb-4 text-lg font-semibold text-[var(--ink)]">Student verification</h2>
+        <SettingsSection title="Student verification">
           <StudentVerification verified={profile.verified_student} />
-        </section>
+        </SettingsSection>
 
-        <section className="card p-6">
-          <h2 className="mb-1 text-lg font-semibold text-[var(--ink)]">Company helpers</h2>
-          <p className="mb-4 text-sm text-[var(--ink-muted)]">
-            Appear on listings for orgs you&apos;ve interned or worked at, so seekers can DM you.
-          </p>
+        <SettingsSection
+          title="Company helpers"
+          description="Appear on listings for orgs you've interned or worked at, so seekers can DM you."
+        >
           <OpenToHelpForm initial={openToHelp} />
-        </section>
+        </SettingsSection>
 
-        <section className="card p-6">
-          <h2 className="mb-4 text-lg font-semibold text-[var(--ink)]">Privacy</h2>
+        <SettingsSection title="Privacy">
           <PrivacyForm initial={profile} />
-
-          <h3 className="mb-4 mt-6 text-sm font-semibold text-[var(--ink)]">Blocked users</h3>
+          <h3 className="mb-3 mt-6 text-sm font-medium text-[var(--ink)]">Blocked users</h3>
           <Suspense fallback={<BlockedUsersFallback />}>
             <BlockedUsers userId={user.id} />
           </Suspense>
-        </section>
+        </SettingsSection>
 
-        <section className="card p-6">
-          <h2 className="mb-1 text-lg font-semibold text-[var(--ink)]">Appearance</h2>
-          <p className="mb-4 text-sm text-[var(--ink-muted)]">Choose light, dark, or match your system.</p>
-          <ThemeToggle />
-        </section>
-
-        <section className="card p-6">
-          <h2 className="mb-1 text-lg font-semibold text-[var(--ink)]">Path</h2>
-          <p className="mb-4 text-sm text-[var(--ink-muted)]">
-            Stuck or something changed? Refresh your plan from intake and applications.
-          </p>
+        <SettingsSection
+          title="Path"
+          description="Stuck or something changed? Refresh your plan from intake and applications."
+        >
           <RediagnoseForm />
           <p className="mt-3 text-sm text-[var(--ink-muted)]">
             Or{" "}
@@ -147,10 +181,10 @@ export default async function SettingsPage() {
             </Link>
             .
           </p>
-        </section>
+        </SettingsSection>
 
         <DeleteAccountSection username={profile.username} />
       </div>
-    </main>
+    </AppPage>
   );
 }

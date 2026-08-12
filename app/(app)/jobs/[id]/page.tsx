@@ -2,6 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getViewer } from "@/lib/viewer";
 import { isPro } from "@/lib/pro";
+import {
+  AppNotice,
+  AppPage,
+  AppPageHeader,
+  AppPanel,
+} from "@/components/app/AppPrimitives";
 import PitchButton from "../PitchButton";
 import SaveJobButton from "@/components/jobs/SaveJobButton";
 import TrackListingButton from "@/components/applications/TrackListingButton";
@@ -59,7 +65,7 @@ function CompanyLogo({
   logoUrl: string | null | undefined;
   size: "sm" | "lg";
 }) {
-  const box = size === "lg" ? "h-14 w-14 rounded-xl p-2 shadow-sm" : "h-5 w-5 rounded p-0.5";
+  const box = size === "lg" ? "h-12 w-12 rounded-lg p-1.5" : "h-5 w-5 rounded p-0.5";
   if (logoUrl) {
     return (
       <img
@@ -75,7 +81,7 @@ function CompanyLogo({
     <AvatarBase
       seed={org}
       name={org}
-      className={`${box} shrink-0 border border-[var(--border)] ${size === "lg" ? "text-xl" : "text-[10px]"}`}
+      className={`${box} shrink-0 border border-[var(--border)] ${size === "lg" ? "text-lg" : "text-[10px]"}`}
     />
   );
 }
@@ -211,86 +217,77 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
   const location = listing.locations ? listing.locations.slice(0, 80) : null;
   const kindLabel = listing.kind === "internship" ? "Internship" : "New grad";
   const degrees = listing.degrees && listing.degrees !== "N/A" ? listing.degrees : null;
-  const chips = [listing.category, listing.term, listing.sponsorship]
+  const metaBits = [listing.category, listing.term, listing.sponsorship]
     .filter((c): c is string => !!c && c !== "N/A" && c !== "Other")
     .filter((c, i, a) => a.indexOf(c) === i);
 
   const desc = listing.description;
   const truncated = !!desc && desc.length > DESC_PREVIEW;
+  const postedLabel = listing.posted_at
+    ? isNew(listing.posted_at)
+      ? `New · posted ${relAge(listing.posted_at)}`
+      : `posted ${relAge(listing.posted_at)}`
+    : null;
 
   return (
-    <main className="page-enter mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8">
-      <Link href="/jobs" className="text-sm text-[var(--ink-muted)] underline">
-        ← All jobs
+    <AppPage width="wide">
+      <Link
+        href="/jobs"
+        className="mb-4 inline-flex text-sm text-[var(--ink-muted)] underline transition hover:text-[var(--ink)]"
+      >
+        ← All opportunities
       </Link>
 
-      <div
-        className="cascade-up mt-4 rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] p-5 shadow-paper"
-        style={{ "--delay": "0ms" } as React.CSSProperties}
-      >
-        <div className="flex items-start gap-4">
-          <CompanyLogo org={listing.org} logoUrl={company?.logo_url} size="lg" />
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <h1 className="text-[22px] font-semibold leading-[1.15] tracking-[-0.025em] text-[var(--ink)] sm:text-[26px]">
-                {listing.title}
-              </h1>
-              {listing.posted_at && isNew(listing.posted_at) && (
-                <span className="rounded-full bg-[var(--blue-glow)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--blue)]">
-                  New
+      <div className="mb-2 flex items-center gap-3">
+        <CompanyLogo org={listing.org} logoUrl={company?.logo_url} size="lg" />
+        <p className="min-w-0 truncate text-sm font-medium text-[var(--ink)]">{listing.org}</p>
+      </div>
+
+      <AppPageHeader
+        kicker={kindLabel}
+        title={listing.title}
+        description={
+          <div className="space-y-1.5">
+            <p className="flex flex-wrap items-center gap-x-1.5">
+              {location && (
+                <span className="inline-flex items-center gap-1">
+                  <IconPin className="h-3.5 w-3.5 text-[var(--ink-faint)]" />
+                  {location}
                 </span>
               )}
-            </div>
-            <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-sm text-[var(--ink-muted)]">
-              <span className="font-medium text-[var(--ink)]">{listing.org}</span>
-              {location && (
+              {postedLabel && (
                 <>
-                  <span aria-hidden className="text-[var(--ink-faint)]">
-                    ·
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <IconPin className="h-3.5 w-3.5 text-[var(--ink-faint)]" />
-                    {location}
-                  </span>
+                  {location && (
+                    <span aria-hidden className="text-[var(--ink-faint)]">
+                      ·
+                    </span>
+                  )}
+                  <span>{postedLabel}</span>
                 </>
               )}
             </p>
-            {listing.posted_at && (
-              <p className="mt-1 text-xs text-[var(--ink-faint)]">posted {relAge(listing.posted_at)}</p>
+            {(metaBits.length > 0 || degrees) && (
+              <p className="flex flex-wrap items-center gap-x-1.5 text-sm text-[var(--ink-faint)]">
+                {metaBits.map((bit, i) => (
+                  <span key={bit}>
+                    {i > 0 ? <span aria-hidden> · </span> : null}
+                    {bit}
+                  </span>
+                ))}
+                {degrees && (
+                  <>
+                    {metaBits.length > 0 ? <span aria-hidden> · </span> : null}
+                    <span className="inline-flex items-center gap-1">
+                      <IconGraduationCap className="h-3.5 w-3.5" />
+                      {degrees}
+                    </span>
+                  </>
+                )}
+              </p>
             )}
           </div>
-        </div>
-
-        <div className="mt-4 flex flex-wrap gap-1.5">
-          <span className="inline-flex items-center rounded-full bg-[var(--ink)] px-2.5 py-1 text-[12px] font-medium text-[var(--canvas)]">
-            {kindLabel}
-          </span>
-          {chips.map((c, i) => (
-            <span
-              key={i}
-              className="inline-flex items-center rounded-full bg-[var(--featured-surface)] px-2.5 py-1 text-[12px] text-[var(--ink-muted)]"
-            >
-              {c}
-            </span>
-          ))}
-          {degrees && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--featured-surface)] px-2.5 py-1 text-[12px] text-[var(--ink-muted)]">
-              <IconGraduationCap className="h-3.5 w-3.5 text-[var(--ink-faint)]" />
-              {degrees}
-            </span>
-          )}
-        </div>
-
-        {helperCount > 0 && (
-          <a
-            href="#peers"
-            className="mt-3 inline-flex items-center gap-1 rounded-full bg-[var(--blue-glow)] px-2.5 py-1 text-xs font-medium text-[var(--blue)] transition hover:opacity-80"
-          >
-            {helperCount} {helperCount === 1 ? "person" : "people"} open to help who&apos;ve been here
-          </a>
-        )}
-
-        <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-[var(--border)] pt-4">
+        }
+        action={
           <a href={listing.url} target="_blank" rel="noopener noreferrer" className="btn-primary">
             Apply
             <svg
@@ -306,144 +303,178 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
               <path d="M5.5 3.5h7v7M12.5 3.5 4 12" />
             </svg>
           </a>
-          {user && <SaveJobButton listingId={listing.id} initialSaved={saved} />}
-          {user && <TrackListingButton listingId={listing.id} initialTracked={isTracked} />}
-          {user && <PitchButton listingId={listing.id} pro={pro} block />}
-        </div>
-        {desc === "" && (
-          <p className="mt-3 text-sm text-[var(--ink-faint)]">
-            This source doesn&apos;t publish descriptions; the posting has the details.
-          </p>
-        )}
-      </div>
+        }
+      />
 
-      {user && (
-        <div
-          className="cascade-up mt-4 rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] p-5 shadow-paper"
-          style={{ "--delay": "60ms" } as React.CSSProperties}
-        >
-          <h2 className="text-sm font-semibold text-[var(--ink)]">Why you fit</h2>
-          <FitCheck listingId={listing.id} initialReason={fit?.reason ?? null} />
+      {helperCount > 0 && (
+        <div className="mb-5">
+          <AppNotice tone="accent">
+            <a href="#peers" className="font-medium underline-offset-2 hover:underline">
+              {helperCount} {helperCount === 1 ? "person" : "people"} open to help who&apos;ve been here
+            </a>
+          </AppNotice>
         </div>
       )}
 
-      {peers.length > 0 && (
-        <div
-          id="peers"
-          className="cascade-up mt-4 rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] p-5 shadow-paper"
-          style={{ "--delay": "90ms" } as React.CSSProperties}
-        >
-          <h2 className="text-sm font-semibold text-[var(--ink)]">People open to help who&apos;ve been here</h2>
-          <ul className="mt-3 flex flex-col gap-2">
-            {peers.map((p) => {
-              const nm = p.display_name ?? p.username;
-              const meta = [p.role, p.term].filter(Boolean).join(" · ");
-              return (
-                <li key={p.id} className="flex items-center gap-3 rounded-lg border border-[var(--border)] px-3 py-2.5">
-                  <Link href={`/profile/${p.username}`} className="flex min-w-0 flex-1 items-center gap-3">
-                    <AvatarBase
-                      src={p.avatar_url}
-                      seed={p.username}
-                      name={nm}
-                      className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] text-sm"
-                      pro={p.is_pro}
-                    />
-                    <div className="min-w-0 text-sm">
-                      <p className="truncate font-medium text-[var(--ink)]">{nm}</p>
-                      {meta && <p className="truncate text-xs text-[var(--ink-muted)]">{meta}</p>}
-                    </div>
-                  </Link>
-                  {/* Reuses ?to= DM deep link; empty threads show “Draft an intro”
-                      (ICEBREAKER_SYSTEM) so help asks stay 1:1 without a new path. */}
-                  <Link
-                    href={`/messages?to=${encodeURIComponent(p.username)}`}
-                    className="btn-ghost shrink-0 rounded-md px-3 py-1.5 text-sm"
-                  >
-                    Ask for help
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      )}
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_16.5rem]">
+        <div className="flex min-w-0 flex-col gap-5">
+          {user && (
+            <AppPanel className="p-5">
+              <h2 className="text-sm font-medium tracking-[-0.01em] text-[var(--ink)]">Why you fit</h2>
+              <FitCheck listingId={listing.id} initialReason={fit?.reason ?? null} />
+            </AppPanel>
+          )}
 
-      {desc !== "" && (
-        <div
-          className="cascade-up mt-4 rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] p-5 shadow-paper"
-          style={{ "--delay": "120ms" } as React.CSSProperties}
-        >
-          <h2 className="text-sm font-semibold text-[var(--ink)]">About the role</h2>
-          {/* Scraped listing text is untrusted third-party data: plain text only. */}
-          {desc === null ? (
-            <p className="mt-2 text-sm text-[var(--ink-muted)]">Details are still syncing.</p>
-          ) : (
-            <div className="relative mt-2">
-              <p className="max-w-[65ch] whitespace-pre-line text-[15px] leading-relaxed text-[var(--ink-muted)]">
-                {truncated ? desc.slice(0, DESC_PREVIEW) : desc}
-              </p>
-              {truncated && (
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-[var(--surface-raised)] to-transparent" />
+          {desc !== "" && (
+            <AppPanel className="p-5">
+              <h2 className="text-sm font-medium tracking-[-0.01em] text-[var(--ink)]">About the role</h2>
+              {/* Scraped listing text is untrusted third-party data: plain text only. */}
+              {desc === null ? (
+                <p className="mt-3 text-sm text-[var(--ink-muted)]">Details are still syncing.</p>
+              ) : (
+                <div className="relative mt-3">
+                  <p className="max-w-[65ch] whitespace-pre-line text-[15px] leading-relaxed text-[var(--ink-muted)]">
+                    {truncated ? desc.slice(0, DESC_PREVIEW) : desc}
+                  </p>
+                  {truncated && (
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-[var(--surface)] to-transparent" />
+                  )}
+                </div>
               )}
+              <a
+                href={listing.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-block text-sm font-medium text-[var(--blue)] underline"
+              >
+                Read the full posting
+              </a>
+            </AppPanel>
+          )}
+
+          {desc === "" && (
+            <AppNotice>
+              This source doesn&apos;t publish descriptions; the posting has the details.
+            </AppNotice>
+          )}
+
+          {peers.length > 0 && (
+            <div id="peers">
+              <AppPanel className="p-5">
+                <h2 className="text-sm font-medium tracking-[-0.01em] text-[var(--ink)]">
+                  People open to help who&apos;ve been here
+                </h2>
+                <ul className="mt-3 divide-y divide-[var(--border)]">
+                  {peers.map((p) => {
+                    const nm = p.display_name ?? p.username;
+                    const meta = [p.role, p.term].filter(Boolean).join(" · ");
+                    return (
+                      <li key={p.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                        <Link href={`/profile/${p.username}`} className="flex min-w-0 flex-1 items-center gap-3">
+                          <AvatarBase
+                            src={p.avatar_url}
+                            seed={p.username}
+                            name={nm}
+                            className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] text-sm"
+                            pro={p.is_pro}
+                          />
+                          <div className="min-w-0 text-sm">
+                            <p className="truncate font-medium text-[var(--ink)]">{nm}</p>
+                            {meta && <p className="truncate text-xs text-[var(--ink-muted)]">{meta}</p>}
+                          </div>
+                        </Link>
+                        {/* Reuses ?to= DM deep link; empty threads show “Draft an intro”
+                            (ICEBREAKER_SYSTEM) so help asks stay 1:1 without a new path. */}
+                        <Link
+                          href={`/messages?to=${encodeURIComponent(p.username)}`}
+                          className="btn-ghost shrink-0 rounded-md px-3 py-1.5 text-sm"
+                        >
+                          Ask for help
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </AppPanel>
             </div>
           )}
-          <a
-            href={listing.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-2 inline-block text-sm font-medium text-[var(--blue)] underline"
-          >
-            Read the full posting
-          </a>
-        </div>
-      )}
 
-      {company?.description && (
-        <div
-          className="cascade-up mt-4 rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] p-5 shadow-paper"
-          style={{ "--delay": "180ms" } as React.CSSProperties}
-        >
-          <div className="flex items-center gap-2">
-            <CompanyLogo org={listing.org} logoUrl={company.logo_url} size="sm" />
-            <h2 className="text-sm font-semibold text-[var(--ink)]">About {listing.org}</h2>
-          </div>
-          <p className="mt-2 max-w-[65ch] whitespace-pre-line text-[15px] leading-relaxed text-[var(--ink-muted)]">
-            {company.description}
-          </p>
-        </div>
-      )}
+          {company?.description && (
+            <AppPanel className="p-5">
+              <div className="flex items-center gap-2">
+                <CompanyLogo org={listing.org} logoUrl={company.logo_url} size="sm" />
+                <h2 className="text-sm font-medium tracking-[-0.01em] text-[var(--ink)]">About {listing.org}</h2>
+              </div>
+              <p className="mt-3 max-w-[65ch] whitespace-pre-line text-[15px] leading-relaxed text-[var(--ink-muted)]">
+                {company.description}
+              </p>
+            </AppPanel>
+          )}
 
-      {more.length > 0 && (
-        <div
-          className="cascade-up mt-4 rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] p-5 shadow-paper"
-          style={{ "--delay": "240ms" } as React.CSSProperties}
-        >
-          <h2 className="text-sm font-semibold text-[var(--ink)]">More at {listing.org}</h2>
-          <ul className="mt-2 flex flex-col gap-2">
-            {more.map((m) => {
-              const meta = [m.term !== "N/A" ? m.term : null, m.locations ? m.locations.slice(0, 80) : null]
-                .filter(Boolean)
-                .join(" · ");
-              return (
-                <li key={m.id}>
-                  <Link
-                    href={`/jobs/${m.id}`}
-                    className="flex items-start justify-between gap-3 rounded-md border border-[var(--border)] px-3 py-2.5 text-sm transition hover:bg-[var(--featured-surface)]"
-                  >
-                    <span className="min-w-0">
-                      <span className="font-medium text-[var(--ink)]">{m.title}</span>
-                      {meta && <span className="mt-0.5 block text-xs text-[var(--ink-muted)]">{meta}</span>}
-                    </span>
-                    {m.posted_at && (
-                      <span className="shrink-0 text-xs text-[var(--ink-faint)]">{relAge(m.posted_at)}</span>
-                    )}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+          {more.length > 0 && (
+            <AppPanel className="p-5">
+              <h2 className="text-sm font-medium tracking-[-0.01em] text-[var(--ink)]">More at {listing.org}</h2>
+              <ul className="mt-3 divide-y divide-[var(--border)]">
+                {more.map((m) => {
+                  const meta = [m.term !== "N/A" ? m.term : null, m.locations ? m.locations.slice(0, 80) : null]
+                    .filter(Boolean)
+                    .join(" · ");
+                  return (
+                    <li key={m.id}>
+                      <Link
+                        href={`/jobs/${m.id}`}
+                        className="flex items-start justify-between gap-3 py-3 text-sm transition first:pt-0 last:pb-0 hover:text-[var(--ink)]"
+                      >
+                        <span className="min-w-0">
+                          <span className="font-medium text-[var(--ink)]">{m.title}</span>
+                          {meta && <span className="mt-0.5 block text-xs text-[var(--ink-muted)]">{meta}</span>}
+                        </span>
+                        {m.posted_at && (
+                          <span className="shrink-0 text-xs text-[var(--ink-faint)]">{relAge(m.posted_at)}</span>
+                        )}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </AppPanel>
+          )}
         </div>
-      )}
-    </main>
+
+        <aside className="flex flex-col gap-4 lg:sticky lg:top-[5.5rem]">
+          <AppPanel className="p-4">
+            <p className="text-xs font-medium uppercase tracking-[0.08em] text-[var(--accent-blue-strong)]">
+              Keep it on your path
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-[var(--ink-muted)]">
+              Save or track this listing so it shows up when you come back.
+            </p>
+            {user ? (
+              <div className="mt-4 flex flex-wrap gap-2">
+                <SaveJobButton listingId={listing.id} initialSaved={saved} />
+                <TrackListingButton listingId={listing.id} initialTracked={isTracked} />
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-[var(--ink-faint)]">
+                <Link href="/login" className="underline hover:text-[var(--ink)]">
+                  Sign in
+                </Link>{" "}
+                to save and track.
+              </p>
+            )}
+          </AppPanel>
+
+          {user && (
+            <AppPanel className="p-4">
+              <p className="text-xs font-medium uppercase tracking-[0.08em] text-[var(--ink-faint)]">Pitch</p>
+              <p className="mt-2 text-sm text-[var(--ink-muted)]">Draft something specific before you submit.</p>
+              <div className="mt-3">
+                <PitchButton listingId={listing.id} pro={pro} block />
+              </div>
+            </AppPanel>
+          )}
+        </aside>
+      </div>
+    </AppPage>
   );
 }
