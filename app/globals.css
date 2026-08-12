@@ -964,6 +964,25 @@ summary {
   background: var(--surface);
 }
 
+/* Thin, low-contrast scrollbar for nested panels (e.g. AI fit assistant). */
+.app-panel-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--ink-faint) 55%, transparent) transparent;
+}
+
+.app-panel-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.app-panel-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.app-panel-scroll::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--ink-faint) 55%, transparent);
+  border-radius: 999px;
+}
+
 .app-notice {
   border: 1px solid var(--border);
   border-radius: var(--landing-radius-sm);
