@@ -3,14 +3,17 @@
 import { useActionState, useOptimistic, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import {
-  APPLICATION_STATUSES,
   createApplication,
   deleteApplication,
   updateApplicationStatus,
+} from "@/app/(app)/applications/actions";
+import {
+  APPLICATION_STATUSES,
+  isApplicationStatus,
   type ApplicationActionState,
   type ApplicationRow,
   type ApplicationStatus,
-} from "@/app/(app)/applications/actions";
+} from "@/lib/applications";
 import Select from "@/components/ui/Select";
 
 const STATUS_LABELS: Record<ApplicationStatus, string> = {
@@ -151,9 +154,7 @@ export default function ApplicationBoard({ initial }: { initial: ApplicationRow[
         const org = String(formData.get("org") ?? "").trim();
         const role = String(formData.get("role") ?? "").trim();
         const statusRaw = String(formData.get("status") ?? "wishlist").trim();
-        const status = (APPLICATION_STATUSES as readonly string[]).includes(statusRaw)
-          ? (statusRaw as ApplicationStatus)
-          : "wishlist";
+        const status = isApplicationStatus(statusRaw) ? statusRaw : "wishlist";
         const now = new Date().toISOString();
         if (res.id) {
           setItems((prevItems) => [

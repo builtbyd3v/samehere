@@ -3,40 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { rediagnoseUser } from "@/lib/path/rediagnose";
-
-export const APPLICATION_STATUSES = [
-  "wishlist",
-  "applied",
-  "oa",
-  "interview",
-  "offer",
-  "rejected",
-  "withdrawn",
-] as const;
-
-export type ApplicationStatus = (typeof APPLICATION_STATUSES)[number];
-
-export type ApplicationRow = {
-  id: string;
-  user_id: string;
-  listing_id: string | null;
-  org: string;
-  role: string;
-  status: ApplicationStatus;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-};
-
-export type ApplicationActionState = {
-  error?: string;
-  success?: boolean;
-  id?: string;
-};
-
-function isStatus(value: string): value is ApplicationStatus {
-  return (APPLICATION_STATUSES as readonly string[]).includes(value);
-}
+import {
+  isApplicationStatus,
+  type ApplicationActionState,
+  type ApplicationStatus,
+} from "@/lib/applications";
 
 function revalidateApplications(listingId?: string | null) {
   revalidatePath("/applications");
@@ -60,7 +31,7 @@ export async function createApplication(
   const notes = String(formData.get("notes") ?? "").trim().slice(0, 2000) || null;
 
   if (!org || !role) return { error: "Org and role are required." };
-  const status: ApplicationStatus = isStatus(statusRaw) ? statusRaw : "wishlist";
+  const status: ApplicationStatus = isApplicationStatus(statusRaw) ? statusRaw : "wishlist";
 
   const { data, error } = await supabase
     .from("applications")
@@ -97,7 +68,7 @@ export async function updateApplicationStatus(
   } = await supabase.auth.getUser();
   if (!user) return { error: "You must be logged in." };
   if (!id) return { error: "Missing application." };
-  if (!isStatus(status)) return { error: "Invalid status." };
+  if (!isApplicationStatus(status)) return { error: "Invalid status." };
 
   const { data, error } = await supabase
     .from("applications")

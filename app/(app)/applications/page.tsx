@@ -3,15 +3,13 @@ import { getViewer } from "@/lib/viewer";
 import { AppNotice, AppPage, AppPageHeader } from "@/components/app/AppPrimitives";
 import ApplicationBoard from "@/components/applications/ApplicationBoard";
 import {
-  APPLICATION_STATUSES,
+  isApplicationStatus,
   type ApplicationRow,
   type ApplicationStatus,
-} from "./actions";
+} from "@/lib/applications";
 
 function asStatus(value: string): ApplicationStatus {
-  return (APPLICATION_STATUSES as readonly string[]).includes(value)
-    ? (value as ApplicationStatus)
-    : "wishlist";
+  return isApplicationStatus(value) ? value : "wishlist";
 }
 
 export const metadata = { title: "Applications · samehere" };
