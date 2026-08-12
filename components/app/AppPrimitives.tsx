@@ -4,6 +4,7 @@ const WIDTHS = {
   narrow: "max-w-xl",
   medium: "max-w-2xl",
   wide: "max-w-3xl",
+  full: "max-w-[1120px]",
 } as const;
 
 export function AppPage({

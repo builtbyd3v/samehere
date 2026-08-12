@@ -143,26 +143,6 @@ export default async function JobsPage({
     logoBySlug = new Map((companies ?? []).map((c) => [c.slug, c.logo_url]));
   }
 
-  // "N students with a path here" chip: distinct user_id count in experiences
-  // whose org ilike-matches this listing's org, batched into one query for the
-  // whole page. ponytail: skips blocked-viewer filtering here (would need a
-  // second per-viewer join) -- the chip is a rough social-proof signal, not a
-  // privacy-sensitive list.
-  const orgs = [...new Set(listings.map((l) => l.org))];
-  let countByOrg = new Map<string, number>();
-  if (orgs.length) {
-    const orFilter = orgs.map((o) => `org.ilike.${o.replace(/[,()%*]/g, "")}`).join(",");
-    const { data: expRows } = await supabase.from("experiences").select("user_id, org").or(orFilter).limit(1000);
-    const usersByOrg = new Map<string, Set<string>>();
-    for (const e of expRows ?? []) {
-      const org = orgs.find((o) => e.org.toLowerCase() === o.toLowerCase()) ?? e.org;
-      const set = usersByOrg.get(org) ?? new Set<string>();
-      set.add(e.user_id);
-      usersByOrg.set(org, set);
-    }
-    countByOrg = new Map([...usersByOrg].map(([org, set]) => [org, set.size]));
-  }
-
   // Cached fit results (from a prior "Find my matches" run) render on load,
   // no AI call. Joined listing data is re-selected fresh; inactive listings
   // are excluded here (job_fit rows persist until the user re-ranks).
@@ -181,6 +161,7 @@ export default async function JobsPage({
       .filter((f): f is typeof f & { listing: ListingRow } => f.listing !== null)
       .map((f) => ({ id: f.listing_id, reason: f.reason, listing: f.listing }));
   }
+  const fitByListing = new Map(initialResults.map((result) => [result.id, result.reason]));
 
   const profile = user
     ? (await supabase.from("profiles").select("is_pro, pro_until").eq("id", user.id).single()).data
@@ -203,14 +184,12 @@ export default async function JobsPage({
   const anyFilter = !!(q || kind || location || category || sponsorship || sort !== "newest" || savedOnly);
 
   return (
-    <AppPage width="medium">
+    <AppPage width="full">
       <AppPageHeader
         kicker="Apply"
         title="Opportunities"
         description="Target internships that fit your current proof, then track the ones worth your time."
       />
-
-      <MatchesSection initialResults={initialResults} pro={pro} />
 
       <FilterForm
         q={q}
@@ -227,12 +206,19 @@ export default async function JobsPage({
         maxQuery={TEXT_LIMITS.searchQuery}
       />
 
-      <p className="mt-4 text-xs text-[var(--ink-faint)]">
-        {total} listing{total === 1 ? "" : "s"}
-        {anyFilter ? " matching filters" : ""}
-      </p>
+      <div className="mt-4 grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
+        <section className="min-w-0" aria-labelledby="opportunity-results">
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <h2 id="opportunity-results" className="text-sm font-medium text-[var(--ink)]">
+              Current listings
+            </h2>
+            <p className="text-xs text-[var(--ink-faint)]">
+              {total} result{total === 1 ? "" : "s"}
+              {anyFilter ? " with filters" : ""}
+            </p>
+          </div>
 
-      <div className="mt-2 flex flex-col gap-2">
+          <div className="flex flex-col gap-2">
         {listings.length === 0 ? (
           <AppEmptyState
             title={savedOnly ? "No saved listings" : "No listings yet"}
@@ -244,10 +230,10 @@ export default async function JobsPage({
           />
         ) : (
           listings.map((l, i) => {
-            const studentCount = countByOrg.get(l.org) ?? 0;
             const location = l.locations ? l.locations.slice(0, 60) : null;
             const kindLabel = l.kind === "internship" ? "Internship" : "New grad";
             const degrees = l.degrees && l.degrees !== "N/A" ? l.degrees : null;
+            const fitReason = fitByListing.get(l.id);
             const chips = [l.category, l.term, l.sponsorship]
               .filter((c): c is string => !!c && c !== "N/A" && c !== "Other")
               .map((c) => c.slice(0, 30))
@@ -258,9 +244,8 @@ export default async function JobsPage({
                 className="cascade-up app-panel relative p-5 transition hover:-translate-y-[1px] hover:border-[var(--border-strong)]"
                 style={{ "--delay": `${Math.min(i, 10) * 60}ms` } as React.CSSProperties}
               >
-                {/* Stretched link (on the title): whole card clicks through to the
-                    detail page while Apply/PitchButton/students-chip stay clickable
-                    via relative z-10. */}
+                {/* Stretched title link keeps the whole row navigable while actions
+                    remain interactive above it. */}
                 <div className="flex items-start gap-3">
                   <CompanyLogo org={l.org} logoUrl={l.company_slug ? logoBySlug.get(l.company_slug) : null} />
                   <div className="min-w-0 flex-1">
@@ -317,14 +302,16 @@ export default async function JobsPage({
                   </div>
                 )}
 
-                {studentCount > 0 && (
-                  <Link
-                    href={`/jobs/${l.id}`}
-                    className="relative z-10 mt-3 inline-flex items-center gap-1 rounded-full bg-[var(--blue-glow)] px-2.5 py-1 text-xs font-medium text-[var(--blue)] transition hover:opacity-80"
-                  >
-                    {studentCount} student{studentCount === 1 ? "" : "s"} with a path here
-                  </Link>
-                )}
+                {fitReason ? (
+                  <div className="mt-3 border-l-2 border-[var(--accent-blue)] pl-3">
+                    <p className="text-[11px] font-medium text-[var(--accent-blue-strong)]">
+                      AI fit
+                    </p>
+                    <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-[var(--ink-muted)]">
+                      {fitReason}
+                    </p>
+                  </div>
+                ) : null}
 
                 <div className="relative z-10 mt-4 flex flex-wrap items-center gap-2 border-t border-[var(--border)] pt-4">
                   <a href={l.url} target="_blank" rel="noopener noreferrer" className="btn-primary">
@@ -349,24 +336,30 @@ export default async function JobsPage({
             );
           })
         )}
-      </div>
+          </div>
 
-      {(page > 1 || hasMore) && (
-        <div className="mt-4 flex items-center justify-between text-sm">
-          {page > 1 ? (
-            <Link href={filterHref({ page: page - 1 })} className="text-[var(--ink-muted)] underline">
-              Previous
-            </Link>
-          ) : (
-            <span />
+          {(page > 1 || hasMore) && (
+            <div className="mt-4 flex items-center justify-between text-sm">
+              {page > 1 ? (
+                <Link href={filterHref({ page: page - 1 })} className="text-[var(--ink-muted)] underline">
+                  Previous
+                </Link>
+              ) : (
+                <span />
+              )}
+              {hasMore && (
+                <Link href={filterHref({ page: page + 1 })} className="text-[var(--ink-muted)] underline">
+                  Next
+                </Link>
+              )}
+            </div>
           )}
-          {hasMore && (
-            <Link href={filterHref({ page: page + 1 })} className="text-[var(--ink-muted)] underline">
-              Next
-            </Link>
-          )}
-        </div>
-      )}
+        </section>
+
+        <aside className="lg:sticky lg:top-20">
+          <MatchesSection initialResults={initialResults} pro={pro} />
+        </aside>
+      </div>
     </AppPage>
   );
 }

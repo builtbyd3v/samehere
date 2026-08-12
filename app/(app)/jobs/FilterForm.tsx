@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { IconSearch } from "@/components/icons";
 import Select from "@/components/ui/Select";
 
 // Jobs board filter card. Custom dropdowns (components/ui/Select) replace
@@ -69,7 +70,7 @@ export default function FilterForm({
   return (
     <form
       action="/jobs"
-      className="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] p-3 shadow-paper"
+      className="app-panel p-3"
     >
       {/* Dropdown state rides along when the text form submits. */}
       {kind && <input type="hidden" name="kind" value={kind} />}
@@ -80,20 +81,9 @@ export default function FilterForm({
 
       <div className="grid gap-2 sm:grid-cols-[1.2fr_1fr_auto]">
         <div className="relative">
-          <svg
-            aria-hidden
-            viewBox="0 0 24 24"
-            width="16"
-            height="16"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ink-faint)]"
-          >
-            <circle cx="11" cy="11" r="7" />
-            <path d="m20 20-3.5-3.5" />
-          </svg>
+          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ink-faint)]">
+            <IconSearch />
+          </span>
           <input
             type="text"
             name="q"
@@ -115,64 +105,71 @@ export default function FilterForm({
           Search
         </button>
       </div>
-      <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <Select
-          ariaLabel="Kind"
-          value={kind}
-          onChange={(v) => pick("kind", v)}
-          options={[
-            { value: "", label: "All kinds" },
-            { value: "internship", label: "Internship" },
-            // new_grad returns once a new-grad ingest source exists (kind enum kept in DB)
-          ]}
-        />
-        <Select
-          ariaLabel="Category"
-          value={category}
-          onChange={(v) => pick("category", v)}
-          options={[{ value: "", label: "All categories" }, ...categories.map((c) => ({ value: c, label: c }))]}
-        />
-        <Select
-          ariaLabel="Sponsorship"
-          value={sponsorship}
-          onChange={(v) => pick("sponsorship", v)}
-          options={[{ value: "", label: "Any sponsorship" }, ...sponsorships.map((s) => ({ value: s, label: s }))]}
-        />
-        <Select
-          ariaLabel="Sort"
-          value={sort}
-          onChange={(v) => pick("sort", v)}
-          options={[
-            { value: "newest", label: "Newest first" },
-            { value: "oldest", label: "Oldest first" },
-          ]}
-        />
-      </div>
-      {(showSaved || anyFilter) && (
-        <div className="mt-2 flex items-center justify-between">
-          {showSaved ? (
-            <button
-              type="button"
-              onClick={toggleSaved}
-              aria-pressed={saved}
-              className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${
-                saved
-                  ? "bg-[var(--featured-surface)] text-[var(--blue)]"
-                  : "text-[var(--ink-muted)] hover:bg-[var(--featured-surface)] hover:text-[var(--ink)]"
-              }`}
-            >
-              Saved only
-            </button>
-          ) : (
-            <span />
-          )}
-          {anyFilter && (
-            <Link href="/jobs" className="text-xs text-[var(--ink-muted)] underline hover:text-[var(--ink)]">
-              Clear filters
-            </Link>
-          )}
+      <details
+        className="mt-2 border-t border-[var(--border)] pt-2"
+        open={Boolean(kind || category || sponsorship || sort !== "newest" || saved)}
+      >
+        <summary className="cursor-pointer select-none text-xs font-medium text-[var(--ink-muted)] hover:text-[var(--ink)]">
+          More filters
+        </summary>
+        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <Select
+            ariaLabel="Kind"
+            value={kind}
+            onChange={(v) => pick("kind", v)}
+            options={[
+              { value: "", label: "All kinds" },
+              { value: "internship", label: "Internship" },
+            ]}
+          />
+          <Select
+            ariaLabel="Category"
+            value={category}
+            onChange={(v) => pick("category", v)}
+            options={[{ value: "", label: "All categories" }, ...categories.map((c) => ({ value: c, label: c }))]}
+          />
+          <Select
+            ariaLabel="Sponsorship"
+            value={sponsorship}
+            onChange={(v) => pick("sponsorship", v)}
+            options={[{ value: "", label: "Any sponsorship" }, ...sponsorships.map((s) => ({ value: s, label: s }))]}
+          />
+          <Select
+            ariaLabel="Sort"
+            value={sort}
+            onChange={(v) => pick("sort", v)}
+            options={[
+              { value: "newest", label: "Newest first" },
+              { value: "oldest", label: "Oldest first" },
+            ]}
+          />
         </div>
-      )}
+        {(showSaved || anyFilter) && (
+          <div className="mt-2 flex items-center justify-between">
+            {showSaved ? (
+              <button
+                type="button"
+                onClick={toggleSaved}
+                aria-pressed={saved}
+                className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${
+                  saved
+                    ? "bg-[var(--featured-surface)] text-[var(--blue)]"
+                    : "text-[var(--ink-muted)] hover:bg-[var(--featured-surface)] hover:text-[var(--ink)]"
+                }`}
+              >
+                Saved only
+              </button>
+            ) : (
+              <span />
+            )}
+            {anyFilter && (
+              <Link href="/jobs" className="text-xs text-[var(--ink-muted)] underline hover:text-[var(--ink)]">
+                Clear filters
+              </Link>
+            )}
+          </div>
+        )}
+      </details>
     </form>
   );
 }
