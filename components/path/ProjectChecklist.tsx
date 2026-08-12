@@ -1,12 +1,36 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import type { PathProject } from "@/lib/path/types";
 import { saveProjectChecklist } from "@/app/(app)/projects/actions";
 import ProjectCompletionPanel from "@/components/path/ProjectCompletionPanel";
 
 type Item = PathProject["build_checklist"][number];
+type ChecklistState = Record<string, boolean>;
+
+function hasServerChecklist(state?: ChecklistState): state is ChecklistState {
+  return !!state && Object.keys(state).length > 0;
+}
+
+function readLocalChecklist(storageKey: string): ChecklistState | null {
+  try {
+    const raw = localStorage.getItem(storageKey);
+    if (!raw) return null;
+    return JSON.parse(raw) as ChecklistState;
+  } catch {
+    return null;
+  }
+}
+
+/** Client-only flag without setState-in-effect; SSR/hydration snapshot stays false. */
+function useIsClient() {
+  return useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+}
 
 export default function ProjectChecklist({
   projectSlug,
@@ -17,34 +41,47 @@ export default function ProjectChecklist({
   projectSlug: string;
   items: Item[];
   /** Server checklist_state when logged in; preferred over localStorage. */
-  initialDone?: Record<string, boolean>;
+  initialDone?: ChecklistState;
   /** When true, toggles upsert user_projects (logged-in viewers). */
   persistServer?: boolean;
 }) {
   const router = useRouter();
   const storageKey = `path-project-checklist:${projectSlug}`;
-  const [done, setDone] = useState<Record<string, boolean>>(initialDone ?? {});
+  const isClient = useIsClient();
+  const [done, setDone] = useState<ChecklistState>(initialDone ?? {});
+  /** Tracks which storage key has applied client hydrate (server or localStorage). */
+  const [hydratedKey, setHydratedKey] = useState<string | null>(null);
+  const [prevInitialDone, setPrevInitialDone] = useState(initialDone);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hydrated = useRef(false);
 
-  useEffect(() => {
-    if (hydrated.current) return;
-    hydrated.current = true;
-    // Prefer server state; localStorage is offline cache fallback only.
-    if (initialDone && Object.keys(initialDone).length > 0) {
+  // Prefer server state when it arrives/changes (e.g. after refresh). Render-time
+  // adjust — not an effect — so we avoid react-hooks/set-state-in-effect.
+  if (initialDone !== prevInitialDone) {
+    setPrevInitialDone(initialDone);
+    if (hasServerChecklist(initialDone)) {
       setDone(initialDone);
-      try {
-        localStorage.setItem(storageKey, JSON.stringify(initialDone));
-      } catch {
-        /* ignore quota */
-      }
-      return;
     }
+  }
+
+  // One client hydrate per storage key: server wins; else localStorage fallback.
+  if (isClient && hydratedKey !== storageKey) {
+    setHydratedKey(storageKey);
+    if (hasServerChecklist(initialDone)) {
+      setDone(initialDone);
+    } else {
+      const local = readLocalChecklist(storageKey);
+      if (local) setDone(local);
+      else setDone(initialDone ?? {});
+    }
+  }
+
+  // Mirror preferred server state into localStorage (write-only; no setState).
+  useEffect(() => {
+    if (!hasServerChecklist(initialDone)) return;
     try {
-      const raw = localStorage.getItem(storageKey);
-      if (raw) setDone(JSON.parse(raw) as Record<string, boolean>);
+      localStorage.setItem(storageKey, JSON.stringify(initialDone));
     } catch {
-      /* ignore */
+      /* ignore quota */
     }
   }, [initialDone, storageKey]);
 
@@ -54,7 +91,7 @@ export default function ProjectChecklist({
     };
   }, []);
 
-  function persist(next: Record<string, boolean>) {
+  function persist(next: ChecklistState) {
     try {
       localStorage.setItem(storageKey, JSON.stringify(next));
     } catch {
