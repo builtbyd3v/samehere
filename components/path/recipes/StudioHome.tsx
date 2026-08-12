@@ -1,4 +1,8 @@
 import Link from "next/link";
+import type {
+  ApplicationStageCount,
+  OpportunityListing,
+} from "@/lib/path/load-opportunities";
 import type { PathPlanUi } from "@/lib/path/types";
 import PathHero from "../PathHero";
 import {
@@ -8,7 +12,14 @@ import {
   SkillStagesStub,
 } from "../modules/stubs";
 
-export default function StudioHome({ plan }: { plan: PathPlanUi }) {
+export default function StudioHome({
+  plan,
+  listings,
+}: {
+  plan: PathPlanUi;
+  listings?: OpportunityListing[];
+  applicationStages?: ApplicationStageCount[];
+}) {
   return (
     <div className="mx-auto w-full max-w-3xl py-6 md:py-8">
       <PathHero plan={plan}>
@@ -26,9 +37,17 @@ export default function StudioHome({ plan }: { plan: PathPlanUi }) {
         <SkillStagesStub />
         <div className="opacity-70">
           <OpportunitiesStub
-            listings={[
-              { org: "Later", title: "Apply after you have one solid project", fit: "Demoted" },
-            ]}
+            listings={
+              listings?.length
+                ? listings
+                : [
+                    {
+                      org: "Later",
+                      title: "Apply after you have one solid project",
+                      fit: "Demoted",
+                    },
+                  ]
+            }
           />
         </div>
       </div>

@@ -73,26 +73,63 @@ export function DossierStub({
   );
 }
 
+export type OpportunityRow = {
+  id?: string;
+  org: string;
+  title: string;
+  location?: string | null;
+  fit?: string | null;
+};
+
+const DEFAULT_OPPORTUNITIES: OpportunityRow[] = [
+  { org: "Stripe", title: "Software Engineering Intern", fit: "Strong fit" },
+  { org: "Notion", title: "Product Engineering Intern", fit: "Good fit" },
+];
+
 export function OpportunitiesStub({
-  listings = [
-    { org: "Stripe", title: "Software Engineering Intern", fit: "Strong fit" },
-    { org: "Notion", title: "Product Engineering Intern", fit: "Good fit" },
-  ],
+  listings,
 }: {
-  listings?: { org: string; title: string; fit: string }[];
+  listings?: OpportunityRow[];
 }) {
+  const rows = listings?.length ? listings : DEFAULT_OPPORTUNITIES;
+
   return (
     <ModuleSection id="opportunities">
       <ul className="divide-y divide-[var(--border)] border-y border-[var(--border)]">
-        {listings.map((listing) => (
-          <li key={`${listing.org}-${listing.title}`} className="flex items-baseline justify-between gap-4 py-3">
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-[var(--ink)]">{listing.title}</p>
-              <p className="text-sm text-[var(--ink-muted)]">{listing.org}</p>
-            </div>
-            <span className="shrink-0 text-xs font-medium text-[var(--blue)]">{listing.fit}</span>
-          </li>
-        ))}
+        {rows.map((listing) => {
+          const href = listing.id ? `/jobs/${listing.id}` : "/jobs";
+          const action = listing.id ? "Open" : "Browse";
+          return (
+            <li
+              key={listing.id ?? `${listing.org}-${listing.title}`}
+              className="flex items-baseline justify-between gap-4 py-3"
+            >
+              <div className="min-w-0">
+                <Link
+                  href={href}
+                  className="truncate text-sm font-semibold text-[var(--ink)] hover:underline"
+                >
+                  {listing.title}
+                </Link>
+                <p className="text-sm text-[var(--ink-muted)]">
+                  {listing.org}
+                  {listing.location
+                    ? ` · ${listing.location.slice(0, 60)}`
+                    : ""}
+                </p>
+                {listing.fit ? (
+                  <p className="mt-0.5 text-xs text-[var(--blue)]">{listing.fit}</p>
+                ) : null}
+              </div>
+              <Link
+                href={href}
+                className="shrink-0 text-xs font-semibold text-[var(--blue)] hover:underline"
+              >
+                {action}
+              </Link>
+            </li>
+          );
+        })}
       </ul>
       <Link
         href="/jobs"
@@ -104,19 +141,23 @@ export function OpportunitiesStub({
   );
 }
 
+const DEFAULT_STAGES = [
+  { label: "Wishlist", count: 4 },
+  { label: "Applied", count: 2 },
+  { label: "Interview", count: 1 },
+];
+
 export function ApplicationsStub({
-  stages = [
-    { label: "Wishlist", count: 4 },
-    { label: "Applied", count: 2 },
-    { label: "Interview", count: 1 },
-  ],
+  stages,
 }: {
   stages?: { label: string; count: number }[];
 }) {
+  const rows = stages ?? DEFAULT_STAGES;
+
   return (
     <ModuleSection id="applications">
       <div className="flex flex-wrap gap-6">
-        {stages.map((stage) => (
+        {rows.map((stage) => (
           <div key={stage.label}>
             <p className="text-2xl font-semibold tabular-nums tracking-[-0.03em] text-[var(--ink)]">
               {stage.count}
@@ -137,17 +178,18 @@ export function ApplicationsStub({
   );
 }
 
-export function PitchStub() {
+export function PitchStub({ listingId }: { listingId?: string }) {
+  const href = listingId ? `/jobs/${listingId}` : "/jobs";
   return (
     <ModuleSection id="pitch">
       <p className="text-sm leading-relaxed text-[var(--ink-muted)]">
         Generate resume bullets tailored to one listing when you are ready to apply.
       </p>
       <Link
-        href="/jobs"
+        href={href}
         className="mt-4 inline-flex text-sm font-semibold text-[var(--blue)] hover:underline"
       >
-        Pick a listing to pitch
+        {listingId ? "Pitch this listing" : "Pick a listing to pitch"}
       </Link>
     </ModuleSection>
   );

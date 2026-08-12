@@ -1,4 +1,8 @@
 import Link from "next/link";
+import type {
+  ApplicationStageCount,
+  OpportunityListing,
+} from "@/lib/path/load-opportunities";
 import type { PathPlanUi } from "@/lib/path/types";
 import PathHero from "../PathHero";
 import {
@@ -8,7 +12,18 @@ import {
   PitchStub,
 } from "../modules/stubs";
 
-export default function OpsDeskHome({ plan }: { plan: PathPlanUi }) {
+export default function OpsDeskHome({
+  plan,
+  listings,
+  applicationStages,
+}: {
+  plan: PathPlanUi;
+  listings?: OpportunityListing[];
+  applicationStages?: ApplicationStageCount[];
+}) {
+  const top = listings?.[0];
+  const listingHref = top ? `/jobs/${top.id}` : "/jobs";
+
   return (
     <div className="mx-auto w-full max-w-3xl py-6 md:py-8">
       <PathHero plan={plan}>
@@ -18,13 +33,17 @@ export default function OpsDeskHome({ plan }: { plan: PathPlanUi }) {
               Next listing
             </p>
             <p className="mt-1 text-lg font-semibold tracking-[-0.02em] text-[var(--ink)]">
-              Software Engineering Intern
+              {top?.title ?? "Software Engineering Intern"}
             </p>
-            <p className="text-sm text-[var(--ink-muted)]">Target company · Strong fit</p>
+            <p className="text-sm text-[var(--ink-muted)]">
+              {top
+                ? `${top.org}${top.fit ? ` · ${top.fit}` : ""}`
+                : "Target company · Strong fit"}
+            </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Link
-              href="/jobs"
+              href={listingHref}
               className="inline-flex h-10 items-center rounded-full bg-[var(--blue)] px-4 text-sm font-semibold text-white transition hover:opacity-90"
             >
               Open listing
@@ -40,9 +59,9 @@ export default function OpsDeskHome({ plan }: { plan: PathPlanUi }) {
       </PathHero>
 
       <div className="mt-10 space-y-10">
-        <ApplicationsStub />
-        <OpportunitiesStub />
-        <PitchStub />
+        <ApplicationsStub stages={applicationStages} />
+        <OpportunitiesStub listings={listings} />
+        <PitchStub listingId={top?.id} />
         <HelpersStub />
       </div>
     </div>

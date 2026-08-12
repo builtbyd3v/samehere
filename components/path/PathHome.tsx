@@ -1,4 +1,8 @@
 import type { ReactNode } from "react";
+import type {
+  ApplicationStageCount,
+  OpportunityListing,
+} from "@/lib/path/load-opportunities";
 import type { PathPlanUi, UiRecipe } from "@/lib/path/types";
 import FocusTrackHome from "./recipes/FocusTrackHome";
 import NetworkGapHome from "./recipes/NetworkGapHome";
@@ -6,9 +10,15 @@ import OpsDeskHome from "./recipes/OpsDeskHome";
 import PrepRoomHome from "./recipes/PrepRoomHome";
 import StudioHome from "./recipes/StudioHome";
 
+export type PathHomeData = {
+  plan: PathPlanUi;
+  listings?: OpportunityListing[];
+  applicationStages?: ApplicationStageCount[];
+};
+
 const RECIPES: Record<
   UiRecipe,
-  (props: { plan: PathPlanUi }) => ReactNode
+  (props: PathHomeData) => ReactNode
 > = {
   studio: StudioHome,
   ops_desk: OpsDeskHome,
@@ -17,11 +27,19 @@ const RECIPES: Record<
   network_gap: NetworkGapHome,
 };
 
-export default function PathHome({ plan }: { plan: PathPlanUi }) {
+export default function PathHome({
+  plan,
+  listings,
+  applicationStages,
+}: PathHomeData) {
   const Recipe = RECIPES[plan.ui_recipe] ?? StudioHome;
   return (
     <main data-path-home data-recipe={plan.ui_recipe} data-tone={plan.tone}>
-      <Recipe plan={plan} />
+      <Recipe
+        plan={plan}
+        listings={listings}
+        applicationStages={applicationStages}
+      />
     </main>
   );
 }

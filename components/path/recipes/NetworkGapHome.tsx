@@ -1,4 +1,8 @@
 import Link from "next/link";
+import type {
+  ApplicationStageCount,
+  OpportunityListing,
+} from "@/lib/path/load-opportunities";
 import type { PathPlanUi } from "@/lib/path/types";
 import PathHero from "../PathHero";
 import {
@@ -7,7 +11,15 @@ import {
   OpportunitiesStub,
 } from "../modules/stubs";
 
-export default function NetworkGapHome({ plan }: { plan: PathPlanUi }) {
+export default function NetworkGapHome({
+  plan,
+  listings,
+  applicationStages,
+}: {
+  plan: PathPlanUi;
+  listings?: OpportunityListing[];
+  applicationStages?: ApplicationStageCount[];
+}) {
   return (
     <div className="mx-auto w-full max-w-3xl py-6 md:py-8">
       <PathHero plan={plan}>
@@ -30,13 +42,25 @@ export default function NetworkGapHome({ plan }: { plan: PathPlanUi }) {
       <div className="mt-10 space-y-10">
         <HelpersStub />
         <OpportunitiesStub
-          listings={[
-            { org: "Stripe", title: "Software Engineering Intern", fit: "Helper available" },
-            { org: "Notion", title: "Product Engineering Intern", fit: "Helper available" },
-          ]}
+          listings={
+            listings?.length
+              ? listings
+              : [
+                  {
+                    org: "Stripe",
+                    title: "Software Engineering Intern",
+                    fit: "Helper available",
+                  },
+                  {
+                    org: "Notion",
+                    title: "Product Engineering Intern",
+                    fit: "Helper available",
+                  },
+                ]
+          }
         />
         <div className="opacity-70">
-          <ApplicationsStub />
+          <ApplicationsStub stages={applicationStages} />
         </div>
       </div>
     </div>

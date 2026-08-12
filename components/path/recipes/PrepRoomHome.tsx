@@ -1,4 +1,8 @@
 import Link from "next/link";
+import type {
+  ApplicationStageCount,
+  OpportunityListing,
+} from "@/lib/path/load-opportunities";
 import type { PathPlanUi } from "@/lib/path/types";
 import PathHero from "../PathHero";
 import {
@@ -7,7 +11,14 @@ import {
   InterviewPrepStub,
 } from "../modules/stubs";
 
-export default function PrepRoomHome({ plan }: { plan: PathPlanUi }) {
+export default function PrepRoomHome({
+  plan,
+  applicationStages,
+}: {
+  plan: PathPlanUi;
+  listings?: OpportunityListing[];
+  applicationStages?: ApplicationStageCount[];
+}) {
   return (
     <div className="mx-auto w-full max-w-3xl py-6 md:py-8">
       <PathHero plan={plan}>
@@ -42,7 +53,14 @@ export default function PrepRoomHome({ plan }: { plan: PathPlanUi }) {
           helpers={[{ name: "Alex M.", org: "Target company", note: "Open to help" }]}
         />
         <div className="opacity-70">
-          <ApplicationsStub stages={[{ label: "Interview", count: 1 }, { label: "Applied", count: 3 }]} />
+          <ApplicationsStub
+            stages={
+              applicationStages ?? [
+                { label: "Interview", count: 1 },
+                { label: "Applied", count: 3 },
+              ]
+            }
+          />
         </div>
       </div>
     </div>

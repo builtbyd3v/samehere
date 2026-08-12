@@ -1,8 +1,18 @@
 import Link from "next/link";
+import type {
+  ApplicationStageCount,
+  OpportunityListing,
+} from "@/lib/path/load-opportunities";
 import type { PathPlanUi } from "@/lib/path/types";
 import PathHero from "../PathHero";
 
-export default function FocusTrackHome({ plan }: { plan: PathPlanUi }) {
+export default function FocusTrackHome({
+  plan,
+}: {
+  plan: PathPlanUi;
+  listings?: OpportunityListing[];
+  applicationStages?: ApplicationStageCount[];
+}) {
   const nextHref =
     plan.module_order[0] === "applications"
       ? "/applications"
