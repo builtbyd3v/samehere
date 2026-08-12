@@ -4,9 +4,9 @@ import gsap from "gsap";
 import { useLayoutEffect, useRef } from "react";
 
 const METRICS = [
-  { value: 3, label: "adaptive stages" },
-  { value: 1, label: "next move at a time" },
-  { value: 0, label: "friends required to begin" },
+  { value: 9, label: "in-app projects that fill a blank resume" },
+  { value: 10, label: "company interview packs ready before the OA" },
+  { value: 0, label: "connections required to start" },
 ] as const;
 
 export default function MetricsStrip() {
@@ -91,7 +91,7 @@ export default function MetricsStrip() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="landing-metrics" aria-label="How the path works">
+    <section ref={sectionRef} className="landing-metrics" aria-label="Why students use samehere">
       <div aria-hidden className="landing-metrics-grid" />
       <div aria-hidden className="landing-metrics-streaks">
         <span className="landing-metrics-streak landing-metrics-streak-h1" />
