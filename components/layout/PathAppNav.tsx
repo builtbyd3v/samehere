@@ -78,7 +78,11 @@ export default function PathAppNav({
 }) {
   const pathname = usePathname();
   const reduceMotion = useReducedMotion();
-  const [menuOpen, setMenuOpen] = useState(false);
+  // Open when menuPath matches the current route; a route change clears the match
+  // without a pathname effect that would set state synchronously.
+  const [menuPath, setMenuPath] = useState<string | null>(null);
+  const menuOpen = menuPath === pathname;
+  const closeMenu = () => setMenuPath(null);
   const [scrolled, setScrolled] = useState(false);
   const current = activeId(pathname);
   const links = orderLinks(navEmphasis);
@@ -99,10 +103,6 @@ export default function PathAppNav({
     };
   }, [menuOpen]);
 
-  useEffect(() => {
-    setMenuOpen(false);
-  }, [pathname]);
-
   return (
     <LazyMotion features={domMax} strict>
       {menuOpen && (
@@ -110,7 +110,7 @@ export default function PathAppNav({
           type="button"
           className="fixed inset-0 z-40 bg-black/40 md:hidden"
           aria-label="Close menu"
-          onClick={() => setMenuOpen(false)}
+          onClick={closeMenu}
         />
       )}
 
@@ -178,7 +178,7 @@ export default function PathAppNav({
                 aria-expanded={menuOpen}
                 aria-controls="path-mobile-menu"
                 aria-label={menuOpen ? "Close menu" : "Open menu"}
-                onClick={() => setMenuOpen((o) => !o)}
+                onClick={() => setMenuPath(menuOpen ? null : pathname)}
               >
                 <MenuIcon open={menuOpen} />
               </button>
@@ -198,6 +198,7 @@ export default function PathAppNav({
                       <li key={link.id}>
                         <Link
                           href={link.href}
+                          onClick={closeMenu}
                           className={`flex items-center rounded-lg px-3 py-2.5 text-[15px] transition ${
                             active
                               ? "bg-[var(--featured-surface)] font-medium text-[var(--accent-blue-strong)]"
@@ -217,6 +218,7 @@ export default function PathAppNav({
                   <li className="mt-2 border-t border-[var(--border)] pt-2">
                     <Link
                       href="/pro"
+                      onClick={closeMenu}
                       className="flex items-center rounded-lg px-3 py-2.5 text-[15px] text-[var(--ink-muted)] transition hover:bg-[var(--featured-surface)] hover:text-[var(--ink)]"
                     >
                       {isPro ? "Manage plan" : "Upgrade"}
