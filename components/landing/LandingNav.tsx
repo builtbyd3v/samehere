@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { LazyMotion, domMax, m, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import AppBrandLink from "@/components/brand/AppBrandLink";
 import { signupCtaSm } from "./cta";
-import LandingNavBrand from "./LandingNavBrand";
 
 const LINKS = [
   { href: "#product", id: "product", label: "Product" },
@@ -199,14 +199,7 @@ export default function LandingNav() {
           }`}
         >
           <div className="relative flex h-16 items-center justify-between gap-4 px-4 lg:px-6">
-            <Link
-              href="/"
-              className="landing-brand-link landing-nav-brand-link"
-              onClick={scrollToTop}
-              aria-label="samehere home"
-            >
-              <LandingNavBrand />
-            </Link>
+            <AppBrandLink href="/" onClick={scrollToTop} />
 
             <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 md:flex" aria-label="Page sections">
               {LINKS.map((link) => (

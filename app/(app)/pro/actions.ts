@@ -17,9 +17,16 @@ import { SITE_URL } from "@/lib/site";
 const PRICES = {
   monthly: process.env.STRIPE_PRICE_MONTHLY ?? "price_1Tq3OeIKoFZaqPVsqyJtUpFU",
   semester: process.env.STRIPE_PRICE_SEMESTER ?? "price_1Tr8OTIKoFZaqPVsVIo2Z35s",
+  ultra_monthly: process.env.STRIPE_PRICE_ULTRA_MONTHLY,
+  ultra_semester: process.env.STRIPE_PRICE_ULTRA_SEMESTER,
 } as const;
 
-const MODES = { monthly: "subscription", semester: "payment" } as const;
+const MODES = {
+  monthly: "subscription",
+  semester: "payment",
+  ultra_monthly: "subscription",
+  ultra_semester: "payment",
+} as const;
 
 // L7: the /pro page hides the checkout/portal buttons when billing is off, but the
 // Server Actions are POST endpoints reachable without the page. Re-check the flag
@@ -30,7 +37,10 @@ const BILLING_ENABLED = process.env.NEXT_PUBLIC_BILLING_ENABLED === "true";
 type Plan = keyof typeof PRICES;
 
 const isPlan = (v: FormDataEntryValue | null): v is Plan =>
-  v === "monthly" || v === "semester";
+  v === "monthly" ||
+  v === "semester" ||
+  v === "ultra_monthly" ||
+  v === "ultra_semester";
 
 // Creates a Stripe Checkout Session for the signed-in user.
 //
@@ -56,9 +66,14 @@ export async function startCheckout(formData: FormData) {
   if (!profile) redirect("/login");
   if (isPro(profile)) redirect("/pro");
 
+  const priceId = PRICES[plan];
+  if (!priceId) redirect("/pro");
+
+  const isSubscription = plan === "monthly" || plan === "ultra_monthly";
+
   const session = await stripe.checkout.sessions.create({
     mode: MODES[plan],
-    line_items: [{ price: PRICES[plan], quantity: 1 }],
+    line_items: [{ price: priceId, quantity: 1 }],
     // The retired Payment Links had this on; Checkout Sessions default it off.
     // Without it there is no "Add promotion code" field at all.
     allow_promotion_codes: true,
@@ -77,7 +92,7 @@ export async function startCheckout(formData: FormData) {
     //    a promotion code takes the total to $0. Stripe only accepts it in
     //    subscription mode; a payment-mode session with a $0 total already
     //    collects nothing, so both plans get the behavior.
-    ...(plan === "monthly"
+    ...(isSubscription
       ? {
           subscription_data: { metadata: { supabase_id: user.id } },
           payment_method_collection: "if_required" as const,

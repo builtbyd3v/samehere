@@ -904,6 +904,15 @@ summary {
   --surface-post: var(--surface);
 }
 
+.path-nav-emphasized {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.path-app-main {
+  min-height: calc(100dvh - 4.5rem);
+}
+
 .landing-xai.path-app .shadow-paper {
   box-shadow: none;
 }
@@ -957,6 +966,35 @@ summary {
   transform-origin: left center;
   animation: landing-brand-link-contract 1500ms
     cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Once-per-session settle: jump to mark end-state without replaying. */
+.landing-nav-brand-link--settled {
+  width: 2.75rem;
+  animation: none;
+}
+
+.landing-nav-brand-link--settled .landing-nav-brand-wordmark {
+  display: none;
+  animation: none;
+}
+
+.landing-nav-brand-link--settled .landing-nav-brand-mark {
+  clip-path: inset(0 0 0 0);
+  opacity: 1;
+  animation: none;
+}
+
+/* Pre-hydration placeholder: reserve mark width, hide until session known. */
+.landing-nav-brand-link--pending {
+  width: 2.75rem;
+  animation: none;
+  opacity: 0;
+}
+
+.landing-nav-brand-link--pending .landing-nav-brand-wordmark,
+.landing-nav-brand-link--pending .landing-nav-brand-mark {
+  animation: none;
 }
 
 .landing-nav-brand {
@@ -2175,7 +2213,7 @@ summary {
 }
 
 .landing-pricing-title {
-  margin-bottom: 2.5rem;
+  margin-bottom: 0.75rem;
   text-align: center;
   font-size: clamp(1.75rem, 3vw, 2.25rem);
   font-weight: 400;
@@ -2188,6 +2226,20 @@ summary {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: stretch;
   gap: 1.5rem;
+}
+
+.landing-pricing-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.landing-pricing-lede {
+  margin-bottom: 2.5rem;
+}
+
+@media (max-width: 72rem) {
+  .landing-pricing-grid-3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .landing-price-plan {
@@ -2205,12 +2257,26 @@ summary {
     0 0 24px var(--accent-blue-soft);
 }
 
+.landing-price-plan-ultra {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: linear-gradient(
+    165deg,
+    rgba(74, 158, 255, 0.08) 0%,
+    var(--surface) 42%
+  );
+}
+
 @media (hover: hover) and (pointer: fine) {
   .landing-price-plan-pro:hover {
     border-color: var(--accent-blue-strong);
     box-shadow:
       0 0 0 1px var(--accent-blue-soft),
       0 0 28px var(--accent-blue-soft);
+  }
+
+  .landing-price-plan-ultra:hover {
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 1px var(--accent-blue-soft);
   }
 }
 

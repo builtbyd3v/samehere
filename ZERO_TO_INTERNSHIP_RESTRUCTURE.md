@@ -92,10 +92,11 @@ Do **not** optimize for posts, reactions, or time-in-feed.
 | Company interview banks | `/prep/[company]` or embedded in `prep_room` | Company-specific Qs with approach + evaluation |
 
 **Nav (final):**
-- Desktop: Home (path) · Opportunities · Applications · Messages · Profile · Pro  
-- Mobile: Home · Opportunities · Applications · Messages · Profile  
+- Primer-style **top path nav** (no left rail): Path · Opportunities · Applications · Prep · Messages  
+- Account / Upgrade sit in the right cluster (avatar menu + Pro)  
+- Order/emphasis adapts from `path_plans.ui.nav_emphasis`  
 - Drop: Community, Saved, Feed, Search-as-people (optional later: search listings only)  
-- **Not primary nav:** Roadmaps catalog, Projects library browse — those are *substrates* reached from the path, not parallel products. Optional later: secondary “Build” / “Prep” entries once path home is stable.
+- **Not primary nav:** Roadmaps catalog, Projects library browse — those are *substrates* reached from the path, not parallel products.
 
 ---
 
@@ -597,19 +598,24 @@ Update meta in `app/page.tsx`, `app/layout.tsx`, OG copy.
 - Browse jobs + basic tracker  
 - Limited AI (e.g. 1 diagnosis/day, 3 fits/day — tune to cost)  
 
-### Pro / Path+ (charge for velocity)
+### Pro (velocity) — **$12/mo · $29/semester**
 - Unlimited re-diagnosis / recipe switches  
 - Unlimited pitches per listing  
-- Interview prep packs  
-- Priority helper icebreakers / higher DM assist caps  
-- Stronger model tier (existing Pro model pattern)
+- Interview prep packs + AI feedback  
+- Stronger model tier / higher daily caps  
+
+### Ultra (interview season) — **$29/mo · $79/semester** (~2.4× Pro)
+- Everything in Pro  
+- Unlimited interview packs and feedback  
+- Priority helper icebreakers on target orgs  
+- Concurrent projects + plan regen without waiting  
+- Highest model tier and weekly path sprint nudges  
 
 ### Explicitly do NOT paywall
 - Initial “you’re not alone” diagnosis  
 - Seeing that a path exists for their segment  
 
 ### Later (out of v1 build)
-- Interview Sprint intensive  
 - University / bootcamp B2B seats  
 - Recruiter-side marketplace (delay until trust is strong)
 

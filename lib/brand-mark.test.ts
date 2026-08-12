@@ -56,6 +56,7 @@ describe("samehere brand mark", () => {
     expect(styles).toContain("@media (prefers-reduced-motion: reduce)");
     expect(styles).toContain(".landing-brand-link:hover");
     expect(styles).toContain(".landing-nav-brand-wordmark > span:last-child");
+    expect(styles).toContain(".landing-nav-brand-link--settled");
   });
 
   it("keeps every frame of the landing brand morph crisp", () => {

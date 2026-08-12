@@ -1,46 +1,49 @@
 import { Suspense } from "react";
 import { getViewer, getViewerProfile } from "@/lib/viewer";
-import Navbar from "@/components/layout/Navbar";
-import LeftNav from "@/components/layout/LeftNav";
-import LeftNavUnread from "@/components/layout/LeftNavUnread";
-import MobileNav from "@/components/layout/MobileNav";
-import MobileNavUnread from "@/components/layout/MobileNavUnread";
+import PathAppNav from "@/components/layout/PathAppNav";
 import TabTitleNotifier from "@/components/layout/TabTitleNotifier";
 import { getUnreadCounts } from "@/lib/unread";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import PostHogUserIdentification from "@/components/providers/PostHogUserIdentification";
 import SuspendedBanner from "@/components/layout/SuspendedBanner";
 import { isPro } from "@/lib/pro";
+import { loadViewerPathPlanUi } from "@/lib/path/load-plan";
 
-// Combined DM + notification unread badge for the browser tab title. Shares the
-// request-cached getUnreadCounts() with the nav badge wrappers, so the whole
-// shell makes one pair of unread RPCs, not one pair per consumer. Its own
-// Suspense boundary (decoration, must never block the shell on a slow count).
 async function TabTitleUnread({ userId }: { userId: string }) {
   const { dm, notif } = await getUnreadCounts();
   return <TabTitleNotifier initialTotal={dm + notif} userId={userId} />;
 }
 
-// Wraps every authed page with the app shell: top bar, a persistent left nav
-// (desktop) / bottom bar (mobile), and the centered content area. The proxy
-// already gates these routes; this just needs the username for the profile link.
+async function PathNavUnread(props: {
+  username: string | null;
+  avatarUrl: string | null;
+  isPro: boolean;
+  isAdmin: boolean;
+  navEmphasis?: string[];
+}) {
+  const { dm } = await getUnreadCounts();
+  return <PathAppNav {...props} dmUnread={dm} />;
+}
+
+// Primer-style app chrome: fixed top path nav (no left rail), full-width content.
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const { supabase, user } = await getViewer();
   const profile = await getViewerProfile();
 
-  // is_admin / is_suspended are privileged columns (revoked from the
-  // authenticated role); read them through the own-status definer RPCs
-  // instead, same as app/(app)/admin/page.tsx. Resolved concurrently since
-  // neither depends on the other.
-  const [{ data: isAdmin }, { data: isSuspended }] = user
-    ? await Promise.all([supabase.rpc("current_is_admin"), supabase.rpc("current_is_suspended")])
-    : [{ data: false }, { data: false }];
+  const [{ data: isAdmin }, { data: isSuspended }, planUi] = user
+    ? await Promise.all([
+        supabase.rpc("current_is_admin"),
+        supabase.rpc("current_is_suspended"),
+        loadViewerPathPlanUi(supabase, user.id),
+      ])
+    : [{ data: false }, { data: false }, null];
 
-  const navbarProps = {
+  const navProps = {
     username: profile?.username ?? null,
     avatarUrl: profile?.avatar_url ?? null,
     isPro: profile ? isPro(profile) : false,
     isAdmin: isAdmin ?? false,
+    navEmphasis: planUi?.nav_emphasis,
   };
 
   return (
@@ -53,33 +56,18 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             username={profile?.username ?? null}
           />
         )}
-        <Navbar {...navbarProps} />
+        <Suspense fallback={<PathAppNav {...navProps} />}>
+          <PathNavUnread {...navProps} />
+        </Suspense>
         {isSuspended && <SuspendedBanner />}
         {user && (
           <Suspense fallback={null}>
             <TabTitleUnread userId={user.id} />
           </Suspense>
         )}
-        <div className="app-shell mx-auto flex w-full max-w-[1384px] justify-center gap-7 px-4 pb-20 sm:px-6 lg:pb-0">
-          <aside className="hidden w-60 shrink-0 pt-6 lg:block lg:pt-8">
-            <div className="sticky top-[72px]">
-              {/* Nav badges are decoration — stream them so a slow unread RPC never
-                  blocks the nav from rendering. Fallback is the nav with no badges. */}
-              <Suspense fallback={<LeftNav username={navbarProps.username} isPro={navbarProps.isPro} />}>
-                <LeftNavUnread username={navbarProps.username} isPro={navbarProps.isPro} />
-              </Suspense>
-            </div>
-          </aside>
-          <div className="min-w-0 flex-1">{children}</div>
-          {/* Balances the left nav so page content centers on the viewport.
-              The feed opts out via .app-shell:has([data-feed-page]) in
-              globals.css and centers its post column with a left offset
-              instead (the 340px rail outweighs the 240px nav). */}
-          <div className="shell-rspacer hidden shrink-0 lg:block lg:w-60" aria-hidden />
+        <div className="path-app-main mx-auto w-full max-w-[1120px] px-4 pb-16 pt-[4.5rem] sm:px-6 lg:px-8">
+          {children}
         </div>
-        <Suspense fallback={<MobileNav username={navbarProps.username} />}>
-          <MobileNavUnread username={navbarProps.username} />
-        </Suspense>
       </div>
     </ThemeProvider>
   );

@@ -80,14 +80,15 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[var(--ink)]">6. samehere Pro &amp; billing</h2>
+          <h2 className="text-lg font-semibold text-[var(--ink)]">6. Paid plans &amp; billing</h2>
           <p className="mt-2">
-            samehere Pro is an optional paid subscription. Current pricing is $4.99 per month or $12.99 per
-            semester, billed in advance through our payment processor, Stripe. Subscriptions renew
-            automatically for the same term until cancelled. You can cancel anytime from your account settings
-            or the Stripe customer portal; cancellation stops future renewals and your Pro access continues
-            through the end of the current paid period. Except where required by law, payments are
-            non-refundable. Prices may change with notice for future terms.
+            samehere offers optional paid plans (Pro and Ultra). Current list pricing is Pro at $12 per
+            month or $29 per semester, and Ultra at $29 per month or $79 per semester, billed in advance
+            through our payment processor, Stripe. Subscriptions renew automatically for the same term
+            until cancelled. You can cancel anytime from your account settings or the Stripe customer
+            portal; cancellation stops future renewals and paid access continues through the end of the
+            current paid period. Except where required by law, payments are non-refundable. Prices may
+            change with notice for future terms.
           </p>
         </section>
 
