@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
+import type { CSSProperties } from "react";
 import Link from "next/link";
-import { Suspense, cache } from "react";
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import { after } from "next/server";
 import { cookies } from "next/headers";
@@ -9,29 +10,16 @@ import { createClient } from "@/lib/supabase/server";
 import type { FollowState } from "@/components/profile/FollowButton";
 import ProfileActions from "@/components/profile/ProfileActions";
 import BlockButton from "@/components/profile/BlockButton";
-import { POST_SELECT, withEngagement, type PostRow } from "@/components/feed/PostCard";
-import FeedTimeline from "@/components/feed/FeedTimeline";
-import ProfileMatchPrompt from "@/components/profile/ProfileMatchPrompt";
-import ProfileActivitySection from "@/components/profile/ProfileActivitySection";
-import ProfileViewersSection from "@/components/profile/ProfileViewersSection";
-import { Skeleton } from "@/components/ui/Skeleton";
-import { attachSignedMedia } from "@/lib/media";
-import { fetchQuotedReposts, toQuotedRepost } from "@/lib/feed-quotes";
-import { fetchPlainReposts } from "@/lib/feed-reposts";
-import { fetchViewerMineState } from "@/lib/feed-engagement";
-import { mergeFeedTimeline } from "@/lib/feed-timeline";
+import DossierProof from "@/components/profile/DossierProof";
 import UserBadges from "@/components/profile/UserBadges";
 import AvatarBase from "@/components/ui/Avatar";
-import ContributionHeatmap, { type HeatmapDay } from "@/components/profile/ContributionHeatmap";
 import { isPro } from "@/lib/pro";
 import { PROFILE_THEMES, isProfileTheme, themeCssVars } from "@/lib/themes";
-import CompanyLogo from "@/components/ui/CompanyLogo";
-import { formatDateRange, descriptionBullets } from "@/lib/experience-format";
-import { schoolLogoUrl } from "@/lib/school-logo";
 import { pickPrimaryEducation } from "@/lib/education-options";
+import { dossierSeekingLine, targetRolesFromAnswers } from "@/lib/profile-dossier";
 
 const PROFILE_SELECT =
-  "id, username, display_name, avatar_url, banner_url, year, major, bio, goals, is_private, heatmap_visibility, is_pro, pro_until, is_founder, is_campus_founder, profile_theme, verified_student, is_bot";
+  "id, username, display_name, avatar_url, banner_url, year, major, bio, goals, is_private, is_pro, pro_until, is_founder, is_campus_founder, profile_theme, verified_student, is_bot";
 
 // Shared by generateMetadata and the page component so they hit one query
 // instead of two — React's cache() dedupes by argument (username) within a
@@ -66,54 +54,30 @@ type EducationRow = {
   is_current: boolean;
 };
 
-// Fixed group order for the Experience section, LinkedIn-style.
-const EXPERIENCE_GROUPS: { kind: string; label: string }[] = [
-  { kind: "internship", label: "Internships" },
-  { kind: "job", label: "Jobs" },
-  { kind: "research", label: "Research" },
-  { kind: "project", label: "Projects" },
-  { kind: "club_role", label: "Leadership & Clubs" },
-];
+function currentNewestFirst<T extends { start_date: string | null; is_current: boolean }>(rows: T[]): T[] {
+  return rows
+    .filter((row) => row.is_current)
+    .sort((a, b) => (b.start_date ?? "").localeCompare(a.start_date ?? ""));
+}
 
-function Stat({ value, label, accent, href }: { value: number; label: string; accent?: boolean; href?: string }) {
-  const content = (
-    <span className="text-[15px]">
-      <b
-        className={`font-semibold tracking-[-0.01em] ${accent ? "" : "text-[var(--ink)]"}`}
-        style={accent ? { color: "var(--profile-accent)" } : undefined}
-      >
-        {value.toLocaleString()}
-      </b>{" "}
-      <span className="text-[var(--ink-muted)]">{label}</span>
-    </span>
-  );
-  return href ? (
-    <Link href={href} className="hover:underline">
-      {content}
-    </Link>
-  ) : (
-    content
-  );
+function schoolMetaLine(school: string | null, major: string | null): string | null {
+  const parts = [school, major].filter(Boolean);
+  if (parts.length === 0) return null;
+  if (parts.length === 1) return parts[0] ?? null;
+  return `${parts[0]} · ${parts.slice(1).join(", ")}`;
 }
 
 // Logged-out render. Uses a plain anon supabase-js client (not the cookie-bound
 // session client) so RLS/definer-fn checks run as true anon — same pattern as
-// lib/founder.ts. The RPCs below (get_public_profile, get_public_profile_counts,
-// get_public_heatmap) are SECURITY DEFINER + anon-granted and enforce privacy
-// themselves; this component renders exactly what they return and never
-// re-derives the is_private field-nulling rule itself.
+// lib/founder.ts. get_public_profile is SECURITY DEFINER + anon-granted and
+// enforces privacy itself; this component never re-derives the is_private
+// field-nulling rule.
 function anonSupabase() {
   return createAnonClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }
 
-// The RPCs below are anon-granted SECURITY DEFINER functions not yet present
-// in the generated Database types (types/database.types.ts hasn't been
-// regenerated since the migration landed). A plain (untyped) client can't call
-// `.rpc(name, args)` with useful inference either way, so cast once here and
-// take rows ourselves instead of chaining `.returns()`/`.maybeSingle()` (which
-// needs the real generated types to resolve correctly).
 function callRpc<T>(supabase: ReturnType<typeof anonSupabase>, fn: string, args: Record<string, unknown>) {
   const rpc = supabase.rpc.bind(supabase) as unknown as (
     fn: string,
@@ -131,7 +95,6 @@ type PublicProfile = {
   is_founder: boolean;
   is_campus_founder: boolean;
   is_private: boolean;
-  heatmap_visibility: string;
   major: string | null;
   bio: string | null;
   goals: string | null;
@@ -140,38 +103,19 @@ type PublicProfile = {
   is_bot: boolean;
 };
 
-type PublicCounts = { posts: number; followers: number; following: number };
-
-// generateMetadata runs with no session (crawlers, logged-out visitors), so it
-// must read through the anon-granted definer, not the cookie-bound client.
-// cache() dedupes it against PublicProfileView within one render pass.
 const getPublicProfileMeta = cache(async (username: string) => {
   const rows = await callRpc<PublicProfile>(anonSupabase(), "get_public_profile", { p_username: username });
   return rows[0] ?? null;
 });
 
 async function PublicProfileView({ username }: { username: string }) {
-  const supabase = anonSupabase();
-  const profile = (await callRpc<PublicProfile>(supabase, "get_public_profile", { p_username: username }))[0] ?? null;
+  const profile = (await callRpc<PublicProfile>(anonSupabase(), "get_public_profile", { p_username: username }))[0] ?? null;
 
   if (!profile) notFound();
 
-  const counts = (await callRpc<PublicCounts>(supabase, "get_public_profile_counts", { p_profile_id: profile.id }))[0];
-  const c = counts ?? { posts: 0, followers: 0, following: 0 };
-
-  // Private accounts render nothing past this — get_public_profile already
-  // nulled every other field for them, so this heatmap call is the only extra
-  // gate we add ourselves (it's a separate RPC, not a field on the profile row).
-  const showHeatmap = !profile.is_private && profile.heatmap_visibility === "public";
-  const heatmapRaw = showHeatmap
-    ? await callRpc<{ day: string; points: number }>(supabase, "get_public_heatmap", { p_profile_id: profile.id })
-    : [];
-  const heatmap: HeatmapDay[] = heatmapRaw.map((d) => ({ ...d, breakdown: {} }));
-
   const displayName = profile.display_name ?? profile.username;
-  const metaParts = [profile.school, profile.major].filter(Boolean);
-  const metaLine =
-    metaParts.length <= 1 ? metaParts[0] ?? null : `${metaParts[0]} · ${metaParts.slice(1).join(", ")}`;
+  const seeking = dossierSeekingLine({ goals: profile.goals, major: profile.major });
+  const metaLine = schoolMetaLine(profile.school, profile.major);
 
   return (
     <main className="page-enter mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8">
@@ -197,13 +141,13 @@ async function PublicProfileView({ username }: { username: string }) {
               <UserBadges isPro={profile.is_pro} isFounder={profile.is_founder} isCampusFounder={profile.is_campus_founder} isVerifiedStudent={profile.verified_student} isBot={profile.is_bot} />
             </div>
             <p className="mt-0.5 text-[15px] text-[var(--ink-muted)]">@{profile.username}</p>
+            {seeking && (
+              <p className="mt-3 text-[15px] leading-snug text-[var(--ink)]">
+                <span className="text-[var(--ink-faint)]">Seeking </span>
+                {seeking}
+              </p>
+            )}
             {metaLine && <p className="mt-2 text-sm text-[var(--ink-muted)]">{metaLine}</p>}
-
-            <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1">
-              <Stat value={Number(c.posts)} label="posts" />
-              <Stat value={Number(c.followers)} label="followers" href={`/profile/${profile.username}/followers`} />
-              <Stat value={Number(c.following)} label="following" href={`/profile/${profile.username}/following`} />
-            </div>
           </div>
 
           {profile.bio && (
@@ -219,41 +163,13 @@ async function PublicProfileView({ username }: { username: string }) {
           <p className="font-medium text-[var(--ink)]">This account is private</p>
         </div>
       ) : (
-        (showHeatmap || profile.goals) && (
-          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {showHeatmap && (
-              <section className="card p-5 shadow-paper sm:col-span-2 sm:p-6">
-                <h2 className="mb-4 text-sm font-semibold text-[var(--ink)]">Activity</h2>
-                <ContributionHeatmap data={heatmap} />
-              </section>
-            )}
-
-            {profile.goals && (
-              <section className="card card-hover p-5 shadow-paper sm:col-span-2 sm:p-6">
-                <h2 className="text-sm font-semibold text-[var(--ink)]">Goals</h2>
-                <p className="mt-1.5 whitespace-pre-line break-words text-[15px] leading-[1.55] text-[var(--ink-muted)]">
-                  {profile.goals}
-                </p>
-              </section>
-            )}
-          </div>
-        )
+        <p className="mt-6 text-sm text-[var(--ink-muted)]">
+          <Link href="/login" className="font-medium text-[var(--ink)] underline-offset-2 hover:underline">
+            Sign in
+          </Link>{" "}
+          to see experience and projects.
+        </p>
       )}
-
-      <section className="mt-6">
-        <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">Posts</h2>
-        <div className="card px-6 py-12 text-center">
-          <p className="font-medium text-[var(--ink)]">Sign in to see their posts</p>
-          <div className="mt-4 flex justify-center gap-2">
-            <Link href="/login" className="btn-ghost !rounded-full !px-4 !py-1.5 text-sm">
-              Sign in
-            </Link>
-            <Link href="/signup" className="btn-primary !rounded-full !px-4 !py-1.5 text-sm">
-              Sign up
-            </Link>
-          </div>
-        </div>
-      </section>
     </main>
   );
 }
@@ -274,27 +190,17 @@ export async function generateMetadata({
   // leaking a bio into a link preview.
   const profile = await getPublicProfileMeta(username);
 
-  // noindex/nofollow, not disabled: link-preview crawlers (Twitterbot,
-  // Slackbot, etc.) fetch the page and parse <head> directly — they don't
-  // consult robots — so OG/Twitter unfurls below still work. This only keeps
-  // the page out of search indexes. Flipping it on is a one-line product call.
   const robots = { index: false, follow: false };
 
   if (!profile) return { title: "Profile not found", robots };
 
   const name = profile.display_name ?? username;
 
-  // Deliberately NOT the bio. A bio is something a student wrote for other
-  // students; pushing it into every Discord, Slack and Twitter embed publishes
-  // it to anyone who sees the link — and it stays in their unfurl caches long
-  // after the account goes private. The card itself carries the identity; the
-  // description just says what the link is for.
-  const description = `Join @${username} on samehere. Built for students.`;
+  // Deliberately NOT the bio or goals. Those are written for a recruiter on
+  // the page; pushing them into every Discord, Slack and Twitter embed
+  // publishes them to anyone who sees the link.
+  const description = `Internship dossier for @${username} on samehere.`;
 
-  // Deliberately NO `images` here. An explicit openGraph.images overrides the
-  // file-based opengraph-image route, which is what renders the heatmap card —
-  // the whole point of the share image. Setting it to the avatar would silently
-  // replace a 1200x630 contribution graph with a small round photo.
   return {
     title: `${name} (@${username})`,
     description,
@@ -304,10 +210,6 @@ export async function generateMetadata({
   };
 }
 
-// Anon crawler unfurls and logged-out visits are the common case for this
-// route; skip constructing the cookie-bound Supabase client entirely when no
-// Supabase auth cookie is present at all. See plans/006-request-layer-dedup.md
-// for the same predicate used in lib/supabase/middleware.ts.
 async function hasAuthCookie() {
   const store = await cookies();
   return store.getAll().some((c) => c.name.startsWith("sb-") && c.name.includes("-auth-token"));
@@ -332,22 +234,18 @@ export default async function ProfilePage({
 
   if (!profile) notFound();
 
-  const isOwner = user?.id === profile.id;
+  const isOwner = user.id === profile.id;
   const displayName = profile.display_name ?? profile.username;
 
-  // Record the view fire-and-forget (after the response is sent) — never on own
-  // profile. record_profile_view also self-guards server-side; this just skips
-  // the call entirely for the owner.
-  if (user && !isOwner) {
+  if (!isOwner) {
     after(async () => {
       await supabase.rpc("record_profile_view", { p_viewed: profile.id });
     });
   }
 
-  const [schoolRes, countRes, relRes, postsRes, quotesRes, repostsRes, blockedIdsRes, myBlockRes, experiencesRes, educationRes] = await Promise.all([
+  const [schoolRes, relRes, blockedIdsRes, myBlockRes, experiencesRes, educationRes, intakeRes] = await Promise.all([
     supabase.from("profile_school").select("school").eq("profile_id", profile.id).maybeSingle(),
-    supabase.rpc("get_profile_counts", { p_profile_id: profile.id }),
-    user && !isOwner
+    !isOwner
       ? supabase
           .from("follows")
           .select("status")
@@ -355,17 +253,8 @@ export default async function ProfilePage({
           .eq("following_id", profile.id)
           .maybeSingle()
       : Promise.resolve({ data: null as { status: string } | null }),
-    supabase
-      .from("posts")
-      .select(POST_SELECT)
-      .eq("user_id", profile.id)
-      .order("created_at", { ascending: false })
-      .limit(20)
-      .returns<PostRow[]>(),
-    fetchQuotedReposts(supabase, { userIds: [profile.id], limit: 20 }),
-    fetchPlainReposts(supabase, { userIds: [profile.id], limit: 20 }),
-    user && !isOwner ? supabase.rpc("get_blocked_ids") : Promise.resolve({ data: [] as string[] }),
-    user && !isOwner
+    !isOwner ? supabase.rpc("get_blocked_ids") : Promise.resolve({ data: [] as string[] }),
+    !isOwner
       ? supabase.from("blocks").select("id").eq("blocker_id", user.id).eq("blocked_id", profile.id).maybeSingle()
       : Promise.resolve({ data: null as { id: string } | null }),
     supabase
@@ -380,55 +269,32 @@ export default async function ProfilePage({
       .eq("user_id", profile.id)
       .order("start_date", { ascending: false, nullsFirst: false })
       .returns<EducationRow[]>(),
+    isOwner
+      ? supabase
+          .from("intake_responses")
+          .select("answers")
+          .eq("user_id", profile.id)
+          .order("version", { ascending: false })
+          .limit(1)
+          .maybeSingle()
+      : Promise.resolve({ data: null as { answers: unknown } | null }),
   ]);
 
-  const viewerId = user?.id ?? null;
   const school = schoolRes.data?.school ?? null;
-  const counts = countRes.data?.[0] ?? { posts: 0, followers: 0, following: 0 };
-  const isAcceptedFollower = relRes.data?.status === "accepted";
-  // Shared signing batch: ONE Storage round trip for every original post
-  // surfaced by posts + quotes + reposts (was 3 separate attachSignedMedia
-  // calls -- see plan 010 Phase 1).
-  const postRows = postsRes.data ?? [];
-  const allForSigning = [...postRows, ...quotesRes.map((q) => q.post), ...repostsRes.map((r) => r.post)];
-  const signedById = new Map(
-    (allForSigning.length ? await attachSignedMedia(supabase, allForSigning) : []).map((p) => [p.id, p]),
-  );
-
-  const postIds = [...signedById.keys()];
-  const repostIds = quotesRes.map((q) => q.id);
-  const mine = await fetchViewerMineState(supabase, viewerId, postIds, repostIds);
-  const engagedById = new Map(withEngagement([...signedById.values()], mine).map((p) => [p.id, p]));
-
-  const posts = postRows.map((r) => engagedById.get(r.id)!);
-  const quotes = quotesRes.map((r) => toQuotedRepost(r, engagedById.get(r.post.id)!, mine));
-  const reposts = repostsRes.map((r) => ({
-    id: r.id,
-    created_at: r.created_at,
-    reposter_id: r.user_id,
-    reposter: r.reposter,
-    original: engagedById.get(r.post.id)!,
-  }));
   const experiences = experiencesRes.data ?? [];
   const education = educationRes.data ?? [];
+  const targetRoles = targetRolesFromAnswers(intakeRes.data?.answers);
 
-  // Auto tagline: "<role> at <org> · <field/degree> at <school>", derived from
-  // whichever experience/education row is marked is_current (latest start_date
-  // if several are current). Falls back to school/year/major below when the
-  // user has no current roles, so profiles without experience data don't
-  // regress to a blank meta line.
-  function currentNewestFirst<T extends { start_date: string | null; is_current: boolean }>(rows: T[]): T[] {
-    return rows
-      .filter((r) => r.is_current)
-      .sort((a, b) => (b.start_date ?? "").localeCompare(a.start_date ?? ""));
-  }
   const currentExp = currentNewestFirst(experiences)[0] ?? null;
-  // Newest-first is wrong for education on its own: a bootcamp taken alongside
-  // a degree starts later and would win. Rank a degree above a certificate
-  // first, same rule that picks profile_school -- see pickPrimaryEducation.
   const currentEdu = pickPrimaryEducation(currentNewestFirst(education)) ?? null;
-  const expPhrase = currentExp ? `${currentExp.role} at ${currentExp.org}` : null;
-  // "Software Engineering at Western Governors University" (field, else degree).
+  const seeking = dossierSeekingLine({
+    targetRoles,
+    goals: profile.goals,
+    currentKind: currentExp?.kind,
+    currentRole: currentExp?.role,
+    currentOrg: currentExp?.org,
+    major: profile.major,
+  });
   const eduPhrase = currentEdu
     ? currentEdu.field
       ? `${currentEdu.field} at ${currentEdu.school}`
@@ -436,57 +302,28 @@ export default async function ProfilePage({
         ? `${currentEdu.degree} at ${currentEdu.school}`
         : currentEdu.school
     : null;
-  const tagline = [expPhrase, eduPhrase].filter(Boolean).join(" · ");
+  const metaLine = eduPhrase || schoolMetaLine(school, profile.major);
 
-  // Logos: one cache-only lookup against job_companies, no external calls.
-  // ponytail: exact-name match only against the simplify company cache; case/whitespace normalized, but "Google Inc" vs "Google" or any company not in the internship feed falls back to a monogram. Upgrade path = a normalized name column or a logo API.
-  // Schools use schoolLogoUrl (domain-based) below instead of this cache.
   const logoNames = [...new Set(experiences.map((e) => e.org))];
-  const logoByName = new Map<string, string | null>();
+  const logoByOrg = new Map<string, string | null>();
   if (logoNames.length > 0) {
     const { data: companies } = await supabase.from("job_companies").select("name, logo_url").in("name", logoNames);
-    for (const c of companies ?? []) {
-      logoByName.set(c.name.trim().toLowerCase(), c.logo_url);
+    for (const company of companies ?? []) {
+      logoByOrg.set(company.name.trim().toLowerCase(), company.logo_url);
     }
-  }
-  function logoFor(name: string): string | null {
-    return logoByName.get(name.trim().toLowerCase()) ?? null;
   }
 
   const isBlocked = !!(blockedIdsRes.data ?? []).includes(profile.id);
   const amIBlocking = !!myBlockRes.data;
-  const profileIsPro = isPro(profile);
-
   const followState: FollowState =
     relRes.data?.status === "accepted" ? "following" : relRes.data?.status === "pending" ? "pending" : "none";
 
-  const contentHidden = (profile.is_private && !isOwner && !isAcceptedFollower) || isBlocked;
-  const timeline = contentHidden ? [] : mergeFeedTimeline(posts, quotes, reposts).slice(0, 20);
-  const canSeeHeatmap = isOwner || isAcceptedFollower || profile.heatmap_visibility === "public";
-  // "Why you two match" renders only where post content would be visible to
-  // this viewer (mirrors contentHidden: excludes private-non-follower and
-  // blocked) — see the ProfileMatchPrompt Suspense boundary below.
-  const showMatchPrompt = !isOwner && !contentHidden;
+  const hideProof = isBlocked;
+  const proofEmpty = experiences.length === 0 && education.length === 0;
 
-  const metaParts = [school, profile.major].filter(Boolean);
-  // Max one middle-dot per line: first item gets the dot separator, any
-  // further items are comma-joined after it.
-  const fallbackMetaLine =
-    metaParts.length <= 1 ? metaParts[0] ?? null : `${metaParts[0]} · ${metaParts.slice(1).join(", ")}`;
-  // Tagline (current role/education) takes priority; school/year/major only
-  // shows when the user has no current experience or education rows.
-  const metaLine = tagline || fallbackMetaLine;
-
-  // Banner, accent colour, and profile theme are Pro perks. The DB keeps all
-  // three columns when a subscription lapses (guard_profile_privileged only
-  // freezes them), so the gate has to live here — otherwise a lapsed
-  // subscriber keeps wearing them. Rendering off is_pro, not a nulled column,
-  // means resubscribing restores them instantly with nothing to redo.
   const pro = isPro(profile);
   const bannerUrl = pro ? profile.banner_url : null;
   const theme = pro && isProfileTheme(profile.profile_theme) ? profile.profile_theme : null;
-  // Accent only comes from a set theme now — the manual accent_color picker
-  // was removed (lib/themes.ts is the only accent source).
   const accentColor = theme ? PROFILE_THEMES[theme].accent : null;
   const themeVars = themeCssVars(theme);
 
@@ -495,13 +332,7 @@ export default async function ProfilePage({
       className={`page-enter mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8${theme ? " profile-themed" : ""}`}
       style={themeVars}
     >
-      {/* theme-zone scopes the bold theme rules (app/globals.css) to the
-          identity zone below — the Posts section further down stays outside
-          so post cards never pick up themed borders/accents. */}
       <div className="theme-zone">
-      {/* Identity header — banner with the avatar overlapping its bottom edge.
-          Themed profiles get a soft top-down wash instead of the old 1px
-          outline, so the accent visibly owns the header band. */}
       <section className="card overflow-hidden">
         {bannerUrl ? (
           // ponytail: plain <img>, not next/image. `fill` is position:absolute,
@@ -523,7 +354,6 @@ export default async function ProfilePage({
         )}
 
         <div className="px-5 pb-5 sm:px-6 sm:pb-6">
-          {/* avatar pulls up over the banner; primary action sits to its right */}
           <div className="flex items-end justify-between gap-3">
             <AvatarBase
               src={profile.avatar_url}
@@ -536,9 +366,9 @@ export default async function ProfilePage({
 
             {isOwner ? (
               <Link href="/profile/edit" className="btn-ghost shrink-0 !rounded-full !px-4 !py-1.5 text-sm">
-                Edit profile
+                Edit dossier
               </Link>
-            ) : user ? (
+            ) : (
               <div className="shrink-0">
                 <ProfileActions
                   username={profile.username}
@@ -549,7 +379,7 @@ export default async function ProfilePage({
                   amIBlocking={amIBlocking}
                 />
               </div>
-            ) : null}
+            )}
           </div>
 
           <div className="mt-3">
@@ -558,29 +388,13 @@ export default async function ProfilePage({
               <UserBadges isPro={profile.is_pro} isFounder={profile.is_founder} isCampusFounder={profile.is_campus_founder} isVerifiedStudent={profile.verified_student} isBot={profile.is_bot} />
             </div>
             <p className="mt-0.5 text-[15px] text-[var(--ink-muted)]">@{profile.username}</p>
-
-            {metaLine && <p className="mt-2 text-sm text-[var(--ink-muted)]">{metaLine}</p>}
-            {user && showMatchPrompt && (
-              <Suspense fallback={<Skeleton className="mt-2 h-4 w-56" />}>
-                <ProfileMatchPrompt
-                  viewerId={user.id}
-                  candidate={{
-                    id: profile.id,
-                    name: displayName,
-                    major: profile.major,
-                    goals: profile.goals,
-                    bio: profile.bio,
-                    school,
-                  }}
-                />
-              </Suspense>
+            {seeking && (
+              <p className="mt-3 text-[15px] leading-snug text-[var(--ink)]">
+                <span className="text-[var(--ink-faint)]">Seeking </span>
+                {seeking}
+              </p>
             )}
-
-            <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1">
-              <Stat value={Number(counts.posts)} label="posts" accent={!!theme} />
-              <Stat value={Number(counts.followers)} label="followers" accent={!!theme} href={`/profile/${profile.username}/followers`} />
-              <Stat value={Number(counts.following)} label="following" accent={!!theme} href={`/profile/${profile.username}/following`} />
-            </div>
+            {metaLine && <p className="mt-2 text-sm text-[var(--ink-muted)]">{metaLine}</p>}
           </div>
 
           {profile.bio && (
@@ -591,172 +405,33 @@ export default async function ProfilePage({
         </div>
       </section>
 
-      {/* Identity canvas — activity, goals as tactile tiles */}
-      {(canSeeHeatmap || profile.goals) && (
-        <div
-          className="cascade-up mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2"
-          style={{ "--delay": "80ms" } as React.CSSProperties}
-        >
-          {canSeeHeatmap && (
-            <Suspense
-              fallback={
-                <section className="card p-5 shadow-paper sm:col-span-2 sm:p-6">
-                  <Skeleton className="mb-4 h-4 w-24" />
-                  <Skeleton className="h-28 w-full" />
-                </section>
-              }
-            >
-              <ProfileActivitySection profileId={profile.id} isOwner={isOwner} />
-            </Suspense>
-          )}
-
-          {profile.goals && (
-            <section className="card card-hover p-5 shadow-paper sm:col-span-2 sm:p-6">
-              <h2 className="text-sm font-semibold text-[var(--ink)]">Goals</h2>
-              <p className="mt-1.5 whitespace-pre-line break-words text-[15px] leading-[1.55] text-[var(--ink-muted)]">
-                {profile.goals}
+      {hideProof ? (
+        <div className="card mt-4 px-6 py-8 text-center">
+          <p className="font-medium text-[var(--ink)]">Dossier unavailable</p>
+          <p className="mt-1.5 text-sm text-[var(--ink-muted)]">
+            You and @{profile.username} cannot see each other&apos;s profiles.
+          </p>
+        </div>
+      ) : (
+        <>
+          <DossierProof education={education} experiences={experiences} logoByOrg={logoByOrg} />
+          {isOwner && proofEmpty && (
+            <section className="card cascade-up mt-4 p-5 sm:p-6" style={{ "--delay": "80ms" } as CSSProperties}>
+              <h2 className="text-sm font-semibold text-[var(--ink)]">Add proof</h2>
+              <p className="mt-1.5 text-sm text-[var(--ink-muted)]">
+                Education, internships, and projects are what recruiters see here. Use Edit dossier to add them.
               </p>
             </section>
           )}
-        </div>
+        </>
       )}
 
-      {/* Experience — same visibility as bio (no privacy tier, mirrors the
-          experiences RLS "any signed-in user reads" policy). Grouped
-          LinkedIn-style by kind, each group sorted newest-first. */}
-      {experiences.length > 0 && (
-        <section
-          className="card card-hover cascade-up mt-4 p-5 shadow-paper sm:p-6"
-          style={{ "--delay": "160ms" } as React.CSSProperties}
-        >
-          <h2 className="text-sm font-semibold text-[var(--ink)]">Experience</h2>
-          <div className="mt-3 flex flex-col gap-5">
-            {EXPERIENCE_GROUPS.map(({ kind, label }) => {
-              const items = experiences
-                .filter((exp) => exp.kind === kind)
-                .sort((a, b) => (b.start_date ?? "").localeCompare(a.start_date ?? ""));
-              if (items.length === 0) return null;
-              return (
-                <div key={kind}>
-                  <p className="text-[10px] font-semibold tracking-wide text-[var(--ink-faint)] uppercase">
-                    {label}
-                  </p>
-                  <ul className="mt-2 flex flex-col gap-2">
-                    {items.map((exp, i) => {
-                      const dateRange = formatDateRange(exp.start_date, exp.end_date, exp.term);
-                      const bullets = descriptionBullets(exp.note);
-                      return (
-                        <li
-                          key={exp.id}
-                          className="cascade-up flex gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3"
-                          style={{ "--delay": `${i * 60}ms` } as React.CSSProperties}
-                        >
-                          <CompanyLogo name={exp.org} logoUrl={logoFor(exp.org)} size="md" />
-                          <div className="min-w-0">
-                            <p className="text-[15px] font-medium text-[var(--ink)]">{exp.role}</p>
-                            <p className="text-sm text-[var(--ink-muted)]">{exp.org}</p>
-                            {dateRange && <p className="mt-0.5 text-xs text-[var(--ink-faint)]">{dateRange}</p>}
-                            {bullets.length > 0 && (
-                              <ul className="mt-1 list-disc pl-5 text-sm break-words whitespace-pre-line text-[var(--ink-muted)]">
-                                {bullets.map((bullet, j) => (
-                                  <li key={j}>{bullet}</li>
-                                ))}
-                              </ul>
-                            )}
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {/* Education — same visibility as Experience, no privacy tier. */}
-      {education.length > 0 && (
-        <section
-          className="card card-hover cascade-up mt-4 p-5 shadow-paper sm:p-6"
-          style={{ "--delay": "200ms" } as React.CSSProperties}
-        >
-          <h2 className="text-sm font-semibold text-[var(--ink)]">Education</h2>
-          <ul className="mt-3 flex flex-col gap-2">
-            {education.map((edu, i) => {
-              const dateRange = formatDateRange(edu.start_date, edu.end_date, null);
-              const degreeLine = [edu.degree, edu.field].filter(Boolean).join(", ");
-              return (
-                <li
-                  key={edu.id}
-                  className="cascade-up flex gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3"
-                  style={{ "--delay": `${i * 60}ms` } as React.CSSProperties}
-                >
-                  <CompanyLogo name={edu.school} logoUrl={schoolLogoUrl(edu.school_domain)} size="md" />
-                  <div className="min-w-0">
-                    <p className="text-[15px] font-medium text-[var(--ink)]">{edu.school}</p>
-                    {degreeLine && <p className="text-sm text-[var(--ink-muted)]">{degreeLine}</p>}
-                    {dateRange && <p className="mt-0.5 text-xs text-[var(--ink-faint)]">{dateRange}</p>}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      )}
-
-      {!isOwner && user && (!isBlocked || amIBlocking) && (
+      {!isOwner && (!isBlocked || amIBlocking) && (
         <div className="mt-3 flex justify-end">
           <BlockButton targetId={profile.id} initialBlocked={amIBlocking} />
         </div>
       )}
-
-      {isOwner && (
-        <Suspense
-          fallback={
-            <section className="card mt-3 p-5 sm:p-6">
-              <Skeleton className="mb-3 h-4 w-40" />
-              <Skeleton className="h-9 w-full" />
-            </section>
-          }
-        >
-          <ProfileViewersSection profileId={profile.id} profileIsPro={profileIsPro} />
-        </Suspense>
-      )}
       </div>
-
-      <section className="cascade-up mt-4" style={{ "--delay": "240ms" } as React.CSSProperties}>
-        <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">Posts</h2>
-
-        {isBlocked ? (
-          <div className="card px-6 py-12 text-center">
-            <p className="font-medium text-[var(--ink)]">Posts unavailable</p>
-            <p className="mt-1.5 text-sm text-[var(--ink-muted)]">
-              You and @{profile.username} cannot see each other&apos;s posts.
-            </p>
-          </div>
-        ) : contentHidden ? (
-          <div className="card px-6 py-12 text-center">
-            <p className="font-medium text-[var(--ink)]">This account is private</p>
-            <p className="mt-1.5 text-sm text-[var(--ink-muted)]">
-              Follow @{profile.username} to see their posts.
-            </p>
-          </div>
-        ) : timeline.length === 0 ? (
-          <div className="card px-6 py-12 text-center">
-            <p className="font-medium text-[var(--ink)]">
-              {isOwner ? "No posts yet" : "No posts yet"}
-            </p>
-            <p className="mt-1.5 text-sm text-[var(--ink-muted)]">
-              {isOwner ? "Share something to fill your feed." : `@${profile.username} has not posted yet.`}
-            </p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            <FeedTimeline items={timeline} viewerId={viewerId} />
-          </div>
-        )}
-      </section>
     </main>
   );
 }

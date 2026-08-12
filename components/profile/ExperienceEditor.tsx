@@ -5,7 +5,12 @@ import { addExperience, deleteExperience, updateExperience, type ExperienceState
 import Select from "@/components/ui/Select";
 import DateRangePicker from "@/components/profile/DateRangePicker";
 import CompanyLogo from "@/components/ui/CompanyLogo";
-import { formatDateRange } from "@/lib/experience-format";
+import { formatDateRange, descriptionBullets } from "@/lib/experience-format";
+import {
+  EXPERIENCE_KIND_LABELS,
+  HELP_EXPERIENCE_KINDS,
+  groupExperiences,
+} from "@/lib/profile-dossier";
 
 export type ExperienceEntry = {
   id: string;
@@ -20,16 +25,9 @@ export type ExperienceEntry = {
   logo_url: string | null;
 };
 
-const KIND_OPTIONS: [string, string][] = [
-  ["internship", "Internship"],
-  ["job", "Job"],
-  ["research", "Research"],
-  ["club_role", "Club role"],
-  ["project", "Project"],
-];
 const KIND_SELECT_OPTIONS = [
   { value: "", label: "Select type" },
-  ...KIND_OPTIONS.map(([value, label]) => ({ value, label })),
+  ...Object.entries(EXPERIENCE_KIND_LABELS).map(([value, label]) => ({ value, label })),
 ];
 
 const label = "block text-sm font-medium text-[var(--ink)]";
@@ -46,10 +44,12 @@ type ExperienceFormProps = {
   onCancel?: () => void;
 };
 
-// Shared markup for both add and edit. entry is undefined for add, so every
-// field falls back to an empty defaultValue and DateRangePicker gets no
-// defaultStart/defaultEnd (both already optional there).
 function ExperienceForm({ entry, action, pending, error, currentYear, submitLabel, pendingLabel, onCancel }: ExperienceFormProps) {
+  const [kind, setKind] = useState(entry?.kind ?? "");
+  const showHelp = HELP_EXPERIENCE_KINDS.has(kind);
+  const orgLabel = kind === "project" ? "Domain" : "Organization";
+  const roleLabel = kind === "project" ? "Project" : "Role";
+
   return (
     <form action={action} className="mt-3 border-t border-[var(--border)] pt-3">
       {error && (
@@ -63,17 +63,18 @@ function ExperienceForm({ entry, action, pending, error, currentYear, submitLabe
           <Select
             options={KIND_SELECT_OPTIONS}
             name="kind"
-            defaultValue={entry?.kind ?? ""}
+            value={kind}
+            onChange={setKind}
             ariaLabel="Type"
             className="mt-1.5 w-full"
           />
         </div>
         <div>
-          <label className={label} htmlFor="exp-org">Organization</label>
+          <label className={label} htmlFor="exp-org">{orgLabel}</label>
           <input id="exp-org" name="org" required maxLength={80} defaultValue={entry?.org} className={field} />
         </div>
         <div>
-          <label className={label} htmlFor="exp-role">Role</label>
+          <label className={label} htmlFor="exp-role">{roleLabel}</label>
           <input id="exp-role" name="role" required maxLength={80} defaultValue={entry?.role} className={field} />
         </div>
         <div className="sm:col-span-2">
@@ -82,19 +83,27 @@ function ExperienceForm({ entry, action, pending, error, currentYear, submitLabe
       </div>
       <div className="mt-3">
         <label className={label} htmlFor="exp-note">Description (optional)</label>
-        <textarea id="exp-note" name="note" maxLength={600} rows={3} placeholder="One line per bullet" defaultValue={entry?.note ?? ""} className={field} />
+        <textarea
+          id="exp-note"
+          name="note"
+          maxLength={600}
+          rows={4}
+          placeholder="One line per bullet. Generated project lines can be edited here."
+          defaultValue={entry?.note ?? ""}
+          className={field}
+        />
       </div>
-      {/* Consent: only meaningful for internship/job/research. Club roles never
-          surface as helpers. Settings owns the global off switch. */}
-      <label className="mt-3 flex items-start gap-2.5 text-sm text-[var(--ink)]">
-        <input type="checkbox" name="open_to_help" className="mt-0.5 h-4 w-4 accent-[var(--ink)]" />
-        <span>
-          Open to help people applying here
-          <span className="mt-0.5 block text-[var(--ink-muted)]">
-            Turns on helper matching for internship, job, and research roles. Change anytime in Settings.
+      {showHelp && (
+        <label className="mt-3 flex items-start gap-2.5 text-sm text-[var(--ink)]">
+          <input type="checkbox" name="open_to_help" className="mt-0.5 h-4 w-4 accent-[var(--ink)]" />
+          <span>
+            Open to help people applying here
+            <span className="mt-0.5 block text-[var(--ink-muted)]">
+              Turns on helper matching for internship, job, and research roles. Change anytime in Settings.
+            </span>
           </span>
-        </span>
-      </label>
+        </label>
+      )}
       <div className="mt-3 flex items-center gap-3">
         <button type="submit" disabled={pending} className="btn-ghost !rounded-full !px-4 !py-1.5 text-sm">
           {pending ? pendingLabel : submitLabel}
@@ -119,18 +128,12 @@ type ExperienceRowProps = {
   onDelete: (id: string) => void;
 };
 
-// One row's display/edit toggle lives in its own component so its
-// useActionState (bound to this entry's id) has a stable identity across
-// renders instead of being recreated from the list's map callback.
 function ExperienceRow({ exp, currentYear, isEditing, onStartEdit, onStopEdit, deletingId, onDelete }: ExperienceRowProps) {
   const [updateState, updateAction, updatePending] = useActionState<ExperienceState, FormData>(
     updateExperience.bind(null, exp.id),
     {},
   );
 
-  // useActionState has no "on success" callback, so an effect watching the
-  // pending-to-not-pending transition is the way to react to a completed
-  // submission, closing the edit form once the update lands with no error.
   const wasPending = useRef(updatePending);
   useEffect(() => {
     if (wasPending.current && !updatePending && !updateState.error) {
@@ -157,6 +160,7 @@ function ExperienceRow({ exp, currentYear, isEditing, onStartEdit, onStopEdit, d
   }
 
   const dateRange = formatDateRange(exp.start_date, exp.end_date, exp.term);
+  const bullets = descriptionBullets(exp.note);
 
   return (
     <li className="flex items-start justify-between gap-3 rounded-lg border border-[var(--border)] px-3 py-2.5">
@@ -166,7 +170,13 @@ function ExperienceRow({ exp, currentYear, isEditing, onStartEdit, onStopEdit, d
           <p className="text-sm font-medium text-[var(--ink)]">{exp.role}</p>
           <p className="text-sm text-[var(--ink-muted)]">{exp.org}</p>
           {dateRange && <p className="text-sm text-[var(--ink-muted)]">{dateRange}</p>}
-          {exp.note && <p className="mt-0.5 text-sm text-[var(--ink-muted)]">{exp.note}</p>}
+          {bullets.length > 0 && (
+            <ul className="mt-1.5 list-disc pl-5 text-sm break-words text-[var(--ink-muted)]">
+              {bullets.map((bullet, j) => (
+                <li key={`${exp.id}-${j}`}>{bullet}</li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-3">
@@ -190,13 +200,6 @@ function ExperienceRow({ exp, currentYear, isEditing, onStartEdit, onStopEdit, d
   );
 }
 
-// Separate concern from EditProfileForm, its own card, its own server
-// actions. Existing entries render inline edit-in-place via ExperienceRow;
-// add stays a standalone form below the list, both sharing ExperienceForm's
-// markup. Both actions revalidatePath the edit page, so the list here is
-// rendered straight off the `initial` prop rather than duplicated into local
-// state, since a Server Action call from a transition triggers Next to refetch
-// this route and pass the updated prop down.
 export default function ExperienceEditor({ initial }: { initial: ExperienceEntry[] }) {
   const [addState, addAction, addPending] = useActionState<ExperienceState, FormData>(addExperience, {});
   const currentYear = new Date().getFullYear();
@@ -205,10 +208,8 @@ export default function ExperienceEditor({ initial }: { initial: ExperienceEntry
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [, startDelete] = useTransition();
+  const groups = groupExperiences(initial);
 
-  // Same pending-to-not-pending pattern as ExperienceRow's edit-close effect:
-  // useActionState has no success callback, so collapse the add form once a
-  // submission completes with no error.
   const wasAddPending = useRef(addPending);
   useEffect(() => {
     if (wasAddPending.current && !addPending && !addState.error) {
@@ -229,24 +230,30 @@ export default function ExperienceEditor({ initial }: { initial: ExperienceEntry
 
   return (
     <section className="card mt-6 p-6">
-      <h2 className="text-sm font-semibold text-[var(--ink)]">Experience</h2>
+      <h2 className="text-sm font-semibold text-[var(--ink)]">Experience and projects</h2>
+      <p className="mt-1 text-xs text-[var(--ink-muted)]">
+        Projects are labeled separately from internships and jobs. Generated bullets stay editable.
+      </p>
 
-      {initial.length > 0 && (
-        <ul className="mt-3 flex flex-col gap-2">
-          {initial.map((exp) => (
-            <ExperienceRow
-              key={exp.id}
-              exp={exp}
-              currentYear={currentYear}
-              isEditing={editingId === exp.id}
-              onStartEdit={() => setEditingId(exp.id)}
-              onStopEdit={() => setEditingId(null)}
-              deletingId={deletingId}
-              onDelete={onDelete}
-            />
-          ))}
-        </ul>
-      )}
+      {groups.map((group) => (
+        <div key={group.kind} className="mt-4">
+          <p className="text-xs font-medium text-[var(--ink-muted)]">{group.label}</p>
+          <ul className="mt-2 flex flex-col gap-2">
+            {group.items.map((exp) => (
+              <ExperienceRow
+                key={exp.id}
+                exp={exp}
+                currentYear={currentYear}
+                isEditing={editingId === exp.id}
+                onStartEdit={() => setEditingId(exp.id)}
+                onStopEdit={() => setEditingId(null)}
+                deletingId={deletingId}
+                onDelete={onDelete}
+              />
+            ))}
+          </ul>
+        </div>
+      ))}
 
       {deleteError && (
         <p role="alert" className="mt-3 text-sm text-[var(--danger)]">

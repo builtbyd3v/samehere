@@ -25,6 +25,7 @@ export type EditInitial = {
   is_pro: boolean;
   pro_until: string | null;
   profile_theme: string | null;
+  seekingPlaceholder?: string;
 };
 
 const label = "block text-sm font-medium text-[var(--ink)]";
@@ -83,7 +84,7 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
   return (
     <main className="mx-auto max-w-xl px-5 py-10">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-[-0.02em]">Edit profile</h1>
+        <h1 className="text-2xl font-semibold tracking-[-0.02em]">Edit dossier</h1>
         <Link href={`/profile/${initial.username}`} className="text-sm text-[var(--ink-muted)] underline">
           Cancel
         </Link>
@@ -188,13 +189,22 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
             )}
             {draftState.error && <p className="mt-1 text-xs text-[var(--danger)]">{draftState.error}</p>}
             <textarea ref={bioRef} id="bio" name="bio" rows={3} maxLength={500}
-              defaultValue={initial.bio ?? ""} placeholder="A few lines about you." className={field} />
+              defaultValue={initial.bio ?? ""} placeholder="A short line under your name." className={field} />
           </div>
 
           <div>
-            <label htmlFor="goals" className={label}>Goals</label>
-            <textarea ref={goalsRef} id="goals" name="goals" rows={2} maxLength={500}
-              defaultValue={initial.goals ?? ""} placeholder="What are you working toward?" className={field} />
+            <label htmlFor="goals" className={label}>Target role</label>
+            <textarea
+              ref={goalsRef}
+              id="goals"
+              name="goals"
+              rows={2}
+              maxLength={500}
+              defaultValue={initial.goals ?? ""}
+              placeholder={initial.seekingPlaceholder ?? "Software Engineering Intern"}
+              className={field}
+            />
+            <p className={hint}>What you are applying for. Recruiters see this first.</p>
           </div>
 
           {/* Hidden field carries the submitted value; the swatch buttons below

@@ -2,17 +2,15 @@ import { readFile } from "node:fs/promises";
 import { ImageResponse } from "next/og";
 import { createClient } from "@supabase/supabase-js";
 import sharp from "sharp";
-import { BLUE, BORDER, CANVAS, CARD, GOLD, GREEN, HM, INK, INK_FAINT, INK_MUTED } from "@/lib/og-tokens";
+import { BLUE, BORDER, CANVAS, CARD, GOLD, GREEN, INK, INK_FAINT, INK_MUTED } from "@/lib/og-tokens";
+import { dossierSeekingLine } from "@/lib/profile-dossier";
 
-// Dynamic per-profile OG card — the shareable, screenshot-worthy asset.
+// Dynamic per-profile OG card — identity + target role, no social counts.
 //
 // IMPORTANT: this runs with NO user session (crawlers, link unfurls) — only the
 // public anon key is available. `profiles` RLS requires auth.uid() is not null,
-// so everything comes through anon-granted SECURITY DEFINER RPCs:
-//   get_public_profile        — nulls a private account's fields itself
-//   get_public_profile_counts — three integers, never the follower lists
-//   get_public_heatmap        — self-guards on heatmap_visibility + is_private
-// Private / heatmap-hidden profiles fall back to the identity card, leaking nothing.
+// so everything comes through the anon-granted SECURITY DEFINER RPC
+// get_public_profile, which nulls a private account's fields itself.
 //
 // Dark by default: an unfurl sits in Discord, Slack and Twitter, which are dark
 // for most people. A cream card in a dark feed reads as a blown-out rectangle.
@@ -23,30 +21,14 @@ import { BLUE, BORDER, CANVAS, CARD, GOLD, GREEN, HM, INK, INK_FAINT, INK_MUTED 
 // JPEG only, and avatars are uploaded as WebP, which it silently draws as
 // nothing (an empty ring). Supabase's image transform would serve a PNG but is
 // a paid add-on. We fetch, transcode, and inline as a data URI.
-// ponytail: one fetch + transcode per render. If it shows in traces, cache the
-// PNG next to avatar_url at upload time instead.
 
-export const runtime = "nodejs"; // sharp is not available on the edge runtime.
+export const runtime = "nodejs";
 
 export const alt = "samehere profile";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
-export const revalidate = 3600; // 1h — crawlers/unfurls re-hit the same profile
-// repeatedly; the card only needs to reflect activity/stat changes roughly
-// hourly, not on every hit. See lib/leaderboard.ts / lib/founder.ts for the
-// same revalidate-window reasoning applied elsewhere in this repo.
+export const revalidate = 3600;
 
-const level = (points: number) => (points === 0 ? 0 : points <= 3 ? 1 : points <= 7 ? 2 : 3);
-
-// The app is set in Figtree (app/layout.tsx). Satori ships no fonts and falls
-// back to a generic sans, which renders 600-weight as something closer to 400 —
-// that is why the wordmark looked thin next to the real navbar.
-//
-// Resolved with `new URL(..., import.meta.url)`, which Next traces statically.
-// `join(process.cwd(), ...)` is a runtime string, so the font would be missing
-// from the deployed bundle: fine locally, a 500 in production. This route is
-// dynamic (its key is `/profile/[username]/opengraph-image-<hash>`), so unlike
-// the root card it is not prerendered and really does read this at request time.
 const fonts = async () => {
   const [regular, semibold] = await Promise.all([
     readFile(new URL("../../../fonts/Figtree-Regular.ttf", import.meta.url)),
@@ -58,7 +40,6 @@ const fonts = async () => {
   ];
 };
 
-type HeatmapRow = { day: string; points: number };
 type Profile = {
   id: string;
   username: string;
@@ -68,17 +49,12 @@ type Profile = {
   is_founder: boolean;
   is_campus_founder: boolean;
   is_private: boolean;
-  heatmap_visibility: string;
   year: string | null;
   major: string | null;
   school: string | null;
+  goals: string | null;
   verified_student: boolean;
 };
-type Counts = { posts: number; followers: number; following: number };
-
-const WEEKS = 26;
-const CELL = 16;
-const GAP = 3;
 
 const YEAR_LABEL: Record<string, string> = {
   freshman: "Freshman",
@@ -88,51 +64,6 @@ const YEAR_LABEL: Record<string, string> = {
   grad: "Grad student",
 };
 
-// Platform's day boundary is midnight America/New_York (matches get_streak/get_heatmap).
-function easternTodayAnchor(): Date {
-  const [y, m, d] = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" })
-    .format(new Date())
-    .split("-")
-    .map(Number);
-  return new Date(Date.UTC(y, m - 1, d));
-}
-
-function buildWeeks(rows: HeatmapRow[]): number[][] {
-  const byDate = new Map(rows.map((r) => [r.day, Number(r.points)]));
-  const end = easternTodayAnchor();
-  const firstSunday = new Date(end);
-  firstSunday.setUTCDate(end.getUTCDate() - end.getUTCDay() - (WEEKS - 1) * 7);
-
-  const cols: number[][] = [];
-  for (let w = 0; w < WEEKS; w++) {
-    const col: number[] = [];
-    for (let d = 0; d < 7; d++) {
-      const cur = new Date(firstSunday);
-      cur.setUTCDate(firstSunday.getUTCDate() + w * 7 + d);
-      col.push(cur > end ? -1 : (byDate.get(cur.toISOString().slice(0, 10)) ?? 0));
-    }
-    cols.push(col);
-  }
-  return cols;
-}
-
-function currentStreak(rows: HeatmapRow[]): number {
-  const activeDays = new Set(rows.filter((r) => Number(r.points) > 0).map((r) => r.day));
-  if (activeDays.size === 0) return 0;
-  const cursor = easternTodayAnchor();
-  if (!activeDays.has(cursor.toISOString().slice(0, 10))) {
-    cursor.setUTCDate(cursor.getUTCDate() - 1);
-  }
-  let streak = 0;
-  while (activeDays.has(cursor.toISOString().slice(0, 10))) {
-    streak++;
-    cursor.setUTCDate(cursor.getUTCDate() - 1);
-  }
-  return streak;
-}
-
-// Satori decodes PNG/JPEG only. Transcode anything else (avatars are WebP) and
-// inline it, so the card shows the real face rather than an empty ring.
 async function avatarDataUri(url: string | null): Promise<string | null> {
   if (!url) return null;
   try {
@@ -146,9 +77,7 @@ async function avatarDataUri(url: string | null): Promise<string | null> {
   }
 }
 
-/** 45% alpha of a #rrggbb, for the butterfly's set-back wings. */
 const fade = (hex: string) => `${hex}73`;
-
 const ICON = 28;
 
 function IconCrown({ color }: { color: string }) {
@@ -167,7 +96,6 @@ function IconBolt({ color }: { color: string }) {
   );
 }
 
-/** Same drawing as components/icons.tsx IconGraduationCap. */
 function IconGradCap({ color }: { color: string }) {
   return (
     <svg width={ICON} height={ICON} viewBox="0 0 24 24">
@@ -177,7 +105,6 @@ function IconGradCap({ color }: { color: string }) {
   );
 }
 
-/** Same drawing as components/icons.tsx — wings separate by tone, not by gaps. */
 function IconButterfly({ color }: { color: string }) {
   return (
     <svg width={ICON} height={ICON} viewBox="0 0 24 24">
@@ -195,7 +122,7 @@ function IconButterfly({ color }: { color: string }) {
 function Avatar({ src, letter }: { src: string | null; letter: string }) {
   const s = 112;
   return src ? (
-    <img src={src} width={s} height={s} style={{ borderRadius: "50%", objectFit: "cover", border: `3px solid ${BORDER}` }} />
+    <img src={src} alt="" width={s} height={s} style={{ borderRadius: "50%", objectFit: "cover", border: `3px solid ${BORDER}` }} />
   ) : (
     <div
       style={{
@@ -217,11 +144,6 @@ function Avatar({ src, letter }: { src: string | null; letter: string }) {
   );
 }
 
-/**
- * Badges sit beside the display name as bare icons, exactly as UserBadges
- * renders them in the app. Pills on their own row read as a different product,
- * and they cost ~50px of height the card doesn't have.
- */
 function NameRow({ name, profile }: { name: string; profile: Profile }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -236,16 +158,7 @@ function NameRow({ name, profile }: { name: string; profile: Profile }) {
   );
 }
 
-function Stat({ value, label }: { value: number; label: string }) {
-  return (
-    <div style={{ display: "flex", alignItems: "baseline" }}>
-      <div style={{ fontSize: 26, fontWeight: 600, color: INK }}>{value.toLocaleString()}</div>
-      <div style={{ marginLeft: 7, fontSize: 19, color: INK_MUTED }}>{label}</div>
-    </div>
-  );
-}
-
-function Identity({ profile, avatar, counts }: { profile: Profile; avatar: string | null; counts: Counts | null }) {
+function Identity({ profile, avatar, seeking }: { profile: Profile; avatar: string | null; seeking: string | null }) {
   const name = profile.display_name ?? profile.username;
   const meta = [profile.year ? YEAR_LABEL[profile.year] : null, profile.major, profile.school]
     .filter(Boolean)
@@ -259,15 +172,13 @@ function Identity({ profile, avatar, counts }: { profile: Profile; avatar: strin
       </div>
       <div style={{ marginTop: 2, fontSize: 24, color: INK_MUTED }}>{`@${profile.username}`}</div>
 
-      {meta.length > 0 && <div style={{ marginTop: 16, fontSize: 20, color: INK_FAINT }}>{meta}</div>}
-
-      {counts && (
-        <div style={{ display: "flex", marginTop: 20, gap: 28 }}>
-          <Stat value={counts.posts} label="posts" />
-          <Stat value={counts.followers} label="followers" />
-          <Stat value={counts.following} label="following" />
+      {seeking && (
+        <div style={{ display: "flex", marginTop: 18, fontSize: 22, color: INK }}>
+          {`Seeking ${seeking}`}
         </div>
       )}
+
+      {meta.length > 0 && <div style={{ marginTop: 16, fontSize: 20, color: INK_FAINT }}>{meta}</div>}
 
       {profile.is_private && (
         <div style={{ marginTop: 18, fontSize: 20, color: INK_FAINT }}>This account is private.</div>
@@ -276,61 +187,6 @@ function Identity({ profile, avatar, counts }: { profile: Profile; avatar: strin
   );
 }
 
-function Heatmap({ weeks, streak }: { weeks: number[][]; streak: number }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
-      {/* "Activity" and "{n}-day streak" are the app's own strings — see the h2 in
-          profile/[username]/page.tsx and ProfileActivitySection. */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ fontSize: 20, fontWeight: 600, color: INK }}>Activity</div>
-        {streak > 0 && (
-          <div
-            style={{
-              display: "flex",
-              fontSize: 17,
-              fontWeight: 600,
-              color: BLUE,
-              background: "rgba(79, 159, 232, 0.14)",
-              border: "1px solid rgba(79, 159, 232, 0.30)",
-              borderRadius: 999,
-              padding: "5px 14px",
-            }}
-          >
-            {`${streak}-day streak`}
-          </div>
-        )}
-      </div>
-
-      <div style={{ display: "flex", marginTop: 22, gap: GAP }}>
-        {weeks.map((col, w) => (
-          <div key={w} style={{ display: "flex", flexDirection: "column", gap: GAP }}>
-            {col.map((pts, d) => (
-              <div
-                key={d}
-                style={{
-                  width: CELL,
-                  height: CELL,
-                  borderRadius: 4,
-                  background: pts < 0 ? "transparent" : HM[level(pts)],
-                }}
-              />
-            ))}
-          </div>
-        ))}
-      </div>
-
-      <div style={{ display: "flex", marginTop: 20, alignItems: "center", gap: 7 }}>
-        <div style={{ fontSize: 16, color: INK_FAINT }}>Less</div>
-        {HM.map((c, i) => (
-          <div key={i} style={{ width: 14, height: 14, borderRadius: 3, background: c }} />
-        ))}
-        <div style={{ fontSize: 16, color: INK_FAINT }}>More</div>
-      </div>
-    </div>
-  );
-}
-
-/** The wordmark: `same` in ink, `here` in blue. Matches Navbar and LandingNav. */
 function Wordmark({ size: s }: { size: number }) {
   return (
     <div style={{ display: "flex", fontSize: s, fontWeight: 600, letterSpacing: "-0.02em" }}>
@@ -374,7 +230,6 @@ export default async function OgImage({ params }: { params: Promise<{ username: 
 
   const font = await fonts();
 
-  // No such user: brand card, nothing personal.
   if (!profile) {
     return new ImageResponse(
       (
@@ -401,17 +256,8 @@ export default async function OgImage({ params }: { params: Promise<{ username: 
     );
   }
 
-  const [avatar, countsRes, heatRes] = await Promise.all([
-    avatarDataUri(profile.avatar_url),
-    supabase.rpc("get_public_profile_counts", { p_profile_id: profile.id }),
-    profile.heatmap_visibility === "public" && !profile.is_private
-      ? supabase.rpc("get_public_heatmap", { p_profile_id: profile.id })
-      : Promise.resolve({ data: null }),
-  ]);
-
-  const counts = ((countsRes.data as Counts[] | null)?.[0] ?? null) as Counts | null;
-  const heat = (heatRes.data as HeatmapRow[] | null) ?? [];
-  const showHeatmap = heat.length > 0;
+  const avatar = await avatarDataUri(profile.avatar_url);
+  const seeking = profile.is_private ? null : dossierSeekingLine({ goals: profile.goals, major: profile.major });
 
   return new ImageResponse(
     (
@@ -438,22 +284,13 @@ export default async function OgImage({ params }: { params: Promise<{ username: 
               "radial-gradient(ellipse 1000px 500px at 30% -15%, rgba(79, 159, 232, 0.30), transparent 65%)",
             border: `1px solid ${BORDER}`,
             borderRadius: 28,
-            // 630 - (44 outer * 2) = 542 inner card height. Content (identity +
-            // footer) must fit inside 542 - (44 * 2) = 454, or the card grows and
-            // eats the bottom outer padding while the top keeps its 44px.
             padding: 44,
             justifyContent: "space-between",
           }}
         >
-          {/* alignItems:center vertically centres the heatmap against the taller
-              identity column — otherwise it top-aligns and leaves dead space. */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexGrow: 1 }}>
-            <div style={{ display: "flex", width: showHeatmap ? 470 : 1000 }}>
-              <Identity profile={profile} avatar={avatar} counts={counts} />
-            </div>
-            {showHeatmap && <Heatmap weeks={buildWeeks(heat)} streak={currentStreak(heat)} />}
+          <div style={{ display: "flex", flexGrow: 1, alignItems: "center" }}>
+            <Identity profile={profile} avatar={avatar} seeking={seeking} />
           </div>
-
           <Footer username={profile.username} />
         </div>
       </div>
