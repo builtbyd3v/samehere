@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { PathProject } from "@/lib/path/types";
 import { saveProjectChecklist } from "@/app/(app)/projects/actions";
+import ProjectCompletionPanel from "@/components/path/ProjectCompletionPanel";
 
 type Item = PathProject["build_checklist"][number];
 
@@ -19,6 +21,7 @@ export default function ProjectChecklist({
   /** When true, toggles upsert user_projects (logged-in viewers). */
   persistServer?: boolean;
 }) {
+  const router = useRouter();
   const storageKey = `path-project-checklist:${projectSlug}`;
   const [done, setDone] = useState<Record<string, boolean>>(initialDone ?? {});
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -59,12 +62,15 @@ export default function ProjectChecklist({
     }
     if (!persistServer) return;
 
-    const required = items.filter((i) => !i.optional);
-    const markDone = required.length > 0 && required.every((i) => next[i.id]);
+    const requiredItems = items.filter((i) => !i.optional);
+    const markDone =
+      requiredItems.length > 0 && requiredItems.every((i) => next[i.id]);
 
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
-      void saveProjectChecklist(projectSlug, next, markDone);
+      void saveProjectChecklist(projectSlug, next, markDone).then((result) => {
+        if (result.firstCompletion) router.refresh();
+      });
     }, 400);
   }
 
@@ -79,6 +85,7 @@ export default function ProjectChecklist({
   const completed = items.filter((i) => done[i.id]).length;
   const required = items.filter((i) => !i.optional);
   const requiredDone = required.filter((i) => done[i.id]).length;
+  const allRequiredDone = required.length > 0 && requiredDone === required.length;
 
   return (
     <section
@@ -132,6 +139,8 @@ export default function ProjectChecklist({
             );
           })}
         </ul>
+
+        {allRequiredDone ? <ProjectCompletionPanel /> : null}
       </div>
     </section>
   );
