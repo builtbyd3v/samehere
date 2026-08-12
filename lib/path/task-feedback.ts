@@ -264,15 +264,20 @@ function normalizedTitle(title: string): string {
   return title.trim().replace(/\s+/g, " ").toLocaleLowerCase("en");
 }
 
-function fallbackTask(entry: PathFeedbackMemoryEntry): DiagnosisTask {
+function fallbackTask(
+  entry: PathFeedbackMemoryEntry,
+  ratedTitles: ReadonlySet<string>,
+): DiagnosisTask {
   const primary = MODULE_FALLBACKS[entry.moduleId][entry.outcome];
-  if (normalizedTitle(primary.title) !== normalizedTitle(entry.title)) {
+  if (!ratedTitles.has(normalizedTitle(primary.title))) {
     return primary;
   }
-  return {
-    module_id: entry.moduleId,
-    ...SECONDARY_FALLBACKS[entry.outcome],
-  };
+  const secondary = SECONDARY_FALLBACKS[entry.outcome];
+  let title = secondary.title;
+  while (ratedTitles.has(normalizedTitle(title))) {
+    title = `${title} next`;
+  }
+  return { module_id: entry.moduleId, title };
 }
 
 function appendUnique(values: readonly string[], value: string): string[] {
@@ -281,7 +286,7 @@ function appendUnique(values: readonly string[], value: string): string[] {
 
 /**
  * Apply the latest rating after AI/heuristic generation.
- * Exact repeats are removed even if the model ignored the memory.
+ * Recently rated tasks are removed even if the model ignored the memory.
  */
 export function adaptDiagnosisToPathFeedback(
   result: DiagnosisResult,
@@ -290,14 +295,14 @@ export function adaptDiagnosisToPathFeedback(
   const latest = recentFirst(entries)[0];
   if (!latest) return result;
 
-  const priorTitle = normalizedTitle(latest.title);
+  const ratedTitles = new Set(entries.map((entry) => normalizedTitle(entry.title)));
   const generatedAlternatives = result.tasks.filter(
-    (task) => normalizedTitle(task.title) !== priorTitle,
+    (task) => !ratedTitles.has(normalizedTitle(task.title)),
   );
   const tasks =
     generatedAlternatives.length > 0
       ? generatedAlternatives
-      : [fallbackTask(latest)];
+      : [fallbackTask(latest, ratedTitles)];
 
   if (latest.outcome === "helped") {
     return {

@@ -231,7 +231,7 @@ describe("adaptDiagnosisToPathFeedback", () => {
     ).toBe(false);
   });
 
-  it("uses only the newest rating", () => {
+  it("uses the newest outcome while excluding every recently rated title", () => {
     const result = adaptDiagnosisToPathFeedback(baseResult, [
       feedback({
         taskId: "new",
@@ -254,7 +254,14 @@ describe("adaptDiagnosisToPathFeedback", () => {
       "Made progress with: Move one application forward",
     );
     expect(result.tasks).toEqual([
-      { module_id: "applications", title: "Move one application forward" },
+      { module_id: "applications", title: "Complete one application field" },
     ]);
+    expect(
+      result.tasks.some((task) =>
+        ["Move one application forward", "Review the next saved role"].includes(
+          task.title,
+        ),
+      ),
+    ).toBe(false);
   });
 });
