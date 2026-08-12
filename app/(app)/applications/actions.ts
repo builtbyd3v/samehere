@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { rediagnoseUser } from "@/lib/path/rediagnose";
 
 export const APPLICATION_STATUSES = [
   "wishlist",
@@ -108,6 +109,19 @@ export async function updateApplicationStatus(
 
   if (error) return { error: "Could not update status. Try again." };
   if (!data) return { error: "Application not found." };
+
+  // OA / interview → flip path recipe (heuristic at minimum). Soft-fail so the
+  // status update still succeeds if rediagnosis errors.
+  if (status === "oa" || status === "interview") {
+    try {
+      await rediagnoseUser(supabase, user.id, {
+        reason: status === "oa" ? "application_status_oa" : "application_status_interview",
+      });
+      revalidatePath("/home");
+    } catch {
+      // ponytail: status write already committed; path refresh is best-effort
+    }
+  }
 
   revalidateApplications(data.listing_id);
   return { success: true };

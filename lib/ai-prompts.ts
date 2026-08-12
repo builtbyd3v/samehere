@@ -126,11 +126,12 @@ export const INTAKE_DIAGNOSIS_SYSTEM =
   "Return ONLY JSON in exactly this shape, no prose: " +
   `{"ui_recipe":${UI_RECIPE_ENUM},"module_order":[${MODULE_ENUM},...],"nav_emphasis":["home"|"opportunities"|"applications"|"messages"|"profile",...],"tone":${TONE_ENUM},"headline":"<string>","why":"<string>","skill_track_id":"<optional>","skill_stage_id":"<optional>","project_slug":"<optional>","diagnosis":{"strengths":["..."],"gaps":["..."],"blockers":["..."],"confidence":0.0,"segment_tags":["..."]},"tasks":[{"module_id":${MODULE_ENUM},"title":"<string>","detail":"<optional>"}]}`;
 
-/** Prior profile + events → updated plan. Stub for WS9. */
+/** Prior profile + events → updated plan (WS9). */
 export const REDIAGNOSIS_SYSTEM =
   "You re-diagnose a student's internship path from their prior diagnosis and recent events. " +
   PATH_JSON_GUARD +
   " Same JSON shape as intake diagnosis. May advance stage or switch ui_recipe when facts justify it. " +
+  "When applications include oa or interview, prefer ui_recipe prep_room. " +
   "Return ONLY the JSON object, no prose.";
 
 /** Pick/adapt a native path project into checklist tasks. Stub for WS8. */

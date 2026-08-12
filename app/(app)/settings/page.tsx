@@ -10,6 +10,7 @@ import DeleteAccountSection from "@/components/settings/DeleteAccountSection";
 import AvatarBase from "@/components/ui/Avatar";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import StudentVerification from "@/components/settings/StudentVerification";
+import RediagnoseForm from "@/components/path/RediagnoseForm";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { unblockUser } from "./actions";
 
@@ -131,6 +132,21 @@ export default async function SettingsPage() {
           <h2 className="mb-1 text-lg font-semibold text-[var(--ink)]">Appearance</h2>
           <p className="mb-4 text-sm text-[var(--ink-muted)]">Choose light, dark, or match your system.</p>
           <ThemeToggle />
+        </section>
+
+        <section className="card p-6">
+          <h2 className="mb-1 text-lg font-semibold text-[var(--ink)]">Path</h2>
+          <p className="mb-4 text-sm text-[var(--ink-muted)]">
+            Stuck or something changed? Refresh your plan from intake and applications.
+          </p>
+          <RediagnoseForm />
+          <p className="mt-3 text-sm text-[var(--ink-muted)]">
+            Or{" "}
+            <Link href="/path/redo" className="underline hover:text-[var(--ink)]">
+              add a blocker note
+            </Link>
+            .
+          </p>
         </section>
 
         <DeleteAccountSection username={profile.username} />

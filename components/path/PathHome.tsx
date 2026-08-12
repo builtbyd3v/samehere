@@ -4,6 +4,7 @@ import type {
   OpportunityListing,
 } from "@/lib/path/load-opportunities";
 import type { PathPlanUi, UiRecipe } from "@/lib/path/types";
+import RediagnoseForm from "./RediagnoseForm";
 import FocusTrackHome from "./recipes/FocusTrackHome";
 import NetworkGapHome from "./recipes/NetworkGapHome";
 import OpsDeskHome from "./recipes/OpsDeskHome";
@@ -40,6 +41,9 @@ export default function PathHome({
         listings={listings}
         applicationStages={applicationStages}
       />
+      <div className="mx-auto w-full max-w-3xl px-5 pb-10 pt-2 md:px-0">
+        <RediagnoseForm compact />
+      </div>
     </main>
   );
 }
