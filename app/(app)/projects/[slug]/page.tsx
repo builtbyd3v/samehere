@@ -1,8 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import {
+  AppNotice,
+  AppPage,
+  AppPageHeader,
+  AppPanel,
+} from "@/components/app/AppPrimitives";
+import ProjectChecklist from "@/components/path/ProjectChecklist";
 import { createClient } from "@/lib/supabase/server";
 import { getProjectBySlug, listProjectSlugs } from "@/lib/path/seeds";
-import ProjectChecklist from "@/components/path/ProjectChecklist";
 import { getUserProjectState } from "../actions";
 
 export function generateStaticParams() {
@@ -21,42 +27,53 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
   const initialDone = user ? ((await getUserProjectState(project.slug)) ?? {}) : undefined;
 
   return (
-    <main className="page-enter mx-auto max-w-3xl px-4 py-8">
-      <p className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--accent-blue-strong)]">
-        <Link href="/home" className="hover:text-[var(--ink)]">
-          Home
-        </Link>
-        <span className="mx-1.5 text-[var(--ink-faint)]">/</span>
-        <span className="text-[var(--ink-muted)]">Projects</span>
-      </p>
+    <AppPage width="wide">
+      <AppPageHeader
+        kicker="Project"
+        title={project.title}
+        description={project.interview_roi}
+        action={
+          <div className="flex flex-wrap gap-2">
+            <Link href="/home" className="btn-ghost inline-flex">
+              Back to path
+            </Link>
+            <a href="#build-checklist" className="btn-primary inline-flex">
+              Continue checklist
+            </a>
+          </div>
+        }
+      />
 
-      <header className="mt-3">
-        <h1 className="text-[2rem] font-medium leading-[1.1] tracking-[-0.03em] text-[var(--ink)] md:text-[2.5rem]">
-          {project.title}
-        </h1>
-        <p className="mt-3 max-w-2xl text-[var(--ink-muted)]">{project.interview_roi}</p>
-        <div className="mt-4 flex flex-wrap gap-2 text-xs text-[var(--ink-muted)]">
-          <span className="rounded-[var(--landing-radius-sm)] border border-[var(--border)] px-2 py-1 capitalize">
-            {project.difficulty}
+      <div className="mb-6 flex flex-wrap gap-2 text-xs text-[var(--ink-muted)]">
+        <span className="rounded-[var(--landing-radius-sm)] border border-[var(--border)] px-2 py-1 capitalize">
+          {project.difficulty}
+        </span>
+        <span className="rounded-[var(--landing-radius-sm)] border border-[var(--border)] px-2 py-1">
+          {project.time_hours[0]}–{project.time_hours[1]}h
+        </span>
+        <span className="rounded-[var(--landing-radius-sm)] border border-[var(--border)] px-2 py-1">
+          {project.domain}
+        </span>
+        {project.stack.map((s) => (
+          <span
+            key={s}
+            className="rounded-[var(--landing-radius-sm)] border border-[var(--border)] px-2 py-1"
+          >
+            {s}
           </span>
-          <span className="rounded-[var(--landing-radius-sm)] border border-[var(--border)] px-2 py-1">
-            {project.time_hours[0]}–{project.time_hours[1]}h
-          </span>
-          <span className="rounded-[var(--landing-radius-sm)] border border-[var(--border)] px-2 py-1">
-            {project.domain}
-          </span>
-          {project.stack.map((s) => (
-            <span
-              key={s}
-              className="rounded-[var(--landing-radius-sm)] border border-[var(--border)] px-2 py-1"
-            >
-              {s}
-            </span>
-          ))}
+        ))}
+      </div>
+
+      {!user ? (
+        <div className="mb-4">
+          <AppNotice>
+            Sign in to sync checklist progress across devices. Local progress still saves in this
+            browser.
+          </AppNotice>
         </div>
-      </header>
+      ) : null}
 
-      <div className="mt-8">
+      <div id="build-checklist">
         <ProjectChecklist
           projectSlug={project.slug}
           items={project.build_checklist}
@@ -65,55 +82,71 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
         />
       </div>
 
-      <section className="mt-8 grid gap-6 sm:grid-cols-2">
-        <div className="rounded-[var(--landing-radius)] border border-[var(--border)] bg-[var(--surface)] p-5">
-          <h2 className="text-base font-medium tracking-[-0.02em] text-[var(--ink)]">What you build</h2>
+      <section className="mt-8 grid gap-4 sm:grid-cols-2" aria-label="Project outcomes">
+        <AppPanel className="p-5">
+          <h2 className="text-base font-medium tracking-[-0.02em] text-[var(--ink)]">
+            What you build
+          </h2>
           <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm text-[var(--ink-muted)]">
             {project.what_you_build.map((line) => (
               <li key={line}>{line}</li>
             ))}
           </ul>
-        </div>
-        <div className="rounded-[var(--landing-radius)] border border-[var(--border)] bg-[var(--surface)] p-5">
-          <h2 className="text-base font-medium tracking-[-0.02em] text-[var(--ink)]">What it teaches</h2>
+        </AppPanel>
+        <AppPanel className="p-5">
+          <h2 className="text-base font-medium tracking-[-0.02em] text-[var(--ink)]">
+            What it teaches
+          </h2>
           <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm text-[var(--ink-muted)]">
             {project.what_it_teaches.map((line) => (
               <li key={line}>{line}</li>
             ))}
           </ul>
-        </div>
+        </AppPanel>
       </section>
 
-      <section className="mt-8">
-        <h2 className="text-base font-medium tracking-[-0.02em] text-[var(--ink)]">How it works</h2>
+      <section className="mt-8" aria-labelledby="how-it-works-heading">
+        <h2
+          id="how-it-works-heading"
+          className="text-base font-medium tracking-[-0.02em] text-[var(--ink)]"
+        >
+          How it works
+        </h2>
         <ol className="mt-3 space-y-3">
           {project.how_it_works.map((step) => (
-            <li
-              key={step.step}
-              className="rounded-[var(--landing-radius)] border border-[var(--border)] bg-[var(--surface)] px-4 py-3"
-            >
-              <p className="text-sm font-medium text-[var(--ink)]">
-                <span className="text-[var(--accent-blue-strong)]">{step.step}.</span> {step.title}
-              </p>
-              <p className="mt-1 text-sm text-[var(--ink-muted)]">{step.detail}</p>
+            <li key={step.step}>
+              <AppPanel className="px-4 py-3">
+                <p className="text-sm font-medium text-[var(--ink)]">
+                  <span className="text-[var(--accent-blue-strong)]">{step.step}.</span>{" "}
+                  {step.title}
+                </p>
+                <p className="mt-1 text-sm text-[var(--ink-muted)]">{step.detail}</p>
+              </AppPanel>
             </li>
           ))}
         </ol>
       </section>
 
-      {project.take_it_further && project.take_it_further.length > 0 && (
-        <section className="mt-8">
-          <h2 className="text-base font-medium tracking-[-0.02em] text-[var(--ink)]">Take it further</h2>
+      {project.take_it_further && project.take_it_further.length > 0 ? (
+        <section className="mt-8" aria-labelledby="further-heading">
+          <h2
+            id="further-heading"
+            className="text-base font-medium tracking-[-0.02em] text-[var(--ink)]"
+          >
+            Take it further
+          </h2>
           <p className="mt-1 text-sm text-[var(--ink-faint)]">
-            Secondary stretch goals — optional after the checklist.
+            Optional stretch goals after the checklist.
           </p>
-          <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm text-[var(--ink-muted)]">
-            {project.take_it_further.map((line) => (
-              <li key={line}>{line}</li>
-            ))}
-          </ul>
+          <AppPanel className="mt-3 p-5">
+            <ul className="list-disc space-y-1.5 pl-5 text-sm text-[var(--ink-muted)]">
+              {project.take_it_further.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          </AppPanel>
         </section>
-      )}
-    </main>
+      ) : null}
+    </AppPage>
   );
 }
