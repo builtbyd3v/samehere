@@ -28,6 +28,8 @@ export default function PathTaskFeedback({ taskId }: { taskId: string }) {
           setError(result.error);
           return;
         }
+        setShowStuckForm(false);
+        setNote("");
         router.refresh();
       } catch {
         setError("Could not save your feedback. Try again.");
