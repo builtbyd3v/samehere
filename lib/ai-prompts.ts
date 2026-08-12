@@ -100,3 +100,61 @@ export const EVE_WELCOME_SYSTEM =
 
 export const EVE_PROMPT_SYSTEM =
   `${STYLE} Task: write one short discussion prompt for a student club channel, tied to the club's name and description, that a member can answer from their own week. One sentence, a single question, under 20 words. Do not repeat the recent prompts given.`;
+
+// --- Path / zero-to-internship prompts (WS2+) ---
+
+const PATH_JSON_GUARD =
+  INJECTION_GUARD +
+  " " +
+  "Hard rules: English only. No emoji, no em dashes, no markdown, no code fences, no preamble. " +
+  "Ground every word in the intake facts; invent nothing. Name the struggle without pity.";
+
+const UI_RECIPE_ENUM =
+  '"studio"|"ops_desk"|"prep_room"|"focus_track"|"network_gap"';
+const MODULE_ENUM =
+  '"dossier"|"opportunities"|"applications"|"pitch"|"project_plan"|"interview_prep"|"helpers"|"skill_stages"';
+const TONE_ENUM = '"steady"|"urgent"|"encouraging"';
+
+/** Intake → recipe + learner diagnosis + initial tasks. Strict JSON only. */
+export const INTAKE_DIAGNOSIS_SYSTEM =
+  "You diagnose a student's internship path from their intake answers. " +
+  PATH_JSON_GUARD +
+  " Choose ui_recipe from the enum only: studio (need proof/project), ops_desk (ready to apply), prep_room (interviewing), focus_track (overwhelmed/heavy constraints), network_gap (solid profile, weak network). " +
+  "Prefer skill_track_id \"new_grad_swe\" when unsure. Prefer a real project_slug only when studio/focus needs a build. " +
+  "headline and why: plain peer voice, grounded in their stage/blocker/constraints. " +
+  "tasks: 2 to 5 concrete next actions with module_id from the enum. " +
+  "Return ONLY JSON in exactly this shape, no prose: " +
+  `{"ui_recipe":${UI_RECIPE_ENUM},"module_order":[${MODULE_ENUM},...],"nav_emphasis":["home"|"opportunities"|"applications"|"messages"|"profile",...],"tone":${TONE_ENUM},"headline":"<string>","why":"<string>","skill_track_id":"<optional>","skill_stage_id":"<optional>","project_slug":"<optional>","diagnosis":{"strengths":["..."],"gaps":["..."],"blockers":["..."],"confidence":0.0,"segment_tags":["..."]},"tasks":[{"module_id":${MODULE_ENUM},"title":"<string>","detail":"<optional>"}]}`;
+
+/** Prior profile + events → updated plan. Stub for WS9. */
+export const REDIAGNOSIS_SYSTEM =
+  "You re-diagnose a student's internship path from their prior diagnosis and recent events. " +
+  PATH_JSON_GUARD +
+  " Same JSON shape as intake diagnosis. May advance stage or switch ui_recipe when facts justify it. " +
+  "Return ONLY the JSON object, no prose.";
+
+/** Pick/adapt a native path project into checklist tasks. Stub for WS8. */
+export const PROJECT_PLAN_SYSTEM =
+  "You assign a native in-app project for a student who needs proof of experience. " +
+  PATH_JSON_GUARD +
+  " Prefer a catalog project_slug from the list given; invent only if none fit. " +
+  'Return ONLY JSON: {"project_slug":"<slug>","tasks":[{"title":"<string>","detail":"<optional>"}],"why":"<one sentence>"}';
+
+/** Prefer company bank questions; else thin Q set. Stub for WS8. */
+export const INTERVIEW_PREP_SYSTEM =
+  "You build a short written interview prep pack for one company or role. " +
+  PATH_JSON_GUARD +
+  " Prefer questions from the company bank when provided. " +
+  'Return ONLY JSON: {"questions":[{"id":"<string>","type":"coding"|"system_design"|"behavioral"|"role_fit","prompt":"<string>","approach":"<string>","evaluating":"<string>"}]}';
+
+/** Grade one written answer. Stub for WS8. */
+export const INTERVIEW_FEEDBACK_SYSTEM =
+  "You give written feedback on one internship interview practice answer. " +
+  PATH_JSON_GUARD +
+  " Compare against the approach and what they are evaluating. " +
+  'Return ONLY JSON: {"score":1,"strengths":["..."],"gaps":["..."],"rewrite_hint":"<one or two sentences>"}';
+
+/** One next-action nudge for path home. Stub for WS3+. */
+export const PATH_TASK_NUDGE_SYSTEM =
+  `${STYLE} Task: write one short next-action nudge for THIS student's path, grounded in their current recipe, headline, and open tasks. ` +
+  "One sentence, under 22 words, peer voice, no flattery. Name the concrete next move.";

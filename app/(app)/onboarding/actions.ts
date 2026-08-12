@@ -3,15 +3,26 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { updateProfile, type EditState } from "@/app/(app)/profile/edit/actions";
-import { peopleSearchCore } from "@/lib/people-search";
+import { aiEnabled, generateText, modelForTier } from "@/lib/ai";
+import { INTAKE_DIAGNOSIS_SYSTEM, untrusted } from "@/lib/ai-prompts";
+import {
+  heuristicDiagnosis,
+  intakeUserPrompt,
+  isPathStage,
+  isPathTimeline,
+  parseDiagnosisJson,
+  type DiagnosisResult,
+  type IntakeAnswers,
+} from "@/lib/path/diagnose";
+import { isPro } from "@/lib/pro";
+import type { Json } from "@/types/database.types";
 
 // `updateProfile` (profile/edit/actions.ts — peer-owned, imported not edited)
 // always calls redirect(`/profile/${username}`) on success. That's correct for
 // the standalone edit-profile page, but here it would bounce the viewer out of
-// the wizard before steps 2/3. Next's redirect() works by throwing an error
+// the wizard before later steps. Next's redirect() works by throwing an error
 // tagged with a `NEXT_REDIRECT`-prefixed `digest`; we catch only that specific
-// signal and treat it as success, letting the wizard advance to the next step
-// on the client instead of navigating away. Any other thrown error rethrows.
+// signal and treat it as success, letting the wizard advance on the client.
 function isRedirectSignal(err: unknown): boolean {
   return (
     typeof err === "object" &&
@@ -26,13 +37,11 @@ export async function saveOnboardingBasics(prev: EditState, formData: FormData):
   try {
     return await updateProfile(prev, formData);
   } catch (err) {
-    if (isRedirectSignal(err)) return {}; // updateProfile succeeded; its own redirect is swallowed here
+    if (isRedirectSignal(err)) return {};
     throw err;
   }
 }
 
-// Own-row update — RLS "owner write" policy on profiles already covers this
-// (see Security Requirements #5 in CLAUDE.md), no new definer function needed.
 export async function finishOnboarding(): Promise<void> {
   const supabase = await createClient();
   const {
@@ -41,89 +50,259 @@ export async function finishOnboarding(): Promise<void> {
   if (!user) redirect("/login");
 
   await supabase.from("profiles").update({ onboarded_at: new Date().toISOString() }).eq("id", user.id);
-  redirect("/feed");
+  redirect("/home");
 }
 
-// Experience is now saved through the shared addExperience action
-// (app/(app)/profile/edit/actions.ts) directly from OnboardingWizard, same as
-// education through addEducation — no onboarding-local wrapper needed.
-
-export type OnboardingMatch = {
-  id: string;
-  username: string;
-  display_name: string | null;
-  avatar_url: string | null;
-  is_pro: boolean;
-  is_founder: boolean;
-  is_campus_founder: boolean;
-  verified_student: boolean;
-  year: string | null;
-  major: string | null;
-  reason: string | null;
+export type PathIntakeState = {
+  error?: string;
+  overCap?: boolean;
 };
 
-// Final wizard step's "front door" moment: live AI peer matches seeded from
-// the major/goals the user just saved in step 1 (not a query they typed).
-// Server-initiated, so it runs with skipQuota -- it must never spend the
-// user's own daily people-search cap. Falls back to get_suggested_profiles
-// (same RPC as the feed's right rail) when major/goals are both empty, since
-// there's nothing to build a seed query from. Empty either way → [] so the
-// caller can skip the step instead of showing a dead end.
-export async function getOnboardingMatches(): Promise<OnboardingMatch[]> {
+const CONSTRAINT_OPTIONS = new Set([
+  "first_gen",
+  "transfer",
+  "commuter",
+  "international",
+  "limited_network",
+  "working_job",
+  "career_switch",
+  "overwhelmed",
+]);
+
+function splitList(raw: string): string[] {
+  return raw
+    .split(/[,;\n]/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 12);
+}
+
+function parseIntakeForm(formData: FormData): IntakeAnswers | { error: string } {
+  const stageRaw = String(formData.get("stage") ?? "").trim();
+  const timelineRaw = String(formData.get("timeline") ?? "").trim();
+  if (!isPathStage(stageRaw)) return { error: "Pick where you are in the process." };
+  if (!isPathTimeline(timelineRaw)) return { error: "Pick a timeline." };
+
+  const constraints = formData
+    .getAll("constraints")
+    .map((v) => String(v))
+    .filter((c) => CONSTRAINT_OPTIONS.has(c));
+
+  const blocker = String(formData.get("blocker") ?? "").trim().slice(0, 400);
+  if (!blocker) return { error: "Name the main thing blocking you right now." };
+
+  const resume = String(formData.get("resume_or_projects") ?? "").trim().slice(0, 2000);
+
+  return {
+    stage: stageRaw,
+    timeline: timelineRaw,
+    constraints,
+    target_roles: splitList(String(formData.get("target_roles") ?? "")).map((s) => s.slice(0, 80)),
+    target_companies: splitList(String(formData.get("target_companies") ?? "")).map((s) =>
+      s.slice(0, 80),
+    ),
+    blocker,
+    resume_or_projects: resume || undefined,
+  };
+}
+
+async function runDiagnosis(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  intake: IntakeAnswers,
+  pro: boolean,
+): Promise<{ result: DiagnosisResult } | { overCap: true }> {
+  if (!aiEnabled()) {
+    return { result: heuristicDiagnosis(intake) };
+  }
+
+  const { data: allowed } = await supabase.rpc("use_ai_quota", { p_kind: "intake_diagnosis" });
+  if (!allowed) {
+    // Free: clear upsell. Pro at the abuse ceiling: still finish via heuristic.
+    if (!pro) return { overCap: true };
+    return { result: heuristicDiagnosis(intake) };
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("major, year, profile_school(school)")
+    .eq("id", userId)
+    .maybeSingle();
+
+  const school = profile?.profile_school?.school ?? undefined;
+
+  const prompt = intakeUserPrompt({
+    stage: untrusted(intake.stage),
+    timeline: untrusted(intake.timeline),
+    constraints: untrusted(intake.constraints.join(", ") || "none"),
+    target_roles: untrusted(intake.target_roles.join(", ") || "none"),
+    target_companies: untrusted(intake.target_companies.join(", ") || "none"),
+    blocker: untrusted(intake.blocker),
+    resume_or_projects: untrusted(intake.resume_or_projects ?? "none"),
+    major: profile?.major ? untrusted(profile.major) : undefined,
+    year: profile?.year ? untrusted(profile.year) : undefined,
+    school: school ? untrusted(school) : undefined,
+  });
+
+  const raw = await generateText(INTAKE_DIAGNOSIS_SYSTEM, prompt, {
+    model: modelForTier(pro),
+    maxTokens: 900,
+    temperature: 0.3,
+  });
+
+  return { result: parseDiagnosisJson(raw, intake) };
+}
+
+/**
+ * Struggle-aware intake → AI diagnosis → learner_profiles + path_plans +
+ * path_tasks (+ optional user_projects). Sets onboarded_at and redirects /home.
+ */
+export async function submitPathIntake(
+  _prev: PathIntakeState,
+  formData: FormData,
+): Promise<PathIntakeState> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return [];
+  if (!user) redirect("/login");
+
+  const parsed = parseIntakeForm(formData);
+  if ("error" in parsed) return { error: parsed.error };
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("major, goals, onboarded_at")
+    .select("is_pro, pro_until, onboarded_at")
     .eq("id", user.id)
     .maybeSingle();
-  // skipQuota makes this a free AI call — only the not-yet-onboarded may take
-  // it, or any signed-in user could replay this action as an unmetered search.
-  if (profile?.onboarded_at) return [];
-  const major = profile?.major?.trim() || "";
-  const goals = profile?.goals?.trim() || "";
+  if (!profile) redirect("/login");
 
-  let seed = "";
-  if (major && goals) seed = `students studying ${major} who want ${goals}`;
-  else if (major) seed = `students studying ${major}`;
-  else if (goals) seed = `students who want ${goals}`;
+  const pro = isPro(profile);
+  const diagnosed = await runDiagnosis(supabase, user.id, parsed, pro);
+  if ("overCap" in diagnosed) return { overCap: true };
 
-  if (!seed) {
-    const { data } = await supabase.rpc("get_suggested_profiles", { p_limit: 3 });
-    return (data ?? []).map((r) => ({
-      id: r.id,
-      username: r.username,
-      display_name: r.display_name,
-      avatar_url: r.avatar_url,
-      is_pro: r.is_pro,
-      is_founder: r.is_founder,
-      is_campus_founder: r.is_campus_founder,
-      verified_student: r.verified_student,
-      year: r.year,
-      major: r.major,
-      reason: null,
-    }));
+  const { result } = diagnosed;
+
+  const { data: latest } = await supabase
+    .from("intake_responses")
+    .select("version")
+    .eq("user_id", user.id)
+    .order("version", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const nextVersion = (latest?.version ?? 0) + 1;
+
+  const answers = {
+    stage: parsed.stage,
+    constraints: parsed.constraints,
+    target_roles: parsed.target_roles,
+    target_companies: parsed.target_companies,
+    timeline: parsed.timeline,
+    blocker: parsed.blocker,
+    resume_or_projects: parsed.resume_or_projects ?? null,
+  } satisfies Record<string, unknown>;
+
+  const { data: intakeRow, error: intakeErr } = await supabase
+    .from("intake_responses")
+    .insert({
+      user_id: user.id,
+      version: nextVersion,
+      answers: answers as Json,
+    })
+    .select("id")
+    .single();
+  if (intakeErr || !intakeRow) {
+    return { error: "Could not save your intake. Try again." };
   }
 
-  const state = await peopleSearchCore(supabase, user, seed, { skipQuota: true });
-  const results = (state.results ?? []).slice(0, 3);
-  if (results.length === 0) return [];
+  let skillTrackId: string | null = result.skill_track_id ?? null;
+  if (skillTrackId) {
+    const { data: track } = await supabase
+      .from("skill_tracks")
+      .select("id")
+      .eq("id", skillTrackId)
+      .maybeSingle();
+    if (!track) skillTrackId = null;
+  }
 
-  // peopleSearchCore's result shape has no year/major (see PeopleSearch.tsx,
-  // its only other caller, which doesn't need one) -- one extra lookup here.
-  const { data: extra } = await supabase
+  const { error: learnerErr } = await supabase.from("learner_profiles").upsert(
+    {
+      user_id: user.id,
+      version: nextVersion,
+      diagnosis: result.diagnosis as Json,
+      skill_track_id: skillTrackId,
+      skill_stage_id: result.skill_stage_id ?? null,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id" },
+  );
+  if (learnerErr) {
+    return { error: "Could not save your diagnosis. Try again." };
+  }
+
+  const { error: planErr } = await supabase.from("path_plans").upsert(
+    {
+      user_id: user.id,
+      ui: result.ui as unknown as Json,
+      rationale: result.ui.why,
+      source_intake_id: intakeRow.id,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id" },
+  );
+  if (planErr) {
+    return { error: "Could not save your path. Try again." };
+  }
+
+  // Replace open tasks from prior diagnoses so re-intake stays clean.
+  await supabase
+    .from("path_tasks")
+    .delete()
+    .eq("user_id", user.id)
+    .in("status", ["todo", "doing"]);
+
+  if (result.tasks.length > 0) {
+    const rows = result.tasks.map((t, i) => ({
+      user_id: user.id,
+      module_id: t.module_id,
+      title: t.title,
+      detail: t.detail ?? null,
+      status: "todo",
+      sort_index: i,
+    }));
+    // Plan already saved — don't block onboarding on task insert failure.
+    await supabase.from("path_tasks").insert(rows);
+  }
+
+  if (result.project_slug) {
+    const { data: project } = await supabase
+      .from("path_projects")
+      .select("slug")
+      .eq("slug", result.project_slug)
+      .eq("published", true)
+      .maybeSingle();
+    if (project) {
+      const { data: existing } = await supabase
+        .from("user_projects")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("project_slug", project.slug)
+        .maybeSingle();
+      if (!existing) {
+        await supabase.from("user_projects").insert({
+          user_id: user.id,
+          project_slug: project.slug,
+          status: "assigned",
+          checklist_state: {},
+        });
+      }
+    }
+  }
+
+  await supabase
     .from("profiles")
-    .select("id, year, major")
-    .in("id", results.map((r) => r.id));
-  const extraById = new Map((extra ?? []).map((e) => [e.id, e]));
+    .update({ onboarded_at: new Date().toISOString() })
+    .eq("id", user.id);
 
-  return results.map((r) => ({
-    ...r,
-    year: extraById.get(r.id)?.year ?? null,
-    major: extraById.get(r.id)?.major ?? null,
-  }));
+  redirect("/home");
 }

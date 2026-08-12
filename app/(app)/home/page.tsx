@@ -3,14 +3,13 @@ import PathHome from "@/components/path/PathHome";
 import { pathPlanOrFixture, loadViewerPathPlanUi } from "@/lib/path/load-plan";
 import { getViewer } from "@/lib/viewer";
 
-// Recipe path home (WS3). Reads path_plans.ui when present; falls back to a
-// studio fixture while WS1+WS2 schema/intake are not merged yet.
+// Recipe path home (WS3). Reads path_plans.ui from WS2 intake when present;
+// falls back to a studio fixture for skip-onboarding / missing rows.
 export default async function HomePage() {
   const { supabase, user } = await getViewer();
   if (!user) redirect("/login");
 
-  // WS1+WS2 will wire real path_plans rows. Until then, missing table / RLS /
-  // types must not break the route — catch via loadViewerPathPlanUi → null.
+  // Missing plan → send unfinished users to intake; onboarded skippers get fixture.
   const planFromDb = await loadViewerPathPlanUi(supabase, user.id);
 
   if (!planFromDb) {

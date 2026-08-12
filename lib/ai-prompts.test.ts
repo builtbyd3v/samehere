@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { COMPOSER_SYSTEM, IMPROVE_SYSTEM, untrusted } from "./ai-prompts";
+import {
+  COMPOSER_SYSTEM,
+  IMPROVE_SYSTEM,
+  INTAKE_DIAGNOSIS_SYSTEM,
+  untrusted,
+} from "./ai-prompts";
 
 describe("untrusted", () => {
   it("wraps plain text in ⟦ ⟧", () => {
@@ -28,5 +33,13 @@ describe("COMPOSER_SYSTEM", () => {
 
   it("bans markdown formatting via the shared STYLE contract", () => {
     expect(COMPOSER_SYSTEM).toContain("no markdown formatting");
+  });
+});
+
+describe("INTAKE_DIAGNOSIS_SYSTEM", () => {
+  it("requires strict JSON and the ui_recipe enum", () => {
+    expect(INTAKE_DIAGNOSIS_SYSTEM).toContain("Return ONLY JSON");
+    expect(INTAKE_DIAGNOSIS_SYSTEM).toContain("ops_desk");
+    expect(INTAKE_DIAGNOSIS_SYSTEM).toContain("focus_track");
   });
 });
