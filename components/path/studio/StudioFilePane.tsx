@@ -161,7 +161,7 @@ export default function StudioFilePane({
   editable: boolean;
   saveStatus: SaveStatus;
   saveMessage: string | null;
-  onContentChange: (value: string) => void;
+  onContentChange: (path: string, value: string) => void;
   className?: string;
 }) {
   const tree = useMemo(() => buildFileTree(visibleFiles), [visibleFiles]);

@@ -448,9 +448,7 @@ export default function ProjectStudio({
           editable={isDesktop}
           saveStatus={workspace.saveStatus}
           saveMessage={workspace.saveMessage}
-          onContentChange={(value) =>
-            workspace.updateFileContent(workspace.selectedPath, value)
-          }
+          onContentChange={workspace.updateFileContent}
         />
         <div className="studio-right-rail">
           <p id={sideTabsLabelId} className="sr-only">
