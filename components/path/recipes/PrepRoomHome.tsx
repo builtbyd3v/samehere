@@ -21,7 +21,7 @@ export default function PrepRoomHome({
     : "/prep";
 
   return (
-    <div className="path-recipe path-recipe-prep mx-auto w-full max-w-6xl py-5 md:py-7">
+    <div className="path-recipe path-recipe-prep">
       <PathHero plan={plan} nextTask={nextTask} taskHref={taskHref}>
         <div className="path-hero-listing">
           <p className="landing-demo-meta">

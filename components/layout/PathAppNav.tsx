@@ -83,18 +83,8 @@ export default function PathAppNav({
   const [menuPath, setMenuPath] = useState<string | null>(null);
   const menuOpen = menuPath === pathname;
   const closeMenu = () => setMenuPath(null);
-  const [scrolled, setScrolled] = useState(false);
   const current = activeId(pathname);
   const links = orderLinks(navEmphasis);
-
-  useEffect(() => {
-    function onScroll() {
-      setScrolled(window.scrollY > 8);
-    }
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
@@ -114,9 +104,8 @@ export default function PathAppNav({
         />
       )}
 
-      <header className="landing-nav path-app-nav fixed inset-x-0 top-0 z-50">
+      <header className="landing-nav path-app-nav sticky top-0 z-50">
         <BrandChrome
-          scrolled={scrolled}
           center={
             <nav
               className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 md:flex"

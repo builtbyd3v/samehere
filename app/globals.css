@@ -895,9 +895,14 @@ summary {
   outline-offset: 3px;
 }
 
-/* Authed app shell: landing dark tokens without clipping sticky/scroll. */
+/* Authed app shell: landing dark tokens, viewport-filling workbench. */
 .landing-xai.path-app {
-  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow: hidden;
+  --path-nav-h: 4rem;
   --blue: var(--accent-blue-strong);
   --blue-2: #7ec4ff;
   --blue-glow: var(--accent-blue-soft);
@@ -909,8 +914,33 @@ summary {
   font-weight: 500;
 }
 
+.path-app-nav .brand-chrome-shell {
+  max-width: none;
+}
+
 .path-app-main {
-  min-height: calc(100dvh - 4.5rem);
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  overflow: auto;
+  padding-inline: 1rem;
+}
+
+@media (min-width: 640px) {
+  .path-app-main {
+    padding-inline: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .path-app-main {
+    padding-inline: 2rem;
+  }
+}
+
+.path-app-main:has(> main[data-path-home]),
+.path-app-main:has(> main.project-studio-page) {
+  padding: 0;
 }
 
 .path-app {
@@ -2662,7 +2692,7 @@ summary {
 
 /* Path app · reuse landing-xai chrome with tighter product density ---------- */
 .path-app.landing-xai {
-  overflow: visible;
+  overflow: hidden;
   --blue: var(--accent-blue);
   --blue-glow: var(--accent-blue-soft);
 }
@@ -2758,38 +2788,37 @@ summary {
 .path-command-center {
   position: relative;
   isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: 1rem;
-  background:
-    radial-gradient(circle at 8% 0%, var(--accent-blue-soft), transparent 28rem),
-    var(--surface);
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--ink) 7%, transparent),
-    0 28px 70px -54px color-mix(in srgb, var(--accent-blue) 70%, transparent);
+  border: 0;
+  border-radius: 0;
+  background: var(--canvas);
+  box-shadow: none;
 }
 
 .path-command-center[data-recipe="ops_desk"] {
   background:
     linear-gradient(90deg, var(--accent-blue-soft) 0.22rem, transparent 0.22rem),
-    var(--surface);
+    var(--canvas);
 }
 
 .path-command-center[data-recipe="prep_room"] {
   background:
-    radial-gradient(circle at 92% 14%, var(--accent-blue-soft), transparent 24rem),
-    var(--surface);
+    radial-gradient(circle at 92% 0%, var(--accent-blue-soft), transparent 28rem),
+    var(--canvas);
 }
 
 .path-command-center[data-recipe="focus_track"] {
-  background: var(--surface);
-  box-shadow: 0 36px 90px -64px color-mix(in srgb, var(--accent-blue) 60%, transparent);
+  background: var(--canvas);
+  box-shadow: none;
 }
 
 .path-command-center[data-recipe="network_gap"] {
   background:
-    radial-gradient(circle at 50% -20%, var(--accent-blue-soft), transparent 30rem),
-    var(--surface);
+    radial-gradient(circle at 50% -20%, var(--accent-blue-soft), transparent 32rem),
+    var(--canvas);
 }
 
 .path-command-header {
@@ -2797,7 +2826,7 @@ summary {
   grid-template-columns: minmax(0, 1fr) minmax(16rem, 0.75fr);
   gap: 2rem;
   align-items: end;
-  padding: clamp(1.25rem, 3vw, 2rem);
+  padding: 1rem 1.25rem 0.9rem;
   border-bottom: 1px solid var(--border);
 }
 
@@ -2828,22 +2857,24 @@ summary {
 
 .path-command-grid {
   display: grid;
+  flex: 1 1 auto;
+  min-height: 0;
   grid-template-columns: minmax(0, 1.45fr) minmax(17rem, 0.75fr);
 }
 
 .path-command-recommendation {
   min-width: 0;
-  padding: clamp(1.5rem, 4vw, 3.25rem);
+  padding: 1.25rem 1.5rem 1.5rem;
 }
 
 .path-command-recommendation h1 {
-  max-width: 18ch;
-  margin-top: 0.8rem;
+  max-width: 22ch;
+  margin-top: 0.55rem;
   color: var(--ink);
-  font-size: clamp(2.05rem, 5vw, 3.8rem);
+  font-size: clamp(1.7rem, 3.4vw, 2.6rem);
   font-weight: 500;
-  letter-spacing: -0.055em;
-  line-height: 0.98;
+  letter-spacing: -0.045em;
+  line-height: 1.05;
   text-wrap: balance;
 }
 
@@ -2861,8 +2892,8 @@ summary {
   min-width: 0;
   flex-direction: column;
   border-left: 1px solid var(--border);
-  padding: clamp(1.5rem, 3vw, 2.25rem);
-  background: color-mix(in srgb, var(--surface-raised) 58%, transparent);
+  padding: 1.25rem 1.25rem 1.5rem;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
 }
 
 .path-command-why {
@@ -2999,18 +3030,20 @@ summary {
 .path-workspace-grid {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 1rem;
-  margin-top: 1rem;
+  gap: 1px;
+  margin: 0;
+  border-top: 1px solid var(--border);
+  background: var(--border);
 }
 
 .path-app .path-module-panel.landing-demo-panel,
 .path-ops-switchboard {
   min-height: 0;
-  border: 1px solid var(--border);
-  border-radius: 1rem;
-  padding: clamp(1rem, 2.4vw, 1.5rem);
-  background: var(--surface);
-  box-shadow: 0 18px 44px -42px color-mix(in srgb, var(--ink) 55%, transparent);
+  border: 0;
+  border-radius: 0;
+  padding: 1rem 1.25rem 1.25rem;
+  background: var(--canvas);
+  box-shadow: none;
 }
 
 .path-app .path-module-panel.landing-demo-panel:hover {
@@ -3128,12 +3161,12 @@ summary {
 }
 
 .path-recipe-focus .path-command-recommendation {
-  padding-block: clamp(2rem, 8vw, 5rem);
+  padding-block: 1.75rem;
 }
 
 .path-recipe-focus .path-command-recommendation h1 {
-  max-width: 14ch;
-  font-size: clamp(2.7rem, 8vw, 5.4rem);
+  max-width: 16ch;
+  font-size: clamp(2rem, 5vw, 3.2rem);
 }
 
 .path-recipe-focus .path-command-rationale {
@@ -3174,7 +3207,7 @@ summary {
   .path-command-recommendation h1,
   .path-recipe-focus .path-command-recommendation h1 {
     max-width: 18ch;
-    font-size: clamp(2.1rem, 11vw, 3.25rem);
+    font-size: clamp(1.7rem, 8vw, 2.4rem);
   }
 
   .path-workspace-grid {
@@ -3203,11 +3236,17 @@ summary {
    Wave 1 read-only workspace shell for assigned path projects.
    Append-only: do not alter rules above this section. */
 .path-app-main:has(> main.project-studio-page) {
-  max-width: 1440px;
+  max-width: none;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .path-app main.project-studio-page {
-  max-width: min(100%, 1360px);
+  max-width: none;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
 }
 
 .project-studio {
@@ -4308,3 +4347,108 @@ summary {
     overflow-x: auto;
   }
 }
+
+/* Signed-in workbench: the remaining viewport is the work, not a nested page. */
+.path-recipe {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.path-home-footer {
+  padding: 0.85rem 1.25rem 1.15rem;
+  border-top: 1px solid var(--border);
+}
+
+.path-app main[data-path-home] {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 768px) {
+  .path-command-center {
+    min-height: calc(100dvh - var(--path-nav-h));
+  }
+
+  .path-recipe:has(.path-workspace-grid) .path-command-center {
+    min-height: calc(100dvh - var(--path-nav-h));
+  }
+
+  .project-studio {
+    --studio-panel-h: 100%;
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 0;
+    overflow: auto;
+    gap: 0;
+  }
+
+  .project-studio .studio-toolbar {
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+    border-top: 0;
+  }
+
+  .studio-desktop {
+    flex: 1 0 auto;
+    width: 100%;
+    min-height: calc(100dvh - var(--path-nav-h) - 3.35rem);
+    height: calc(100dvh - var(--path-nav-h) - 3.35rem);
+  }
+
+  .studio-milestone-rail,
+  .studio-file-pane,
+  .studio-right-rail {
+    min-height: 0;
+    height: 100%;
+  }
+
+  .studio-brief.studio-desktop-only {
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 0;
+  }
+}
+
+@media (max-width: 1100px) and (min-width: 768px) {
+  .studio-desktop {
+    height: auto;
+    min-height: calc(100dvh - var(--path-nav-h) - 3.35rem);
+  }
+
+  .studio-right-rail {
+    min-height: 22rem;
+    height: 22rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .path-command-center {
+    min-height: 0;
+  }
+
+  .path-command-header,
+  .path-command-recommendation,
+  .path-command-rationale {
+    padding-inline: 1rem;
+  }
+
+  .project-studio {
+    height: 100%;
+    min-height: 0;
+    overflow: auto;
+    gap: 0.65rem;
+    padding: 0.65rem 0.75rem 1rem;
+  }
+
+  .studio-mobile-tabs {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+}
+
+

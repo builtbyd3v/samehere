@@ -103,13 +103,13 @@ export default function PathHero({
       data-recipe={plan.ui_recipe}
       className="path-command-center"
       aria-label="Your adaptive path"
-      initial={reduced ? false : { opacity: 0, y: 12 }}
+      initial={reduced ? false : { opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 260, damping: 30 }}
     >
       <header className="path-command-header">
         <div>
-          <p className="path-command-kicker">Your adaptive workspace</p>
+          <p className="path-command-kicker">Now</p>
           <p className="path-command-recipe">{recipe.label}</p>
         </div>
         <p className="path-command-context">{recipe.context}</p>

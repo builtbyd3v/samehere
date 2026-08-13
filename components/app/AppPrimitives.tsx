@@ -5,6 +5,7 @@ const WIDTHS = {
   medium: "max-w-2xl",
   wide: "max-w-3xl",
   full: "max-w-[1120px]",
+  canvas: "max-w-none",
 } as const;
 
 export function AppPage({
@@ -16,8 +17,9 @@ export function AppPage({
   width?: keyof typeof WIDTHS;
   className?: string;
 }) {
+  const pad = width === "canvas" ? "flex min-h-0 flex-1 flex-col p-0" : "py-6 md:py-8";
   return (
-    <main className={`page-enter mx-auto w-full ${WIDTHS[width]} py-6 md:py-8 ${className}`}>
+    <main className={`page-enter mx-auto w-full ${WIDTHS[width]} ${pad} ${className}`}>
       {children}
     </main>
   );

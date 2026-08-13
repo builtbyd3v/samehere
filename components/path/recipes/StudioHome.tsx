@@ -23,7 +23,7 @@ export default function StudioHome({
   const skill = context.skillStage;
 
   return (
-    <div className="path-recipe path-recipe-studio mx-auto w-full max-w-6xl py-5 md:py-7">
+    <div className="path-recipe path-recipe-studio">
       <PathHero plan={plan} nextTask={nextTask} taskHref={taskHref}>
         <Link href={project ? `/projects/${project.slug}` : "/home"} className={signupCta}>
           {project ? "Open assigned project" : "Review your path"}

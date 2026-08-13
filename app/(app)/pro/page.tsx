@@ -95,7 +95,7 @@ export default async function ProPage({
   const preferUltra = highlight === "ultra";
 
   return (
-    <main className="page-enter mx-auto max-w-3xl py-8 md:py-10">
+    <main className="page-enter mx-auto max-w-3xl px-4 py-8 md:py-10">
       <div className="mb-6 flex items-center gap-2">
         <IconBolt className="h-5 w-5 text-[var(--accent-blue-strong)]" />
         <h1 className="text-2xl font-medium tracking-[-0.02em] text-[var(--ink)]">Plans</h1>

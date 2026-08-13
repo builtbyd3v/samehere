@@ -25,7 +25,7 @@ async function PathNavUnread(props: {
   return <PathAppNav {...props} dmUnread={dm} />;
 }
 
-// Primer-style app chrome: fixed top path nav (no left rail), full-width content.
+// Workbench chrome: sticky top path nav, remaining viewport is the work.
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const { supabase, user } = await getViewer();
   const profile = await getViewerProfile();
@@ -65,7 +65,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <TabTitleUnread userId={user.id} />
           </Suspense>
         )}
-        <div className="path-app-main mx-auto w-full max-w-[1120px] px-4 pb-16 pt-[4.5rem] sm:px-6 lg:px-8">
+        <div className="path-app-main">
           {children}
         </div>
       </div>

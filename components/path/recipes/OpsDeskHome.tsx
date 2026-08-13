@@ -17,7 +17,7 @@ export default function OpsDeskHome({
   const listingHref = top ? `/jobs/${top.id}` : "/jobs";
 
   return (
-    <div className="path-recipe path-recipe-ops mx-auto w-full max-w-6xl py-5 md:py-7">
+    <div className="path-recipe path-recipe-ops">
       <PathHero plan={plan} nextTask={nextTask} taskHref={taskHref}>
         <div className="landing-opportunity path-hero-listing">
           <div>

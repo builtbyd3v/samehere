@@ -1,6 +1,6 @@
 # samehere zero-to-internship handoff
 
-Last updated: 2026-08-12
+Last updated: 2026-08-13
 
 This document is the starting point for the next implementation chat. It records the product decisions, current branch state, shipped behavior, verification status, known gaps, and the order of work.
 
@@ -28,7 +28,7 @@ Do not restart the product from scratch. Continue the existing branch and preser
 
 - Repository: `https://github.com/builtbyd3v/samehere`
 - Base branch: `feat/zero-to-internship`
-- Working branch: `cursor/z2i-implementation-b75f`
+- Working branch: `cursor/fullscreen-workbench-2b28` (from `cursor/z2i-implementation-b75f`)
 - Draft pull request: `https://github.com/builtbyd3v/samehere/pull/19`
 - Product plan: `ZERO_TO_INTERNSHIP_RESTRUCTURE.md`
 
@@ -287,6 +287,13 @@ Migrated signed-in routes:
 - `/settings`
 
 The signed-in product uses the dark landing-xai visual language.
+
+The signed-in shell is a full-viewport workbench, not a marketing page with an embedded card:
+
+- `app/(app)/layout.tsx` is a `100dvh` column. `PathAppNav` is sticky. `.path-app-main` fills the rest.
+- `/home` and Project Studio use the remaining viewport with no outer max-width and no nested page frame.
+- Document routes (`/jobs`, `/applications`, `/prep`, `/settings`, dossier) keep `AppPage` width caps and scroll inside the main pane.
+- There is no left sidebar. Adaptivity stays in the recommendation, not in extra chrome.
 
 ### Adaptive path home
 
@@ -720,6 +727,17 @@ Reference use:
 - ResuMax remains a flow reference only. Do not copy its score rings, pink/purple glow, roadmap catalog, or resume-first hierarchy.
 
 The visual acceptance test is unchanged: a stranger should infer different user stages from the workspace composition without reading a bio.
+
+### Full-viewport workbench shell
+
+**Done** on 2026-08-13.
+
+Logged-in pages are a tool, not a nested card on a marketing page:
+
+- Sticky top nav. No left sidebar. No `1120px` page frame around `/home` or Studio.
+- The next move fills the remaining desktop viewport. Modules sit below it.
+- Studio editor, files, and preview fill the first screen. Brief and checklist remain below.
+- Mobile stays a single scrolling column with sticky Studio tabs.
 
 ### Project Studio Wave 1
 

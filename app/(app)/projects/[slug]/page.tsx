@@ -45,7 +45,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
 
   if (manifest) {
     return (
-      <AppPage width="full" className="project-studio-page">
+      <AppPage width="canvas" className="project-studio-page">
         <ProjectStudio
           project={project}
           manifest={manifest}

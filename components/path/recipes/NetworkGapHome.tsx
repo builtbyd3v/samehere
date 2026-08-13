@@ -19,7 +19,7 @@ export default function NetworkGapHome({
   const helpers = context.helpers;
   const introHref = helpers[0]?.href ?? "/messages";
   return (
-    <div className="path-recipe path-recipe-network mx-auto w-full max-w-6xl py-5 md:py-7">
+    <div className="path-recipe path-recipe-network">
       <PathHero plan={plan} nextTask={nextTask} taskHref={taskHref}>
         <div className="flex flex-wrap gap-2">
           <Link href={introHref} className={signupCta}>
