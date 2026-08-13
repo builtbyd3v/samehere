@@ -2,9 +2,10 @@
 
 Last updated: 2026-08-12
 
-Status: Wave 1 foundation completed on 2026-08-12. The URL Shortener now has
-a visual read-only Studio, versioned manifest, vendored technology marks, and
-owner-only workspace/file persistence. Wave 2 is next.
+Status: Waves 1 and 2 completed on 2026-08-13. The URL Shortener now has a
+visual Studio, Monaco desktop editing, owner-only revisioned files, and a live
+classic Sandpack UI preview. Backend API/Postgres preview remains Wave 4 and
+requires authenticated Vercel Sandbox access.
 
 ## 1. Product goal
 

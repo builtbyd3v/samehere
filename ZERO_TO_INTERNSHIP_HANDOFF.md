@@ -453,8 +453,8 @@ After Phase 3:
 
 ```text
 npm test
-28 test files passed
-184 tests passed
+29 test files passed
+198 tests passed
 
 npm run typecheck
 passed
@@ -510,6 +510,9 @@ Screenshots:
 /opt/cursor/artifacts/screenshots/z2i_project_studio_desktop.webp
 /opt/cursor/artifacts/screenshots/z2i_project_studio_mobile_final.webp
 /opt/cursor/artifacts/z2i_project_studio_preview.mp4
+/opt/cursor/artifacts/screenshots/z2i_project_studio_monaco_final.webp
+/opt/cursor/artifacts/screenshots/z2i_project_studio_monaco_mobile_final.webp
+/opt/cursor/artifacts/z2i_monaco_live_preview_clean.mp4
 ```
 
 ## 10. Known gaps and risks
@@ -738,9 +741,24 @@ The visual acceptance test is unchanged: a stranger should infer different user 
 - Rolled-back live checks passed for owner access, cross-user denial, forged
   ownership, path validation, and anonymous denial.
 
-Wave 2 adds Monaco, canonical file checkpoints, and one deliberately
-browser-compatible React/TypeScript pilot. Existing Next.js/PostgreSQL projects
-must not run through classic Sandpack.
+Wave 2 is also complete:
+
+- Desktop uses Monaco with TypeScript syntax coloring, line numbers, separate
+  URI-bound models, formatting, and accessible editing.
+- Owner files autosave with optimistic workspace/file revisions and visible
+  Saved, Saving, Not saved, and Conflict states.
+- File switching and hard refresh no longer route a stale model into another
+  path.
+- `app/page.tsx` drives a real classic Sandpack React/TypeScript UI preview.
+  Settled source remounts the provider so live edits reliably recompile.
+- Preview clearly remains UI-only for `remote_node`; backend API and PostgreSQL
+  execution still require Vercel Sandbox.
+- Mobile never mounts Monaco. Code is read-only and the UI preview remains
+  available.
+
+Wave 4 remote runtime is blocked in this environment until Vercel MCP/OIDC is
+authenticated. Existing Next.js/PostgreSQL projects must not be represented as
+fully running through classic Sandpack.
 
 ### Phase 4: close automatic re-diagnosis triggers
 
