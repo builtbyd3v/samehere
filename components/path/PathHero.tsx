@@ -1,7 +1,4 @@
-"use client";
-
 import type { ReactNode } from "react";
-import { motion, useReducedMotion } from "motion/react";
 import type { PathTaskSummary } from "@/lib/path/load-home-data";
 import type { PathPlanUi, UiRecipe } from "@/lib/path/types";
 import PathTaskAction from "./PathTaskAction";
@@ -92,20 +89,16 @@ export default function PathHero({
   const stageIndex = RECIPE_STAGE[plan.ui_recipe];
   const modifier = modifierFor(plan);
   const recipe = RECIPE_COPY[plan.ui_recipe];
-  const reduced = useReducedMotion();
   const moveTitle = nextTask?.title ?? plan.headline;
   const moveDetail = nextTask?.detail ?? plan.why;
+  const stageProgress = `${(stageIndex / (STAGES.length - 1)) * 100}%`;
 
   return (
-    <motion.article
-      key={plan.ui_recipe}
+    <article
       data-tone={plan.tone}
       data-recipe={plan.ui_recipe}
       className="path-command-center"
       aria-label="Your adaptive path"
-      initial={reduced ? false : { opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 260, damping: 30 }}
     >
       <header className="path-command-header">
         <div>
@@ -137,11 +130,7 @@ export default function PathHero({
 
           <div className="path-stage-rail" aria-label={`Current path stage: ${STAGES[stageIndex]}`}>
             <div className="path-stage-track" aria-hidden>
-              <motion.span
-                initial={false}
-                animate={{ scaleX: stageIndex / (STAGES.length - 1) }}
-                transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 240, damping: 30 }}
-              />
+              <span style={{ width: stageProgress }} />
             </div>
             <div className="path-stage-labels">
               {STAGES.map((stage, index) => (
@@ -158,6 +147,6 @@ export default function PathHero({
           </div>
         </aside>
       </div>
-    </motion.article>
+    </article>
   );
 }

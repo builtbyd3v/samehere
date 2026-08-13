@@ -938,9 +938,11 @@ summary {
   }
 }
 
-.path-app-main:has(> main[data-path-home]),
-.path-app-main:has(> main.project-studio-page) {
+.path-app-main:has(> main[data-path-home]) {
   padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .path-app {
@@ -2791,7 +2793,7 @@ summary {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  overflow: hidden;
+  overflow: visible;
   border: 0;
   border-radius: 0;
   background: var(--canvas);
@@ -2857,8 +2859,6 @@ summary {
 
 .path-command-grid {
   display: grid;
-  flex: 1 1 auto;
-  min-height: 0;
   grid-template-columns: minmax(0, 1.45fr) minmax(17rem, 0.75fr);
 }
 
@@ -2918,9 +2918,7 @@ summary {
 
 .path-stage-track > span {
   display: block;
-  width: 100%;
   height: 100%;
-  transform-origin: left center;
   border-radius: inherit;
   background: var(--accent-blue-strong);
 }
@@ -3237,6 +3235,7 @@ summary {
    Append-only: do not alter rules above this section. */
 .path-app-main:has(> main.project-studio-page) {
   max-width: none;
+  padding: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -4352,29 +4351,40 @@ summary {
 .path-recipe {
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
   min-height: 0;
+  overflow: hidden;
 }
 
 .path-home-footer {
+  flex: 0 0 auto;
   padding: 0.85rem 1.25rem 1.15rem;
   border-top: 1px solid var(--border);
 }
 
 .path-app main[data-path-home] {
-  min-height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+}
+
+.path-command-center {
+  flex: 0 0 auto;
+}
+
+.path-recipe:not(:has(.path-workspace-grid)) .path-command-center {
+  flex: 1 1 auto;
+}
+
+.path-workspace-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
 }
 
 @media (min-width: 768px) {
-  .path-command-center {
-    min-height: calc(100dvh - var(--path-nav-h));
-  }
-
-  .path-recipe:has(.path-workspace-grid) .path-command-center {
-    min-height: calc(100dvh - var(--path-nav-h));
-  }
-
   .project-studio {
     --studio-panel-h: 100%;
     flex: 1 1 auto;
@@ -4426,8 +4436,21 @@ summary {
 }
 
 @media (max-width: 767px) {
+  .path-app-main:has(> main[data-path-home]),
+  .path-app main[data-path-home],
+  .path-recipe {
+    overflow: auto;
+    height: auto;
+  }
+
   .path-command-center {
     min-height: 0;
+    flex: 0 0 auto;
+  }
+
+  .path-workspace-grid {
+    flex: 0 0 auto;
+    overflow: visible;
   }
 
   .path-command-header,
