@@ -1,31 +1,9 @@
 import type { ReactNode } from "react";
 import type { PathTaskSummary } from "@/lib/path/load-home-data";
+import { RECIPE_COPY } from "@/lib/path/recipe-copy";
 import type { PathPlanUi, UiRecipe } from "@/lib/path/types";
 import PathTaskAction from "./PathTaskAction";
 import PathTaskFeedback from "./PathTaskFeedback";
-
-const RECIPE_COPY: Record<UiRecipe, { label: string; context: string }> = {
-  studio: {
-    label: "Build studio",
-    context: "Your path is prioritizing proof you can explain in an interview.",
-  },
-  ops_desk: {
-    label: "Application desk",
-    context: "Your path is prioritizing a smaller set of applications worth finishing.",
-  },
-  prep_room: {
-    label: "Interview room",
-    context: "Your live interview stays ahead of new listings and project work.",
-  },
-  focus_track: {
-    label: "Focus track",
-    context: "Secondary work is muted until this one move is out of the way.",
-  },
-  network_gap: {
-    label: "Warm intro desk",
-    context: "Your path is prioritizing useful conversations at target companies.",
-  },
-};
 
 /** Build=0, Apply=1, Prepare=2 — matches landing PathSystem track. */
 const RECIPE_STAGE: Record<UiRecipe, 0 | 1 | 2> = {
@@ -110,18 +88,23 @@ export default function PathHero({
 
       <div className="path-command-grid">
         <section className="path-command-recommendation" aria-labelledby="path-next-move">
-          <p className="path-command-label">Next move</p>
-          <h1 id="path-next-move">{moveTitle}</h1>
-          <p className="path-command-detail">{moveDetail}</p>
+          {/* Keyed so a re-diagnosed move visibly swaps in. Feedback stays
+              mounted below to keep the "path updated" notice readable. */}
+          <div key={nextTask?.id ?? moveTitle} className="path-move-swap">
+            <p className="path-command-label">Next move</p>
+            <h1 id="path-next-move">{moveTitle}</h1>
+            <p className="path-command-detail">{moveDetail}</p>
 
-          {nextTask && taskHref ? (
-            <div className="path-hero-actions">
-              <PathTaskAction taskId={nextTask.id} href={taskHref} status={nextTask.status} />
-              <PathTaskFeedback key={nextTask.id} taskId={nextTask.id} />
-            </div>
-          ) : children ? (
-            <div className="path-hero-actions">{children}</div>
-          ) : null}
+            {nextTask && taskHref ? (
+              <div className="path-hero-actions">
+                <PathTaskAction taskId={nextTask.id} href={taskHref} status={nextTask.status} />
+              </div>
+            ) : children ? (
+              <div className="path-hero-actions">{children}</div>
+            ) : null}
+          </div>
+
+          {nextTask ? <PathTaskFeedback taskId={nextTask.id} /> : null}
         </section>
 
         <aside className="path-command-rationale" aria-label="Why the path changed">

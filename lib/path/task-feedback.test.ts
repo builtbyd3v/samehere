@@ -4,10 +4,12 @@ import type { ModuleId } from "./types";
 import {
   PATH_FEEDBACK_OUTCOMES,
   adaptDiagnosisToPathFeedback,
+  describePathShift,
   formatPathFeedbackMemory,
   isPathFeedbackOutcome,
   parsePathFeedbackMemoryEntry,
   type PathFeedbackMemoryEntry,
+  type PathShift,
 } from "./task-feedback";
 
 const baseResult: DiagnosisResult = {
@@ -263,5 +265,52 @@ describe("adaptDiagnosisToPathFeedback", () => {
         ),
       ),
     ).toBe(false);
+  });
+});
+
+describe("describePathShift", () => {
+  const baseShift: PathShift = {
+    outcome: "helped",
+    previousTitle: "Move one application forward",
+    nextTitle: "Practice the next interview question",
+    recipe: "prep_room",
+    recipeChanged: false,
+    why: "Your interview is the nearest deadline.",
+  };
+
+  it("acknowledges a helped move and names the next one", () => {
+    const view = describePathShift(baseShift);
+    expect(view.lead).toBe('"Move one application forward" is done.');
+    expect(view.next).toBe("Next: Practice the next interview question");
+    expect(view.why).toBe("Your interview is the nearest deadline.");
+  });
+
+  it("says a dropped move will not come back", () => {
+    const view = describePathShift({ ...baseShift, outcome: "not_relevant" });
+    expect(view.lead).toBe(
+      'Dropped "Move one application forward". It won\'t come back.',
+    );
+  });
+
+  it("explains a stuck re-plan and a workspace switch", () => {
+    const view = describePathShift({
+      ...baseShift,
+      outcome: "stuck",
+      recipeChanged: true,
+    });
+    expect(view.lead).toBe("Re-planned around your blocker.");
+    expect(view.next).toBe(
+      "Next: Practice the next interview question. Your workspace switched to Interview room.",
+    );
+  });
+
+  it("handles an empty queue and a missing why", () => {
+    const view = describePathShift({
+      ...baseShift,
+      nextTitle: null,
+      why: null,
+    });
+    expect(view.next).toBe("Your path is up to date. Nothing else is queued.");
+    expect(view.why).toBeNull();
   });
 });

@@ -1,5 +1,6 @@
 import type { DiagnosisResult, DiagnosisTask } from "./diagnose";
-import type { ModuleId } from "./types";
+import { RECIPE_COPY } from "./recipe-copy";
+import type { ModuleId, UiRecipe } from "./types";
 
 export const PATH_FEEDBACK_OUTCOMES = [
   "helped",
@@ -282,6 +283,47 @@ function fallbackTask(
 
 function appendUnique(values: readonly string[], value: string): string[] {
   return values.includes(value) ? [...values] : [...values, value];
+}
+
+/** What visibly changed after a feedback submission. Returned to the client. */
+export type PathShift = {
+  outcome: PathFeedbackOutcome;
+  previousTitle: string;
+  nextTitle: string | null;
+  recipe: UiRecipe | null;
+  recipeChanged: boolean;
+  why: string | null;
+};
+
+const SHIFT_LEAD: Record<PathFeedbackOutcome, (previousTitle: string) => string> = {
+  helped: (title) => `"${title}" is done.`,
+  not_relevant: (title) => `Dropped "${title}". It won't come back.`,
+  stuck: () => "Re-planned around your blocker.",
+};
+
+/**
+ * Human sentences for the in-place "your path changed" notice.
+ * Pure so the client and tests share one source of copy.
+ */
+export function describePathShift(shift: PathShift): {
+  lead: string;
+  next: string | null;
+  why: string | null;
+} {
+  const lead = SHIFT_LEAD[shift.outcome](cleanText(shift.previousTitle, 160));
+
+  let next: string | null = null;
+  if (shift.nextTitle) {
+    next = `Next: ${cleanText(shift.nextTitle, 160)}`;
+    if (shift.recipeChanged && shift.recipe) {
+      next += `. Your workspace switched to ${RECIPE_COPY[shift.recipe].label}.`;
+    }
+  } else {
+    next = "Your path is up to date. Nothing else is queued.";
+  }
+
+  const why = shift.why ? cleanText(shift.why, 240) : null;
+  return { lead, next, why };
 }
 
 /**

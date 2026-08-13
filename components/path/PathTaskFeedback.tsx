@@ -4,17 +4,46 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { submitPathTaskFeedback } from "@/app/(app)/home/actions";
-import type { PathFeedbackOutcome } from "@/lib/path/task-feedback";
+import {
+  describePathShift,
+  type PathFeedbackOutcome,
+  type PathShift,
+} from "@/lib/path/task-feedback";
+
+function ShiftNotice({ shift }: { shift: PathShift }) {
+  const { lead, next, why } = describePathShift(shift);
+  return (
+    <div className="path-shift-notice" role="status" aria-live="polite">
+      <p className="path-shift-lead">
+        <span className="path-shift-kicker">Path updated</span>
+        {lead}
+      </p>
+      {next ? <p className="path-shift-next">{next}</p> : null}
+      {why ? <p className="path-shift-why">{why}</p> : null}
+    </div>
+  );
+}
 
 export default function PathTaskFeedback({ taskId }: { taskId: string }) {
   const router = useRouter();
   const [showStuckForm, setShowStuckForm] = useState(false);
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [shift, setShift] = useState<PathShift | null>(null);
   const [pendingOutcome, setPendingOutcome] =
     useState<PathFeedbackOutcome | null>(null);
   const [pending, startTransition] = useTransition();
   const reduced = useReducedMotion();
+
+  // Reset the form when the move changes, but keep the shift notice so the
+  // learner can read what just happened to their path.
+  const [lastTaskId, setLastTaskId] = useState(taskId);
+  if (taskId !== lastTaskId) {
+    setLastTaskId(taskId);
+    setShowStuckForm(false);
+    setNote("");
+    setError(null);
+  }
 
   function submit(outcome: PathFeedbackOutcome) {
     setError(null);
@@ -32,6 +61,7 @@ export default function PathTaskFeedback({ taskId }: { taskId: string }) {
         }
         setShowStuckForm(false);
         setNote("");
+        setShift(result.shift ?? null);
         router.refresh();
       } catch {
         setError("Could not save your feedback. Try again.");
@@ -49,6 +79,19 @@ export default function PathTaskFeedback({ taskId }: { taskId: string }) {
 
   return (
     <div className="path-feedback">
+      <AnimatePresence initial={false}>
+        {shift ? (
+          <motion.div
+            key={`shift-${shift.outcome}-${shift.nextTitle ?? "none"}`}
+            initial={reduced ? { opacity: 1 } : { opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+          >
+            <ShiftNotice shift={shift} />
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
       <div className="path-feedback-heading">
         <p>Did this move fit?</p>
         <span>Your answer reshapes the next one.</span>

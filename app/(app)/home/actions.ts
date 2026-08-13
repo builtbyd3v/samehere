@@ -1,10 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { loadViewerPathPlanUi } from "@/lib/path/load-plan";
 import { rediagnoseUser } from "@/lib/path/rediagnose";
 import {
   isPathFeedbackOutcome,
   type PathFeedbackOutcome,
+  type PathShift,
 } from "@/lib/path/task-feedback";
 import { createClient } from "@/lib/supabase/server";
 
@@ -14,6 +16,7 @@ const UUID_RE =
 type PathTaskFeedbackActionResult = {
   error?: string;
   success?: true;
+  shift?: PathShift;
 };
 
 export async function startPathTask(taskId: string): Promise<{ error?: string }> {
@@ -57,7 +60,7 @@ export async function submitPathTaskFeedback(
 
   const { data: task, error: taskError } = await supabase
     .from("path_tasks")
-    .select("id")
+    .select("id, title")
     .eq("id", taskId)
     .eq("user_id", user.id)
     .in("status", ["todo", "doing"])
@@ -65,6 +68,8 @@ export async function submitPathTaskFeedback(
 
   if (taskError) return { error: "Could not check this task. Try again." };
   if (!task) return { error: "This task is no longer active." };
+
+  const priorPlan = await loadViewerPathPlanUi(supabase, user.id);
 
   const blockerNote =
     outcome === "stuck" && typeof note === "string" ? note.trim().slice(0, 400) : "";
@@ -113,6 +118,29 @@ export async function submitPathTaskFeedback(
     // The feedback and task status are already saved. Path refresh is best-effort.
   }
 
+  // What the learner should see change, in place, without hunting for it.
+  const [nextPlan, { data: nextTask }] = await Promise.all([
+    loadViewerPathPlanUi(supabase, user.id),
+    supabase
+      .from("path_tasks")
+      .select("title")
+      .eq("user_id", user.id)
+      .in("status", ["todo", "doing"])
+      .order("sort_index", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+
+  const shift: PathShift = {
+    outcome,
+    previousTitle: task.title,
+    nextTitle: nextTask?.title ?? null,
+    recipe: nextPlan?.ui_recipe ?? null,
+    recipeChanged:
+      !!priorPlan && !!nextPlan && priorPlan.ui_recipe !== nextPlan.ui_recipe,
+    why: nextPlan?.why ?? null,
+  };
+
   revalidatePath("/home");
-  return { success: true };
+  return { success: true, shift };
 }

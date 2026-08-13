@@ -4435,6 +4435,130 @@ summary {
   }
 }
 
+/* Visible path reactions -----------------------------------------------------
+   The move swaps in place after feedback; the notice explains why. */
+.path-shift-notice {
+  margin-bottom: 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--accent-blue) 40%, var(--border));
+  border-radius: 0.7rem;
+  padding: 0.75rem 0.9rem;
+  background:
+    linear-gradient(90deg, var(--accent-blue-soft), transparent 65%),
+    var(--surface);
+}
+
+.path-shift-kicker {
+  display: inline-block;
+  margin-right: 0.55rem;
+  color: var(--accent-blue-strong);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.path-shift-lead {
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.path-shift-next {
+  margin-top: 0.3rem;
+  color: var(--ink);
+  font-size: 0.8rem;
+}
+
+.path-shift-why {
+  margin-top: 0.25rem;
+  color: var(--ink-muted);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+@keyframes path-move-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes path-module-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .path-move-swap {
+    animation: path-move-in 320ms var(--ease-out) both;
+  }
+
+  .path-workspace-grid > * {
+    animation: path-module-in 380ms var(--ease-out) both;
+  }
+
+  .path-workspace-grid > *:nth-child(2) {
+    animation-delay: 70ms;
+  }
+
+  .path-workspace-grid > *:nth-child(3) {
+    animation-delay: 140ms;
+  }
+
+  .path-workspace-grid > *:nth-child(4) {
+    animation-delay: 210ms;
+  }
+
+  .path-stage-track > span {
+    transition: width 600ms var(--ease-out);
+  }
+
+  .path-app .path-module-panel.landing-demo-panel,
+  .path-ops-switchboard {
+    transition: background-color 200ms var(--ease-out);
+  }
+}
+
+.path-app .path-module-panel.landing-demo-panel:hover,
+.path-ops-switchboard:hover {
+  background: color-mix(in srgb, var(--featured-surface) 70%, var(--canvas));
+}
+
+.path-feedback-choice:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+/* Interior segmented control replaces the hand-rolled studio tab pills. */
+.studio-seg-tabs.studio-side-tabs,
+.studio-seg-tabs.studio-mobile-tabs {
+  display: block;
+  border: 0;
+  border-radius: 0;
+  padding: 0.35rem;
+  background: color-mix(in srgb, var(--surface-raised) 70%, transparent);
+}
+
+.studio-seg-tabs.studio-mobile-tabs {
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  background: var(--surface);
+}
+
+.studio-seg-tabs [role="radiogroup"] {
+  display: block;
+  width: 100%;
+}
+
 @media (max-width: 767px) {
   .path-app-main:has(> main[data-path-home]),
   .path-app main[data-path-home],

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useId, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
+import { SegmentedControl } from "@/components/interior/SegmentedControl";
 import { TechIcon } from "@/components/tech";
 import ProjectChecklist from "@/components/path/ProjectChecklist";
 import StudioFilePane from "@/components/path/studio/StudioFilePane";
@@ -205,62 +206,22 @@ function BriefDetails({ project }: { project: PathProject }) {
 function SideTabs({
   active,
   onChange,
-  labelledBy,
 }: {
   active: SideTab;
   onChange: (tab: SideTab) => void;
-  labelledBy: string;
 }) {
-  const tabs: { id: SideTab; label: string }[] = [
-    { id: "preview", label: "Preview" },
-    { id: "tests", label: "Tests" },
-  ];
-
-  function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
-    const index = tabs.findIndex((tab) => tab.id === active);
-    if (index < 0) return;
-    let next = index;
-    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
-      next = (index + 1) % tabs.length;
-    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
-      next = (index - 1 + tabs.length) % tabs.length;
-    } else if (event.key === "Home") {
-      next = 0;
-    } else if (event.key === "End") {
-      next = tabs.length - 1;
-    } else {
-      return;
-    }
-    event.preventDefault();
-    onChange(tabs[next]!.id);
-  }
-
   return (
-    <div
-      className="studio-side-tabs"
-      role="tablist"
-      aria-labelledby={labelledBy}
-      onKeyDown={onKeyDown}
-    >
-      {tabs.map((tab) => {
-        const selected = active === tab.id;
-        return (
-          <button
-            key={tab.id}
-            type="button"
-            role="tab"
-            id={`studio-side-tab-${tab.id}`}
-            aria-selected={selected}
-            aria-controls={`studio-side-panel-${tab.id}`}
-            tabIndex={selected ? 0 : -1}
-            className="studio-side-tab"
-            data-active={selected ? "true" : "false"}
-            onClick={() => onChange(tab.id)}
-          >
-            {tab.label}
-          </button>
-        );
-      })}
+    <div className="studio-side-tabs studio-seg-tabs">
+      <SegmentedControl
+        options={[
+          { value: "preview", label: "Preview" },
+          { value: "tests", label: "Tests" },
+        ]}
+        label="Preview and tests"
+        value={active}
+        onValueChange={(value) => onChange(value as SideTab)}
+        className="w-full !block"
+      />
     </div>
   );
 }
@@ -268,61 +229,29 @@ function SideTabs({
 function MobileTabList({
   active,
   onChange,
-  labelledBy,
 }: {
   active: MobileTab;
   onChange: (tab: MobileTab) => void;
-  labelledBy: string;
 }) {
-  function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
-    const index = MOBILE_TABS.findIndex((tab) => tab.id === active);
-    if (index < 0) return;
-    let next = index;
-    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
-      next = (index + 1) % MOBILE_TABS.length;
-    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
-      next = (index - 1 + MOBILE_TABS.length) % MOBILE_TABS.length;
-    } else if (event.key === "Home") {
-      next = 0;
-    } else if (event.key === "End") {
-      next = MOBILE_TABS.length - 1;
-    } else {
-      return;
-    }
-    event.preventDefault();
-    onChange(MOBILE_TABS[next]!.id);
-  }
-
   return (
-    <div
-      className="studio-mobile-tabs"
-      role="tablist"
-      aria-labelledby={labelledBy}
-      onKeyDown={onKeyDown}
-    >
-      {MOBILE_TABS.map((tab) => {
-        const selected = active === tab.id;
-        const controls = tab.id === "evidence" ? "build-checklist" : `studio-panel-${tab.id}`;
-        return (
-          <button
-            key={tab.id}
-            type="button"
-            role="tab"
-            id={`studio-tab-${tab.id}`}
-            aria-selected={selected}
-            aria-controls={controls}
-            tabIndex={selected ? 0 : -1}
-            className="studio-mobile-tab"
-            data-active={selected ? "true" : "false"}
-            onClick={() => onChange(tab.id)}
-          >
-            {tab.label}
-          </button>
-        );
-      })}
+    <div className="studio-mobile-tabs studio-seg-tabs">
+      <SegmentedControl
+        options={MOBILE_TABS.map((tab) => ({ value: tab.id, label: tab.label }))}
+        label="Studio sections"
+        value={active}
+        onValueChange={(value) => onChange(value as MobileTab)}
+        className="w-full !block"
+      />
     </div>
   );
 }
+
+const MOBILE_PANEL_LABELS: Record<MobileTab, string> = {
+  build: "Build",
+  files: "Files",
+  preview: "Preview",
+  evidence: "Evidence",
+};
 
 function MobilePanel({
   id,
@@ -336,9 +265,9 @@ function MobilePanel({
   const selected = active === id;
   return (
     <div
-      role="tabpanel"
+      role="region"
       id={`studio-panel-${id}`}
-      aria-labelledby={`studio-tab-${id}`}
+      aria-label={MOBILE_PANEL_LABELS[id]}
       hidden={!selected}
       className="studio-mobile-panel"
     >
@@ -365,8 +294,6 @@ export default function ProjectStudio({
   workspaceSnapshot?: ProjectWorkspaceSnapshot | null;
 }) {
   const titleId = useId();
-  const tabsLabelId = useId();
-  const sideTabsLabelId = useId();
   const [checklistState, setChecklistState] = useState<Record<string, boolean>>(
     () => initialDone ?? {},
   );
@@ -451,14 +378,11 @@ export default function ProjectStudio({
           onContentChange={workspace.updateFileContent}
         />
         <div className="studio-right-rail">
-          <p id={sideTabsLabelId} className="sr-only">
-            Preview and tests
-          </p>
-          <SideTabs active={sideTab} onChange={setSideTab} labelledBy={sideTabsLabelId} />
+          <SideTabs active={sideTab} onChange={setSideTab} />
           <div
-            role="tabpanel"
+            role="region"
             id="studio-side-panel-preview"
-            aria-labelledby="studio-side-tab-preview"
+            aria-label="Preview"
             hidden={sideTab !== "preview"}
             className="studio-side-panel"
           >
@@ -470,9 +394,9 @@ export default function ProjectStudio({
             ) : null}
           </div>
           <div
-            role="tabpanel"
+            role="region"
             id="studio-side-panel-tests"
-            aria-labelledby="studio-side-tab-tests"
+            aria-label="Tests"
             hidden={sideTab !== "tests"}
             className="studio-side-panel"
           >
@@ -489,10 +413,7 @@ export default function ProjectStudio({
       </aside>
 
       <div className="studio-mobile">
-        <p id={tabsLabelId} className="sr-only">
-          Studio sections
-        </p>
-        <MobileTabList active={mobileTab} onChange={setMobileTab} labelledBy={tabsLabelId} />
+        <MobileTabList active={mobileTab} onChange={setMobileTab} />
         <MobilePanel id="build" active={mobileTab}>
           <MilestoneRail
             milestones={manifest.milestones}
