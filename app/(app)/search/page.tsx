@@ -1,25 +1,33 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { FeedSearchResults } from "@/components/feed/FeedSearch";
-import PeopleSearch from "@/components/feed/PeopleSearch";
 import FeedTimeline from "@/components/feed/FeedTimeline";
-import ClubCard from "@/components/community/ClubCard";
 import EmptyState from "@/components/ui/EmptyState";
 import SearchBar from "@/components/search/SearchBar";
-import { isPro } from "@/lib/pro";
-import { tokensFor, searchPosts, searchClubs } from "@/lib/search";
+import {
+  SEARCH_PAGE,
+  tokensFor,
+  searchPosts,
+  searchProjects,
+  parseSearchPage,
+  searchPageOffset,
+  searchHref,
+  nextSearchOffset,
+} from "@/lib/search";
 
 const POSTS_PREVIEW = 3;
-const CLUBS_CAP = 6;
 
 export default async function SearchPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; mode?: string }>;
+  searchParams: Promise<{ q?: string; peoplePage?: string; projectPage?: string }>;
 }) {
   const params = await searchParams;
   const q = (params.q ?? "").trim();
-  const smart = params.mode === "smart";
+  const peoplePage = parseSearchPage(params.peoplePage);
+  const peopleOffset = searchPageOffset(peoplePage);
+  const projectPage = parseSearchPage(params.projectPage);
+  const projectOffset = searchPageOffset(projectPage);
 
   const supabase = await createClient();
   const {
@@ -27,37 +35,74 @@ export default async function SearchPage({
   } = await supabase.auth.getUser();
   const viewerId = user?.id ?? null;
 
-  if (!q) {
+  if (!q || !tokensFor(q).length) {
     return (
       <main className="page-enter mx-auto max-w-2xl px-4 py-8">
         <SearchBar />
-        <EmptyState title="Search people, posts, and clubs" />
+        <EmptyState title="Search people, projects, and posts" />
       </main>
     );
   }
 
-  const tokens = tokensFor(q);
-  const [{ data: profile }, posts, clubs] = await Promise.all([
-    user ? supabase.from("profiles").select("is_pro, pro_until").eq("id", user.id).single() : Promise.resolve({ data: null }),
-    // Fetch one past the preview so we know whether to offer "Show more posts".
-    searchPosts(supabase, tokens, POSTS_PREVIEW + 1),
-    searchClubs(supabase, tokens, CLUBS_CAP),
+  const [posts, projects] = await Promise.all([
+    searchPosts(supabase, q, POSTS_PREVIEW + 1),
+    searchProjects(supabase, q, SEARCH_PAGE, projectOffset),
   ]);
-  const pro = isPro(profile ?? { is_pro: false, pro_until: null });
 
   const hasMorePosts = posts.length > POSTS_PREVIEW;
+  const hasMoreProjects = projects.length === SEARCH_PAGE && nextSearchOffset(projectOffset) != null;
   const postItems = posts
     .slice(0, POSTS_PREVIEW)
     .map((post) => ({ kind: "post" as const, created_at: post.created_at, post }));
+  const showProjects = projects.length > 0 || projectPage > 1;
+
+  const peopleBlock = (
+    <FeedSearchResults q={q} page={peoplePage} offset={peopleOffset} projectPage={projectPage} />
+  );
 
   return (
     <main className="page-enter mx-auto max-w-2xl px-4 py-8">
-      <SearchBar initialQuery={q} initialSmart={smart} />
+      <SearchBar initialQuery={q} />
 
       <section className="mt-6">
         <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">People</h2>
-        <PeopleSearch isPro={pro} initialQuery={q} initialSmart={smart} keyword={<FeedSearchResults q={q} />} />
+        {peopleBlock}
       </section>
+
+      {showProjects && (
+        <section className="mt-6">
+          <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">Projects</h2>
+          {projects.length > 0 ? (
+            <ul className="flex flex-col gap-2">
+              {projects.map((p) => (
+                <li key={p.id}>
+                  <Link href={`/profile/${p.owner_username}`} className="card card-hover block px-3 py-2.5">
+                    <p className="font-medium text-[var(--ink)]">{p.title}</p>
+                    {p.summary && <p className="mt-0.5 text-sm text-[var(--ink-muted)]">{p.summary}</p>}
+                    <p className="mt-1 text-xs text-[var(--ink-faint)]">@{p.owner_username}</p>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-[var(--ink-muted)]">No more projects for this query.</p>
+          )}
+          {(projectPage > 1 || hasMoreProjects) && (
+            <div className="mt-3 flex items-center gap-3 text-sm">
+              {projectPage > 1 && (
+                <Link href={searchHref({ q, peoplePage, projectPage: projectPage - 1 })} className="text-[var(--ink-muted)] underline hover:text-[var(--ink)]">
+                  Previous
+                </Link>
+              )}
+              {hasMoreProjects && (
+                <Link href={searchHref({ q, peoplePage, projectPage: projectPage + 1 })} className="text-[var(--ink-muted)] underline hover:text-[var(--ink)]">
+                  Next
+                </Link>
+              )}
+            </div>
+          )}
+        </section>
+      )}
 
       {postItems.length > 0 && (
         <section className="mt-6">
@@ -73,17 +118,6 @@ export default async function SearchPage({
               Show more posts
             </Link>
           )}
-        </section>
-      )}
-
-      {clubs.length > 0 && (
-        <section className="mt-6">
-          <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">Clubs ({clubs.length})</h2>
-          <div className="flex flex-col gap-2">
-            {clubs.map((club) => (
-              <ClubCard key={club.id} club={club} />
-            ))}
-          </div>
         </section>
       )}
     </main>

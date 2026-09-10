@@ -5,17 +5,43 @@ import { TEXT_LIMITS } from "@/lib/utils/validation";
 
 type SupabaseServer = Awaited<ReturnType<typeof createClient>>;
 
-export type ClubResult = {
+export const SEARCH_PAGE = 20;
+/** PostgreSQL integer max — RPC offsets are int4. */
+export const PG_INT4_MAX = 2_147_483_647;
+/** Largest 1-based page whose offset still fits in int4. */
+export const SEARCH_PAGE_MAX = Math.floor(PG_INT4_MAX / SEARCH_PAGE) + 1;
+
+export type SearchPerson = {
   id: string;
-  slug: string;
-  name: string;
-  purpose: string | null;
+  username: string;
+  display_name: string | null;
   avatar_url: string | null;
-  is_verified: boolean;
+  is_pro: boolean;
+  is_founder: boolean;
+  is_campus_founder: boolean;
+  verified_student: boolean;
+  open_to: string[] | null;
 };
 
-// Same sanitizer as searchProfiles/peopleSearch: strips PostgREST-unsafe chars,
-// then allowlists [a-z0-9] per token so nothing user-typed reaches .or() raw.
+export type SearchProject = {
+  id: string;
+  owner_id: string;
+  owner_username: string;
+  title: string;
+  summary: string | null;
+  technologies: string[];
+  published_at: string;
+};
+
+export type SearchRankRow = {
+  exact: boolean;
+  termHits: number;
+  createdAt: string;
+  id: string;
+};
+
+// Same sanitizer as the SQL RPCs: strips PostgREST-unsafe chars,
+// then allowlists [a-z0-9] per token so nothing user-typed reaches a filter raw.
 export function tokensFor(q: string): string[] {
   const safe = q.replace(/[,()*%\\]/g, "").trim().slice(0, TEXT_LIMITS.searchQuery);
   return safe
@@ -25,28 +51,124 @@ export function tokensFor(q: string): string[] {
     .slice(0, 8);
 }
 
-// ponytail: ilike scan, add tsvector GIN + websearch_to_tsquery if search gets slow/needs ranking
-export async function searchPosts(supabase: SupabaseServer, tokens: string[], limit: number): Promise<FeedPost[]> {
-  if (!tokens.length) return [];
-  const orFilter = tokens.map((t) => `content.ilike.%${t}%`).join(",");
-  const [{ data }, { data: blockedIds }] = await Promise.all([
-    supabase.from("posts").select(POST_SELECT).or(orFilter).order("created_at", { ascending: false }).limit(limit).returns<FeedPost[]>(),
-    supabase.rpc("get_blocked_ids"),
-  ]);
-  const blocked = new Set(blockedIds ?? []);
-  const filtered = (data ?? []).filter((p) => !blocked.has(p.user_id));
-  return filtered.length ? attachSignedMedia(supabase, filtered) : [];
+export function clampSearchLimit(n: unknown): number {
+  const v = typeof n === "number" ? n : Number(n);
+  if (!Number.isFinite(v)) return SEARCH_PAGE;
+  return Math.min(SEARCH_PAGE, Math.max(1, Math.floor(v)));
 }
 
-// ponytail: ilike scan, add tsvector GIN + websearch_to_tsquery if search gets slow/needs ranking
-export async function searchClubs(supabase: SupabaseServer, tokens: string[], limit: number): Promise<ClubResult[]> {
-  if (!tokens.length) return [];
-  const orFilter = tokens.map((t) => `name.ilike.%${t}%,purpose.ilike.%${t}%`).join(",");
-  const { data } = await supabase
-    .from("clubs")
-    .select("id, slug, name, purpose, avatar_url, is_verified")
-    .or(orFilter)
-    .limit(limit)
-    .returns<ClubResult[]>();
-  return data ?? [];
+export function clampSearchOffset(n: unknown): number {
+  const v = typeof n === "number" ? n : Number(n);
+  if (!Number.isFinite(v) || v < 0 || v > PG_INT4_MAX) return 0;
+  return Math.floor(v);
+}
+
+/** 1-based page. Junk / 0 / negative / overflow → 1. */
+export function parseSearchPage(raw: unknown): number {
+  const v = typeof raw === "number" ? raw : Number(raw);
+  if (!Number.isFinite(v) || v < 1 || v > SEARCH_PAGE_MAX) return 1;
+  return Math.floor(v);
+}
+
+export function searchPageOffset(page: number): number {
+  return (parseSearchPage(page) - 1) * SEARCH_PAGE;
+}
+
+export function nextSearchOffset(offset: number): number | null {
+  const next = clampSearchOffset(offset) + SEARCH_PAGE;
+  if (next > PG_INT4_MAX) return null;
+  return next;
+}
+
+export type SearchHrefOpts = { q: string; peoplePage?: number; projectPage?: number };
+
+export function searchHref({ q, peoplePage = 1, projectPage = 1 }: SearchHrefOpts): string {
+  const params = new URLSearchParams();
+  params.set("q", q);
+  const people = parseSearchPage(peoplePage);
+  const project = parseSearchPage(projectPage);
+  if (people > 1) params.set("peoplePage", String(people));
+  if (project > 1) params.set("projectPage", String(project));
+  return `/search?${params.toString()}`;
+}
+
+export function projectSearchHref(q: string, projectPage: number, peoplePage = 1): string {
+  return searchHref({ q, projectPage, peoplePage });
+}
+
+export function postsSearchHref(q: string, offset: number): string {
+  const params = new URLSearchParams();
+  params.set("q", q);
+  const off = clampSearchOffset(offset);
+  if (off > 0) params.set("offset", String(off));
+  return `/search/posts?${params.toString()}`;
+}
+
+/** exact-name/title > matched terms > recency+id. Visibility must already be applied. */
+export function compareSearchRank(a: SearchRankRow, b: SearchRankRow): number {
+  if (a.exact !== b.exact) return a.exact ? -1 : 1;
+  if (a.termHits !== b.termHits) return b.termHits - a.termHits;
+  if (a.createdAt !== b.createdAt) return a.createdAt < b.createdAt ? 1 : -1;
+  if (a.id !== b.id) return a.id < b.id ? 1 : -1;
+  return 0;
+}
+
+export function paginateRanked<T extends SearchRankRow>(
+  visible: T[],
+  limit: number,
+  offset: number,
+): T[] {
+  return [...visible].sort(compareSearchRank).slice(clampSearchOffset(offset), clampSearchOffset(offset) + clampSearchLimit(limit));
+}
+
+export async function searchPeople(
+  supabase: SupabaseServer,
+  query: string,
+  limit = SEARCH_PAGE,
+  offset = 0,
+): Promise<SearchPerson[]> {
+  if (!tokensFor(query).length) return [];
+  const { data, error } = await supabase.rpc("search_people", {
+    p_query: query,
+    p_limit: clampSearchLimit(limit),
+    p_offset: clampSearchOffset(offset),
+  });
+  if (error || !data) return [];
+  return data;
+}
+
+export async function searchProjects(
+  supabase: SupabaseServer,
+  query: string,
+  limit = SEARCH_PAGE,
+  offset = 0,
+): Promise<SearchProject[]> {
+  if (!tokensFor(query).length) return [];
+  const { data, error } = await supabase.rpc("search_projects", {
+    p_query: query,
+    p_limit: clampSearchLimit(limit),
+    p_offset: clampSearchOffset(offset),
+  });
+  if (error || !data) return [];
+  return data;
+}
+
+export async function searchPosts(
+  supabase: SupabaseServer,
+  query: string,
+  limit = SEARCH_PAGE,
+  offset = 0,
+): Promise<FeedPost[]> {
+  if (!tokensFor(query).length) return [];
+  const { data: ranked, error } = await supabase.rpc("search_posts", {
+    p_query: query,
+    p_limit: clampSearchLimit(limit),
+    p_offset: clampSearchOffset(offset),
+  });
+  if (error || !ranked?.length) return [];
+  const ids = ranked.map((r) => r.id);
+  const { data } = await supabase.from("posts").select(POST_SELECT).in("id", ids).returns<FeedPost[]>();
+  const byId = new Map((data ?? []).map((p) => [p.id, p]));
+  const ordered = ids.map((id) => byId.get(id)).filter((p): p is FeedPost => !!p);
+  return ordered.length ? attachSignedMedia(supabase, ordered) : [];
 }

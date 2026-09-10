@@ -3,9 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { aiEnabled, generateText, modelForTier } from "@/lib/ai";
-import { ICEBREAKER_SYSTEM, untrusted } from "@/lib/ai-prompts";
-import { isPro } from "@/lib/pro";
 import { TEXT_LIMITS } from "@/lib/utils/validation";
 
 export async function startDmWithUsername(username: string) {
@@ -116,83 +113,8 @@ export async function searchUsersForMessage(query: string): Promise<MessageUserR
 
 export type IcebreakerResult = { locked: true } | { text: string } | { error: true };
 
-type FactSource = {
-  year: string | null;
-  major: string | null;
-  bio: string | null;
-  goals: string | null;
-};
-
-// Compact fact list for the prompt. school comes from profile_school, whose own
-// RLS already honors hide_school, so a null school here means "not visible".
-// Bundled into one untrusted block — these are free-text fields the profile
-// owner wrote, never to be read as instructions (see lib/ai-prompts.ts).
-function facts(p: FactSource, school: string | null): string {
-  return untrusted(
-    [
-      school && `school: ${school}`,
-      p.year && `year: ${p.year}`,
-      p.major && `major: ${p.major}`,
-      p.bio && `bio: ${p.bio}`,
-      p.goals && `goals: ${p.goals}`,
-    ]
-      .filter(Boolean)
-      .join("; ")
-  );
-}
-
-// Draft a first DM grounded in what the sender and recipient share. Every
-// read goes through the session client (RLS), and the header fields used
-// here are exactly what the profile page already exposes to any signed-in
-// viewer — no new unrestricted fetch, no hidden field leaks. Metered: free
-// caps at 3/day, Pro is effectively unlimited. `locked` now means "out of
-// free tries today" (upsell to Pro), not "not Pro". `error` when blocked,
-// AI is off, or the call fails.
-export async function icebreaker(peerId: string): Promise<IcebreakerResult> {
-  if (!peerId) return { error: true };
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: true };
-  if (peerId === user.id) return { error: true };
-
-  const { data: me } = await supabase
-    .from("profiles")
-    .select("is_pro, pro_until, year, major, bio, goals")
-    .eq("id", user.id)
-    .single();
-  if (!me) return { error: true };
-  if (!aiEnabled()) return { error: true };
-
-  const pro = isPro(me);
-  const { data: allowed } = await supabase.rpc("use_ai_quota", { p_kind: "icebreaker" });
-  if (!allowed) return { locked: true };
-
-  // Don't draft to someone the viewer has blocked (a peer blocking the viewer is
-  // enforced by RLS on the eventual insert).
-  const { data: blocked } = await supabase.rpc("get_blocked_ids");
-  if (((blocked ?? []) as string[]).includes(peerId)) return { error: true };
-
-  const [{ data: peer }, { data: mySchool }, { data: peerSchool }] = await Promise.all([
-    supabase.from("profiles").select("display_name, username, year, major, bio, goals").eq("id", peerId).maybeSingle(),
-    supabase.from("profile_school").select("school").eq("profile_id", user.id).maybeSingle(),
-    supabase.from("profile_school").select("school").eq("profile_id", peerId).maybeSingle(),
-  ]);
-  if (!peer) return { error: true };
-
-  const peerName = peer.display_name ?? peer.username;
-  const prompt =
-    `Sender (you): ${facts(me, mySchool?.school ?? null)}. ` +
-    `Recipient (${untrusted(peerName)}): ${facts(peer, peerSchool?.school ?? null)}.`;
-
-  const text = await generateText(ICEBREAKER_SYSTEM, prompt, {
-    model: modelForTier(pro),
-    maxTokens: 140,
-    temperature: 0.6,
-  });
-  return text ? { text } : { error: true };
+export async function icebreaker(_peerId: string): Promise<IcebreakerResult> {
+  return { error: true };
 }
 
 export type GroupMemberActionResult = { error?: string };

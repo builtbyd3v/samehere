@@ -8,7 +8,7 @@ export function welcomeEmail(): { subject: string; text: string; html: string } 
 
   const text =
     "hey, you're in. samehere is small right now, on purpose: every person here was invited. " +
-    "three things worth doing first: finish your profile, post something real, and join a club at https://samehere.dev/community.\n\nDev";
+    "three things worth doing first: finish your profile, post something real, and find people at https://samehere.dev/search.\n\nDev";
 
   const html = emailShell(`
         <tr>
@@ -28,7 +28,7 @@ export function welcomeEmail(): { subject: string; text: string; html: string } 
                 <td style="padding:4px 0;font-size:15px;line-height:1.6;color:${INK};">2. Post something real</td>
               </tr>
               <tr>
-                <td style="padding:4px 0;font-size:15px;line-height:1.6;color:${INK};">3. Join a club</td>
+                <td style="padding:4px 0;font-size:15px;line-height:1.6;color:${INK};">3. Find people</td>
               </tr>
             </table>
           </td>
@@ -44,7 +44,7 @@ export function welcomeEmail(): { subject: string; text: string; html: string } 
               <tr>
                 <td style="text-align:center;font-size:13px;">
                   <a href="https://samehere.dev/feed" style="color:${INK_MUTED};text-decoration:underline;margin-right:16px;">Explore the feed</a>
-                  <a href="https://samehere.dev/community" style="color:${INK_MUTED};text-decoration:underline;">Join a club</a>
+                  <a href="https://samehere.dev/search" style="color:${INK_MUTED};text-decoration:underline;">Find people</a>
                 </td>
               </tr>
             </table>

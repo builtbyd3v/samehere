@@ -24,7 +24,7 @@ import { Skeleton, PostCardSkeleton } from "@/components/ui/Skeleton";
 // Desktop feed redesign, now the live /feed. The app shell (app/(app)/layout.tsx)
 // supplies the persistent left nav; this page is a two-column layout — the
 // Latest/Following timeline centered, with a right rail stacking profile+heatmap
-// (LeftRail) above trending/suggested/leaderboard/invite (RightRail). The
+// (LeftRail) above suggested/invite (RightRail). The
 // composer is collapsed behind a trigger; `data-feed-page` lets the shell drop
 // its right spacer so this page's own rail balances the left nav.
 //
@@ -73,24 +73,21 @@ export default async function FeedPage({
 }
 
 // Composer trigger + tabs + onboarding checklist. Suspense-wrapped so its own
-// profile/counts/clubs fetch runs independently of (not before) the timeline
+// profile/counts fetch runs independently of (not before) the timeline
 // below — same reasoning as LeftRail/RightRail's own boundaries.
 async function FeedHeader({ tab, userId }: { tab: "latest" | "following"; userId: string | null }) {
   const composerProfile = userId ? await getViewerProfile() : null;
   const composerPro = isPro(composerProfile ?? { is_pro: false, pro_until: null });
 
   let counts: Awaited<ReturnType<typeof getViewerProfileCounts>> = null;
-  let inClub = false;
   let isSuspended = false;
   if (userId) {
     const { supabase } = await getViewer();
-    const [countsResult, clubsResult, suspendedResult] = await Promise.all([
+    const [countsResult, suspendedResult] = await Promise.all([
       getViewerProfileCounts(),
-      supabase.from("club_members").select("club_id", { count: "exact", head: true }).eq("user_id", userId),
       supabase.rpc("current_is_suspended"),
     ]);
     counts = countsResult;
-    inClub = (clubsResult.count ?? 0) > 0;
     isSuspended = suspendedResult.data ?? false;
   }
 
@@ -110,7 +107,6 @@ async function FeedHeader({ tab, userId }: { tab: "latest" | "following"; userId
           postCount={counts?.posts ?? 0}
           followingCount={counts?.following ?? 0}
           verifiedStudent={!!composerProfile?.verified_student}
-          inClub={inClub}
         />
       )}
     </>
@@ -193,7 +189,7 @@ async function LatestTab({ viewerId }: { viewerId: string | null }) {
       <EmptyState
         title="Nothing here yet"
         description="Be the first to share what you are building or figuring out."
-        action={{ label: "Explore the community", href: "/community" }}
+        action={{ label: "Find people", href: "/search" }}
       />
     );
   }
@@ -285,7 +281,7 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
         <EmptyState
           title="Your feed is empty"
           description="Follow students to see their posts here."
-          action={{ label: "Find people", href: "/community" }}
+          action={{ label: "Find people", href: "/search" }}
         />
       )}
     </section>

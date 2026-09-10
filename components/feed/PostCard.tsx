@@ -10,9 +10,11 @@ import PostBodyLink from "./PostBodyLink";
 import LocalTime from "@/components/ui/LocalTime";
 import type { PostMedia } from "@/lib/media";
 import type { ViewerMineState } from "@/lib/feed-engagement";
+import type { ContextLabel } from "@/types/portfolio";
+import { CONTEXT_LABEL_COPY } from "@/lib/context-label";
 
 export const POST_SELECT =
-  "id, content, created_at, user_id, media, hidden, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, is_private, is_pro, is_founder, is_campus_founder, verified_student, is_bot, profile_school(school)), reactions(count), reposts(count), comments(count)";
+  "id, content, created_at, user_id, media, hidden, context_label, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, is_private, is_pro, is_founder, is_campus_founder, verified_student, is_bot, profile_school(school)), reactions(count), reposts(count), comments(count)";
 
 export const PAGE = 20;
 
@@ -39,6 +41,7 @@ export type PostRow = {
   user_id: string;
   media: PostMedia[];
   hidden: boolean;
+  context_label: ContextLabel | null;
   author: Author;
   reactions: { count: number }[];
   reposts: { count: number }[];
@@ -55,6 +58,7 @@ export type FeedPost = {
   user_id: string;
   media: PostMedia[];
   hidden: boolean;
+  context_label: ContextLabel | null;
   author: Author;
   samehere_count: number;
   repost_count: number;
@@ -72,6 +76,7 @@ export function withEngagement(rows: PostRow[], mine: ViewerMineState): FeedPost
     user_id: r.user_id,
     media: r.media,
     hidden: r.hidden,
+    context_label: r.context_label ?? null,
     author: r.author,
     samehere_count: r.reactions?.[0]?.count ?? 0,
     repost_count: r.reposts?.[0]?.count ?? 0,
@@ -172,6 +177,11 @@ export default function PostCard({
                   {post.hidden && (
                     <span className="rounded-full bg-[var(--danger)]/[0.06] px-2 py-0.5 text-xs font-medium text-[var(--danger)]">
                       Hidden
+                    </span>
+                  )}
+                  {post.context_label && (
+                    <span className="rounded-full border border-[var(--border)] px-2 py-0.5 text-xs text-[var(--ink-muted)]">
+                      {CONTEXT_LABEL_COPY[post.context_label]}
                     </span>
                   )}
                 </div>

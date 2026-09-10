@@ -2,9 +2,6 @@ import Link from "next/link";
 import AvatarBase from "@/components/ui/Avatar";
 import UserBadges from "@/components/profile/UserBadges";
 import FollowButton from "@/components/profile/FollowButton";
-import { Skeleton } from "@/components/ui/Skeleton";
-import { createClient } from "@/lib/supabase/server";
-import { cachedConnectionPrompts, connectionPrompt } from "@/lib/connection-prompt";
 import type { MatchSignal } from "@/lib/match";
 
 export type SuggestedProfile = {
@@ -23,18 +20,9 @@ export type SuggestedProfile = {
   profile_school: { school: string | null } | null;
 };
 
-function SuggestedCard({
-  s,
-  prompt,
-  loading,
-  i,
-}: {
-  s: SuggestedProfile;
-  prompt?: string | null;
-  loading?: boolean;
-  i: number;
-}) {
+function SuggestedCard({ s, i }: { s: SuggestedProfile; i: number }) {
   const name = s.display_name ?? s.username;
+  const line = s.year && s.major ? `${s.year} · ${s.major}` : (s.year ?? s.major ?? null);
   return (
     <div
       className="cascade-up flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3"
@@ -55,71 +43,35 @@ function SuggestedCard({
           <UserBadges isPro={s.is_pro} isFounder={s.is_founder} isCampusFounder={s.is_campus_founder} isVerifiedStudent={s.verified_student} />
           <span className="text-[var(--ink-muted)]">@{s.username}</span>
         </div>
-        {loading ? (
-          <Skeleton className="mt-1 h-3 w-32" />
-        ) : (
-          prompt && <p className="mt-0.5 text-xs text-[var(--ink-muted)]">{prompt}</p>
-        )}
+        {line && <p className="mt-0.5 text-xs text-[var(--ink-muted)]">{line}</p>}
       </div>
       <FollowButton targetId={s.id} initial="none" />
     </div>
   );
 }
 
-// Suspense fallback — same cards from the already-fetched (sync, non-AI)
-// suggested pool, with a skeleton line reserving the AI "why follow" line's
-// height so the swap-in doesn't reflow the card.
 export function SuggestedFollowsFallback({ suggested }: { suggested: SuggestedProfile[] }) {
   return (
     <div className="flex flex-col gap-2">
       {suggested.map((s, i) => (
-        <SuggestedCard key={s.id} s={s} loading i={i} />
+        <SuggestedCard key={s.id} s={s} i={i} />
       ))}
     </div>
   );
 }
 
-// Does its own fetch (prompt cache read + up to 5 connectionPrompt AI calls)
-// so the LLM round trips never block the feed timeline from streaming first.
 export default async function SuggestedFollows({
-  userId,
-  viewerSignal,
-  viewerPro,
   suggested,
 }: {
-  userId: string;
-  viewerSignal: MatchSignal;
-  viewerPro: boolean;
+  userId?: string;
+  viewerSignal?: MatchSignal;
+  viewerPro?: boolean;
   suggested: SuggestedProfile[];
 }) {
-  const supabase = await createClient();
-  const promptCache = await cachedConnectionPrompts(supabase, userId, suggested.map((s) => s.id));
-  const prompts = await Promise.all(
-    suggested.map((s) =>
-      promptCache.has(s.id)
-        ? Promise.resolve(promptCache.get(s.id)!)
-        : connectionPrompt(
-            supabase,
-            userId,
-            viewerSignal,
-            {
-              id: s.id,
-              name: s.display_name ?? s.username,
-              major: s.major,
-              goals: s.goals,
-              bio: s.bio,
-              school: s.profile_school?.school ?? null,
-            },
-            viewerPro,
-            true // promptCache.has() above already proved this is a miss
-          )
-    )
-  );
-
   return (
     <div className="flex flex-col gap-2">
       {suggested.map((s, i) => (
-        <SuggestedCard key={s.id} s={s} prompt={prompts[i]} i={i} />
+        <SuggestedCard key={s.id} s={s} i={i} />
       ))}
     </div>
   );

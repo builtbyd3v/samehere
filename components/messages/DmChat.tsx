@@ -1,11 +1,9 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState } from "react";
 import posthog from "posthog-js";
 import { getBrowserClient } from "@/lib/supabase/client";
 import MessageThread from "@/components/messages/MessageThread";
-import { icebreaker } from "@/app/(app)/messages/actions";
 import { IconSend } from "@/components/icons";
 import { useSubmitShortcut } from "@/lib/useSubmitShortcut";
 import { TEXT_LIMITS, textLimitError } from "@/lib/utils/validation";
@@ -60,8 +58,6 @@ export default function DmChat({
   conversationId,
   initialMessages,
   viewerId,
-  peerId,
-  viewerIsPro = false,
   members,
   roster,
 }: {
@@ -79,8 +75,6 @@ export default function DmChat({
   const [messages, setMessages] = useState<DmMessage[]>(initialMessages);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [drafting, startDraft] = useTransition();
-  const [draftNotice, setDraftNotice] = useState<"locked" | "error" | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -128,29 +122,6 @@ export default function DmChat({
 
   useSubmitShortcut(textareaRef, () => formRef.current?.requestSubmit(), !pending);
 
-  // Available to everyone: drop an AI-drafted intro into the (editable)
-  // composer. Free users get a metered taste (3/day); Pro is unlimited --
-  // gating happens server-side in the action, not here.
-  function onDraftIntro() {
-    if (!peerId || drafting) return;
-    setDraftNotice(null);
-    startDraft(async () => {
-      const res = await icebreaker(peerId);
-      if ("text" in res) {
-        const el = textareaRef.current;
-        if (el) {
-          el.value = res.text;
-          resizeTextarea(el);
-          el.focus();
-        }
-      } else if ("locked" in res) {
-        setDraftNotice("locked");
-      } else {
-        setDraftNotice("error");
-      }
-    });
-  }
-
   async function handleSend(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const el = textareaRef.current;
@@ -193,8 +164,6 @@ export default function DmChat({
     setPending(false);
   }
 
-  const empty = messages.length === 0;
-
   return (
     <>
       <div className="min-h-0 flex-1 overflow-y-auto bg-[var(--canvas)]">
@@ -206,31 +175,6 @@ export default function DmChat({
         onSubmit={handleSend}
         className="shrink-0 border-t border-[var(--border)] bg-[var(--surface-card)] px-3 py-3 sm:px-4"
       >
-        {empty && peerId && (
-          <div className="mb-2 px-1">
-            <button
-              type="button"
-              onClick={onDraftIntro}
-              disabled={drafting}
-              className="text-xs font-medium text-[var(--blue)] underline disabled:opacity-50"
-            >
-              {drafting ? "Drafting…" : "✦ Draft an intro"}
-              {viewerIsPro && <span className="text-[var(--ink-faint)]"> (150 a day)</span>}
-            </button>
-            {draftNotice === "locked" && (
-              <p className="mt-1 text-xs text-[var(--ink-muted)]">
-                Out of free suggestions today.{" "}
-                <Link href="/pro" className="font-medium text-[var(--blue)] underline">
-                  Go Pro for 150 a day
-                </Link>
-                .
-              </p>
-            )}
-            {draftNotice === "error" && (
-              <p className="mt-1 text-xs text-[var(--ink-faint)]">Couldn&apos;t draft an intro. Try again.</p>
-            )}
-          </div>
-        )}
         <div className="flex items-end gap-2 rounded-full border border-[var(--border)] bg-[var(--canvas)] px-4 py-2">
           <textarea
             ref={textareaRef}

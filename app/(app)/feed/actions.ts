@@ -9,11 +9,10 @@ import { fetchPlainReposts } from "@/lib/feed-reposts";
 import { fetchViewerMineState } from "@/lib/feed-engagement";
 import { mergeFeedTimeline, itemId, type FeedTimelineItem } from "@/lib/feed-timeline";
 import { decodeCursor, encodeCursor } from "@/lib/feed-cursor";
-import { aiEnabled, generateText, modelForTier, type AiResult } from "@/lib/ai";
-import { COMPOSER_SYSTEM, IMPROVE_SYSTEM, untrusted } from "@/lib/ai-prompts";
+import { type AiResult } from "@/lib/ai";
 import { getPostHogServerClient } from "@/lib/posthog-server";
-import { isPro } from "@/lib/pro";
 import { TEXT_LIMITS, textLimitError } from "@/lib/utils/validation";
+import { contextLabelError, parseContextLabel } from "@/lib/context-label";
 import { peopleSearchCore, type PeopleSearchState } from "@/lib/people-search";
 
 export type ComposerState = { error?: string; ok?: boolean };
@@ -138,9 +137,14 @@ export async function createPost(_prev: ComposerState, formData: FormData): Prom
     if (mediaErr) return { error: mediaErr };
   }
 
+  const rawLabel = formData.get("context_label");
+  const labelErr = contextLabelError(rawLabel);
+  if (labelErr) return { error: labelErr };
+  const context_label = parseContextLabel(rawLabel);
+
   const { error } = await supabase
     .from("posts")
-    .insert({ user_id: user.id, content, media });
+    .insert({ user_id: user.id, content, media, context_label });
   if (error) return { error: "Could not publish your post. Try again." };
 
   const posthog = getPostHogServerClient();
@@ -178,101 +182,14 @@ export async function createPost(_prev: ComposerState, formData: FormData): Prom
   return { ok: true };
 }
 
-const NUDGE_FALLBACKS = [
-  "What did you build or fix today?",
-  "What are you stuck on right now?",
-  "Share one thing you learned this week.",
-  "What are you working toward this semester?",
-  "What's a small win from today?",
-];
-
-function randomFallback(): string {
-  return NUDGE_FALLBACKS[Math.floor(Math.random() * NUDGE_FALLBACKS.length)];
-}
-
-// On-demand composer writing prompt. Metered via use_ai_quota; always falls
-// back to a static prompt (AI off, over quota, or call failed) so this never
-// throws and always returns something usable.
-// ponytail: static fallback list covers AI-off/over-quota; on-demand only, so no quota burn on render.
 export async function composerNudge(): Promise<AiResult> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { text: randomFallback() };
-
-  if (aiEnabled()) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("is_pro, pro_until, year, major, goals, bio")
-      .eq("id", user.id)
-      .single();
-    const pro = isPro(profile ?? { is_pro: false, pro_until: null });
-    const { data: allowed } = await supabase.rpc("use_ai_quota", { p_kind: "composer_nudge" });
-    // Free user out of quota → upsell; Pro can't realistically hit the cap.
-    if (!allowed) return pro ? { text: randomFallback() } : { overCap: true };
-    // Own latest post only — never another user's content (privacy invariant).
-    const { data: lastPost } = await supabase
-      .from("posts")
-      .select("content")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    const facts = [
-      profile?.year ? `year: ${untrusted(String(profile.year))}` : null,
-      profile?.major ? `major: ${untrusted(profile.major)}` : null,
-      profile?.goals ? `goals: ${untrusted(profile.goals)}` : null,
-      profile?.bio ? `bio: ${untrusted(profile.bio)}` : null,
-      lastPost?.content
-        ? `their most recent post (do not repeat this topic): ${untrusted(lastPost.content.slice(0, 200))}`
-        : null,
-    ]
-      .filter(Boolean)
-      .join("; ");
-    const userMsg = facts
-      ? `Student facts: ${facts}. Give me one prompt for them.`
-      : "No profile facts available. Give me one broadly useful prompt.";
-    const text = await generateText(COMPOSER_SYSTEM, userMsg, {
-      model: modelForTier(pro),
-      maxTokens: 60,
-      temperature: 0.8,
-    });
-    if (text) return { text };
-  }
-
-  return { text: randomFallback() };
+  return { text: "" };
 }
 
-// Pro-only: rewrite the author's OWN draft sharper. `locked` when the caller
-// isn't Pro; `error` when the draft is empty, AI is off, or the call fails.
-// Only ever sees the author's own draft — no other user's content is loaded.
 export type ImproveResult = { locked: true } | { text: string } | { error: true };
 
-export async function improvePost(draft: string): Promise<ImproveResult> {
-  const trimmed = draft.trim();
-  if (!trimmed) return { error: true };
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: true };
-
-  const { data: profile } = await supabase.from("profiles").select("is_pro, pro_until").eq("id", user.id).single();
-  if (!isPro(profile ?? { is_pro: false, pro_until: null })) return { locked: true };
-  if (!aiEnabled()) return { error: true };
-
-  // Metered for telemetry only, not enforcement -- the locked check above already
-  // gates this to Pro; the cap lives inside use_ai_quota now (150/day for Pro).
-  await supabase.rpc("use_ai_quota", { p_kind: "improve_post" });
-
-  const text = await generateText(
-    IMPROVE_SYSTEM,
-    `Draft to edit: ${untrusted(trimmed)}`,
-    { model: modelForTier(true), maxTokens: 512, temperature: 0.3 },
-  );
-  return text ? { text } : { error: true };
+export async function improvePost(_draft: string): Promise<ImproveResult> {
+  return { error: true };
 }
 
 // Delete own post. RLS restricts the delete to the owner, so a non-owner's
@@ -296,22 +213,13 @@ export async function deletePost(postId: string): Promise<void> {
   revalidatePath("/feed");
 }
 
-// Natural-language people search (Pro engine). LLM-reranks a SQL-prefiltered
-// candidate pool — no embeddings. Free users get 5/day; Pro 150/day. AI
-// output is untrusted: JSON parsed defensively, ids validated against the pool,
-// reason rendered as plain text by the caller. Core logic lives in
-// lib/people-search.ts so onboarding's seeded first-match step can reuse it
-// server-side without spending the caller's quota.
-// ponytail: ilike prefilter + LLM rerank; add pgvector only if it beats this.
-export async function peopleSearch(query: string, verifiedOnly?: boolean): Promise<PeopleSearchState> {
+export async function peopleSearch(query: string, _verifiedOnly?: boolean): Promise<PeopleSearchState> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "You must be logged in." };
-  // Server action args are untrusted client input -- coerce to a real boolean
-  // rather than trusting whatever shape arrives.
-  return peopleSearchCore(supabase, user, query, { verifiedOnly: Boolean(verifiedOnly) });
+  return peopleSearchCore(supabase, user, query);
 }
 
 // Count posts newer than a timestamp, for the feed's "N new posts" pill. Capped

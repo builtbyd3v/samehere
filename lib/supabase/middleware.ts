@@ -1,6 +1,17 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { GITHUB_CALLBACK_PATH, GITHUB_CONNECT_PATH } from '@/lib/github/config'
+import { PORTFOLIO_RPC_ERRORS } from '@/types/portfolio'
 import type { Database } from '@/types/database.types'
+
+/** Owner JSON APIs. Missing session → 401 JSON, not a signup HTML redirect. */
+export function isOwnerJsonApi(path: string): boolean {
+  return (
+    path.startsWith('/api/portfolio/') ||
+    path === GITHUB_CONNECT_PATH ||
+    path.startsWith(`${GITHUB_CONNECT_PATH}/`)
+  )
+}
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
@@ -73,6 +84,12 @@ export async function updateSession(request: NextRequest) {
     path === '/api/cron/weekly-matches' ||
     path === '/api/cron/eve' ||
     path === '/api/cron/jobs-ingest' ||
+    path === '/api/cron/github-sync' ||
+    // GitHub OAuth start/callback do their own login/state redirects.
+    (path === GITHUB_CONNECT_PATH && request.method === 'GET') ||
+    path === GITHUB_CALLBACK_PATH ||
+    // Anonymous view/click beacons. Route does its own secret/origin checks.
+    (path === '/api/portfolio/metrics' && request.method === 'POST') ||
     path === '/api/email/unsubscribe' ||
     // CSP violation collector (Plan 040) — browsers POST this straight from the
     // Report-Only header's report-uri/report-to, no session cookie sent.
@@ -116,6 +133,9 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (!user && !isAnonAllowed) {
+    if (isOwnerJsonApi(path)) {
+      return NextResponse.json({ error: PORTFOLIO_RPC_ERRORS.notAuthenticated }, { status: 401 })
+    }
     const url = request.nextUrl.clone()
     url.pathname = '/signup'
     return NextResponse.redirect(url)
