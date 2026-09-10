@@ -19,7 +19,7 @@ import { BLUE, BORDER, CANVAS, CARD, FEATURED, INK, INK_FAINT, INK_MUTED, POST }
 
 export const runtime = "nodejs"; // reads the font files off disk
 
-export const alt = "samehere: Find your people. Find your path.";
+export const alt = "samehere: Find your people. Show what you’re building.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -28,20 +28,16 @@ export const contentType = "image/png";
 // Resolved with `new URL(..., import.meta.url)`, which Next traces statically;
 // `join(process.cwd(), ...)` is a runtime string and would be missing from the
 // deployed bundle.
-// The headline's accent words ("people.", "path.") borrow the landing hero's
-// Fraunces italic treatment (components/landing/Hero.tsx) — a static italic
-// instance ships here because Satori can misrender a variable-font TTF's
-// italic axis.
+// Figtree matches app/layout.tsx. Site OG uses the same face as the landing.
 const fonts = async () => {
-  const [regular, semibold, frauncesItalic] = await Promise.all([
+  const [regular, medium] = await Promise.all([
     readFile(new URL("./fonts/Figtree-Regular.ttf", import.meta.url)),
     readFile(new URL("./fonts/Figtree-SemiBold.ttf", import.meta.url)),
-    readFile(new URL("./fonts/Fraunces-SemiBoldItalic.ttf", import.meta.url)),
   ]);
   return [
     { name: "Figtree", data: regular, weight: 400 as const, style: "normal" as const },
-    { name: "Figtree", data: semibold, weight: 600 as const, style: "normal" as const },
-    { name: "Fraunces", data: frauncesItalic, weight: 600 as const, style: "italic" as const },
+    { name: "Figtree", data: medium, weight: 500 as const, style: "normal" as const },
+    { name: "Figtree", data: medium, weight: 600 as const, style: "normal" as const },
   ];
 };
 
@@ -74,16 +70,6 @@ function IconComment({ color }: { color: string }) {
   );
 }
 
-// Four-point sparkle, echoing the AI-search affordance in HeroSearchDemo.
-// Drawn as a path rather than a unicode glyph (✦) — Figtree has no glyph for
-// it in Satori's renderer, which draws a missing-glyph box instead.
-function IconSparkle({ color }: { color: string }) {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill={color}>
-      <path d="M12 2c0 4.5 1.2 7.5 3 9.3S19.5 12 22 12c-4.5 0-7.5 1.2-9.3 3S12 19.5 12 22c0-4.5-1.2-7.5-3-9.3S4.5 12 2 12c4.5 0 7.5-1.2 9.3-3S12 4.5 12 2Z" />
-    </svg>
-  );
-}
 
 function IconRepost({ color }: { color: string }) {
   return (
@@ -159,13 +145,13 @@ function PostCard() {
           M
         </div>
         <div style={{ display: "flex", flexDirection: "column" }}>
-          <div style={{ fontSize: 20, fontWeight: 600, color: INK }}>Maya</div>
-          <div style={{ marginTop: 1, fontSize: 16, color: INK_FAINT }}>@maya · Junior · Computer Science</div>
+          <div style={{ fontSize: 20, fontWeight: 600, color: INK }}>Preview</div>
+          <div style={{ marginTop: 1, fontSize: 16, color: INK_FAINT }}>Example post · not a real person</div>
         </div>
       </div>
 
       <div style={{ marginTop: 20, fontSize: 21, lineHeight: 1.45, color: INK }}>
-        Three hours on one problem set and I still have nothing. Does it click for anyone else, or is it just me?
+        Rewrote the scheduler twice and the tests still fail on Fridays. Anyone else stuck here?
       </div>
 
       <div style={{ display: "flex", marginTop: 22, alignItems: "center", gap: 6 }}>
@@ -226,10 +212,7 @@ export default async function OgImage() {
                   padding: "8px 18px",
                 }}
               >
-                <div style={{ display: "flex" }}>
-                  <IconSparkle color={BLUE} />
-                </div>
-                <div style={{ display: "flex" }}>Describe who you&apos;re looking for</div>
+                <div style={{ display: "flex" }}>For students, building together</div>
               </div>
 
               <div
@@ -237,29 +220,19 @@ export default async function OgImage() {
                   display: "flex",
                   flexDirection: "column",
                   marginTop: 26,
-                  fontSize: 62,
-                  fontWeight: 600,
-                  letterSpacing: "-0.035em",
+                  fontSize: 56,
+                  fontWeight: 500,
+                  letterSpacing: "-0.03em",
                   lineHeight: 1.05,
                   color: INK,
                 }}
               >
-                <div style={{ display: "flex" }}>
-                  <div style={{ display: "flex" }}>Find your&nbsp;</div>
-                  <div style={{ display: "flex", fontFamily: "Fraunces", fontStyle: "italic", color: BLUE }}>
-                    people.
-                  </div>
-                </div>
-                <div style={{ display: "flex" }}>
-                  <div style={{ display: "flex" }}>Find your&nbsp;</div>
-                  <div style={{ display: "flex", fontFamily: "Fraunces", fontStyle: "italic", color: BLUE }}>
-                    path.
-                  </div>
-                </div>
+                <div style={{ display: "flex" }}>Find your people.</div>
+                <div style={{ display: "flex" }}>Show what you’re building.</div>
               </div>
 
               <div style={{ marginTop: 22, fontSize: 23, lineHeight: 1.4, color: INK_MUTED }}>
-                One AI-native network for students. Post what&apos;s real, find who gets it.
+                A place for CS students to share the work, find a familiar struggle, and build a profile that feels like them.
               </div>
             </div>
 

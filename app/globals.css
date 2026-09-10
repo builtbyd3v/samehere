@@ -1,96 +1,131 @@
 @import "tailwindcss";
 
-/* Lovable-style tokens (see DESIGN.md). Warm cream, charcoal, opacity grays, #eceae4 borders.
-   Blue is kept ONLY for the profile card + heatmap (per product decision). */
-/* Reserve the scrollbar gutter permanently so centered layouts don't shift
-   7-8px between short (no scrollbar) and long pages. */
+/* x.ai-style tokens. Dark is the default canvas; .light is the coherent inverse.
+   Landing scopes a darker card/border set via .landing-xai. */
 html {
   scrollbar-gutter: stable;
+  overflow-x: clip;
+}
+
+body {
+  overflow-x: clip;
 }
 
 :root {
-  color-scheme: light dark;
-  --canvas: #f7f4ed;
-  --surface: #f7f4ed;
-  --surface-raised: #fcfbf8;
-  /* Posts, composer, profile + heatmap cards share the auth-form/landing card
-     surface. One card color across the product. */
-  --surface-post: #fcfbf8;
-  --surface-card: #fcfbf8;
-  /* Opacity-based on charcoal — reads clearer on cream than #eceae4 alone */
-  --border: rgba(28, 28, 28, 0.14);
-  --border-strong: rgba(28, 28, 28, 0.32);
-  --ink: #1c1c1c;
-  --ink-muted: #5f5f5d;
-  --ink-faint: rgba(28, 28, 28, 0.45);
-  --featured-surface: rgba(28, 28, 28, 0.04);
-  --blue: #0075de;
-  --blue-2: #2f9bff;
-  --founder: #a67c00;
-  --campus-founder: #1f8a4d;
-  --danger: #c0392b;
-  --hm0: rgba(28, 28, 28, 0.06); --hm1: #bcd8f5; --hm2: #5fa0e8; --hm3: #0075de;
-  /* Signature warm accent — pulled from the ambient wash coral, deepened for AA
-     on cream (passes for large display text + non-text touches; NOT button text).
-     Blue stays reserved for the heatmap; coral acts, blue measures. */
-  --accent: #cf5a30;
-  --accent-glow: rgba(207, 90, 48, 0.24);
-  /* Blue is the SameHere signature (reaction + heatmap) — used for the hero
-     highlight word, the same-here indicator, and the CTA glow. */
-  --blue-glow: rgba(0, 117, 222, 0.20);
-}
-
-.dark {
   color-scheme: dark;
-  --canvas: #141310;
-  --surface: #1c1a16;
-  --surface-raised: #232018;
-  --surface-post: #232018;
-  --surface-card: #232018;
-  --border: rgba(247, 244, 237, 0.10);
-  --border-strong: rgba(247, 244, 237, 0.28);
-  --ink: #f2efe6;
-  --ink-muted: #a8a49a;
-  --ink-faint: rgba(242, 239, 230, 0.40);
-  --featured-surface: rgba(247, 244, 237, 0.06);
+  --canvas: #0a0a0a;
+  --surface: #1a1a1a;
+  --surface-raised: #1f2228;
+  --surface-post: #1f2228;
+  --surface-card: #1a1a1a;
+  --border: rgba(255, 255, 255, 0.10);
+  --border-strong: rgba(255, 255, 255, 0.22);
+  --ink: #f5f5f5;
+  --ink-muted: #a1a5ab;
+  --ink-faint: rgba(245, 245, 245, 0.55);
+  --featured-surface: rgba(255, 255, 255, 0.05);
   --blue: #4f9fe8;
   --blue-2: #7ec4ff;
   --founder: #ecc94b;
   --campus-founder: #5fce8f;
   --danger: #e88;
-  --hm0: rgba(247, 244, 237, 0.07); --hm1: #1e3a5f; --hm2: #2f6db0; --hm3: #4f9fe8;
-  --accent: #f0865a;
-  --accent-glow: rgba(240, 134, 90, 0.20);
+  --hm0: rgba(255, 255, 255, 0.07); --hm1: #1e3a5f; --hm2: #2f6db0; --hm3: #4f9fe8;
+  --accent: #4f9fe8;
+  --accent-glow: rgba(0, 117, 222, 0.24);
   --blue-glow: rgba(79, 159, 232, 0.18);
+  --accent-blue: #0075de;
+  --accent-blue-strong: #4f9fe8;
+  --accent-blue-soft: rgba(0, 117, 222, 0.14);
+  --nav-muted: rgba(255, 255, 255, 0.55);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-micro: 120ms;
+  --dur-short: 220ms;
+}
+
+.dark {
+  color-scheme: dark;
+  --canvas: #0a0a0a;
+  --surface: #1a1a1a;
+  --surface-raised: #1f2228;
+  --surface-post: #1f2228;
+  --surface-card: #1a1a1a;
+  --border: rgba(255, 255, 255, 0.10);
+  --border-strong: rgba(255, 255, 255, 0.22);
+  --ink: #f5f5f5;
+  --ink-muted: #a1a5ab;
+  --ink-faint: rgba(245, 245, 245, 0.55);
+  --featured-surface: rgba(255, 255, 255, 0.05);
+  --blue: #4f9fe8;
+  --blue-2: #7ec4ff;
+  --founder: #ecc94b;
+  --campus-founder: #5fce8f;
+  --danger: #e88;
+  --hm0: rgba(255, 255, 255, 0.07); --hm1: #1e3a5f; --hm2: #2f6db0; --hm3: #4f9fe8;
+  --accent: #4f9fe8;
+  --accent-glow: rgba(0, 117, 222, 0.24);
+  --blue-glow: rgba(79, 159, 232, 0.18);
+  --accent-blue: #0075de;
+  --accent-blue-strong: #4f9fe8;
+  --accent-blue-soft: rgba(0, 117, 222, 0.14);
+  --nav-muted: rgba(255, 255, 255, 0.55);
 }
 
 .light {
   color-scheme: light;
+  --canvas: #f4f4f5;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-post: #ffffff;
+  --surface-card: #ffffff;
+  --border: rgba(10, 10, 10, 0.10);
+  --border-strong: rgba(10, 10, 10, 0.22);
+  --ink: #0a0a0a;
+  --ink-muted: #52525b;
+  --ink-faint: rgba(10, 10, 10, 0.50);
+  --featured-surface: rgba(10, 10, 10, 0.04);
+  --blue: #0075de;
+  --blue-2: #2f9bff;
+  --founder: #a67c00;
+  --campus-founder: #1f8a4d;
+  --danger: #c0392b;
+  --hm0: rgba(10, 10, 10, 0.06); --hm1: #bcd8f5; --hm2: #5fa0e8; --hm3: #0075de;
+  --accent: #0075de;
+  --accent-glow: rgba(0, 117, 222, 0.20);
+  --blue-glow: rgba(0, 117, 222, 0.20);
+  --accent-blue: #0075de;
+  --accent-blue-strong: #005bb3;
+  --accent-blue-soft: rgba(0, 117, 222, 0.10);
+  --nav-muted: rgba(10, 10, 10, 0.55);
 }
 
-/* System dark when user has not forced .light */
-@media (prefers-color-scheme: dark) {
-  :root:not(.light) {
-    --canvas: #141310;
-    --surface: #1c1a16;
-    --surface-raised: #232018;
-    --surface-post: #232018;
-    --surface-card: #232018;
-    --border: rgba(247, 244, 237, 0.10);
-    --border-strong: rgba(247, 244, 237, 0.28);
-    --ink: #f2efe6;
-    --ink-muted: #a8a49a;
-    --ink-faint: rgba(242, 239, 230, 0.40);
-    --featured-surface: rgba(247, 244, 237, 0.06);
-    --blue: #4f9fe8;
-    --blue-2: #7ec4ff;
-    --founder: #ecc94b;
-    --campus-founder: #5fce8f;
-    --danger: #e88;
-    --hm0: rgba(247, 244, 237, 0.07); --hm1: #1e3a5f; --hm2: #2f6db0; --hm3: #4f9fe8;
-    --accent: #f0865a;
-    --accent-glow: rgba(240, 134, 90, 0.20);
-    --blue-glow: rgba(79, 159, 232, 0.18);
+@media (prefers-color-scheme: light) {
+  :root:not(.dark) {
+    color-scheme: light;
+    --canvas: #f4f4f5;
+    --surface: #ffffff;
+    --surface-raised: #ffffff;
+    --surface-post: #ffffff;
+    --surface-card: #ffffff;
+    --border: rgba(10, 10, 10, 0.10);
+    --border-strong: rgba(10, 10, 10, 0.22);
+    --ink: #0a0a0a;
+    --ink-muted: #52525b;
+    --ink-faint: rgba(10, 10, 10, 0.50);
+    --featured-surface: rgba(10, 10, 10, 0.04);
+    --blue: #0075de;
+    --blue-2: #2f9bff;
+    --founder: #a67c00;
+    --campus-founder: #1f8a4d;
+    --danger: #c0392b;
+    --hm0: rgba(10, 10, 10, 0.06); --hm1: #bcd8f5; --hm2: #5fa0e8; --hm3: #0075de;
+    --accent: #0075de;
+    --accent-glow: rgba(0, 117, 222, 0.20);
+    --blue-glow: rgba(0, 117, 222, 0.20);
+    --accent-blue: #0075de;
+    --accent-blue-strong: #005bb3;
+    --accent-blue-soft: rgba(0, 117, 222, 0.10);
+    --nav-muted: rgba(10, 10, 10, 0.55);
   }
 }
 
@@ -179,14 +214,12 @@ summary {
  * light spilling down from the top edge — not a circle. Overlapping in the
  * middle, the warm + cool merge into one continuous band. */
 .canvas-blob-a {
-  background: radial-gradient(130% 75% at 22% -18%, rgba(255, 148, 112, 0.22) 0%, rgba(255, 148, 112, 0.07) 40%, transparent 76%);
+  background: radial-gradient(130% 75% at 22% -18%, rgba(0, 117, 222, 0.18) 0%, rgba(0, 117, 222, 0.05) 40%, transparent 76%);
 }
 .canvas-blob-b {
   opacity: 0.7;
-  background: radial-gradient(120% 68% at 82% -22%, rgba(120, 170, 255, 0.14) 0%, rgba(120, 170, 255, 0.045) 42%, transparent 72%);
+  background: radial-gradient(120% 68% at 82% -22%, rgba(79, 159, 232, 0.16) 0%, rgba(79, 159, 232, 0.05) 42%, transparent 72%);
 }
-/* Dark canvas can carry a bigger, bluer wash without washing out text —
- * amplify size + strength for the premium hero read. */
 .dark .canvas-blob-b {
   opacity: 0.85;
   background: radial-gradient(150% 85% at 82% -24%, rgba(79, 159, 232, 0.24) 0%, rgba(79, 159, 232, 0.08) 44%, transparent 78%);
@@ -201,10 +234,10 @@ summary {
   }
   .canvas-blob { filter: blur(42px); }
   .canvas-blob-a {
-    background: radial-gradient(175% 95% at 30% -6%, rgba(255, 148, 112, 0.30) 0%, rgba(255, 148, 112, 0.10) 44%, transparent 80%);
+    background: radial-gradient(175% 95% at 30% -6%, rgba(0, 117, 222, 0.26) 0%, rgba(0, 117, 222, 0.08) 44%, transparent 80%);
   }
   .canvas-blob-b {
-    background: radial-gradient(160% 88% at 74% -10%, rgba(120, 170, 255, 0.20) 0%, rgba(120, 170, 255, 0.07) 46%, transparent 76%);
+    background: radial-gradient(160% 88% at 74% -10%, rgba(79, 159, 232, 0.22) 0%, rgba(79, 159, 232, 0.07) 46%, transparent 76%);
   }
 }
 @media (prefers-reduced-motion: no-preference) {
@@ -249,8 +282,8 @@ summary {
   transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 220ms ease;
 }
 .dark .match-card {
-  background: #2b2721;
-  border-color: rgba(247, 244, 237, 0.18);
+  background: #1f2228;
+  border-color: rgba(255, 255, 255, 0.16);
 }
 .match-card:hover {
   transform: translateY(-4px);
@@ -577,17 +610,17 @@ summary {
   align-items: center;
   justify-content: center;
   gap: 0.375rem;
-  border-radius: 6px;
+  min-height: 2.75rem;
+  border-radius: 9999px;
   padding: 8px 16px;
   font-size: 0.9375rem;
   font-weight: 500;
   background: var(--ink);
   color: var(--canvas);
-  box-shadow: rgba(255, 255, 255, 0.2) 0 0.5px 0 0 inset, rgba(0, 0, 0, 0.2) 0 0 0 0.5px inset, rgba(0, 0, 0, 0.05) 0 1px 2px 0;
+  box-shadow: none;
 }
 .btn-primary:hover:not(:disabled) {
-  filter: brightness(1.1);
-  transform: translateY(-1px);
+  filter: brightness(0.92);
 }
 .btn-primary:active:not(:disabled) {
   opacity: 0.8;
@@ -603,7 +636,8 @@ summary {
   align-items: center;
   justify-content: center;
   gap: 0.375rem;
-  border-radius: 6px;
+  min-height: 2.75rem;
+  border-radius: 9999px;
   padding: 8px 16px;
   font-size: 0.9375rem;
   font-weight: 500;
@@ -628,7 +662,8 @@ summary {
   align-items: center;
   justify-content: center;
   gap: 0.375rem;
-  border-radius: 6px;
+  min-height: 2.75rem;
+  border-radius: 9999px;
   padding: 8px 16px;
   font-size: 0.9375rem;
   font-weight: 500;
@@ -717,7 +752,8 @@ summary {
 .input-base {
   display: block;
   width: 100%;
-  border-radius: 6px;
+  min-height: 2.75rem;
+  border-radius: 0.5rem;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--ink);
@@ -728,8 +764,8 @@ summary {
   color: var(--ink-muted);
 }
 .input-base:focus-visible {
-  border-color: var(--border-strong);
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px var(--accent-blue-soft);
 }
 .input-base:disabled {
   opacity: 0.5;
@@ -739,7 +775,7 @@ summary {
 /* Cards ---------------------------------------------------------------- */
 
 .card {
-  border-radius: 16px; /* rounded-2xl — matches the landing card radius app-wide */
+  border-radius: 0.75rem;
   border: 1px solid var(--border);
   background: var(--surface-card);
 }
@@ -774,7 +810,7 @@ summary {
   background-image: linear-gradient(
     100deg,
     transparent 30%,
-    rgba(247, 244, 237, 0.08) 50%,
+    rgba(255, 255, 255, 0.08) 50%,
     transparent 70%
   );
 }
@@ -797,5 +833,93 @@ summary {
 }
 
 } /* @layer components */
+
+.auth-shell {
+  min-height: 100dvh;
+  background: var(--canvas);
+  color: var(--ink);
+}
+
+.auth-split,
+.auth-focus {
+  display: flex;
+  max-width: 72rem;
+  margin: 0 auto;
+  flex-direction: column;
+  gap: 2rem;
+  padding: 1.5rem 1.25rem 3rem;
+}
+
+.auth-split .auth-copy h2,
+.auth-focus .auth-copy h2 {
+  max-width: 16ch;
+  font-size: clamp(2rem, 4vw, 3.25rem);
+  font-weight: 500;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.auth-sub {
+  display: none;
+  max-width: 36ch;
+  margin-top: 1rem;
+  color: var(--ink-muted);
+  font-size: 1.05rem;
+  line-height: 1.55;
+}
+
+.auth-form {
+  width: 100%;
+}
+
+.auth-footer {
+  margin-top: 1rem;
+  max-width: 28rem;
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+}
+
+.auth-aside-desktop {
+  display: none;
+  margin-top: 1.5rem;
+}
+
+.auth-aside-mobile {
+  margin-top: 1.5rem;
+  max-width: 28rem;
+}
+
+@media (min-width: 48rem) {
+  .auth-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 4rem;
+    padding-top: 2.5rem;
+  }
+
+  .auth-focus {
+    align-items: center;
+    padding-top: 2.5rem;
+  }
+
+  .auth-focus .auth-copy,
+  .auth-focus .auth-form {
+    width: 100%;
+    max-width: 28rem;
+  }
+
+  .auth-sub {
+    display: block;
+  }
+
+  .auth-aside-desktop {
+    display: block;
+  }
+
+  .auth-aside-mobile {
+    display: none;
+  }
+}
 
 

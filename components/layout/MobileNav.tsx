@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { IconBell, IconMail, IconCommunity, IconSearch, IconBriefcase } from "@/components/icons";
+import { House, User } from "lucide-react";
+import { IconBell, IconMail, IconSearch } from "@/components/icons";
 
 export default function MobileNav({
   username,
@@ -17,34 +18,22 @@ export default function MobileNav({
 
   const items = [
     {
-      label: "Home",
+      label: "Feed",
       href: "/feed",
-      icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-          <path d="M3 10.5 12 3l9 7.5" />
-          <path d="M5 9.5V21h14V9.5" />
-        </svg>
-      ),
+      icon: <House size={22} strokeWidth={1.5} aria-hidden />,
     },
     { label: "Search", href: "/search", icon: <IconSearch /> },
-    { label: "Notifications", href: "/notifications", icon: <IconBell />, dot: notifUnread > 0 },
     { label: "Messages", href: "/messages", icon: <IconMail />, dot: dmUnread > 0 },
-    { label: "Community", href: "/community", icon: <IconCommunity /> },
-    { label: "Jobs", href: "/jobs", icon: <IconBriefcase /> },
+    { label: "Notifications", href: "/notifications", icon: <IconBell />, dot: notifUnread > 0 },
     {
       label: "Profile",
       href: username ? `/profile/${username}` : "#",
-      icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-          <circle cx="12" cy="8" r="4" />
-          <path d="M4 21a8 8 0 0 1 16 0" />
-        </svg>
-      ),
+      icon: <User size={22} strokeWidth={1.5} aria-hidden />,
     },
   ].map((item) => ({
     ...item,
     active:
-      item.label === "Home"
+      item.label === "Feed"
         ? pathname === "/feed" || pathname.startsWith("/feed/")
         : pathname === item.href || pathname.startsWith(item.href + "/"),
   }));
@@ -56,6 +45,7 @@ export default function MobileNav({
           key={item.label}
           href={item.href}
           aria-label={item.label}
+          aria-current={item.active ? "page" : undefined}
           className={`relative flex min-h-11 flex-1 items-center justify-center py-3 transition-colors duration-200 ease-out ${item.active ? "text-[var(--blue)]" : "text-[var(--ink-muted)]"}`}
         >
           {item.active && (

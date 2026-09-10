@@ -11,7 +11,7 @@ import Menu, { useMenuClose } from "@/components/ui/Menu";
 export type SelectOption = { value: string; label: string };
 
 const TRIGGER =
-  "h-10 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--border-strong)] focus:ring-2 focus:ring-[#3b82f6]/40";
+  "h-11 min-h-11 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--ink)] outline-none transition-colors focus:border-[var(--accent-blue)] focus:ring-2 focus:ring-[var(--accent-blue-soft)]";
 
 function OptionRow({
   option,

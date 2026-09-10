@@ -25,24 +25,37 @@ function resolveTheme(theme: Theme): "light" | "dark" {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
+function readStoredTheme(): Theme {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored === "light" || stored === "dark" || stored === "system") return stored;
+  } catch {
+    // localStorage unavailable (privacy mode, blocked storage)
+  }
+  return "dark";
+}
+
+function writeStoredTheme(theme: Theme) {
+  try {
+    localStorage.setItem(STORAGE_KEY, theme);
+  } catch {
+    // ignore
+  }
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("system");
-  const [resolved, setResolved] = useState<"light" | "dark">("light");
+  const [theme, setThemeState] = useState<Theme>("dark");
+  const [resolved, setResolved] = useState<"light" | "dark">("dark");
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
-    const initial = stored === "light" || stored === "dark" || stored === "system" ? stored : "system";
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- deliberate mount-time localStorage read deferred past hydration to avoid an SSR/client mismatch (server always renders the "system" default)
+    const initial = readStoredTheme();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-time storage read; SSR stays on the dark default that matches the boot script
     setThemeState(initial);
     applyTheme(initial);
     setResolved(resolveTheme(initial));
   }, []);
 
   useEffect(() => {
-    applyTheme(theme);
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- resolveTheme() reads window.matchMedia, a browser-only API unavailable during SSR render; must run post-mount, paired with the DOM class mutation above.
-    setResolved(resolveTheme(theme));
-
     if (theme !== "system") return;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const onChange = () => {
@@ -53,16 +66,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     return () => mq.removeEventListener("change", onChange);
   }, [theme]);
 
-  // Leaving the app shell — drop forced classes so public pages follow system CSS.
-  useEffect(() => {
-    return () => {
-      document.documentElement.classList.remove("light", "dark");
-    };
-  }, []);
-
   const setTheme = useCallback((t: Theme) => {
-    localStorage.setItem(STORAGE_KEY, t);
+    writeStoredTheme(t);
     setThemeState(t);
+    applyTheme(t);
+    setResolved(resolveTheme(t));
   }, []);
 
   return <ThemeCtx.Provider value={{ theme, setTheme, resolved }}>{children}</ThemeCtx.Provider>;
