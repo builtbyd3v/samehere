@@ -1,7 +1,7 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 
-// service_role client — bypasses RLS. FIVE sanctioned uses, none of which
+// service_role client — bypasses RLS. SIX sanctioned uses, none of which
 // write a value the caller can steer:
 //   1. Stripe webhook (app/api/stripe/webhook/route.ts) — is_pro/pro_until/
 //      stripe_customer_id, pinned against the session client by guard_profile_privileged.
@@ -19,6 +19,9 @@ import type { Database } from "@/types/database.types";
 //      Storage RLS on post-media is owner-keyed by user id and cannot let an
 //      admin remove another user's objects; the target paths come from the
 //      already-authorized RPC's return value, not from raw client input.
+//   6. Portfolio metrics (app/api/portfolio/metrics/route.ts) — calls
+//      record_portfolio_daily_metric_once only. Session hash, owner, project,
+//      and viewer are derived server-side; the body never steers a count.
 // (A second use, the weekly-prompt cache, and a fourth, push notification
 // send, were removed with those features.)
 // Do NOT add a use that writes user-controllable data or targets a user-chosen
