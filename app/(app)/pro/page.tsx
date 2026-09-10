@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { isPro } from "@/lib/pro";
+import { isPro, welcomeAfterCheckout } from "@/lib/pro";
+import { githubAnalysisConfigured } from "@/lib/github/config";
 import { IconBolt } from "@/components/icons";
 import { openBillingPortal, startCheckout } from "./actions";
 
@@ -9,32 +10,17 @@ const BILLING_ENABLED = process.env.NEXT_PUBLIC_BILLING_ENABLED === "true";
 const GROUPS: { title: string; subtitle: string; features: string[] }[] = [
   {
     title: "Express",
-    subtitle: "Make your profile yours",
+    subtitle: "Make your portfolio yours",
     features: [
       "Pro badge on your profile",
-      "Custom profile accent color",
-      "Profile banner",
-      "Animated profile picture (GIF / animated-webp)",
+      "Profile themes, banner, and animated avatar",
+      "Custom section order",
     ],
   },
   {
-    title: "Connect",
-    subtitle: "Let AI find your people",
-    features: [
-      "150 natural-language people searches a day",
-      "A stronger AI model, 150 uses a day",
-      "Improve my post: AI rewrites your draft",
-      "150 AI icebreakers a day",
-      "Weekly “5 people to meet” email, with AI reasons",
-    ],
-  },
-  {
-    title: "Belong",
-    subtitle: "See and be seen",
-    features: [
-      "Profile themes",
-      "See who viewed your profile",
-    ],
+    title: "See what gets attention",
+    subtitle: "Aggregate counts, not named visitors",
+    features: ["30-day portfolio views", "30-day project link clicks", "Per-project click totals"],
   },
 ];
 
@@ -45,6 +31,8 @@ const NEVER_GATED = [
   "posting",
   "following",
   "DMs",
+  "manual projects",
+  "publication and sharing",
   "private accounts",
   "feed",
   "reactions",
@@ -77,6 +65,8 @@ export default async function ProPage({
   if (!profile) redirect("/login");
 
   const pro = isPro(profile);
+  const showWelcome = welcomeAfterCheckout(upgraded, profile);
+  const analysisAvailable = githubAnalysisConfigured();
   // Gate on pro_source, NOT on stripe_customer_id: a user who once subscribed
   // keeps that customer id forever, so a later one-time semester purchase would
   // still show "Manage billing" and open a portal with no subscription in it.
@@ -97,7 +87,7 @@ export default async function ProPage({
       </div>
 
       <p className="mb-6 text-[15px] leading-relaxed text-[var(--ink-muted)]">
-        Express who you are. Let AI find your people.
+        Customize your portfolio and see what gets attention. Social posting, projects, and DMs stay free.
       </p>
 
       {/* Pricing */}
@@ -135,9 +125,14 @@ export default async function ProPage({
         </div>
 
         <div className="mt-4">
-          {upgraded && (
+          {showWelcome && (
             <p className="mb-3 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 text-sm font-medium text-[var(--ink)]">
               You&apos;re upgraded to Pro. Welcome.
+            </p>
+          )}
+          {upgraded === "1" && !pro && (
+            <p className="mb-3 text-sm text-[var(--ink-muted)]">
+              Checkout finished. Pro unlocks when billing confirms on your account.
             </p>
           )}
           {pro ? (
@@ -177,7 +172,17 @@ export default async function ProPage({
 
       {/* What's included — grouped as divided sections, not a grid of identical cards */}
       <div className="mt-4 card shadow-paper overflow-hidden">
-        {GROUPS.map((g, i) => (
+        {(analysisAvailable
+          ? [
+              ...GROUPS,
+              {
+                title: "Analysis",
+                subtitle: "When repository analysis is enabled",
+                features: ["Higher repository-analysis allowance than Free"],
+              },
+            ]
+          : GROUPS
+        ).map((g, i) => (
           <div key={g.title} className={i > 0 ? "border-t border-[var(--border)] p-6" : "p-6"}>
             <div className="flex items-baseline justify-between gap-3">
               <h2 className="text-[15px] font-semibold text-[var(--ink)]">{g.title}</h2>

@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import posthog from "posthog-js";
 import { updateReferralCode, type ReferralCodeState } from "@/app/(app)/referrals/actions";
+import { copyText } from "@/lib/referrals";
 import { IconBolt, IconButterfly } from "@/components/icons";
 
 const GOAL = 100;
@@ -24,6 +25,7 @@ export default function ReferralShareCard({
   const [state, formAction, pending] = useActionState<ReferralCodeState, FormData>(updateReferralCode, {});
   const [editing, setEditing] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState(false);
   const code = state.code ?? initialCode;
   const shareLink = `${origin}/signup?ref=${code}`;
 
@@ -31,14 +33,31 @@ export default function ReferralShareCard({
   const proEarned = referralCount >= GOAL;
   const progress = Math.min(referralCount, GOAL);
 
-  function copyLink() {
-    navigator.clipboard.writeText(shareLink);
+  async function copyLink() {
+    setCopyError(false);
+    const ok = await copyText(shareLink);
+    if (!ok) {
+      setCopyError(true);
+      return;
+    }
     posthog.capture("referral_link_copied", {
       referral_count: referralCount,
       is_campus_founder: isCampusFounder,
     });
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1500);
+  }
+
+  async function shareLinkNative() {
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+      try {
+        await navigator.share({ title: "Join me on samehere", url: shareLink });
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+      }
+    }
+    await copyLink();
   }
 
   return (
@@ -84,12 +103,24 @@ export default function ReferralShareCard({
         <span className="min-w-0 flex-1 truncate text-sm text-[var(--ink-muted)]">{shareLink}</span>
         <button
           type="button"
-          onClick={copyLink}
+          onClick={() => void copyLink()}
           className="btn-ghost shrink-0 !rounded-full !px-3 !py-1 text-sm active:scale-[0.98]"
         >
           {copied ? "Copied" : "Copy link"}
         </button>
+        <button
+          type="button"
+          onClick={() => void shareLinkNative()}
+          className="btn-ghost shrink-0 !rounded-full !px-3 !py-1 text-sm active:scale-[0.98]"
+        >
+          Share
+        </button>
       </div>
+      {copyError && (
+        <p role="alert" className="mt-2 text-sm text-[var(--danger)]">
+          Could not copy the link. Copy it from the field above.
+        </p>
+      )}
 
       {/* Progress and milestones section */}
       <div className="mt-5 space-y-4">
@@ -98,7 +129,7 @@ export default function ReferralShareCard({
           <div className="flex items-center justify-between gap-2 mb-2">
             <span className="text-sm font-semibold text-[var(--ink)]">Progress</span>
             <span className="text-sm font-semibold text-[var(--ink)]">
-              {progress} of {GOAL}
+              {progress} qualified of {GOAL}
             </span>
           </div>
 
@@ -120,11 +151,10 @@ export default function ReferralShareCard({
               ? `${Math.max(0, GOAL - referralCount)} more to a free semester of Pro`
               : `${Math.max(0, BUTTERFLY_MILESTONE - referralCount)} more to the Social Butterfly badge`}
           </p>
-          {pendingCount > 0 && (
-            <p className="mt-1 text-xs text-[var(--ink-muted)]">
-              {pendingCount} pending. A referral counts once that person is active on samehere.
-            </p>
-          )}
+          <p className="mt-1 text-xs text-[var(--ink-muted)]">
+            {referralCount} qualified
+            {pendingCount > 0 ? ` · ${pendingCount} pending until they are active` : ""}.
+          </p>
         </div>
 
         {/* Milestone 1: Social Butterfly */}
