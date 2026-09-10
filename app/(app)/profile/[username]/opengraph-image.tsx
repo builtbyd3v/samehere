@@ -1,14 +1,14 @@
 import { readFile } from "node:fs/promises";
 import { ImageResponse } from "next/og";
-import { createClient } from "@supabase/supabase-js";
 import sharp from "sharp";
 import { BLUE, BORDER, CANVAS, CARD, GOLD, GREEN, HM, INK, INK_FAINT, INK_MUTED } from "@/lib/og-tokens";
+import { portfolioViewerClient } from "@/lib/portfolio/client";
+import { getPublicPortfolio } from "@/lib/portfolio/public";
 
 // Dynamic per-profile OG card — the shareable, screenshot-worthy asset.
 //
-// IMPORTANT: this runs with NO user session (crawlers, link unfurls) — only the
-// public anon key is available. `profiles` RLS requires auth.uid() is not null,
-// so everything comes through anon-granted SECURITY DEFINER RPCs:
+// Crawlers have no session cookie, so this uses the anon key. A signed-in
+// viewer keeps the session client so block context is not erased. RPCs:
 //   get_public_profile        — nulls a private account's fields itself
 //   get_public_profile_counts — three integers, never the follower lists
 //   get_public_heatmap        — self-guards on heatmap_visibility + is_private
@@ -73,6 +73,7 @@ type Profile = {
   major: string | null;
   school: string | null;
   verified_student: boolean;
+  open_to?: string[] | null;
 };
 type Counts = { posts: number; followers: number; following: number };
 
@@ -363,14 +364,10 @@ function Footer({ username }: { username: string }) {
 
 export default async function OgImage({ params }: { params: Promise<{ username: string }> }) {
   const { username } = await params;
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { auth: { persistSession: false, autoRefreshToken: false } },
-  );
+  const supabase = await portfolioViewerClient();
 
   const { data: rows } = await supabase.rpc("get_public_profile", { p_username: username });
-  const profile = (rows as Profile[] | null)?.[0] ?? null;
+  const profile = rows?.[0] ?? null;
 
   const font = await fonts();
 
@@ -401,16 +398,22 @@ export default async function OgImage({ params }: { params: Promise<{ username: 
     );
   }
 
+  const projection = await getPublicPortfolio(supabase, username);
+  const activityVisible = projection.ok
+    ? Boolean(projection.data?.activity_visible)
+    : !projection.unavailable && profile.heatmap_visibility === "public" && !profile.is_private;
+  const heatmapFallback =
+    (!projection.ok && projection.unavailable && profile.heatmap_visibility === "public" && !profile.is_private);
   const [avatar, countsRes, heatRes] = await Promise.all([
     avatarDataUri(profile.avatar_url),
     supabase.rpc("get_public_profile_counts", { p_profile_id: profile.id }),
-    profile.heatmap_visibility === "public" && !profile.is_private
+    activityVisible || heatmapFallback
       ? supabase.rpc("get_public_heatmap", { p_profile_id: profile.id })
       : Promise.resolve({ data: null }),
   ]);
 
-  const counts = ((countsRes.data as Counts[] | null)?.[0] ?? null) as Counts | null;
-  const heat = (heatRes.data as HeatmapRow[] | null) ?? [];
+  const counts = countsRes.data?.[0] ?? null;
+  const heat = heatRes.data ?? [];
   const showHeatmap = heat.length > 0;
 
   return new ImageResponse(

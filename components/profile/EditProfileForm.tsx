@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useRef, useState, useTransition } from "react";
-import { draftProfileText, updateProfile, uploadAvatar, uploadBanner, type AvatarState, type DraftState, type EditState } from "@/app/(app)/profile/edit/actions";
+import { useActionState, useState } from "react";
+import { updateProfile, uploadAvatar, uploadBanner, type AvatarState, type EditState } from "@/app/(app)/profile/edit/actions";
 import { isPro } from "@/lib/pro";
 import { PROFILE_THEME_KEYS, PROFILE_THEMES, isProfileTheme, type ProfileTheme } from "@/lib/themes";
+import { OPEN_TO_TAGS } from "@/lib/portfolio/validation";
+import { OPEN_TO_LABELS } from "@/lib/portfolio/labels";
 import AvatarBase from "@/components/ui/Avatar";
-import ProfileNudgePanel from "@/components/profile/ProfileNudgePanel";
 
 export type EditInitial = {
   id: string;
@@ -19,6 +20,7 @@ export type EditInitial = {
   major: string | null;
   bio: string | null;
   goals: string | null;
+  open_to: string[];
   is_private: boolean;
   hide_school: boolean;
   heatmap_visibility: string;
@@ -32,8 +34,7 @@ const field = "input-base mt-1.5";
 const hint = "mt-1 text-xs text-[var(--ink-muted)]";
 
 export default function EditProfileForm({ initial }: { initial: EditInitial }) {
-  const [state, formAction, _pending] = useActionState<EditState, FormData>(updateProfile, {});
-
+  const [state, formAction] = useActionState<EditState, FormData>(updateProfile, {});
   const [avatarState, avatarAction, avatarBusy] = useActionState<AvatarState, FormData>(uploadAvatar, {});
   const avatarUrl = avatarState.url ?? initial.avatar_url;
   const [bannerState, bannerAction, bannerBusy] = useActionState<AvatarState, FormData>(uploadBanner, {});
@@ -43,28 +44,9 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
   );
   const pro = isPro(initial);
 
-  // Bio + goals are uncontrolled (defaultValue); the draft button writes into
-  // them directly via ref so typing elsewhere isn't fought by React state.
-  const bioRef = useRef<HTMLTextAreaElement>(null);
-  const goalsRef = useRef<HTMLTextAreaElement>(null);
-  const [draftState, setDraftState] = useState<DraftState>({});
-  const [drafting, startDraft] = useTransition();
-
-  function onDraft() {
-    startDraft(async () => {
-      const result = await draftProfileText();
-      setDraftState(result);
-      if (result.bio && bioRef.current) bioRef.current.value = result.bio;
-      if (result.goals && goalsRef.current) goalsRef.current.value = result.goals;
-    });
-  }
-
-  // Server action validates MIME/size/animation and gates animated avatars
-  // behind Pro (client checks below are UX only, not the trust boundary).
-
   function onAvatar(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    e.target.value = ""; // let the same file be re-picked after an error
+    e.target.value = "";
     if (!file) return;
     const fd = new FormData();
     fd.set("avatar", file);
@@ -89,18 +71,6 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
         </Link>
       </div>
 
-      <ProfileNudgePanel
-        profile={{
-          display_name: initial.display_name,
-          avatar_url: avatarUrl,
-          school: initial.school,
-          year: initial.year,
-          major: initial.major,
-          bio: initial.bio,
-          goals: initial.goals,
-        }}
-      />
-
       <form id="edit-profile-form" action={formAction} className="card p-6">
         {state.error && (
           <p role="alert" className="mb-5 rounded-md border border-[var(--border-strong)] bg-[var(--featured-surface)] px-3 py-2 text-sm text-[var(--ink)]">
@@ -108,9 +78,7 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
           </p>
         )}
 
-        {/* Media: banner + avatar grouped into one compact block */}
         <div className="mb-6 space-y-4 border-b border-[var(--border)] pb-6">
-          {/* Banner (Pro) */}
           <div>
             <label className={label}>Profile banner</label>
             {pro ? (
@@ -143,7 +111,6 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
             )}
           </div>
 
-          {/* Avatar */}
           <div className="flex items-center gap-4">
             <AvatarBase
               src={avatarUrl}
@@ -153,10 +120,7 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
               pro={pro}
             />
             <div>
-              <label
-                id="avatar-upload"
-                className="btn-ghost inline-flex cursor-pointer !py-1.5 text-sm"
-              >
+              <label id="avatar-upload" className="btn-ghost inline-flex cursor-pointer !py-1.5 text-sm">
                 <input type="file" accept="image/*" onChange={onAvatar} disabled={avatarBusy} className="hidden" />
                 {avatarBusy ? "Uploading…" : "Change avatar"}
               </label>
@@ -175,85 +139,90 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
           </div>
 
           <div>
-            <div className="flex items-center justify-between">
-              <label htmlFor="bio" className={label}>Bio</label>
-              <button type="button" onClick={onDraft} disabled={drafting} className="btn-ghost !py-1 !px-2 text-xs">
-                {drafting ? "Drafting…" : "✦ Draft with AI"}
-              </button>
-            </div>
-            {draftState.overCap && (
-              <p className="mt-1 text-xs text-[var(--ink-muted)]">
-                Out of AI drafts today. <Link href="/pro" className="underline">Pro for more</Link>
-              </p>
-            )}
-            {draftState.error && <p className="mt-1 text-xs text-[var(--danger)]">{draftState.error}</p>}
-            <textarea ref={bioRef} id="bio" name="bio" rows={3} maxLength={500}
+            <label htmlFor="bio" className={label}>Bio</label>
+            <textarea id="bio" name="bio" rows={3} maxLength={500}
               defaultValue={initial.bio ?? ""} placeholder="A few lines about you." className={field} />
           </div>
 
           <div>
             <label htmlFor="goals" className={label}>Goals</label>
-            <textarea ref={goalsRef} id="goals" name="goals" rows={2} maxLength={500}
+            <textarea id="goals" name="goals" rows={2} maxLength={500}
               defaultValue={initial.goals ?? ""} placeholder="What are you working toward?" className={field} />
           </div>
 
-          {/* Hidden field carries the submitted value; the swatch buttons below
-              just drive `profileTheme` state (no name attr of their own). */}
+          <fieldset>
+            <legend className={label}>Open to</legend>
+            <p className={hint}>Optional. An invitation to message, not a DM bypass.</p>
+            <ul className="mt-2 flex flex-col gap-2">
+              {OPEN_TO_TAGS.map((tag) => (
+                <li key={tag}>
+                  <label className="flex items-center gap-2.5 text-sm text-[var(--ink)]">
+                    <input
+                      type="checkbox"
+                      name="open_to"
+                      value={tag}
+                      defaultChecked={initial.open_to.includes(tag)}
+                      className="h-4 w-4 accent-[var(--ink)]"
+                    />
+                    {OPEN_TO_LABELS[tag]}
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </fieldset>
+
           <input type="hidden" name="profile_theme" value={profileTheme ?? ""} />
-          {(
-            <div className="border-t border-[var(--border)] pt-4">
-              <label className={label}>Profile theme</label>
-              {pro ? (
-                <>
-                  <div className="mt-1.5 flex flex-wrap gap-2">
+          <div className="border-t border-[var(--border)] pt-4">
+            <label className={label}>Profile theme</label>
+            {pro ? (
+              <>
+                <div className="mt-1.5 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setProfileTheme(null)}
+                    aria-pressed={profileTheme === null}
+                    className={`h-9 rounded-full border px-3 text-sm ${
+                      profileTheme === null
+                        ? "border-[var(--ink)] text-[var(--ink)]"
+                        : "border-[var(--border)] text-[var(--ink-muted)]"
+                    }`}
+                  >
+                    None
+                  </button>
+                  {PROFILE_THEME_KEYS.map((key) => (
                     <button
+                      key={key}
                       type="button"
-                      onClick={() => setProfileTheme(null)}
-                      aria-pressed={profileTheme === null}
-                      className={`h-9 rounded-full border px-3 text-sm active:scale-[0.98] ${
-                        profileTheme === null
+                      onClick={() => setProfileTheme(key)}
+                      aria-pressed={profileTheme === key}
+                      title={PROFILE_THEMES[key].label}
+                      className={`flex h-9 items-center gap-2 rounded-full border px-3 text-sm ${
+                        profileTheme === key
                           ? "border-[var(--ink)] text-[var(--ink)]"
                           : "border-[var(--border)] text-[var(--ink-muted)]"
                       }`}
                     >
-                      None
+                      <span
+                        aria-hidden
+                        className="h-3.5 w-3.5 rounded-full"
+                        style={{ background: PROFILE_THEMES[key].accent }}
+                      />
+                      {PROFILE_THEMES[key].label}
                     </button>
-                    {PROFILE_THEME_KEYS.map((key) => (
-                      <button
-                        key={key}
-                        type="button"
-                        onClick={() => setProfileTheme(key)}
-                        aria-pressed={profileTheme === key}
-                        title={PROFILE_THEMES[key].label}
-                        className={`flex h-9 items-center gap-2 rounded-full border px-3 text-sm active:scale-[0.98] ${
-                          profileTheme === key
-                            ? "border-[var(--ink)] text-[var(--ink)]"
-                            : "border-[var(--border)] text-[var(--ink-muted)]"
-                        }`}
-                      >
-                        <span
-                          aria-hidden
-                          className="h-3.5 w-3.5 rounded-full"
-                          style={{ background: PROFILE_THEMES[key].accent }}
-                        />
-                        {PROFILE_THEMES[key].label}
-                      </button>
-                    ))}
-                  </div>
-                  <p className={hint}>A curated look for your profile.</p>
-                </>
-              ) : (
-                <div className="mt-1.5 flex items-center gap-3">
-                  <div className="h-9 w-24 rounded-full border border-[var(--border)] bg-[var(--canvas)] opacity-50" />
-                  <Link href="/pro" className="text-sm text-[var(--ink-muted)] underline">
-                    Profile themes · Pro
-                  </Link>
+                  ))}
                 </div>
-              )}
-            </div>
-          )}
+                <p className={hint}>A curated look for your profile.</p>
+              </>
+            ) : (
+              <div className="mt-1.5 flex items-center gap-3">
+                <div className="h-9 w-24 rounded-full border border-[var(--border)] bg-[var(--canvas)] opacity-50" />
+                <Link href="/pro" className="text-sm text-[var(--ink-muted)] underline">
+                  Profile themes · Pro
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
-
       </form>
     </main>
   );

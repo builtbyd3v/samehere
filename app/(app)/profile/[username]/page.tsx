@@ -1,20 +1,24 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Suspense, cache } from "react";
+import { cache, Suspense, type CSSProperties, type ReactNode } from "react";
+import type {
+  GithubConnectionPublic,
+  GithubContributionDay,
+  PortfolioProject,
+  PublicPortfolioEducation,
+  PublicPortfolioExperience,
+  PublicPortfolioProject,
+  PublicPortfolioProjection,
+} from "@/types/portfolio";
 import { notFound } from "next/navigation";
-import { after } from "next/server";
-import { cookies } from "next/headers";
-import { createClient as createAnonClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import type { FollowState } from "@/components/profile/FollowButton";
 import ProfileActions from "@/components/profile/ProfileActions";
 import BlockButton from "@/components/profile/BlockButton";
 import { POST_SELECT, withEngagement, type PostRow } from "@/components/feed/PostCard";
 import FeedTimeline from "@/components/feed/FeedTimeline";
-import ProfileMatchPrompt from "@/components/profile/ProfileMatchPrompt";
 import ProfileActivitySection from "@/components/profile/ProfileActivitySection";
-import ProfileViewersSection from "@/components/profile/ProfileViewersSection";
-import { Skeleton } from "@/components/ui/Skeleton";
+import ContributionHeatmap, { type HeatmapDay } from "@/components/profile/ContributionHeatmap";
 import { attachSignedMedia } from "@/lib/media";
 import { fetchQuotedReposts, toQuotedRepost } from "@/lib/feed-quotes";
 import { fetchPlainReposts } from "@/lib/feed-reposts";
@@ -22,57 +26,49 @@ import { fetchViewerMineState } from "@/lib/feed-engagement";
 import { mergeFeedTimeline } from "@/lib/feed-timeline";
 import UserBadges from "@/components/profile/UserBadges";
 import AvatarBase from "@/components/ui/Avatar";
-import ContributionHeatmap, { type HeatmapDay } from "@/components/profile/ContributionHeatmap";
 import { isPro } from "@/lib/pro";
 import { PROFILE_THEMES, isProfileTheme, themeCssVars } from "@/lib/themes";
-import CompanyLogo from "@/components/ui/CompanyLogo";
-import { formatDateRange, descriptionBullets } from "@/lib/experience-format";
-import { schoolLogoUrl } from "@/lib/school-logo";
 import { pickPrimaryEducation } from "@/lib/education-options";
-
+import { createAnonPortfolioClient, hasPortfolioAuthCookie, portfolioReadClient, type PortfolioClient } from "@/lib/portfolio/client";
+import { getOwnerGithubConnection, getOwnerGithubDays, loadPublicPortfolioBundle } from "@/lib/portfolio/public";
+import { listOwnerProjects } from "@/lib/portfolio/owner";
+import { heatmapBreakdown } from "@/lib/portfolio/activity";
+import { metadataDescription, profileIntro, publicSectionVisible, robotsForProjection } from "@/lib/portfolio/projection";
+import { effectiveSectionOrder, eligiblePublicView } from "@/lib/portfolio/metrics";
+import { PORTFOLIO_SECTIONS } from "@/lib/portfolio/validation";
+import TrackPortfolioView from "@/components/portfolio/TrackPortfolioView";
+import { OwnerAnalyticsSection, PortfolioAnalyticsFallback } from "@/components/portfolio/PortfolioAnalytics";
+import SharePortfolioButton from "@/components/portfolio/SharePortfolioButton";
+import UnavailableNotice from "@/components/portfolio/UnavailableNotice";
+import {
+  ActivitySection,
+  EducationList,
+  ExperienceList,
+  IntroSection,
+  OwnerProjects,
+  PublicProjectList,
+} from "@/components/portfolio/ProfileSections";
 const PROFILE_SELECT =
+  "id, username, display_name, avatar_url, banner_url, year, major, bio, goals, open_to, is_private, heatmap_visibility, is_pro, pro_until, is_founder, is_campus_founder, profile_theme, verified_student, is_bot";
+const PROFILE_SELECT_FALLBACK =
   "id, username, display_name, avatar_url, banner_url, year, major, bio, goals, is_private, heatmap_visibility, is_pro, pro_until, is_founder, is_campus_founder, profile_theme, verified_student, is_bot";
 
-// Shared by generateMetadata and the page component so they hit one query
-// instead of two — React's cache() dedupes by argument (username) within a
-// single render pass. Takes only the primitive username (not a supabase
-// client instance) so both call sites land on the same cache entry.
 const getProfileByUsername = cache(async (username: string) => {
   const supabase = await createClient();
-  const { data } = await supabase.from("profiles").select(PROFILE_SELECT).eq("username", username).maybeSingle();
-  return data;
+  const first = await supabase.from("profiles").select(PROFILE_SELECT).eq("username", username).maybeSingle();
+  if (!first.error) return first.data;
+  const fallback = await supabase.from("profiles").select(PROFILE_SELECT_FALLBACK).eq("username", username).maybeSingle();
+  return fallback.data;
 });
 
-type ExperienceRow = {
-  id: string;
-  kind: string;
-  org: string;
-  role: string;
-  term: string | null;
-  note: string | null;
-  start_date: string | null;
-  end_date: string | null;
-  is_current: boolean;
-};
-
-type EducationRow = {
-  id: string;
-  school: string;
-  degree: string | null;
-  field: string | null;
-  start_date: string | null;
-  end_date: string | null;
-  school_domain: string | null;
-  is_current: boolean;
-};
-
-// Fixed group order for the Experience section, LinkedIn-style.
-const EXPERIENCE_GROUPS: { kind: string; label: string }[] = [
-  { kind: "internship", label: "Internships" },
-  { kind: "job", label: "Jobs" },
-  { kind: "research", label: "Research" },
-  { kind: "club_role", label: "Leadership & Clubs" },
-];
+const loadViewerPublicMeta = cache(async (username: string, hasAuth: boolean) => {
+  const client = await portfolioReadClient(hasAuth);
+  const [{ data }, portfolio] = await Promise.all([
+    client.rpc("get_public_profile", { p_username: username }),
+    loadPublicPortfolioBundle(client, username),
+  ]);
+  return { profile: data?.[0] ?? null, portfolio };
+});
 
 function Stat({ value, label, accent, href }: { value: number; label: string; accent?: boolean; href?: string }) {
   const content = (
@@ -95,205 +91,18 @@ function Stat({ value, label, accent, href }: { value: number; label: string; ac
   );
 }
 
-// Logged-out render. Uses a plain anon supabase-js client (not the cookie-bound
-// session client) so RLS/definer-fn checks run as true anon — same pattern as
-// lib/founder.ts. The RPCs below (get_public_profile, get_public_profile_counts,
-// get_public_heatmap) are SECURITY DEFINER + anon-granted and enforce privacy
-// themselves; this component renders exactly what they return and never
-// re-derives the is_private field-nulling rule itself.
-function anonSupabase() {
-  return createAnonClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-}
-
-// The RPCs below are anon-granted SECURITY DEFINER functions not yet present
-// in the generated Database types (types/database.types.ts hasn't been
-// regenerated since the migration landed). A plain (untyped) client can't call
-// `.rpc(name, args)` with useful inference either way, so cast once here and
-// take rows ourselves instead of chaining `.returns()`/`.maybeSingle()` (which
-// needs the real generated types to resolve correctly).
-function callRpc<T>(supabase: ReturnType<typeof anonSupabase>, fn: string, args: Record<string, unknown>) {
-  const rpc = supabase.rpc.bind(supabase) as unknown as (
-    fn: string,
-    args: Record<string, unknown>,
-  ) => PromiseLike<{ data: T[] | null }>;
-  return rpc(fn, args).then((r) => r.data ?? []);
-}
-
-type PublicProfile = {
-  id: string;
-  username: string;
-  display_name: string | null;
-  avatar_url: string | null;
-  is_pro: boolean;
-  is_founder: boolean;
-  is_campus_founder: boolean;
-  is_private: boolean;
-  heatmap_visibility: string;
-  major: string | null;
-  bio: string | null;
-  goals: string | null;
-  school: string | null;
-  verified_student: boolean;
-  is_bot: boolean;
-};
-
-type PublicCounts = { posts: number; followers: number; following: number };
-
-// generateMetadata runs with no session (crawlers, logged-out visitors), so it
-// must read through the anon-granted definer, not the cookie-bound client.
-// cache() dedupes it against PublicProfileView within one render pass.
-const getPublicProfileMeta = cache(async (username: string) => {
-  const rows = await callRpc<PublicProfile>(anonSupabase(), "get_public_profile", { p_username: username });
-  return rows[0] ?? null;
-});
-
-async function PublicProfileView({ username }: { username: string }) {
-  const supabase = anonSupabase();
-  const profile = (await callRpc<PublicProfile>(supabase, "get_public_profile", { p_username: username }))[0] ?? null;
-
-  if (!profile) notFound();
-
-  const counts = (await callRpc<PublicCounts>(supabase, "get_public_profile_counts", { p_profile_id: profile.id }))[0];
-  const c = counts ?? { posts: 0, followers: 0, following: 0 };
-
-  // Private accounts render nothing past this — get_public_profile already
-  // nulled every other field for them, so this heatmap call is the only extra
-  // gate we add ourselves (it's a separate RPC, not a field on the profile row).
-  const showHeatmap = !profile.is_private && profile.heatmap_visibility === "public";
-  const heatmapRaw = showHeatmap
-    ? await callRpc<{ day: string; points: number }>(supabase, "get_public_heatmap", { p_profile_id: profile.id })
-    : [];
-  const heatmap: HeatmapDay[] = heatmapRaw.map((d) => ({ ...d, breakdown: {} }));
-
-  const displayName = profile.display_name ?? profile.username;
-  const metaParts = [profile.school, profile.major].filter(Boolean);
-  const metaLine =
-    metaParts.length <= 1 ? metaParts[0] ?? null : `${metaParts[0]} · ${metaParts.slice(1).join(", ")}`;
-
-  return (
-    <main className="page-enter mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8">
-      <section className="card overflow-hidden">
-        <div
-          aria-hidden
-          className="aspect-[4/1] w-full"
-          style={{ background: "linear-gradient(120deg, color-mix(in srgb, var(--blue) 14%, var(--surface-card)) 0%, var(--surface-card) 62%)" }}
-        />
-        <div className="px-5 pb-5 sm:px-6 sm:pb-6">
-          <AvatarBase
-            src={profile.avatar_url}
-            seed={profile.username}
-            name={displayName}
-            pro={profile.is_pro}
-            priority
-            className="-mt-12 h-24 w-24 shrink-0 rounded-full border-4 border-[var(--surface-card)] text-3xl sm:-mt-14 sm:h-28 sm:w-28"
-          />
-
-          <div className="mt-3">
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-              <h1 className="text-2xl font-semibold tracking-[-0.025em] sm:text-[28px]">{displayName}</h1>
-              <UserBadges isPro={profile.is_pro} isFounder={profile.is_founder} isCampusFounder={profile.is_campus_founder} isVerifiedStudent={profile.verified_student} isBot={profile.is_bot} />
-            </div>
-            <p className="mt-0.5 text-[15px] text-[var(--ink-muted)]">@{profile.username}</p>
-            {metaLine && <p className="mt-2 text-sm text-[var(--ink-muted)]">{metaLine}</p>}
-
-            <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1">
-              <Stat value={Number(c.posts)} label="posts" />
-              <Stat value={Number(c.followers)} label="followers" href={`/profile/${profile.username}/followers`} />
-              <Stat value={Number(c.following)} label="following" href={`/profile/${profile.username}/following`} />
-            </div>
-          </div>
-
-          {profile.bio && (
-            <p className="mt-5 max-w-[60ch] whitespace-pre-line break-words text-[17px] leading-[1.6] text-[var(--ink)]">
-              {profile.bio}
-            </p>
-          )}
-        </div>
-      </section>
-
-      {profile.is_private ? (
-        <div className="card mt-3 px-6 py-8 text-center">
-          <p className="font-medium text-[var(--ink)]">This account is private</p>
-        </div>
-      ) : (
-        (showHeatmap || profile.goals) && (
-          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {showHeatmap && (
-              <section className="card p-5 shadow-paper sm:col-span-2 sm:p-6">
-                <h2 className="mb-4 text-sm font-semibold text-[var(--ink)]">Activity</h2>
-                <ContributionHeatmap data={heatmap} />
-              </section>
-            )}
-
-            {profile.goals && (
-              <section className="card card-hover p-5 shadow-paper sm:col-span-2 sm:p-6">
-                <h2 className="text-sm font-semibold text-[var(--ink)]">Goals</h2>
-                <p className="mt-1.5 whitespace-pre-line break-words text-[15px] leading-[1.55] text-[var(--ink-muted)]">
-                  {profile.goals}
-                </p>
-              </section>
-            )}
-          </div>
-        )
-      )}
-
-      <section className="mt-6">
-        <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">Posts</h2>
-        <div className="card px-6 py-12 text-center">
-          <p className="font-medium text-[var(--ink)]">Sign in to see their posts</p>
-          <div className="mt-4 flex justify-center gap-2">
-            <Link href="/login" className="btn-ghost !rounded-full !px-4 !py-1.5 text-sm">
-              Sign in
-            </Link>
-            <Link href="/signup" className="btn-primary !rounded-full !px-4 !py-1.5 text-sm">
-              Sign up
-            </Link>
-          </div>
-        </div>
-      </section>
-    </main>
-  );
-}
-
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ username: string }>;
 }): Promise<Metadata> {
   const { username } = await params;
-
-  // Metadata is generated for crawlers and for logged-out visitors, i.e. with NO
-  // session. The session client can't see `profiles` at all (its SELECT policy
-  // requires auth.uid() is not null), so reading through it returned null and
-  // every shared link unfurled as "Profile not found". Read the same anon-granted
-  // definer the page body uses. It nulls a private account's fields itself, so a
-  // private profile falls back to the generic description below rather than
-  // leaking a bio into a link preview.
-  const profile = await getPublicProfileMeta(username);
-
-  // noindex/nofollow, not disabled: link-preview crawlers (Twitterbot,
-  // Slackbot, etc.) fetch the page and parse <head> directly — they don't
-  // consult robots — so OG/Twitter unfurls below still work. This only keeps
-  // the page out of search indexes. Flipping it on is a one-line product call.
-  const robots = { index: false, follow: false };
-
+  const hasAuth = await hasPortfolioAuthCookie();
+  const { profile, portfolio } = await loadViewerPublicMeta(username, hasAuth);
+  const robots = robotsForProjection(portfolio.ok ? portfolio.data.projection : null, !portfolio.ok && Boolean(portfolio.unavailable));
   if (!profile) return { title: "Profile not found", robots };
-
   const name = profile.display_name ?? username;
-
-  // Deliberately NOT the bio. A bio is something a student wrote for other
-  // students; pushing it into every Discord, Slack and Twitter embed publishes
-  // it to anyone who sees the link — and it stays in their unfurl caches long
-  // after the account goes private. The card itself carries the identity; the
-  // description just says what the link is for.
-  const description = `Join @${username} on samehere. Built for students.`;
-
-  // Deliberately NO `images` here. An explicit openGraph.images overrides the
-  // file-based opengraph-image route, which is what renders the heatmap card —
-  // the whole point of the share image. Setting it to the avatar would silently
-  // replace a 1200x630 contribution graph with a small round photo.
+  const description = metadataDescription(username);
   return {
     title: `${name} (@${username})`,
     description,
@@ -303,102 +112,363 @@ export async function generateMetadata({
   };
 }
 
-// Anon crawler unfurls and logged-out visits are the common case for this
-// route; skip constructing the cookie-bound Supabase client entirely when no
-// Supabase auth cookie is present at all. See plans/006-request-layer-dedup.md
-// for the same predicate used in lib/supabase/middleware.ts.
-async function hasAuthCookie() {
-  const store = await cookies();
-  return store.getAll().some((c) => c.name.startsWith("sb-") && c.name.includes("-auth-token"));
+function OwnerBar({
+  username,
+  previewPublic,
+}: {
+  username: string;
+  previewPublic: boolean;
+}) {
+  return (
+    <div className="mb-3 flex flex-wrap items-center gap-2">
+      <Link href="/profile/edit" className="btn-ghost !rounded-full !px-4 !py-1.5 text-sm">
+        Edit profile
+      </Link>
+      <Link href="/profile/projects/new" className="btn-primary !rounded-full !px-4 !py-1.5 text-sm">
+        Add project
+      </Link>
+      <Link
+        href={previewPublic ? `/profile/${username}` : `/profile/${username}?preview=public`}
+        className="btn-ghost !rounded-full !px-4 !py-1.5 text-sm"
+      >
+        {previewPublic ? "Owner view" : "Public preview"}
+      </Link>
+    </div>
+  );
+}
+
+function PortfolioBody({
+  projection,
+  unavailable,
+  isOwner,
+  previewPublic,
+  ownerProjects,
+  publicProjects,
+  experience,
+  education,
+  logos,
+  samehere,
+  github,
+  connection,
+  streak,
+  posts,
+  samehereKnown = true,
+  currentPro,
+  intro,
+}: {
+  projection: PublicPortfolioProjection | null;
+  unavailable: boolean;
+  isOwner: boolean;
+  previewPublic: boolean;
+  ownerProjects: PortfolioProject[];
+  publicProjects: PublicPortfolioProject[];
+  experience: PublicPortfolioExperience[];
+  education: Array<PublicPortfolioEducation & { school_domain?: string | null }>;
+  logos: Map<string, string | null>;
+  samehere: { day: string; points: number; breakdown: Record<string, number> }[];
+  github: GithubContributionDay[];
+  connection: GithubConnectionPublic | null;
+  streak: { current_streak: number; longest_streak: number; today_earned?: boolean } | null;
+  posts: ReactNode;
+  samehereKnown?: boolean;
+  currentPro: boolean;
+  intro: { bio: string | null; goals: string | null; open_to: string[] };
+}) {
+  if (unavailable) {
+    return (
+      <>
+        {isOwner && <UnavailableNotice />}
+        {isOwner && !previewPublic && (
+          <IntroSection bio={intro.bio} goals={intro.goals} openTo={intro.open_to} />
+        )}
+        {posts}
+      </>
+    );
+  }
+  const order = effectiveSectionOrder(projection?.section_order ?? [], currentPro);
+  const show = (section: (typeof order)[number]) => {
+    if (isOwner && !previewPublic) return true;
+    if (!projection) return false;
+    return publicSectionVisible(projection, section);
+  };
+  return (
+    <>
+      {order.map((section) => {
+        if (section === "intro" && show("intro")) {
+          return <IntroSection key="intro" bio={intro.bio} goals={intro.goals} openTo={intro.open_to} />;
+        }
+        if (section === "projects" && show("projects")) {
+          return isOwner && !previewPublic ? (
+            <OwnerProjects key="projects" projects={ownerProjects} previewPublic={false} />
+          ) : (
+            <PublicProjectList key="projects" projects={publicProjects} />
+          );
+        }
+        if (section === "activity" && show("activity")) {
+          return (
+            <ActivitySection
+              key="activity"
+              samehere={samehere}
+              github={github}
+              connection={connection}
+              streak={streak}
+              isOwner={isOwner && !previewPublic}
+              samehereKnown={samehereKnown}
+            />
+          );
+        }
+        if (section === "experience" && show("experience")) {
+          return <ExperienceList key="experience" items={experience} logos={logos} />;
+        }
+        if (section === "education" && show("education")) {
+          return <EducationList key="education" items={education} />;
+        }
+        if (section === "posts" && show("posts")) {
+          return <div key="posts">{posts}</div>;
+        }
+        return null;
+      })}
+    </>
+  );
+}
+
+async function PublicHeatmapFallback({
+  client,
+  profileId,
+}: {
+  client: PortfolioClient;
+  profileId: string;
+}) {
+  const { data } = await client.rpc("get_public_heatmap", { p_profile_id: profileId });
+  const heatmap: HeatmapDay[] = (data ?? []).map((d) => ({
+    day: d.day,
+    points: d.points,
+    breakdown: {},
+  }));
+  if (heatmap.length === 0) return null;
+  return (
+    <section className="card mt-3 p-5 sm:p-6">
+      <h2 className="mb-4 text-sm font-semibold text-[var(--ink)]">Activity</h2>
+      <ContributionHeatmap data={heatmap} />
+    </section>
+  );
+}
+
+async function PublicProfileView({ username }: { username: string }) {
+  const client = createAnonPortfolioClient();
+  const { data: profileRows } = await client.rpc("get_public_profile", { p_username: username });
+  const profile = profileRows?.[0] ?? null;
+  if (!profile) notFound();
+
+  const [{ data: countRows }, bundle] = await Promise.all([
+    client.rpc("get_public_profile_counts", { p_profile_id: profile.id }),
+    loadPublicPortfolioBundle(client, username),
+  ]);
+  const counts = countRows?.[0] ?? { posts: 0, followers: 0, following: 0 };
+  const projection = bundle.ok ? bundle.data.projection : null;
+  const intro = profileIntro(
+    {
+      id: profile.id,
+      username: profile.username,
+      display_name: profile.display_name,
+      bio: profile.bio,
+      goals: profile.goals,
+      open_to: profile.open_to,
+      is_private: profile.is_private,
+    },
+    projection,
+    "public"
+  );
+  const displayName = profile.display_name ?? profile.username;
+  const metaParts = [profile.school, profile.major].filter(Boolean);
+  const metaLine = metaParts.length <= 1 ? metaParts[0] ?? null : `${metaParts[0]} · ${metaParts.slice(1).join(", ")}`;
+  const bannerUrl = profile.banner_url;
+  const accentColor = profile.accent_color;
+  const trackView = eligiblePublicView({
+    isOwner: false,
+    previewPublic: false,
+    isPrivate: profile.is_private,
+    isBlocked: false,
+    isSuspended: false,
+    hasRenderedPublicContent: Boolean(
+      projection && PORTFOLIO_SECTIONS.some((section) => publicSectionVisible(projection, section))
+    ),
+  });
+
+  return (
+    <main
+      className="page-enter mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8"
+      style={accentColor ? ({ "--profile-accent": accentColor } as CSSProperties) : undefined}
+    >
+      {trackView && <TrackPortfolioView username={profile.username} />}
+      <section className="card overflow-hidden">
+        {bannerUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={bannerUrl} alt="" className="aspect-[3/1] w-full object-cover" />
+        ) : (
+          <div
+            aria-hidden
+            className="aspect-[4/1] w-full"
+            style={{
+              background: `linear-gradient(120deg, color-mix(in srgb, ${accentColor ?? "var(--blue)"} 14%, var(--surface-card)) 0%, var(--surface-card) 62%)`,
+            }}
+          />
+        )}
+        <div className="px-5 pb-5 sm:px-6 sm:pb-6">
+          <div className="flex items-end justify-between gap-3">
+            <AvatarBase
+              src={profile.avatar_url}
+              seed={profile.username}
+              name={displayName}
+              pro={profile.is_pro}
+              priority
+              style={accentColor ? { borderColor: accentColor } : undefined}
+              className="-mt-12 h-24 w-24 shrink-0 rounded-full border-4 border-[var(--surface-card)] text-3xl sm:-mt-14 sm:h-28 sm:w-28"
+            />
+            <SharePortfolioButton username={profile.username} displayName={displayName} />
+          </div>
+          <div className="mt-3">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+              <h1 className="text-2xl font-semibold tracking-[-0.025em] sm:text-[28px]">{displayName}</h1>
+              <UserBadges isPro={profile.is_pro} isFounder={profile.is_founder} isCampusFounder={profile.is_campus_founder} isVerifiedStudent={profile.verified_student} isBot={profile.is_bot} />
+            </div>
+            <p className="mt-0.5 text-[15px] text-[var(--ink-muted)]">@{profile.username}</p>
+            {metaLine && <p className="mt-2 text-sm text-[var(--ink-muted)]">{metaLine}</p>}
+            <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1">
+              <Stat value={Number(counts.posts)} label="posts" accent={Boolean(accentColor)} />
+              <Stat value={Number(counts.followers)} label="followers" accent={Boolean(accentColor)} href={`/profile/${profile.username}/followers`} />
+              <Stat value={Number(counts.following)} label="following" accent={Boolean(accentColor)} href={`/profile/${profile.username}/following`} />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {profile.is_private ? (
+        <div className="card mt-3 px-6 py-8 text-center">
+          <p className="font-medium text-[var(--ink)]">This account is private</p>
+        </div>
+      ) : !bundle.ok && bundle.unavailable ? (
+        <>
+          {profile.heatmap_visibility === "public" && (
+            <PublicHeatmapFallback client={client} profileId={profile.id} />
+          )}
+          <section className="mt-6">
+            <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">Posts</h2>
+            <div className="card px-6 py-12 text-center">
+              <p className="font-medium text-[var(--ink)]">Sign in to see their posts</p>
+              <div className="mt-4 flex justify-center gap-2">
+                <Link href="/login" className="btn-ghost !rounded-full !px-4 !py-1.5 text-sm">Sign in</Link>
+                <Link href="/signup" className="btn-primary !rounded-full !px-4 !py-1.5 text-sm">Sign up</Link>
+              </div>
+            </div>
+          </section>
+        </>
+      ) : (
+        <PortfolioBody
+          projection={projection}
+          unavailable={!bundle.ok && Boolean(bundle.unavailable)}
+          isOwner={false}
+          previewPublic
+          ownerProjects={[]}
+          publicProjects={bundle.ok ? bundle.data.sections.projects : []}
+          experience={bundle.ok ? bundle.data.sections.experience : []}
+          education={bundle.ok ? bundle.data.sections.education : []}
+          logos={new Map()}
+          samehere={bundle.ok ? bundle.data.samehere : []}
+          github={bundle.ok ? bundle.data.github : []}
+          connection={null}
+          streak={null}
+          samehereKnown={bundle.ok ? bundle.data.samehereKnown : false}
+          currentPro={profile.is_pro}
+          intro={intro}
+          posts={
+            <section className="mt-6">
+              <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">Posts</h2>
+              <div className="card px-6 py-12 text-center">
+                <p className="font-medium text-[var(--ink)]">Sign in to see their posts</p>
+                <div className="mt-4 flex justify-center gap-2">
+                  <Link href="/login" className="btn-ghost !rounded-full !px-4 !py-1.5 text-sm">
+                    Sign in
+                  </Link>
+                  <Link href="/signup" className="btn-primary !rounded-full !px-4 !py-1.5 text-sm">
+                    Sign up
+                  </Link>
+                </div>
+              </div>
+            </section>
+          }
+        />
+      )}
+    </main>
+  );
 }
 
 export default async function ProfilePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ username: string }>;
+  searchParams?: Promise<{ preview?: string }>;
 }) {
   const { username } = await params;
-  if (!(await hasAuthCookie())) return <PublicProfileView username={username} />;
+  const previewPublic = (await searchParams)?.preview === "public";
+  if (!(await hasPortfolioAuthCookie())) return <PublicProfileView username={username} />;
 
   const supabase = await createClient();
-
   const [{ data: { user } }, profile] = await Promise.all([
     supabase.auth.getUser(),
     getProfileByUsername(username),
   ]);
-
   if (!user) return <PublicProfileView username={username} />;
-
   if (!profile) notFound();
 
-  const isOwner = user?.id === profile.id;
+  const isOwner = user.id === profile.id;
   const displayName = profile.display_name ?? profile.username;
 
-  // Record the view fire-and-forget (after the response is sent) — never on own
-  // profile. record_profile_view also self-guards server-side; this just skips
-  // the call entirely for the owner.
-  if (user && !isOwner) {
-    after(async () => {
-      await supabase.rpc("record_profile_view", { p_viewed: profile.id });
-    });
-  }
-
-  const [schoolRes, countRes, relRes, postsRes, quotesRes, repostsRes, blockedIdsRes, myBlockRes, experiencesRes, educationRes] = await Promise.all([
+  const readClient = await portfolioReadClient(true);
+  const [
+    schoolRes,
+    countRes,
+    relRes,
+    postsRes,
+    quotesRes,
+    repostsRes,
+    blockedIdsRes,
+    myBlockRes,
+    bundle,
+    ownerProjects,
+    ownerGithub,
+    ownerGithubDays,
+  ] = await Promise.all([
     supabase.from("profile_school").select("school").eq("profile_id", profile.id).maybeSingle(),
     supabase.rpc("get_profile_counts", { p_profile_id: profile.id }),
     user && !isOwner
-      ? supabase
-          .from("follows")
-          .select("status")
-          .eq("follower_id", user.id)
-          .eq("following_id", profile.id)
-          .maybeSingle()
+      ? supabase.from("follows").select("status").eq("follower_id", user.id).eq("following_id", profile.id).maybeSingle()
       : Promise.resolve({ data: null as { status: string } | null }),
-    supabase
-      .from("posts")
-      .select(POST_SELECT)
-      .eq("user_id", profile.id)
-      .order("created_at", { ascending: false })
-      .limit(20)
-      .returns<PostRow[]>(),
+    supabase.from("posts").select(POST_SELECT).eq("user_id", profile.id).order("created_at", { ascending: false }).limit(20).returns<PostRow[]>(),
     fetchQuotedReposts(supabase, { userIds: [profile.id], limit: 20 }),
     fetchPlainReposts(supabase, { userIds: [profile.id], limit: 20 }),
     user && !isOwner ? supabase.rpc("get_blocked_ids") : Promise.resolve({ data: [] as string[] }),
     user && !isOwner
       ? supabase.from("blocks").select("id").eq("blocker_id", user.id).eq("blocked_id", profile.id).maybeSingle()
       : Promise.resolve({ data: null as { id: string } | null }),
-    supabase
-      .from("experiences")
-      .select("id, kind, org, role, term, note, start_date, end_date, is_current")
-      .eq("user_id", profile.id)
-      .order("created_at", { ascending: false })
-      .returns<ExperienceRow[]>(),
-    supabase
-      .from("education")
-      .select("id, school, degree, field, start_date, end_date, school_domain, is_current")
-      .eq("user_id", profile.id)
-      .order("start_date", { ascending: false, nullsFirst: false })
-      .returns<EducationRow[]>(),
+    loadPublicPortfolioBundle(readClient, username),
+    isOwner ? listOwnerProjects(supabase, user.id) : Promise.resolve({ ok: true as const, data: [] }),
+    isOwner ? getOwnerGithubConnection(readClient, user.id) : Promise.resolve({ ok: true as const, data: null }),
+    isOwner ? getOwnerGithubDays(readClient, user.id) : Promise.resolve({ ok: true as const, data: [] }),
   ]);
 
-  const viewerId = user?.id ?? null;
+  const viewerId = user.id;
   const school = schoolRes.data?.school ?? null;
   const counts = countRes.data?.[0] ?? { posts: 0, followers: 0, following: 0 };
   const isAcceptedFollower = relRes.data?.status === "accepted";
-  // Shared signing batch: ONE Storage round trip for every original post
-  // surfaced by posts + quotes + reposts (was 3 separate attachSignedMedia
-  // calls -- see plan 010 Phase 1).
   const postRows = postsRes.data ?? [];
   const allForSigning = [...postRows, ...quotesRes.map((q) => q.post), ...repostsRes.map((r) => r.post)];
   const signedById = new Map(
     (allForSigning.length ? await attachSignedMedia(supabase, allForSigning) : []).map((p) => [p.id, p]),
   );
-
-  const postIds = [...signedById.keys()];
-  const repostIds = quotesRes.map((q) => q.id);
-  const mine = await fetchViewerMineState(supabase, viewerId, postIds, repostIds);
+  const mine = await fetchViewerMineState(supabase, viewerId, [...signedById.keys()], quotesRes.map((q) => q.id));
   const engagedById = new Map(withEngagement([...signedById.values()], mine).map((p) => [p.id, p]));
-
   const posts = postRows.map((r) => engagedById.get(r.id)!);
   const quotes = quotesRes.map((r) => toQuotedRepost(r, engagedById.get(r.post.id)!, mine));
   const reposts = repostsRes.map((r) => ({
@@ -408,26 +478,72 @@ export default async function ProfilePage({
     reposter: r.reposter,
     original: engagedById.get(r.post.id)!,
   }));
-  const experiences = experiencesRes.data ?? [];
-  const education = educationRes.data ?? [];
 
-  // Auto tagline: "<role> at <org> · <field/degree> at <school>", derived from
-  // whichever experience/education row is marked is_current (latest start_date
-  // if several are current). Falls back to school/year/major below when the
-  // user has no current roles, so profiles without experience data don't
-  // regress to a blank meta line.
-  function currentNewestFirst<T extends { start_date: string | null; is_current: boolean }>(rows: T[]): T[] {
-    return rows
-      .filter((r) => r.is_current)
-      .sort((a, b) => (b.start_date ?? "").localeCompare(a.start_date ?? ""));
+  const isBlocked = !!(blockedIdsRes.data ?? []).includes(profile.id);
+  const amIBlocking = !!myBlockRes.data;
+  const followState: FollowState =
+    relRes.data?.status === "accepted" ? "following" : relRes.data?.status === "pending" ? "pending" : "none";
+  const contentHidden = (profile.is_private && !isOwner && !isAcceptedFollower) || isBlocked;
+  const timeline = contentHidden ? [] : mergeFeedTimeline(posts, quotes, reposts).slice(0, 20);
+  const portfolioUnavailable = !bundle.ok && Boolean(bundle.unavailable);
+  const projection = bundle.ok ? bundle.data.projection : null;
+  const usePublicSections = !isOwner || previewPublic;
+
+  let experience: PublicPortfolioExperience[] = [];
+  let education: Array<PublicPortfolioEducation & { school_domain?: string | null }> = [];
+  if (usePublicSections && bundle.ok) {
+    experience = bundle.data.sections.experience;
+    education = bundle.data.sections.education;
+  } else if (isOwner && !previewPublic) {
+    const [expRes, eduRes] = await Promise.all([
+      supabase
+        .from("experiences")
+        .select("id, kind, org, role, term, note, start_date, end_date, is_current")
+        .eq("user_id", profile.id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("education")
+        .select("id, school, degree, field, class_year, start_date, end_date, school_domain, is_current")
+        .eq("user_id", profile.id)
+        .order("start_date", { ascending: false, nullsFirst: false }),
+    ]);
+    experience = (expRes.data ?? []).map((row) => ({
+      id: row.id,
+      kind: row.kind,
+      org: row.org,
+      role: row.role,
+      term: row.term,
+      note: row.note,
+      start_date: row.start_date,
+      end_date: row.end_date,
+      is_current: row.is_current,
+    }));
+    education = (eduRes.data ?? []).map((row) => ({
+      id: row.id,
+      school: row.school,
+      degree: row.degree,
+      field: row.field,
+      class_year: row.class_year,
+      start_date: row.start_date,
+      end_date: row.end_date,
+      is_current: row.is_current,
+      school_domain: row.school_domain,
+    }));
   }
-  const currentExp = currentNewestFirst(experiences)[0] ?? null;
-  // Newest-first is wrong for education on its own: a bootcamp taken alongside
-  // a degree starts later and would win. Rank a degree above a certificate
-  // first, same rule that picks profile_school -- see pickPrimaryEducation.
+
+  const logoNames = [...new Set(experience.map((e) => e.org))];
+  const logoByName = new Map<string, string | null>();
+  if (logoNames.length > 0) {
+    const { data: companies } = await supabase.from("job_companies").select("name, logo_url").in("name", logoNames);
+    for (const c of companies ?? []) logoByName.set(c.name.trim().toLowerCase(), c.logo_url);
+  }
+
+  function currentNewestFirst<T extends { start_date: string | null; is_current: boolean }>(rows: T[]): T[] {
+    return rows.filter((r) => r.is_current).sort((a, b) => (b.start_date ?? "").localeCompare(a.start_date ?? ""));
+  }
+  const currentExp = currentNewestFirst(experience)[0] ?? null;
   const currentEdu = pickPrimaryEducation(currentNewestFirst(education)) ?? null;
   const expPhrase = currentExp ? `${currentExp.role} at ${currentExp.org}` : null;
-  // "Software Engineering at Western Governors University" (field, else degree).
   const eduPhrase = currentEdu
     ? currentEdu.field
       ? `${currentEdu.field} at ${currentEdu.school}`
@@ -435,327 +551,237 @@ export default async function ProfilePage({
         ? `${currentEdu.degree} at ${currentEdu.school}`
         : currentEdu.school
     : null;
-  const tagline = [expPhrase, eduPhrase].filter(Boolean).join(" · ");
-
-  // Logos: one cache-only lookup against job_companies, no external calls.
-  // ponytail: exact-name match only against the simplify company cache; case/whitespace normalized, but "Google Inc" vs "Google" or any company not in the internship feed falls back to a monogram. Upgrade path = a normalized name column or a logo API.
-  // Schools use schoolLogoUrl (domain-based) below instead of this cache.
-  const logoNames = [...new Set(experiences.map((e) => e.org))];
-  const logoByName = new Map<string, string | null>();
-  if (logoNames.length > 0) {
-    const { data: companies } = await supabase.from("job_companies").select("name, logo_url").in("name", logoNames);
-    for (const c of companies ?? []) {
-      logoByName.set(c.name.trim().toLowerCase(), c.logo_url);
-    }
-  }
-  function logoFor(name: string): string | null {
-    return logoByName.get(name.trim().toLowerCase()) ?? null;
-  }
-
-  const isBlocked = !!(blockedIdsRes.data ?? []).includes(profile.id);
-  const amIBlocking = !!myBlockRes.data;
-  const profileIsPro = isPro(profile);
-
-  const followState: FollowState =
-    relRes.data?.status === "accepted" ? "following" : relRes.data?.status === "pending" ? "pending" : "none";
-
-  const contentHidden = (profile.is_private && !isOwner && !isAcceptedFollower) || isBlocked;
-  const timeline = contentHidden ? [] : mergeFeedTimeline(posts, quotes, reposts).slice(0, 20);
-  const canSeeHeatmap = isOwner || isAcceptedFollower || profile.heatmap_visibility === "public";
-  // "Why you two match" renders only where post content would be visible to
-  // this viewer (mirrors contentHidden: excludes private-non-follower and
-  // blocked) — see the ProfileMatchPrompt Suspense boundary below.
-  const showMatchPrompt = !isOwner && !contentHidden;
-
+  const expEduTagline = [expPhrase, eduPhrase].filter(Boolean).join(" · ");
+  const canCiteExpEdu =
+    !contentHidden &&
+    (isOwner && !previewPublic
+      ? true
+      : Boolean(
+          projection &&
+            !projection.is_private &&
+            (publicSectionVisible(projection, "experience") || publicSectionVisible(projection, "education"))
+        ));
+  const tagline = canCiteExpEdu ? expEduTagline : "";
   const metaParts = [school, profile.major].filter(Boolean);
-  // Max one middle-dot per line: first item gets the dot separator, any
-  // further items are comma-joined after it.
   const fallbackMetaLine =
     metaParts.length <= 1 ? metaParts[0] ?? null : `${metaParts[0]} · ${metaParts.slice(1).join(", ")}`;
-  // Tagline (current role/education) takes priority; school/year/major only
-  // shows when the user has no current experience or education rows.
   const metaLine = tagline || fallbackMetaLine;
 
-  // Banner, accent colour, and profile theme are Pro perks. The DB keeps all
-  // three columns when a subscription lapses (guard_profile_privileged only
-  // freezes them), so the gate has to live here — otherwise a lapsed
-  // subscriber keeps wearing them. Rendering off is_pro, not a nulled column,
-  // means resubscribing restores them instantly with nothing to redo.
   const pro = isPro(profile);
   const bannerUrl = pro ? profile.banner_url : null;
   const theme = pro && isProfileTheme(profile.profile_theme) ? profile.profile_theme : null;
-  // Accent only comes from a set theme now — the manual accent_color picker
-  // was removed (lib/themes.ts is the only accent source).
   const accentColor = theme ? PROFILE_THEMES[theme].accent : null;
   const themeVars = themeCssVars(theme);
+
+  const intro = profileIntro(
+    {
+      id: profile.id,
+      username: profile.username,
+      display_name: profile.display_name,
+      bio: profile.bio,
+      goals: profile.goals,
+      open_to: "open_to" in profile && Array.isArray(profile.open_to) ? profile.open_to : [],
+      is_private: profile.is_private,
+    },
+    projection,
+    isOwner && !previewPublic ? "owner" : "public"
+  );
+
+  const canReadHeatmap = isOwner || isAcceptedFollower || profile.heatmap_visibility === "public";
+  const heatmapRes = canReadHeatmap
+    ? await supabase.rpc("get_heatmap", { p_profile_id: profile.id })
+    : { data: [] as { day: string; points: number; breakdown?: Record<string, number> }[], error: null };
+  const streakRes = await supabase.rpc("get_streak", { p_profile_id: profile.id });
+  const publicSamehere = bundle.ok ? bundle.data.samehere : [];
+  const publicSamehereKnown = bundle.ok ? bundle.data.samehereKnown : false;
+  const ownerHeatmapKnown = !heatmapRes.error;
+  const samehere = previewPublic
+    ? publicSamehere
+    : canReadHeatmap
+      ? (heatmapRes.data ?? []).map((d) => ({
+          day: d.day,
+          points: d.points,
+          breakdown: heatmapBreakdown("breakdown" in d ? d.breakdown : null),
+        }))
+      : publicSamehere;
+  const samehereKnown = previewPublic ? publicSamehereKnown : canReadHeatmap ? ownerHeatmapKnown : publicSamehereKnown;
+  const github = usePublicSections && bundle.ok ? bundle.data.github : ownerGithubDays.ok ? ownerGithubDays.data : [];
+  const connection = isOwner && !previewPublic && ownerGithub.ok ? ownerGithub.data : null;
+  const streak = streakRes.error ? null : (streakRes.data?.[0] ?? null);
+
+  const showPosts = isOwner
+    ? !previewPublic || (projection?.publish_posts ?? false) || (profile.is_private && isAcceptedFollower)
+    : profile.is_private
+      ? isAcceptedFollower && !isBlocked
+      : !isBlocked && (portfolioUnavailable || (projection?.publish_posts ?? false) || !bundle.ok);
+
+  const postsSection = (
+    <section className="mt-4">
+      <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">Posts</h2>
+      {isBlocked ? (
+        <div className="card px-6 py-12 text-center">
+          <p className="font-medium text-[var(--ink)]">Posts unavailable</p>
+          <p className="mt-1.5 text-sm text-[var(--ink-muted)]">
+            You and @{profile.username} cannot see each other&apos;s posts.
+          </p>
+        </div>
+      ) : contentHidden ? (
+        <div className="card px-6 py-12 text-center">
+          <p className="font-medium text-[var(--ink)]">This account is private</p>
+          <p className="mt-1.5 text-sm text-[var(--ink-muted)]">Follow @{profile.username} to see their posts.</p>
+        </div>
+      ) : timeline.length === 0 ? (
+        <div className="card px-6 py-12 text-center">
+          <p className="font-medium text-[var(--ink)]">No posts yet</p>
+          <p className="mt-1.5 text-sm text-[var(--ink-muted)]">
+            {isOwner ? "Share something to fill your feed." : `@${profile.username} has not posted yet.`}
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          <FeedTimeline items={timeline} viewerId={viewerId} />
+        </div>
+      )}
+    </section>
+  );
 
   return (
     <main
       className={`page-enter mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8${theme ? " profile-themed" : ""}`}
       style={themeVars}
     >
-      {/* theme-zone scopes the bold theme rules (app/globals.css) to the
-          identity zone below — the Posts section further down stays outside
-          so post cards never pick up themed borders/accents. */}
       <div className="theme-zone">
-      {/* Identity header — banner with the avatar overlapping its bottom edge.
-          Themed profiles get a soft top-down wash instead of the old 1px
-          outline, so the accent visibly owns the header band. */}
-      <section className="card overflow-hidden">
-        {bannerUrl ? (
-          // ponytail: plain <img>, not next/image. `fill` is position:absolute,
-          // which paints above the in-flow avatar that pulls up over the banner
-          // with a negative margin. The optimizer also flattened animated
-          // banners to one re-encoded frame. Both problems vanish with an
-          // in-flow <img>, and banners are user uploads the optimizer barely
-          // helps. Revisit only if banner bytes become a real cost.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={bannerUrl} alt="" className="aspect-[3/1] w-full object-cover" />
-        ) : (
-          <div
-            aria-hidden
-            className="aspect-[4/1] w-full"
-            style={{
-              background: `linear-gradient(120deg, color-mix(in srgb, ${theme ? "var(--profile-accent)" : "var(--blue)"} 14%, var(--surface-card)) 0%, var(--surface-card) 62%)`,
-            }}
+        {isOwner && <OwnerBar username={profile.username} previewPublic={previewPublic} />}
+        {isOwner && !previewPublic && (
+          <Suspense fallback={<PortfolioAnalyticsFallback />}>
+            <OwnerAnalyticsSection
+              client={supabase}
+              ownerId={profile.id}
+              currentPro={pro}
+              titles={new Map((ownerProjects.ok ? ownerProjects.data : []).map((project) => [project.id, project.title]))}
+            />
+          </Suspense>
+        )}
+        {!isOwner &&
+          eligiblePublicView({
+            isOwner: false,
+            previewPublic: false,
+            isPrivate: contentHidden,
+            isBlocked,
+            isSuspended: false,
+            hasRenderedPublicContent: Boolean(
+              projection && PORTFOLIO_SECTIONS.some((section) => publicSectionVisible(projection, section))
+            ),
+          }) && <TrackPortfolioView username={profile.username} />}
+        <section className="card overflow-hidden">
+          {bannerUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={bannerUrl} alt="" className="aspect-[3/1] w-full object-cover" />
+          ) : (
+            <div
+              aria-hidden
+              className="aspect-[4/1] w-full"
+              style={{
+                background: `linear-gradient(120deg, color-mix(in srgb, ${theme ? "var(--profile-accent)" : "var(--blue)"} 14%, var(--surface-card)) 0%, var(--surface-card) 62%)`,
+              }}
+            />
+          )}
+          <div className="px-5 pb-5 sm:px-6 sm:pb-6">
+            <div className="flex items-end justify-between gap-3">
+              <AvatarBase
+                src={profile.avatar_url}
+                seed={profile.username}
+                name={displayName}
+                pro={pro}
+                style={accentColor ? { borderColor: accentColor } : undefined}
+                className="-mt-12 h-24 w-24 shrink-0 rounded-full border-4 border-[var(--surface-card)] text-3xl sm:-mt-14 sm:h-28 sm:w-28"
+              />
+              {isOwner ? (
+                <SharePortfolioButton username={profile.username} displayName={displayName} />
+              ) : (
+                <div className="flex shrink-0 flex-col items-end gap-2">
+                  <SharePortfolioButton username={profile.username} displayName={displayName} />
+                  <ProfileActions
+                    username={profile.username}
+                    targetId={profile.id}
+                    viewerId={user.id}
+                    followState={followState}
+                    blocked={isBlocked}
+                    amIBlocking={amIBlocking}
+                  />
+                </div>
+              )}
+            </div>
+            <div className="mt-3">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                <h1 className="text-2xl font-semibold tracking-[-0.025em] sm:text-[28px]">{displayName}</h1>
+                <UserBadges isPro={profile.is_pro} isFounder={profile.is_founder} isCampusFounder={profile.is_campus_founder} isVerifiedStudent={profile.verified_student} isBot={profile.is_bot} />
+              </div>
+              <p className="mt-0.5 text-[15px] text-[var(--ink-muted)]">@{profile.username}</p>
+              {metaLine && <p className="mt-2 text-sm text-[var(--ink-muted)]">{metaLine}</p>}
+              <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1">
+                <Stat value={Number(counts.posts)} label="posts" accent={!!theme} />
+                <Stat value={Number(counts.followers)} label="followers" accent={!!theme} href={`/profile/${profile.username}/followers`} />
+                <Stat value={Number(counts.following)} label="following" accent={!!theme} href={`/profile/${profile.username}/following`} />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {portfolioUnavailable && isOwner && (
+          <>
+            <UnavailableNotice />
+            {!previewPublic && (
+              <IntroSection bio={intro.bio} goals={intro.goals} openTo={intro.open_to} />
+            )}
+            {canReadHeatmap && (
+              <div className="mt-4">
+                <ProfileActivitySection profileId={profile.id} isOwner={isOwner} />
+              </div>
+            )}
+            <ExperienceList items={experience} logos={logoByName} />
+            <EducationList items={education} />
+            {showPosts && postsSection}
+          </>
+        )}
+        {portfolioUnavailable && !isOwner && (
+          <>
+            {!contentHidden && canReadHeatmap && (
+              <div className="mt-4">
+                <ProfileActivitySection profileId={profile.id} isOwner={false} />
+              </div>
+            )}
+            {showPosts && postsSection}
+          </>
+        )}
+        {!portfolioUnavailable && (
+          <PortfolioBody
+            projection={projection}
+            unavailable={false}
+            isOwner={isOwner}
+            previewPublic={previewPublic && isOwner}
+            ownerProjects={ownerProjects.ok ? ownerProjects.data : []}
+            publicProjects={bundle.ok ? bundle.data.sections.projects : []}
+            experience={experience}
+            education={education}
+            logos={logoByName}
+            samehere={samehere}
+            github={github}
+            connection={connection}
+            streak={streak}
+            samehereKnown={samehereKnown}
+            currentPro={isOwner ? pro : Boolean(profile.is_pro)}
+            intro={intro}
+            posts={showPosts ? postsSection : null}
           />
         )}
 
-        <div className="px-5 pb-5 sm:px-6 sm:pb-6">
-          {/* avatar pulls up over the banner; primary action sits to its right */}
-          <div className="flex items-end justify-between gap-3">
-            <AvatarBase
-              src={profile.avatar_url}
-              seed={profile.username}
-              name={displayName}
-              pro={pro}
-              style={accentColor ? { borderColor: accentColor } : undefined}
-              className="-mt-12 h-24 w-24 shrink-0 rounded-full border-4 border-[var(--surface-card)] text-3xl sm:-mt-14 sm:h-28 sm:w-28"
-            />
-
-            {isOwner ? (
-              <Link href="/profile/edit" className="btn-ghost shrink-0 !rounded-full !px-4 !py-1.5 text-sm">
-                Edit profile
-              </Link>
-            ) : user ? (
-              <div className="shrink-0">
-                <ProfileActions
-                  username={profile.username}
-                  targetId={profile.id}
-                  viewerId={user.id}
-                  followState={followState}
-                  blocked={isBlocked}
-                  amIBlocking={amIBlocking}
-                />
-              </div>
-            ) : null}
-          </div>
-
-          <div className="mt-3">
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-              <h1 className="text-2xl font-semibold tracking-[-0.025em] sm:text-[28px]">{displayName}</h1>
-              <UserBadges isPro={profile.is_pro} isFounder={profile.is_founder} isCampusFounder={profile.is_campus_founder} isVerifiedStudent={profile.verified_student} isBot={profile.is_bot} />
-            </div>
-            <p className="mt-0.5 text-[15px] text-[var(--ink-muted)]">@{profile.username}</p>
-
-            {metaLine && <p className="mt-2 text-sm text-[var(--ink-muted)]">{metaLine}</p>}
-            {user && showMatchPrompt && (
-              <Suspense fallback={<Skeleton className="mt-2 h-4 w-56" />}>
-                <ProfileMatchPrompt
-                  viewerId={user.id}
-                  candidate={{
-                    id: profile.id,
-                    name: displayName,
-                    major: profile.major,
-                    goals: profile.goals,
-                    bio: profile.bio,
-                    school,
-                  }}
-                />
-              </Suspense>
-            )}
-
-            <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1">
-              <Stat value={Number(counts.posts)} label="posts" accent={!!theme} />
-              <Stat value={Number(counts.followers)} label="followers" accent={!!theme} href={`/profile/${profile.username}/followers`} />
-              <Stat value={Number(counts.following)} label="following" accent={!!theme} href={`/profile/${profile.username}/following`} />
-            </div>
-          </div>
-
-          {profile.bio && (
-            <p className="mt-5 max-w-[60ch] whitespace-pre-line break-words text-[17px] leading-[1.6] text-[var(--ink)]">
-              {profile.bio}
-            </p>
-          )}
-        </div>
-      </section>
-
-      {/* Identity canvas — activity, goals as tactile tiles */}
-      {(canSeeHeatmap || profile.goals) && (
-        <div
-          className="cascade-up mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2"
-          style={{ "--delay": "80ms" } as React.CSSProperties}
-        >
-          {canSeeHeatmap && (
-            <Suspense
-              fallback={
-                <section className="card p-5 shadow-paper sm:col-span-2 sm:p-6">
-                  <Skeleton className="mb-4 h-4 w-24" />
-                  <Skeleton className="h-28 w-full" />
-                </section>
-              }
-            >
-              <ProfileActivitySection profileId={profile.id} isOwner={isOwner} />
-            </Suspense>
-          )}
-
-          {profile.goals && (
-            <section className="card card-hover p-5 shadow-paper sm:col-span-2 sm:p-6">
-              <h2 className="text-sm font-semibold text-[var(--ink)]">Goals</h2>
-              <p className="mt-1.5 whitespace-pre-line break-words text-[15px] leading-[1.55] text-[var(--ink-muted)]">
-                {profile.goals}
-              </p>
-            </section>
-          )}
-        </div>
-      )}
-
-      {/* Experience — same visibility as bio (no privacy tier, mirrors the
-          experiences RLS "any signed-in user reads" policy). Grouped
-          LinkedIn-style by kind, each group sorted newest-first. */}
-      {experiences.length > 0 && (
-        <section
-          className="card card-hover cascade-up mt-4 p-5 shadow-paper sm:p-6"
-          style={{ "--delay": "160ms" } as React.CSSProperties}
-        >
-          <h2 className="text-sm font-semibold text-[var(--ink)]">Experience</h2>
-          <div className="mt-3 flex flex-col gap-5">
-            {EXPERIENCE_GROUPS.map(({ kind, label }) => {
-              const items = experiences
-                .filter((exp) => exp.kind === kind)
-                .sort((a, b) => (b.start_date ?? "").localeCompare(a.start_date ?? ""));
-              if (items.length === 0) return null;
-              return (
-                <div key={kind}>
-                  <p className="text-[10px] font-semibold tracking-wide text-[var(--ink-faint)] uppercase">
-                    {label}
-                  </p>
-                  <ul className="mt-2 flex flex-col gap-2">
-                    {items.map((exp, i) => {
-                      const dateRange = formatDateRange(exp.start_date, exp.end_date, exp.term);
-                      const bullets = descriptionBullets(exp.note);
-                      return (
-                        <li
-                          key={exp.id}
-                          className="cascade-up flex gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3"
-                          style={{ "--delay": `${i * 60}ms` } as React.CSSProperties}
-                        >
-                          <CompanyLogo name={exp.org} logoUrl={logoFor(exp.org)} size="md" />
-                          <div className="min-w-0">
-                            <p className="text-[15px] font-medium text-[var(--ink)]">{exp.role}</p>
-                            <p className="text-sm text-[var(--ink-muted)]">{exp.org}</p>
-                            {dateRange && <p className="mt-0.5 text-xs text-[var(--ink-faint)]">{dateRange}</p>}
-                            {bullets.length > 0 && (
-                              <ul className="mt-1 list-disc pl-5 text-sm break-words whitespace-pre-line text-[var(--ink-muted)]">
-                                {bullets.map((bullet, j) => (
-                                  <li key={j}>{bullet}</li>
-                                ))}
-                              </ul>
-                            )}
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {/* Education — same visibility as Experience, no privacy tier. */}
-      {education.length > 0 && (
-        <section
-          className="card card-hover cascade-up mt-4 p-5 shadow-paper sm:p-6"
-          style={{ "--delay": "200ms" } as React.CSSProperties}
-        >
-          <h2 className="text-sm font-semibold text-[var(--ink)]">Education</h2>
-          <ul className="mt-3 flex flex-col gap-2">
-            {education.map((edu, i) => {
-              const dateRange = formatDateRange(edu.start_date, edu.end_date, null);
-              const degreeLine = [edu.degree, edu.field].filter(Boolean).join(", ");
-              return (
-                <li
-                  key={edu.id}
-                  className="cascade-up flex gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3"
-                  style={{ "--delay": `${i * 60}ms` } as React.CSSProperties}
-                >
-                  <CompanyLogo name={edu.school} logoUrl={schoolLogoUrl(edu.school_domain)} size="md" />
-                  <div className="min-w-0">
-                    <p className="text-[15px] font-medium text-[var(--ink)]">{edu.school}</p>
-                    {degreeLine && <p className="text-sm text-[var(--ink-muted)]">{degreeLine}</p>}
-                    {dateRange && <p className="mt-0.5 text-xs text-[var(--ink-faint)]">{dateRange}</p>}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      )}
-
-      {!isOwner && user && (!isBlocked || amIBlocking) && (
-        <div className="mt-3 flex justify-end">
-          <BlockButton targetId={profile.id} initialBlocked={amIBlocking} />
-        </div>
-      )}
-
-      {isOwner && (
-        <Suspense
-          fallback={
-            <section className="card mt-3 p-5 sm:p-6">
-              <Skeleton className="mb-3 h-4 w-40" />
-              <Skeleton className="h-9 w-full" />
-            </section>
-          }
-        >
-          <ProfileViewersSection profileId={profile.id} profileIsPro={profileIsPro} />
-        </Suspense>
-      )}
-      </div>
-
-      <section className="cascade-up mt-4" style={{ "--delay": "240ms" } as React.CSSProperties}>
-        <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">Posts</h2>
-
-        {isBlocked ? (
-          <div className="card px-6 py-12 text-center">
-            <p className="font-medium text-[var(--ink)]">Posts unavailable</p>
-            <p className="mt-1.5 text-sm text-[var(--ink-muted)]">
-              You and @{profile.username} cannot see each other&apos;s posts.
-            </p>
-          </div>
-        ) : contentHidden ? (
-          <div className="card px-6 py-12 text-center">
-            <p className="font-medium text-[var(--ink)]">This account is private</p>
-            <p className="mt-1.5 text-sm text-[var(--ink-muted)]">
-              Follow @{profile.username} to see their posts.
-            </p>
-          </div>
-        ) : timeline.length === 0 ? (
-          <div className="card px-6 py-12 text-center">
-            <p className="font-medium text-[var(--ink)]">
-              {isOwner ? "No posts yet" : "No posts yet"}
-            </p>
-            <p className="mt-1.5 text-sm text-[var(--ink-muted)]">
-              {isOwner ? "Share something to fill your feed." : `@${profile.username} has not posted yet.`}
-            </p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            <FeedTimeline items={timeline} viewerId={viewerId} />
+        {!isOwner && user && (!isBlocked || amIBlocking) && (
+          <div className="mt-3 flex justify-end">
+            <BlockButton targetId={profile.id} initialBlocked={amIBlocking} />
           </div>
         )}
-      </section>
+      </div>
     </main>
   );
 }

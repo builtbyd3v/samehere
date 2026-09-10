@@ -3,14 +3,13 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { aiEnabled, generateText, modelForTier, type AiResult } from "@/lib/ai";
-import { PROFILE_DRAFT_SYSTEM, PROFILE_NUDGE_SYSTEM, untrusted } from "@/lib/ai-prompts";
 import { isPro } from "@/lib/pro";
 import { isProfileTheme } from "@/lib/themes";
 import { getPostHogServerClient } from "@/lib/posthog-server";
-import { fallbackProfileNudge, getProfileGaps } from "@/lib/profile-completion";
 import { DEGREE_VALUES as DEGREE_VALUES_RAW, pickPrimaryEducation } from "@/lib/education-options";
 import { resolveInstitutionDomain } from "@/lib/resolve-domain";
+import { isPortfolioSchemaMissing } from "@/lib/portfolio/errors";
+import { parseOpenTo } from "@/lib/portfolio/owner";
 
 // DEGREE_VALUES infers as a narrow string-literal union array (mapped from an
 // `as const` options list), which Array.includes can't check against a plain
@@ -47,6 +46,8 @@ export async function updateProfile(_prev: EditState, formData: FormData): Promi
     bio: str("bio", 500) || null,
     goals: str("goals", 500) || null,
   };
+  const openTo = parseOpenTo(formData.getAll("open_to"));
+  if (!openTo.ok) return { error: openTo.unavailable ? openTo.message : openTo.error };
 
   // Trust boundary: never take the client's word for Pro status. Non-Pro
   // requests simply don't touch profile_theme (a lapsed Pro keeps their
@@ -57,11 +58,14 @@ export async function updateProfile(_prev: EditState, formData: FormData): Promi
     updates.profile_theme = isProfileTheme(themeRaw) ? themeRaw : null;
   }
 
-  const { error: pErr } = await supabase
-    .from("profiles")
-    .update(updates)
-    .eq("id", user.id);
-  if (pErr) return { error: "Could not save your profile. Try again." };
+  const withOpenTo = { ...updates, open_to: openTo.data };
+  const first = await supabase.from("profiles").update(withOpenTo).eq("id", user.id);
+  if (first.error && isPortfolioSchemaMissing(first.error)) {
+    const retry = await supabase.from("profiles").update(updates).eq("id", user.id);
+    if (retry.error) return { error: "Could not save your profile. Try again." };
+  } else if (first.error) {
+    return { error: "Could not save your profile. Try again." };
+  }
 
   // 1 pt for a profile update is awarded by the profiles_award_contribution
   // AFTER UPDATE trigger (fires only when a meaningful content field changed;
@@ -76,97 +80,6 @@ export async function updateProfile(_prev: EditState, formData: FormData): Promi
     .single();
 
   redirect(`/profile/${prof?.username ?? ""}`);
-}
-
-// On-demand profile-completion nudge. Metered via use_ai_quota; static fallback
-// when AI is off, over quota, or the call fails.
-export async function profileNudge(): Promise<AiResult> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { text: fallbackProfileNudge([]) };
-
-  const [{ data: profile }, { data: schoolRow }] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("display_name, avatar_url, year, major, bio, goals, is_pro, pro_until")
-      .eq("id", user.id)
-      .single(),
-    supabase.from("profile_school").select("school").eq("profile_id", user.id).maybeSingle(),
-  ]);
-
-  const gaps = getProfileGaps({
-    display_name: profile?.display_name ?? null,
-    avatar_url: profile?.avatar_url ?? null,
-    school: schoolRow?.school ?? "",
-    year: profile?.year ?? null,
-    major: profile?.major ?? null,
-    bio: profile?.bio ?? null,
-    goals: profile?.goals ?? null,
-  });
-
-  if (gaps.length === 0) return { text: fallbackProfileNudge([]) };
-
-  if (aiEnabled()) {
-    const pro = isPro(profile ?? { is_pro: false, pro_until: null });
-    const { data: allowed } = await supabase.rpc("use_ai_quota", { p_kind: "profile_nudge" });
-    // Free user out of quota → upsell; Pro can't realistically hit the cap.
-    if (!allowed) return pro ? { text: fallbackProfileNudge(gaps) } : { overCap: true };
-    const missing = gaps.map((g) => g.replace("_", " ")).join(", ");
-    const text = await generateText(
-      PROFILE_NUDGE_SYSTEM,
-      `Missing or weak fields: ${missing}.`,
-      { model: modelForTier(pro), maxTokens: 100, temperature: 0.3 },
-    );
-    if (text) return { text };
-  }
-
-  return { text: fallbackProfileNudge(gaps) };
-}
-
-export type DraftState = { bio?: string; goals?: string; overCap?: boolean; error?: string };
-
-// On-demand bio + goals draft from the reader's own profile facts. Free,
-// metered on the same profile_nudge quota as the nudge above (no new DB kind).
-export async function draftProfileText(): Promise<DraftState> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "You must be logged in." };
-  if (!aiEnabled()) return { error: "AI is unavailable right now." };
-
-  const [{ data: p }, { data: schoolRow }] = await Promise.all([
-    supabase.from("profiles").select("display_name, year, major, is_pro, pro_until").eq("id", user.id).single(),
-    supabase.from("profile_school").select("school").eq("profile_id", user.id).maybeSingle(),
-  ]);
-  const pro = isPro(p ?? { is_pro: false, pro_until: null });
-  const { data: allowed } = await supabase.rpc("use_ai_quota", { p_kind: "profile_nudge" });
-  if (!allowed) return pro ? { error: "Try again." } : { overCap: true };
-
-  const facts = [
-    p?.display_name ? `name: ${untrusted(p.display_name)}` : "",
-    p?.major ? `major: ${untrusted(p.major)}` : "",
-    schoolRow?.school ? `school: ${untrusted(schoolRow.school)}` : "",
-  ].filter(Boolean).join("\n");
-
-  const raw = await generateText(PROFILE_DRAFT_SYSTEM, `Facts:\n${facts || "(no facts yet)"}`, {
-    model: modelForTier(pro),
-    maxTokens: 220,
-    temperature: 0.3,
-  });
-  if (!raw) return { error: "Couldn't draft right now. Try again." };
-  try {
-    const cleaned = raw.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
-    const obj = JSON.parse(cleaned);
-    const bio = typeof obj?.bio === "string" ? obj.bio.slice(0, 500) : undefined;
-    const goals = typeof obj?.goals === "string" ? obj.goals.slice(0, 500) : undefined;
-    if (!bio && !goals) return { error: "Couldn't draft right now. Try again." };
-    return { bio, goals };
-  } catch {
-    return { error: "Couldn't draft right now. Try again." };
-  }
 }
 
 // Upload an avatar server-side so MIME/size/animation checks can't be

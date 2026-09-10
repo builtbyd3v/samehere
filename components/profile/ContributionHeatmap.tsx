@@ -9,8 +9,14 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { easternCivilDate } from "@/lib/eastern";
 
-export type HeatmapDay = { day: string; points: number; breakdown: Record<string, number> };
-type Cell = { date: string; points: number; breakdown: Record<string, number>; future: boolean };
+export type HeatmapDay = {
+  day: string;
+  points: number;
+  breakdown: Record<string, number>;
+  tooltipLines?: string[];
+  valueLabel?: string;
+};
+type Cell = HeatmapDay & { date: string; future: boolean };
 
 // Blue heatmap ramp — same tokens as landing demo.
 const CELL = ["bg-[var(--hm0)]", "bg-[var(--hm1)]", "bg-[var(--hm2)]", "bg-[var(--hm3)]"];
@@ -65,7 +71,15 @@ export function buildHeatmapGrid(data: HeatmapDay[], today: Date = new Date()): 
       cur.setUTCDate(firstSunday.getUTCDate() + w * 7 + d);
       const date = cur.toISOString().slice(0, 10);
       const entry = byDate.get(date);
-      col.push({ date, points: entry?.points ?? 0, breakdown: entry?.breakdown ?? {}, future: cur > end });
+      col.push({
+        date,
+        day: date,
+        points: entry?.points ?? 0,
+        breakdown: entry?.breakdown ?? {},
+        tooltipLines: entry?.tooltipLines,
+        valueLabel: entry?.valueLabel,
+        future: cur > end,
+      });
     }
     cols.push(col);
   }
@@ -76,18 +90,23 @@ function Spacer({ className }: { className: string }) {
   return <div className={className} aria-hidden />;
 }
 
-function cellAriaLabel(cell: Cell): string {
+function cellAriaLabel(cell: Cell, emptyValueLabel: string): string {
   const date = fmtDate.format(new Date(cell.date));
-  if (cell.points === 0) return `${date}: no contributions`;
+  if (cell.valueLabel) return `${date}: ${cell.valueLabel}`;
+  if (cell.points === 0) return `${date}: ${emptyValueLabel}`;
   return `${date}: ${cell.points} contribution${cell.points === 1 ? "" : "s"}`;
 }
 
 export default function ContributionHeatmap({
   data,
   animate = false,
+  hideTotal = false,
+  emptyValueLabel = "No contributions",
 }: {
   data: HeatmapDay[];
   animate?: boolean;
+  hideTotal?: boolean;
+  emptyValueLabel?: string;
 }) {
   const cols = buildHeatmapGrid(data);
   const total = data.reduce((sum, d) => sum + d.points, 0);
@@ -133,9 +152,11 @@ export default function ContributionHeatmap({
 
   return (
     <div>
-      <p className="text-sm text-[var(--ink-muted)]">
-        <b className="text-[var(--ink)]">{total.toLocaleString()}</b> contributions in the last year
-      </p>
+      {!hideTotal && (
+        <p className="text-sm text-[var(--ink-muted)]">
+          <b className="text-[var(--ink)]">{total.toLocaleString()}</b> contributions in the last year
+        </p>
+      )}
 
       <div className="mt-4 -mx-1 px-1">
         <div
@@ -187,7 +208,7 @@ export default function ContributionHeatmap({
                         <div
                           key={cell.date}
                           role="img"
-                          aria-label={cellAriaLabel(cell)}
+                          aria-label={cellAriaLabel(cell, emptyValueLabel)}
                           onMouseEnter={(e) => setHovered({ cell, x: e.clientX, y: e.clientY })}
                           onMouseLeave={() => setHovered(null)}
                           style={animate ? ({ "--i": i + row } as CSSProperties) : undefined}
@@ -220,13 +241,17 @@ export default function ContributionHeatmap({
           >
             <p className="font-medium text-[var(--ink)]">{fmtDate.format(new Date(hovered.cell.date))}</p>
             <p className="text-[var(--ink-muted)]">
-              {hovered.cell.points === 0
-                ? "No contributions"
-                : `${hovered.cell.points} ${hovered.cell.points === 1 ? "point" : "points"}`}
+              {hovered.cell.valueLabel
+                ? hovered.cell.valueLabel
+                : hovered.cell.points === 0
+                  ? emptyValueLabel
+                  : `${hovered.cell.points} ${hovered.cell.points === 1 ? "point" : "points"}`}
             </p>
-            {Object.entries(hovered.cell.breakdown).map(([action, pts]) => (
-              <p key={action} className="text-[var(--ink-muted)]">
-                {(ACTION_LABEL[action] ?? action) + ` +${pts}`}
+            {(hovered.cell.tooltipLines ?? Object.entries(hovered.cell.breakdown).map(([action, pts]) =>
+              `${ACTION_LABEL[action] ?? action} +${pts}`
+            )).map((line) => (
+              <p key={line} className="text-[var(--ink-muted)]">
+                {line}
               </p>
             ))}
           </div>,
