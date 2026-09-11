@@ -58,7 +58,7 @@ Fail → fix or `cleanup` + `launch`. Do not drive an instance this run did not 
 
 ## Drive
 
-Harness is `control-samehere`. Browser actions use Playwright `getByRole` against a **1280×800** desktop viewport (landing `Log in` / `Join free` are `hidden md:inline-flex`; a mobile width hides them).
+Harness is `control-samehere`. Browser actions use Playwright `getByRole` against a **1280×800** desktop viewport (landing `Log in` / `Join free` are `hidden md:inline-flex`; a mobile width hides them). Each `browser` command connects over CDP, prints `ok …`, and exits so the WebSocket does not hold the shell; Chrome stays up until `cleanup`.
 
 ```bash
 BIN=.cursor/skills/verify-samehere/helpers/control-samehere
@@ -144,7 +144,8 @@ Optional env:
 - `SAMEHERE_VERIFY_HOST` / `--host` — default `127.0.0.1`
 - `SAMEHERE_VERIFY_STATE_DIR` — default `<skill>/.run`
 - `SAMEHERE_VERIFY_ARTIFACTS_DIR` — default `<skill>/artifacts`
-- `SAMEHERE_VERIFY_CHROME` — Chrome binary
+- `SAMEHERE_VERIFY_CHROME` — Chrome binary (use the real binary, not a wrapper that shares the desktop profile)
+- `SAMEHERE_VERIFY_CDP_PORT` — Chrome DevTools port, default `14173`
 - `SAMEHERE_VERIFY_PROFILE_USERNAME` — live username for the published-profile path
 
 Keep the map honest with `/maintain-verification-skill` as the app changes.

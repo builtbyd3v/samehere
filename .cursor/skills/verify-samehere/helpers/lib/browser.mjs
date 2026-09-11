@@ -58,47 +58,72 @@ function parseArgs(argv) {
 function chromePath() {
   const fromEnv = process.env.SAMEHERE_VERIFY_CHROME;
   if (fromEnv && existsSync(fromEnv)) return fromEnv;
+  // Prefer the real binary. /usr/local/bin/google-chrome is often a wrapper
+  // that forces the desktop user-data-dir and debug port 9222.
   const candidates = [
-    "/usr/local/bin/google-chrome",
-    "/usr/bin/google-chrome",
+    "/opt/google/chrome/chrome",
+    "/opt/google/chrome/google-chrome",
     "/usr/bin/google-chrome-stable",
     "/usr/bin/chromium",
     "/usr/bin/chromium-browser",
+    "/usr/bin/google-chrome",
   ];
   return candidates.find((p) => existsSync(p)) || "";
 }
 
-async function waitForDevtools(userData, timeoutMs = 20000) {
-  const marker = join(userData, "DevToolsActivePort");
+function cdpPort() {
+  return process.env.SAMEHERE_VERIFY_CDP_PORT || "14173";
+}
+
+async function waitForJsonVersion(port, timeoutMs = 20000) {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
+    try {
+      const res = await fetch(`http://127.0.0.1:${port}/json/version`);
+      if (res.ok) return { port: String(port), path: "" };
+    } catch {
+      // Chrome is still binding.
+    }
+    const marker = join(stateDir, "chrome-profile", "DevToolsActivePort");
     if (existsSync(marker)) {
-      const [port, path] = readFileSync(marker, "utf8").trim().split("\n");
-      if (port && Number(port) > 0) {
+      const [filePort] = readFileSync(marker, "utf8").trim().split("\n");
+      if (filePort && Number(filePort) > 0) {
         try {
-          const res = await fetch(`http://127.0.0.1:${port}/json/version`);
-          if (res.ok) return { port, path: path || "" };
+          const res = await fetch(`http://127.0.0.1:${filePort}/json/version`);
+          if (res.ok) return { port: filePort, path: "" };
         } catch {
-          // Chrome is still binding.
+          // keep polling
         }
       }
     }
     await delay(150);
   }
-  fail("Chrome DevTools port never became ready");
+  fail(`Chrome DevTools port ${port} never became ready`);
 }
 
 async function ensureChrome() {
   const existingPid = readState("chrome_pid");
-  const existingPort = readState("cdp_port");
-  if (existingPid && existingPort) {
+  const existingPort = readState("cdp_port") || cdpPort();
+  if (existingPid) {
     try {
       process.kill(Number(existingPid), 0);
       const res = await fetch(`http://127.0.0.1:${existingPort}/json/version`);
-      if (res.ok) return existingPort;
+      if (res.ok) {
+        writeState("cdp_port", String(existingPort));
+        return String(existingPort);
+      }
     } catch {
       // Relaunch.
     }
+  }
+  try {
+    const res = await fetch(`http://127.0.0.1:${cdpPort()}/json/version`);
+    if (res.ok) {
+      writeState("cdp_port", cdpPort());
+      return cdpPort();
+    }
+  } catch {
+    // Need a new Chrome.
   }
 
   const chrome = chromePath();
@@ -107,6 +132,7 @@ async function ensureChrome() {
   const userData = join(stateDir, "chrome-profile");
   rmSync(join(userData, "DevToolsActivePort"), { force: true });
   mkdirSync(userData, { recursive: true });
+  const port = cdpPort();
 
   const child = spawn(
     chrome,
@@ -115,11 +141,15 @@ async function ensureChrome() {
       "--no-sandbox",
       "--disable-dev-shm-usage",
       "--disable-gpu",
+      "--use-gl=angle",
+      "--use-angle=swiftshader-webgl",
       "--no-first-run",
       "--no-default-browser-check",
       "--disable-background-networking",
       "--disable-sync",
-      "--remote-debugging-port=0",
+      "--disable-extensions",
+      `--remote-debugging-port=${port}`,
+      "--remote-debugging-address=127.0.0.1",
       `--user-data-dir=${userData}`,
       `--window-size=${DEFAULT_VIEWPORT.width},${DEFAULT_VIEWPORT.height}`,
       "about:blank",
@@ -129,19 +159,20 @@ async function ensureChrome() {
   child.unref();
   writeState("chrome_pid", String(child.pid));
 
-  const { port } = await waitForDevtools(userData);
-  writeState("cdp_port", port);
-  return port;
+  const ready = await waitForJsonVersion(port);
+  writeState("cdp_port", ready.port);
+  return ready.port;
 }
 
 async function connectPage() {
   const port = await ensureChrome();
-  const browser = await chromium.connectOverCDP(`http://127.0.0.1:${port}`);
+  const browser = await chromium.connectOverCDP(`http://127.0.0.1:${port}`, { timeout: 15000 });
   const context = browser.contexts()[0] || (await browser.newContext({ viewport: DEFAULT_VIEWPORT }));
   await context.setDefaultTimeout(15000);
   let page = context.pages().find((p) => !p.url().startsWith("devtools://")) || context.pages()[0];
   if (!page) page = await context.newPage();
   await page.setViewportSize(DEFAULT_VIEWPORT);
+  await page.emulateMedia({ reducedMotion: "reduce" });
   return { browser, page };
 }
 
@@ -187,8 +218,13 @@ async function cmdGoto(page, args) {
 async function cmdClick(page, args) {
   const loc = locatorFor(page, args);
   await loc.waitFor({ state: "visible" });
+  const before = page.url();
   await loc.click();
-  await page.waitForLoadState("domcontentloaded").catch(() => {});
+  try {
+    await page.waitForURL((url) => url.href !== before, { timeout: 8000 });
+  } catch {
+    await page.waitForLoadState("domcontentloaded").catch(() => {});
+  }
   await page.locator("main").first().waitFor({ state: "visible", timeout: 20000 }).catch(() => {});
   await delay(250);
   printOk({
@@ -224,7 +260,7 @@ async function cmdPress(page, args) {
 async function cmdSnapshot(page, args) {
   const dest = resolveArtifactPath(args.path);
   mkdirSync(dirname(dest), { recursive: true });
-  const aria = await page.locator("body").ariaSnapshot();
+  const aria = await page.locator("body").ariaSnapshot({ timeout: 15000 });
   writeFileSync(dest, `${aria}\n`);
   printOk({ path: dest, url: page.url(), title: await page.title() });
 }
@@ -232,7 +268,7 @@ async function cmdSnapshot(page, args) {
 async function cmdScreenshot(page, args) {
   const dest = resolveArtifactPath(args.path);
   mkdirSync(dirname(dest), { recursive: true });
-  await page.screenshot({ path: dest, fullPage: args.full === true });
+  await page.screenshot({ path: dest, fullPage: args.full === true, timeout: 15000 });
   printOk({ path: dest, url: page.url(), title: await page.title() });
 }
 
@@ -279,3 +315,5 @@ if (!command || !commands[command]) {
 const args = parseArgs(argv);
 const { page } = await connectPage();
 await commands[command](page, args);
+// CDP keeps the event loop alive; do not browser.close() (that kills Chrome).
+process.exit(0);

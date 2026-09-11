@@ -88,14 +88,56 @@ pid_alive() {
 
 port_pids() {
   local port="$1"
-  if command -v ss >/dev/null 2>&1; then
-    ss -ltnp "sport = :$port" 2>/dev/null | sed -n 's/.*pid=\([0-9]\+\).*/\1/p' | sort -u
-    return
-  fi
-  if command -v lsof >/dev/null 2>&1; then
-    lsof -nP -t -iTCP:"$port" -sTCP:LISTEN 2>/dev/null || true
-    return
-  fi
+  {
+    python3 - "$port" <<'PY'
+import os, sys
+port = sys.argv[1]
+hex_port = f"{int(port):04X}"
+inodes = set()
+for path in ("/proc/net/tcp", "/proc/net/tcp6"):
+    try:
+        lines = open(path, encoding="utf-8").read().splitlines()[1:]
+    except OSError:
+        continue
+    for line in lines:
+        parts = line.split()
+        if len(parts) < 10 or parts[3] != "0A":
+            continue
+        if parts[1].split(":")[-1].upper() == hex_port:
+            inodes.add(parts[9])
+if not inodes:
+    sys.exit(0)
+seen = set()
+for pid in os.listdir("/proc"):
+    if not pid.isdigit():
+        continue
+    fd_dir = f"/proc/{pid}/fd"
+    try:
+        fds = os.listdir(fd_dir)
+    except OSError:
+        continue
+    for fd in fds:
+        try:
+            target = os.readlink(f"{fd_dir}/{fd}")
+        except OSError:
+            continue
+        if target.startswith("socket:[") and target[8:-1] in inodes:
+            if pid not in seen:
+                print(pid)
+                seen.add(pid)
+            break
+PY
+    if command -v netstat >/dev/null 2>&1; then
+      netstat -ltnp 2>/dev/null | awk -v port="$port" '
+        $6 == "LISTEN" {
+          n = split($4, a, ":")
+          if (a[n] == port) {
+            split($7, b, "/")
+            if (b[1] ~ /^[0-9]+$/) print b[1]
+          }
+        }'
+    fi
+  } | sort -u
 }
 
 kill_descendants() {
