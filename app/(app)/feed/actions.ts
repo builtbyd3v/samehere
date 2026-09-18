@@ -14,6 +14,7 @@ import { getPostHogServerClient } from "@/lib/posthog-server";
 import { TEXT_LIMITS, textLimitError } from "@/lib/utils/validation";
 import { contextLabelError, parseContextLabel } from "@/lib/context-label";
 import { fetchLabeledPosts } from "@/lib/feed-labeled";
+import { parseTeamEventFields, teamEventError } from "@/lib/team-event";
 import { peopleSearchCore, type PeopleSearchState } from "@/lib/people-search";
 
 export type ComposerState = { error?: string; ok?: boolean };
@@ -168,10 +169,25 @@ export async function createPost(_prev: ComposerState, formData: FormData): Prom
   const labelErr = contextLabelError(rawLabel);
   if (labelErr) return { error: labelErr };
   const context_label = parseContextLabel(rawLabel);
+  const eventInput = {
+    label: rawLabel,
+    name: formData.get("team_event_name"),
+    date: formData.get("team_event_date"),
+    mode: formData.get("team_event_mode"),
+  };
+  const eventErr = teamEventError(eventInput);
+  if (eventErr) return { error: eventErr };
+  const event = parseTeamEventFields(eventInput);
 
-  const { error } = await supabase
-    .from("posts")
-    .insert({ user_id: user.id, content, media, context_label });
+  const { error } = await supabase.from("posts").insert({
+    user_id: user.id,
+    content,
+    media,
+    context_label,
+    team_event_name: event.team_event_name,
+    team_event_date: event.team_event_date,
+    team_event_mode: event.team_event_mode,
+  });
   if (error) return { error: "Could not publish your post. Try again." };
 
   const posthog = getPostHogServerClient();
@@ -182,6 +198,8 @@ export async function createPost(_prev: ComposerState, formData: FormData): Prom
       has_media: media.length > 0,
       media_count: media.length,
       character_count: content.length,
+      context_label,
+      has_team_event: Boolean(event.team_event_name || event.team_event_date || event.team_event_mode),
     },
   });
 
