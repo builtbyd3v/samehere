@@ -12,18 +12,18 @@ export default function ThemeToggle() {
   const { theme, setTheme } = useTheme();
 
   return (
-    <div className="inline-flex gap-0.5 rounded-full border border-[var(--border)] p-0.5" role="group" aria-label="Theme">
+    <div className="inline-flex w-full gap-0.5 rounded-full border border-[var(--border)] p-0.5" role="group" aria-label="Theme">
       {OPTIONS.map((o) => (
         <button
           key={o.value}
           type="button"
           onClick={() => setTheme(o.value)}
           aria-pressed={theme === o.value}
-          className={`cursor-pointer rounded-full px-2.5 py-1 text-xs transition active:scale-95 ${
-            theme === o.value
-              ? "bg-[var(--featured-surface)] font-medium text-[var(--ink)]"
-              : "text-[var(--ink-muted)] hover:bg-[var(--featured-surface)]/60 hover:text-[var(--ink)]"
-          }`}
+            className={`min-h-11 flex-1 cursor-pointer rounded-full px-2.5 py-1 text-xs transition ${
+              theme === o.value
+                ? "bg-[var(--featured-surface)] font-medium text-[var(--ink)]"
+                : "text-[var(--ink-muted)] hover:bg-[var(--featured-surface)]/60 hover:text-[var(--ink)]"
+            }`}
         >
           {o.label}
         </button>

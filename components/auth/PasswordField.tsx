@@ -1,17 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { authInput, authInputError } from "./auth-fields";
-
-function EyeIcon({ off }: { off: boolean }) {
-  return (
-    <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
-      <circle cx="12" cy="12" r="3" />
-      {off && <path d="M4 4l16 16" />}
-    </svg>
-  );
-}
 
 type Props = {
   id: string;
@@ -51,10 +42,10 @@ export default function PasswordField({
         onClick={() => setShow((s) => !s)}
         aria-label={show ? "Hide password" : "Show password"}
         aria-pressed={show}
-        className="absolute right-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-md text-[var(--ink-muted)] transition hover:bg-[var(--featured-surface)] hover:text-[var(--ink)]"
+        className="absolute right-1 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-md text-[var(--ink-muted)] transition hover:bg-[var(--featured-surface)] hover:text-[var(--ink)]"
         tabIndex={-1}
       >
-        <EyeIcon off={show} />
+        {show ? <EyeOff size={18} strokeWidth={1.5} aria-hidden /> : <Eye size={18} strokeWidth={1.5} aria-hidden />}
       </button>
     </div>
   );

@@ -800,6 +800,107 @@ export type Database = {
           },
         ]
       }
+      github_connections: {
+        Row: {
+          connected_at: string
+          created_at: string
+          epoch: number
+          github_login: string
+          github_user_id: number
+          id: string
+          last_error_at: string | null
+          last_sync_error: string | null
+          last_synced_at: string | null
+          owner_id: string
+          status: string
+          sync_cursor: string | null
+          updated_at: string
+        }
+        Insert: {
+          connected_at?: string
+          created_at?: string
+          epoch?: number
+          github_login: string
+          github_user_id: number
+          id?: string
+          last_error_at?: string | null
+          last_sync_error?: string | null
+          last_synced_at?: string | null
+          owner_id: string
+          status?: string
+          sync_cursor?: string | null
+          updated_at?: string
+        }
+        Update: {
+          connected_at?: string
+          created_at?: string
+          epoch?: number
+          github_login?: string
+          github_user_id?: number
+          id?: string
+          last_error_at?: string | null
+          last_sync_error?: string | null
+          last_synced_at?: string | null
+          owner_id?: string
+          status?: string
+          sync_cursor?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "github_connections_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      github_contribution_days: {
+        Row: {
+          connection_id: string
+          contribution_count: number
+          contribution_date: string
+          contribution_level: number
+          fetched_at: string
+          id: string
+          owner_id: string
+        }
+        Insert: {
+          connection_id: string
+          contribution_count?: number
+          contribution_date: string
+          contribution_level?: number
+          fetched_at?: string
+          id?: string
+          owner_id: string
+        }
+        Update: {
+          connection_id?: string
+          contribution_count?: number
+          contribution_date?: string
+          contribution_level?: number
+          fetched_at?: string
+          id?: string
+          owner_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "github_contribution_days_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "github_connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "github_contribution_days_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       job_companies: {
         Row: {
           description: string | null
@@ -1093,9 +1194,177 @@ export type Database = {
           },
         ]
       }
+      portfolio_daily_metrics: {
+        Row: {
+          click_count: number
+          metric_date: string
+          owner_id: string
+          project_id: string | null
+          view_count: number
+        }
+        Insert: {
+          click_count?: number
+          metric_date: string
+          owner_id: string
+          project_id?: string | null
+          view_count?: number
+        }
+        Update: {
+          click_count?: number
+          metric_date?: string
+          owner_id?: string
+          project_id?: string | null
+          view_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portfolio_daily_metrics_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "portfolio_daily_metrics_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "portfolio_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      portfolio_projects: {
+        Row: {
+          created_at: string
+          demo_url: string | null
+          description: string | null
+          id: string
+          key_features: string[]
+          owner_id: string
+          personal_role: string | null
+          published_at: string | null
+          repo_url: string | null
+          sort_order: number
+          source_analysis_id: string | null
+          source_commit_sha: string | null
+          source_repository_id: number | null
+          status: string
+          summary: string | null
+          technologies: string[]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          demo_url?: string | null
+          description?: string | null
+          id?: string
+          key_features?: string[]
+          owner_id: string
+          personal_role?: string | null
+          published_at?: string | null
+          repo_url?: string | null
+          sort_order?: number
+          source_analysis_id?: string | null
+          source_commit_sha?: string | null
+          source_repository_id?: number | null
+          status?: string
+          summary?: string | null
+          technologies?: string[]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          demo_url?: string | null
+          description?: string | null
+          id?: string
+          key_features?: string[]
+          owner_id?: string
+          personal_role?: string | null
+          published_at?: string | null
+          repo_url?: string | null
+          sort_order?: number
+          source_analysis_id?: string | null
+          source_commit_sha?: string | null
+          source_repository_id?: number | null
+          status?: string
+          summary?: string | null
+          technologies?: string[]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portfolio_projects_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "portfolio_projects_source_analysis_fkey"
+            columns: ["source_analysis_id"]
+            isOneToOne: false
+            referencedRelation: "repository_analyses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      portfolio_settings: {
+        Row: {
+          allow_indexing: boolean
+          owner_id: string
+          publish_activity: boolean
+          publish_education: boolean
+          publish_experience: boolean
+          publish_intro: boolean
+          publish_posts: boolean
+          publish_projects: boolean
+          section_order: string[]
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          allow_indexing?: boolean
+          owner_id: string
+          publish_activity?: boolean
+          publish_education?: boolean
+          publish_experience?: boolean
+          publish_intro?: boolean
+          publish_posts?: boolean
+          publish_projects?: boolean
+          section_order?: string[]
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          allow_indexing?: boolean
+          owner_id?: string
+          publish_activity?: boolean
+          publish_education?: boolean
+          publish_experience?: boolean
+          publish_intro?: boolean
+          publish_posts?: boolean
+          publish_projects?: boolean
+          section_order?: string[]
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portfolio_settings_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       posts: {
         Row: {
           content: string
+          context_label: string | null
           created_at: string | null
           hidden: boolean
           id: string
@@ -1105,6 +1374,7 @@ export type Database = {
         }
         Insert: {
           content: string
+          context_label?: string | null
           created_at?: string | null
           hidden?: boolean
           id?: string
@@ -1114,6 +1384,7 @@ export type Database = {
         }
         Update: {
           content?: string
+          context_label?: string | null
           created_at?: string | null
           hidden?: boolean
           id?: string
@@ -1213,6 +1484,7 @@ export type Database = {
           leaderboard_opt_out: boolean
           major: string | null
           onboarded_at: string | null
+          open_to: string[]
           pro_source: string | null
           pro_until: string | null
           profile_theme: string | null
@@ -1247,6 +1519,7 @@ export type Database = {
           leaderboard_opt_out?: boolean
           major?: string | null
           onboarded_at?: string | null
+          open_to?: string[]
           pro_source?: string | null
           pro_until?: string | null
           profile_theme?: string | null
@@ -1281,6 +1554,7 @@ export type Database = {
           leaderboard_opt_out?: boolean
           major?: string | null
           onboarded_at?: string | null
+          open_to?: string[]
           pro_source?: string | null
           pro_until?: string | null
           profile_theme?: string | null
@@ -1442,6 +1716,184 @@ export type Database = {
           {
             foreignKeyName: "reports_reporter_id_fkey"
             columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      repository_analyses: {
+        Row: {
+          attempt_id: string
+          commit_sha: string
+          completed_at: string | null
+          connection_epoch: number
+          connection_id: string
+          coverage: Json | null
+          created_at: string
+          draft: Json | null
+          estimated_cost_usd: number | null
+          evidence: Json | null
+          id: string
+          lease_expires_at: string | null
+          lease_owner: string | null
+          model: string | null
+          owner_id: string
+          parent_analysis_id: string | null
+          parent_attempt_id: string | null
+          project_id: string | null
+          prompt_version: string
+          repository_full_name: string | null
+          repository_id: number
+          request_key: string
+          safe_error: string | null
+          started_at: string | null
+          status: string
+          token_input: number | null
+          token_output: number | null
+          updated_at: string
+        }
+        Insert: {
+          attempt_id?: string
+          commit_sha: string
+          completed_at?: string | null
+          connection_epoch: number
+          connection_id: string
+          coverage?: Json | null
+          created_at?: string
+          draft?: Json | null
+          estimated_cost_usd?: number | null
+          evidence?: Json | null
+          id?: string
+          lease_expires_at?: string | null
+          lease_owner?: string | null
+          model?: string | null
+          owner_id: string
+          parent_analysis_id?: string | null
+          parent_attempt_id?: string | null
+          project_id?: string | null
+          prompt_version: string
+          repository_full_name?: string | null
+          repository_id: number
+          request_key: string
+          safe_error?: string | null
+          started_at?: string | null
+          status?: string
+          token_input?: number | null
+          token_output?: number | null
+          updated_at?: string
+        }
+        Update: {
+          attempt_id?: string
+          commit_sha?: string
+          completed_at?: string | null
+          connection_epoch?: number
+          connection_id?: string
+          coverage?: Json | null
+          created_at?: string
+          draft?: Json | null
+          estimated_cost_usd?: number | null
+          evidence?: Json | null
+          id?: string
+          lease_expires_at?: string | null
+          lease_owner?: string | null
+          model?: string | null
+          owner_id?: string
+          parent_analysis_id?: string | null
+          parent_attempt_id?: string | null
+          project_id?: string | null
+          prompt_version?: string
+          repository_full_name?: string | null
+          repository_id?: number
+          request_key?: string
+          safe_error?: string | null
+          started_at?: string | null
+          status?: string
+          token_input?: number | null
+          token_output?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "repository_analyses_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "github_connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "repository_analyses_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "repository_analyses_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "portfolio_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      repository_analysis_usage: {
+        Row: {
+          analysis_id: string
+          counts_toward_success: boolean
+          estimated_cost_usd: number | null
+          id: string
+          model: string | null
+          month: string
+          owner_id: string
+          prompt_version: string | null
+          reserved_at: string
+          settled_at: string | null
+          settlement: string
+          token_input: number | null
+          token_output: number | null
+        }
+        Insert: {
+          analysis_id: string
+          counts_toward_success?: boolean
+          estimated_cost_usd?: number | null
+          id?: string
+          model?: string | null
+          month: string
+          owner_id: string
+          prompt_version?: string | null
+          reserved_at?: string
+          settled_at?: string | null
+          settlement?: string
+          token_input?: number | null
+          token_output?: number | null
+        }
+        Update: {
+          analysis_id?: string
+          counts_toward_success?: boolean
+          estimated_cost_usd?: number | null
+          id?: string
+          model?: string | null
+          month?: string
+          owner_id?: string
+          prompt_version?: string | null
+          reserved_at?: string
+          settled_at?: string | null
+          settlement?: string
+          token_input?: number | null
+          token_output?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "repository_analysis_usage_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: true
+            referencedRelation: "repository_analyses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "repository_analysis_usage_owner_id_fkey"
+            columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1806,12 +2258,14 @@ export type Database = {
           author_avatar_url: string
           author_display_name: string
           author_id: string
+          author_is_bot: boolean
           author_is_campus_founder: boolean
           author_is_founder: boolean
           author_is_pro: boolean
           author_username: string
           author_verified_student: boolean
           content: string
+          context_label: string | null
           created_at: string
           id: string
           repost_count: number
@@ -1829,11 +2283,13 @@ export type Database = {
           goals: string
           heatmap_visibility: string
           id: string
+          is_bot: boolean
           is_campus_founder: boolean
           is_founder: boolean
           is_private: boolean
           is_pro: boolean
           major: string
+          open_to: string[] | null
           school: string
           username: string
           verified_student: boolean
@@ -2042,7 +2498,395 @@ export type Database = {
       rl_check_signup: { Args: { p_ip_hash: string }; Returns: boolean }
       set_referral_code: { Args: { p_code: string }; Returns: string }
       sweep_unconfirmed_signups: { Args: never; Returns: number }
+      acquire_repository_analysis_lease: {
+        Args: { p_analysis_id: string; p_ttl_seconds?: number; p_worker_id: string }
+        Returns: {
+          analysis_id: string
+          attempt_id: string
+          lease_expires_at: string
+        }[]
+      }
+      advance_repository_analysis_stage: {
+        Args: {
+          p_analysis_id: string
+          p_attempt_id: string
+          p_connection_epoch: number
+          p_status: string
+          p_worker_id: string
+        }
+        Returns: undefined
+      }
+      cancel_repository_analysis: {
+        Args: { p_analysis_id: string }
+        Returns: undefined
+      }
+      commit_repository_analysis: {
+        Args: {
+          p_analysis_id: string
+          p_attempt_id: string
+          p_connection_epoch: number
+          p_coverage?: Json
+          p_draft?: Json
+          p_estimated_cost_usd?: number
+          p_evidence?: Json
+          p_model?: string
+          p_prompt_version?: string
+          p_safe_error?: string
+          p_status: string
+          p_token_input?: number
+          p_token_output?: number
+          p_worker_id: string
+        }
+        Returns: undefined
+      }
+      finalize_repository_analysis: {
+        Args: {
+          p_analysis_id: string
+          p_attempt_id: string
+          p_connection_epoch: number
+          p_coverage?: Json
+          p_draft?: Json
+          p_estimated_cost_usd?: number
+          p_evidence?: Json
+          p_model?: string
+          p_prompt_version?: string
+          p_safe_error?: string
+          p_status: string
+          p_token_input?: number
+          p_token_output?: number
+          p_worker_id: string
+        }
+        Returns: string | null
+      }
+      delete_github_credentials: {
+        Args: { p_connection_id: string }
+        Returns: undefined
+      }
+      disconnect_github_connection: { Args: never; Returns: undefined }
+      get_public_github_contributions: {
+        Args: { p_username: string }
+        Returns: {
+          connection_id: string
+          contribution_count: number
+          contribution_date: string
+          contribution_level: number
+          fetched_at: string
+          owner_id: string
+        }[]
+      }
+      get_public_portfolio: {
+        Args: { p_username: string }
+        Returns: {
+          activity_visible: boolean
+          allow_indexing: boolean
+          is_private: boolean
+          owner_id: string
+          publish_activity: boolean
+          publish_education: boolean
+          publish_experience: boolean
+          publish_intro: boolean
+          publish_posts: boolean
+          publish_projects: boolean
+          section_order: string[]
+          username: string
+        }[]
+      }
+      get_public_portfolio_education: {
+        Args: { p_username: string }
+        Returns: {
+          class_year: string
+          degree: string
+          end_date: string
+          field: string
+          id: string
+          is_current: boolean
+          school: string
+          start_date: string
+        }[]
+      }
+      get_public_portfolio_experience: {
+        Args: { p_username: string }
+        Returns: {
+          end_date: string
+          id: string
+          is_current: boolean
+          kind: string
+          note: string
+          org: string
+          role: string
+          start_date: string
+          term: string
+        }[]
+      }
+      get_public_portfolio_projects: {
+        Args: { p_username: string }
+        Returns: {
+          demo_url: string
+          description: string
+          id: string
+          key_features: string[]
+          owner_id: string
+          personal_role: string
+          published_at: string
+          repo_url: string
+          sort_order: number
+          summary: string
+          technologies: string[]
+          title: string
+        }[]
+      }
+      get_repository_analysis_usage_month: {
+        Args: never
+        Returns: {
+          attempt_count: number
+          daily_attempt_cap: number
+          daily_attempt_count: number
+          month: string
+          success_cap: number
+          success_count: number
+        }[]
+      }
+      heartbeat_repository_analysis_lease: {
+        Args: {
+          p_analysis_id: string
+          p_attempt_id: string
+          p_ttl_seconds?: number
+          p_worker_id: string
+        }
+        Returns: string
+      }
+      increment_portfolio_daily_metric: {
+        Args: {
+          p_kind: string
+          p_owner_id: string
+          p_project_id: string | null
+          p_viewer_id: string | null
+        }
+        Returns: boolean
+      }
+      record_portfolio_daily_metric_once: {
+        Args: {
+          p_kind: string
+          p_owner_id: string
+          p_project_id: string | null
+          p_session_hash: string
+          p_viewer_id: string | null
+        }
+        Returns: boolean
+      }
+      mark_github_connection_status: {
+        Args: {
+          p_connection_id: string
+          p_expected_epoch: number
+          p_safe_error: string
+          p_status: string
+        }
+        Returns: undefined
+      }
+      portfolio_activity_readable: { Args: { p_owner: string }; Returns: boolean }
+      portfolio_analysis_caps: {
+        Args: never
+        Returns: {
+          free_attempts_per_day: number
+          free_success_per_month: number
+          lease_seconds: number
+          month_timezone: string
+          pro_attempts_per_day: number
+          pro_success_per_month: number
+          queued_seconds: number
+        }[]
+      }
+      portfolio_http_url_ok: { Args: { p: string }; Returns: boolean }
+      portfolio_publicly_readable: { Args: { p_owner: string }; Returns: boolean }
+      portfolio_publicly_readable_to: {
+        Args: { p_owner: string; p_viewer: string }
+        Returns: boolean
+      }
+      portfolio_section_order_ok: { Args: { p: string[] }; Returns: boolean }
+      portfolio_text_array_ok: {
+        Args: { p: string[]; p_item_max: number; p_max: number }
+        Returns: boolean
+      }
+      reserve_repository_analysis: {
+        Args: {
+          p_commit_sha: string
+          p_project_id: string | null
+          p_prompt_version: string
+          p_repository_full_name: string | null
+          p_repository_id: number
+          p_request_key: string
+        }
+        Returns: {
+          analysis_id: string
+          attempt_id: string
+          request_key: string
+          reused: boolean
+          status: string
+        }[]
+      }
+      retry_repository_analysis: {
+        Args: { p_analysis_id: string }
+        Returns: {
+          analysis_id: string
+          attempt_id: string
+          request_key: string
+          reused: boolean
+          status: string
+        }[]
+      }
+      search_people: {
+        Args: { p_limit?: number; p_offset?: number; p_query: string }
+        Returns: {
+          avatar_url: string | null
+          display_name: string | null
+          id: string
+          is_campus_founder: boolean
+          is_founder: boolean
+          is_pro: boolean
+          open_to: string[] | null
+          username: string
+          verified_student: boolean
+        }[]
+      }
+      search_posts: {
+        Args: { p_limit?: number; p_offset?: number; p_query: string }
+        Returns: {
+          content: string
+          context_label: string | null
+          created_at: string
+          id: string
+          user_id: string
+        }[]
+      }
+      search_projects: {
+        Args: { p_limit?: number; p_offset?: number; p_query: string }
+        Returns: {
+          id: string
+          owner_id: string
+          owner_username: string
+          published_at: string
+          summary: string | null
+          technologies: string[]
+          title: string
+        }[]
+      }
+      upsert_github_connection: {
+        Args: {
+          p_github_login: string
+          p_github_user_id: number
+          p_owner_id: string
+        }
+        Returns: string
+      }
+      upsert_github_contribution_day: {
+        Args: {
+          p_connection_id: string
+          p_count: number
+          p_date: string
+          p_expected_epoch: number
+          p_level: number
+        }
+        Returns: undefined
+      }
+      replace_github_contribution_snapshot: {
+        Args: {
+          p_connection_id: string
+          p_days: Json
+          p_expected_epoch: number
+          p_from: string
+          p_to: string
+        }
+        Returns: number
+      }
+      upsert_github_credentials: {
+        Args: {
+          p_access_token_encrypted: string
+          p_connection_epoch: number
+          p_connection_id: string
+          p_expires_at: string
+          p_key_version: number
+          p_owner_id: string
+          p_refresh_token_encrypted: string
+        }
+        Returns: undefined
+      }
+      get_github_credentials: {
+        Args: { p_connection_id: string }
+        Returns: {
+          access_token_encrypted: string
+          connection_epoch: number
+          connection_id: string
+          expires_at: string
+          key_version: number
+          owner_id: string
+          refresh_token_encrypted: string
+        }[]
+      }
       use_ai_quota: { Args: { p_kind: string }; Returns: boolean }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+  private: {
+    Tables: {
+      github_credentials: {
+        Row: {
+          access_token_encrypted: string
+          connection_epoch: number
+          connection_id: string
+          expires_at: string | null
+          key_version: number
+          owner_id: string
+          refresh_token_encrypted: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_token_encrypted: string
+          connection_epoch: number
+          connection_id: string
+          expires_at?: string | null
+          key_version?: number
+          owner_id: string
+          refresh_token_encrypted?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_token_encrypted?: string
+          connection_epoch?: number
+          connection_id?: string
+          expires_at?: string | null
+          key_version?: number
+          owner_id?: string
+          refresh_token_encrypted?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "github_credentials_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: true
+            referencedRelation: "github_connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "github_credentials_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never

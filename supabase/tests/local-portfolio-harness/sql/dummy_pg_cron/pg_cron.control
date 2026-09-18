@@ -1,0 +1,7 @@
+# SQL-only no-op stand-in so repo migrations can CREATE EXTENSION pg_cron
+# without a worker. Jobs are stored and never executed.
+comment = 'Harness no-op pg_cron (no background worker, no job execution)'
+default_version = '1.6.4'
+relocatable = false
+schema = cron
+superuser = true

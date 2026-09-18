@@ -7,21 +7,21 @@ export const dynamic = "force-static";
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: "samehere: find your people, find your path",
+  title: "samehere: Build something. Find people who get it.",
   description:
-    "One AI-native network for students. Post what's real, find who gets it, and land the internship. Verified students, real activity, free to join.",
+    "Share what you're learning, turn your projects into a portfolio, and meet students on a similar path.",
   openGraph: {
-    title: "samehere: find your people, find your path",
+    title: "samehere: Build something. Find people who get it.",
     description:
-      "One AI-native network for students. Post what's real, find who gets it, and land what's next.",
+      "Share what you're learning, turn your projects into a portfolio, and meet students on a similar path.",
     type: "website",
     siteName: "samehere",
   },
   twitter: {
     card: "summary_large_image",
-    title: "samehere: find your people, find your path",
+    title: "samehere: Build something. Find people who get it.",
     description:
-      "One AI-native network for students. Post what's real, find who gets it, and land what's next.",
+      "Share what you're learning, turn your projects into a portfolio, and meet students on a similar path.",
   },
 };
 

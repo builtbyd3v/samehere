@@ -1,12 +1,12 @@
-import { redirect } from "next/navigation";
+import EmptyState from "@/components/ui/EmptyState";
 
-// Leaderboard moved into the Community tab; keep this route as a redirect
-// for old links — same shim pattern as /dashboard and /search.
-export default async function LeaderboardPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ scope?: string }>;
-}) {
-  const scope = (await searchParams).scope;
-  redirect(scope === "peers" ? "/community?tab=leaderboard&scope=peers" : "/community?tab=leaderboard");
+export default function LeaderboardPage() {
+  return (
+    <main className="page-enter mx-auto max-w-2xl px-4 py-8">
+      <EmptyState
+        title="Leaderboard is unavailable"
+        description="Rankings are retired. Your posts and heatmap are unchanged."
+      />
+    </main>
+  );
 }

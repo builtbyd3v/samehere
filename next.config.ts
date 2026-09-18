@@ -45,6 +45,7 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: "3mb",
     },
+    optimizePackageImports: ["lucide-react", "motion"],
   },
   images: {
     remotePatterns: [

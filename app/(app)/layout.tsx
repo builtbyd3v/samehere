@@ -7,7 +7,6 @@ import MobileNav from "@/components/layout/MobileNav";
 import MobileNavUnread from "@/components/layout/MobileNavUnread";
 import TabTitleNotifier from "@/components/layout/TabTitleNotifier";
 import { getUnreadCounts } from "@/lib/unread";
-import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import PostHogUserIdentification from "@/components/providers/PostHogUserIdentification";
 import SuspendedBanner from "@/components/layout/SuspendedBanner";
 import { isPro } from "@/lib/pro";
@@ -44,7 +43,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   };
 
   return (
-    <ThemeProvider>
+    <>
       {user && (
         <PostHogUserIdentification
           distinctId={user.id}
@@ -52,6 +51,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           username={profile?.username ?? null}
         />
       )}
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-50 focus:rounded-md focus:bg-[var(--surface)] focus:px-3 focus:py-2 focus:text-sm focus:text-[var(--ink)]"
+      >
+        Skip to content
+      </a>
       <Navbar {...navbarProps} />
       {isSuspended && <SuspendedBanner />}
       {user && (
@@ -69,7 +74,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </Suspense>
           </div>
         </aside>
-        <div className="min-w-0 flex-1">{children}</div>
+        <div id="main" className="min-w-0 flex-1">{children}</div>
         {/* Balances the left nav so page content centers on the viewport.
             The feed opts out via .app-shell:has([data-feed-page]) in
             globals.css and centers its post column with a left offset
@@ -79,6 +84,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <Suspense fallback={<MobileNav username={navbarProps.username} />}>
         <MobileNavUnread username={navbarProps.username} />
       </Suspense>
-    </ThemeProvider>
+    </>
   );
 }

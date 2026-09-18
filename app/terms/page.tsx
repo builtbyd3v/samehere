@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import PublicHeader from "@/components/brand/PublicHeader";
 
 export const dynamic = "force-static";
 
@@ -11,8 +12,10 @@ const UPDATED = "July 6, 2026";
 
 export default function TermsPage() {
   return (
-    <main className="page-enter mx-auto min-h-screen max-w-2xl bg-[var(--canvas)] px-5 py-20 text-[var(--ink)]">
-      <h1 className="text-[36px] font-semibold leading-tight tracking-[-0.025em]">Terms of Service</h1>
+    <main className="min-h-[100dvh] bg-[var(--canvas)] text-[var(--ink)]">
+      <PublicHeader />
+      <div className="mx-auto max-w-2xl px-5 py-16">
+      <h1 className="text-[2.25rem] font-medium leading-[1.05] tracking-[-0.03em]">Terms of Service</h1>
       <p className="mt-3 text-sm text-[var(--ink-muted)]">Last updated: {UPDATED}</p>
 
       <div className="mt-8 space-y-8 text-[15px] leading-relaxed text-[var(--ink-muted)]">
@@ -144,10 +147,11 @@ export default function TermsPage() {
 
       <Link
         href="/"
-        className="mt-12 inline-block text-sm text-[var(--ink)] underline-offset-4 transition hover:underline"
+        className="btn-ghost mt-12 inline-flex"
       >
         Back to home
       </Link>
+      </div>
     </main>
   );
 }

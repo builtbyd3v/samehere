@@ -1,7 +1,5 @@
-// Weekly "3 people to meet" digest — free basic (3, no AI) + Pro enhanced (5,
-// each with an AI "why you match" line). Sent from
-// app/api/cron/weekly-matches/route.ts. Chrome (canvas, card, two-tone
-// wordmark, footer) comes from lib/emails/layout.ts.
+// Dead weekly-matches template. Cron route returns 410; keep chrome so leftover
+// callers typecheck. No AI/club copy.
 import { CREAM, CANVAS, INK, INK_MUTED, BORDER, escapeHtml, emailShell, footerRow } from "./layout";
 
 export type MatchCard = {
@@ -9,8 +7,6 @@ export type MatchCard = {
   name: string;
   avatarUrl: string | null;
   school: string | null;
-  // AI "why you match" line — Pro recipients only, null when the pair had no
-  // shared fact, the AI call was skipped/failed, or the run's AI budget was spent.
   reason: string | null;
 };
 
@@ -31,7 +27,6 @@ function cardHtml(c: MatchCard): string {
                   <td style="padding-left:12px;vertical-align:top;">
                     <p style="margin:0;font-size:15px;font-weight:600;color:${INK};">${name}</p>
                     ${c.school ? `<p style="margin:2px 0 0;font-size:13px;color:${INK_MUTED};">${escapeHtml(c.school)}</p>` : ""}
-                    ${c.reason ? `<p style="margin:6px 0 0;font-size:13px;line-height:1.5;color:${INK_MUTED};">${escapeHtml(c.reason)}</p>` : ""}
                   </td>
                   <td style="vertical-align:top;text-align:right;white-space:nowrap;">
                     <a href="https://samehere.dev/messages?to=${escapeHtml(c.username)}" style="display:inline-block;background:${INK};color:${CANVAS};font-size:13px;font-weight:600;text-decoration:none;padding:8px 14px;border-radius:8px;">Say hi</a>
@@ -64,7 +59,6 @@ export function weeklyMatchesEmail({
     "",
     ...cards.map((c) => {
       const lines = [`${c.name} (@${c.username})${c.school ? ` — ${c.school}` : ""}`];
-      if (c.reason) lines.push(c.reason);
       lines.push(`Say hi: https://samehere.dev/messages?to=${c.username}`);
       lines.push(`Profile: https://samehere.dev/profile/${c.username}`);
       return lines.join("\n");

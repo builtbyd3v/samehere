@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { sendEmail } from "@/lib/email";
 import { usernameError } from "@/lib/utils/validation";
+import { privacyUpdatesFromForm } from "@/lib/privacy-updates";
 
 export type PrivacyState = { error?: string; success?: boolean };
 
@@ -46,14 +47,7 @@ export async function updatePrivacy(_prev: PrivacyState, formData: FormData): Pr
   } = await supabase.auth.getUser();
   if (!user) return { error: "You must be logged in." };
 
-  const hvRaw = String(formData.get("heatmap_visibility") ?? "").trim();
-  const updates = {
-    is_private: formData.get("is_private") === "on",
-    hide_school: formData.get("hide_school") === "on",
-    heatmap_visibility: hvRaw === "followers" ? "followers" : "public",
-    leaderboard_opt_out: formData.get("show_on_leaderboard") !== "on",
-    email_digest_opt_out: formData.get("daily_digest_email") !== "on",
-  };
+  const updates = privacyUpdatesFromForm(formData);
 
   const { error } = await supabase.from("profiles").update(updates).eq("id", user.id);
   if (error) return { error: "Could not save your settings. Try again." };

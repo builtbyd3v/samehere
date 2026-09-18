@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import { createClient } from "@/lib/supabase/server";
 import { getViewer, getViewerProfile, getViewerProfileCounts } from "@/lib/viewer";
 import { POST_SELECT, PAGE, withEngagement, type PostRow } from "@/components/feed/PostCard";
 import FeedTabs from "@/components/feed/FeedTabs";
@@ -24,7 +23,7 @@ import { Skeleton, PostCardSkeleton } from "@/components/ui/Skeleton";
 // Desktop feed redesign, now the live /feed. The app shell (app/(app)/layout.tsx)
 // supplies the persistent left nav; this page is a two-column layout — the
 // Latest/Following timeline centered, with a right rail stacking profile+heatmap
-// (LeftRail) above trending/suggested/leaderboard/invite (RightRail). The
+// (LeftRail) above suggested/invite (RightRail). The
 // composer is collapsed behind a trigger; `data-feed-page` lets the shell drop
 // its right spacer so this page's own rail balances the left nav.
 //
@@ -73,24 +72,21 @@ export default async function FeedPage({
 }
 
 // Composer trigger + tabs + onboarding checklist. Suspense-wrapped so its own
-// profile/counts/clubs fetch runs independently of (not before) the timeline
+// profile/counts fetch runs independently of (not before) the timeline
 // below — same reasoning as LeftRail/RightRail's own boundaries.
 async function FeedHeader({ tab, userId }: { tab: "latest" | "following"; userId: string | null }) {
   const composerProfile = userId ? await getViewerProfile() : null;
   const composerPro = isPro(composerProfile ?? { is_pro: false, pro_until: null });
 
   let counts: Awaited<ReturnType<typeof getViewerProfileCounts>> = null;
-  let inClub = false;
   let isSuspended = false;
   if (userId) {
     const { supabase } = await getViewer();
-    const [countsResult, clubsResult, suspendedResult] = await Promise.all([
+    const [countsResult, suspendedResult] = await Promise.all([
       getViewerProfileCounts(),
-      supabase.from("club_members").select("club_id", { count: "exact", head: true }).eq("user_id", userId),
       supabase.rpc("current_is_suspended"),
     ]);
     counts = countsResult;
-    inClub = (clubsResult.count ?? 0) > 0;
     isSuspended = suspendedResult.data ?? false;
   }
 
@@ -110,7 +106,6 @@ async function FeedHeader({ tab, userId }: { tab: "latest" | "following"; userId
           postCount={counts?.posts ?? 0}
           followingCount={counts?.following ?? 0}
           verifiedStudent={!!composerProfile?.verified_student}
-          inClub={inClub}
         />
       )}
     </>
@@ -142,8 +137,10 @@ function FeedTimelineFallback() {
 // Latest = global recency. Posts + quote-reposts + plain reposts merged, blocked
 // authors filtered app-side, sliced to one page.
 async function LatestTab({ viewerId }: { viewerId: string | null }) {
-  const supabase = await createClient();
-  const [{ data }, { data: blockedIds }] = await Promise.all([
+  const { supabase } = await getViewer();
+  // Stage 1 after auth: posts + blocks + quotes + reposts. Quotes/reposts
+  // filter blocked authors in JS so they do not wait on get_blocked_ids.
+  const [{ data }, { data: blockedIds }, rawQuotes, rawReposts] = await Promise.all([
     supabase
       .from("posts")
       .select(POST_SELECT)
@@ -152,32 +149,32 @@ async function LatestTab({ viewerId }: { viewerId: string | null }) {
       .limit(PAGE)
       .returns<PostRow[]>(),
     viewerId ? supabase.rpc("get_blocked_ids") : Promise.resolve({ data: [] as string[] }),
+    fetchQuotedReposts(supabase, { limit: PAGE }),
+    fetchPlainReposts(supabase, { limit: PAGE }),
   ]);
   const blocked = new Set(blockedIds ?? []);
   const postRows = (data ?? []).filter((p) => !blocked.has(p.user_id));
+  const quotesUnblocked = rawQuotes.filter((q) => !blocked.has(q.user_id));
+  const repostsUnblocked = rawReposts.filter((r) => !blocked.has(r.user_id));
 
-  const [rawQuotes, rawReposts] = await Promise.all([
-    fetchQuotedReposts(supabase, { limit: PAGE, blockedIds: blocked }),
-    fetchPlainReposts(supabase, { limit: PAGE, blockedIds: blocked }),
+  // Stage 2: signed media + mine-state. Mine-state needs post ids only.
+  const allForSigning = [
+    ...postRows,
+    ...quotesUnblocked.map((q) => q.post),
+    ...repostsUnblocked.map((r) => r.post),
+  ];
+  const postIds = [...new Set(allForSigning.map((p) => p.id))];
+  const repostIds = quotesUnblocked.map((q) => q.id);
+  const [signedPosts, mine] = await Promise.all([
+    allForSigning.length ? attachSignedMedia(supabase, allForSigning) : Promise.resolve([]),
+    fetchViewerMineState(supabase, viewerId, postIds, repostIds),
   ]);
-
-  // Shared signing batch: ONE Storage round trip for every original post
-  // surfaced by any of the three sources (was 3 separate attachSignedMedia
-  // calls -- one inline here, one inside fetchQuotedReposts, one inside
-  // fetchPlainReposts).
-  const allForSigning = [...postRows, ...rawQuotes.map((q) => q.post), ...rawReposts.map((r) => r.post)];
-  const signedById = new Map(
-    (allForSigning.length ? await attachSignedMedia(supabase, allForSigning) : []).map((p) => [p.id, p]),
-  );
-
-  const postIds = [...signedById.keys()];
-  const repostIds = rawQuotes.map((q) => q.id);
-  const mine = await fetchViewerMineState(supabase, viewerId, postIds, repostIds);
+  const signedById = new Map(signedPosts.map((p) => [p.id, p]));
   const engagedById = new Map(withEngagement([...signedById.values()], mine).map((p) => [p.id, p]));
 
   const posts = postRows.map((r) => engagedById.get(r.id)!);
-  const quotes = rawQuotes.map((r) => toQuotedRepost(r, engagedById.get(r.post.id)!, mine));
-  const reposts = rawReposts.map((r) => ({
+  const quotes = quotesUnblocked.map((r) => toQuotedRepost(r, engagedById.get(r.post.id)!, mine));
+  const reposts = repostsUnblocked.map((r) => ({
     id: r.id,
     created_at: r.created_at,
     reposter_id: r.user_id,
@@ -193,7 +190,7 @@ async function LatestTab({ viewerId }: { viewerId: string | null }) {
       <EmptyState
         title="Nothing here yet"
         description="Be the first to share what you are building or figuring out."
-        action={{ label: "Explore the community", href: "/community" }}
+        action={{ label: "Find people", href: "/search" }}
       />
     );
   }
@@ -215,7 +212,7 @@ async function LatestTab({ viewerId }: { viewerId: string | null }) {
 async function FollowingTab({ userId, viewerId }: { userId: string | null; viewerId: string | null }) {
   if (!userId) return null; // proxy gates this route; null is a type edge case
 
-  const supabase = await createClient();
+  const { supabase } = await getViewer();
   const [{ data: myFollows }, { data: requests }, { data: blockedIds }] = await Promise.all([
     supabase.from("follows").select("following_id, status").eq("follower_id", userId),
     supabase
@@ -252,16 +249,15 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
     fetchPlainReposts(supabase, { userIds: quoteAuthorIds, limit: PAGE, blockedIds: blocked }),
   ]);
 
-  // Shared signing batch (see LatestTab above for why).
   const postRows = followFeed ?? [];
   const allForSigning = [...postRows, ...rawQuotes.map((q) => q.post), ...rawReposts.map((r) => r.post)];
-  const signedById = new Map(
-    (allForSigning.length ? await attachSignedMedia(supabase, allForSigning) : []).map((p) => [p.id, p]),
-  );
-
-  const postIds = [...signedById.keys()];
+  const postIds = [...new Set(allForSigning.map((p) => p.id))];
   const repostIds = rawQuotes.map((q) => q.id);
-  const mine = await fetchViewerMineState(supabase, viewerId, postIds, repostIds);
+  const [signedPosts, mine] = await Promise.all([
+    allForSigning.length ? attachSignedMedia(supabase, allForSigning) : Promise.resolve([]),
+    fetchViewerMineState(supabase, viewerId, postIds, repostIds),
+  ]);
+  const signedById = new Map(signedPosts.map((p) => [p.id, p]));
   const engagedById = new Map(withEngagement([...signedById.values()], mine).map((p) => [p.id, p]));
 
   const feedPosts = postRows.map((r) => engagedById.get(r.id)!);
@@ -285,7 +281,7 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
         <EmptyState
           title="Your feed is empty"
           description="Follow students to see their posts here."
-          action={{ label: "Find people", href: "/community" }}
+          action={{ label: "Find people", href: "/search" }}
         />
       )}
     </section>

@@ -1,10 +1,11 @@
+import { Check } from "lucide-react";
 import { IconCrown } from "@/components/icons";
 
 // Founder-spots pill — stays directly under the headline on every breakpoint.
 export function SignupFounderPill({ spotsLeft }: { spotsLeft?: number }) {
   if (spotsLeft == null || spotsLeft <= 0) return null;
   return (
-    <p className="mt-5 inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface-raised)] px-3.5 py-1.5 text-sm shadow-paper">
+    <p className="mt-5 inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3.5 py-1.5 text-sm">
       <IconCrown className="h-4 w-4 text-[var(--founder)]" />
       <span>
         <span className="font-semibold text-[var(--founder)]">{spotsLeft}</span>
@@ -14,12 +15,8 @@ export function SignupFounderPill({ spotsLeft }: { spotsLeft?: number }) {
   );
 }
 
-function Check() {
-  return (
-    <svg viewBox="0 0 24 24" className="mt-0.5 h-4 w-4 shrink-0 text-[var(--blue)]" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M20 6 9 17l-5-5" />
-    </svg>
-  );
+function CheckMark() {
+  return <Check className="mt-0.5 h-4 w-4 shrink-0 text-[var(--blue)]" size={16} strokeWidth={1.75} aria-hidden />;
 }
 
 const POINTS = [
@@ -31,10 +28,10 @@ const POINTS = [
 // Reassurance bullets — left column on desktop, below the form on mobile.
 export default function SignupReassurance() {
   return (
-    <ul className="space-y-3 text-sm leading-relaxed text-[var(--ink-muted)]">
+    <ul className="auth-enter-aside space-y-3 text-sm leading-relaxed text-[var(--ink-muted)]">
       {POINTS.map((p) => (
         <li key={p} className="flex items-start gap-2.5">
-          <Check />
+          <CheckMark />
           <span>{p}</span>
         </li>
       ))}

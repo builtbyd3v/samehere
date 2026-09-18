@@ -11,12 +11,8 @@ type Props = {
   postCount: number;
   followingCount: number;
   verifiedStudent: boolean;
-  inClub: boolean;
 };
 
-// ponytail: composer toggle lives as local state inside ComposerToggle (owned
-// elsewhere); click through the DOM instead of lifting that state up.
-// Contract: ComposerToggle's closed-state trigger must keep its "New post" aria-label.
 function openComposer() {
   const btn = document.querySelector<HTMLButtonElement>('button[aria-label="New post"]');
   btn?.click();
@@ -29,23 +25,20 @@ export default function OnboardingChecklist({
   postCount,
   followingCount,
   verifiedStudent,
-  inClub,
 }: Props) {
   const [dismissed, setDismissed] = useState(true);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- deliberate mount-time localStorage read deferred past hydration to avoid an SSR/client mismatch (server always renders the `dismissed: true` default)
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-time localStorage read deferred past hydration
     setDismissed(localStorage.getItem(DISMISS_KEY) === "1");
   }, []);
 
   const steps = [
-    { done: !!avatarUrl, label: "Upload an avatar", href: "/profile/edit" },
-    { done: !!(bio && bio.trim().length > 10), label: "Write a short bio", href: "/profile/edit" },
+    { done: !!avatarUrl, label: "Upload an avatar", href: "/onboarding" },
+    { done: !!(bio && bio.trim().length > 10), label: "Write a short bio", href: "/onboarding" },
     { done: postCount > 0, label: "Publish your first post", href: "/feed" },
-    { done: followingCount > 0, label: "Follow someone", href: "/feed?search=1" },
+    { done: followingCount > 0, label: "Follow someone", href: "/search" },
     { done: verifiedStudent, label: "Verify your school email", href: "/settings" },
-    { done: inClub, label: "Join a club", href: "/community" },
-    // ponytail: no client-side completion signal for "shared their link" — pointer, not a tracked task.
     { done: false, label: "Share your invite link", href: "/referrals" },
   ];
 
@@ -55,7 +48,7 @@ export default function OnboardingChecklist({
   if (dismissed || (!needsPost && !needsFollow)) return null;
 
   return (
-    <section className="card mb-3 animate-[modal-in_200ms_var(--ease-out)] p-4 motion-reduce:animate-none sm:p-5">
+    <section className="card mb-3 p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold text-[var(--ink)]">Get your feed going</h2>
@@ -87,12 +80,14 @@ export default function OnboardingChecklist({
           </button>
         )}
         {needsFollow && (
-          <Link href="/feed?search=1" className="btn-ghost">
+          <Link href="/search" className="btn-ghost">
             Follow a few people
           </Link>
         )}
+        <Link href="/onboarding" className="btn-ghost">
+          Edit profile
+        </Link>
       </div>
-      {needsPost && <p className="mt-2 text-xs text-[var(--ink-muted)]">A post of 150+ characters earns 4 heatmap points.</p>}
 
       <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1.5 border-t border-[var(--border)] pt-3">
         {steps.map((s) => (

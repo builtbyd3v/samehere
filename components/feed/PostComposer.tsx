@@ -1,13 +1,14 @@
 "use client";
 
-import Link from "next/link";
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
-import { createPost, composerNudge, improvePost, type ComposerState } from "@/app/(app)/feed/actions";
+import { X } from "lucide-react";
+import { createPost, type ComposerState } from "@/app/(app)/feed/actions";
 import { getBrowserClient } from "@/lib/supabase/client";
 import { useSubmitShortcut } from "@/lib/useSubmitShortcut";
 import { submitShortcutLabel } from "@/lib/keyboard";
 import { TEXT_LIMITS } from "@/lib/utils/validation";
 import MentionTextarea from "@/components/ui/MentionTextarea";
+import { CONTEXT_LABELS, CONTEXT_LABEL_COPY, type ContextLabel } from "@/lib/context-label";
 
 // 150 chars earns a heatmap point, it does NOT gate posting.
 const POINT_AT = 150; // ponytail: mirrors posts_award_contribution post threshold
@@ -53,7 +54,6 @@ async function downscaleImage(file: File): Promise<File> {
 }
 
 export default function PostComposer({
-  isPro = false,
   autoFocus = false,
 }: {
   isPro?: boolean;
@@ -68,12 +68,8 @@ export default function PostComposer({
   const [mediaErr, setMediaErr] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [supabase] = useState(getBrowserClient);
-  const [hint, setHint] = useState<string | null>(null);
-  const [overCap, setOverCap] = useState(false);
   const [shortcutLabel, setShortcutLabel] = useState("");
-  const [nudging, startNudge] = useTransition();
-  const [improving, startImprove] = useTransition();
-  const [preImprove, setPreImprove] = useState<string | null>(null);
+  const [label, setLabel] = useState<ContextLabel | null>(null);
   const [, startSubmit] = useTransition();
 
   // Latest files for the unmount-only revoke below (avoids a [files]-dep effect
@@ -94,6 +90,7 @@ export default function PostComposer({
       // eslint-disable-next-line react-hooks/set-state-in-effect -- reacts to useActionState completion (no synchronous onSuccess in React 19's action model); paired with the form.reset()/revokeObjectURL side effects here.
       setContent("");
       setLen(0);
+      setLabel(null);
       files.forEach((f) => URL.revokeObjectURL(f.url));
       setFiles([]);
     }
@@ -141,52 +138,6 @@ export default function PostComposer({
         url: URL.createObjectURL(file),
       })),
     ]);
-  }
-
-  function onNudge() {
-    startNudge(async () => {
-      const res = await composerNudge();
-      if ("overCap" in res) {
-        setOverCap(true);
-        setHint(null);
-      } else {
-        setHint(res.text);
-        setOverCap(false);
-      }
-    });
-  }
-
-  function useHint() {
-    if (!hint) return;
-    setContent(hint);
-    textareaRef.current?.focus();
-    setLen(hint.trim().length);
-    setHint(null);
-  }
-
-  function applyText(next: string) {
-    setContent(next);
-    setLen(next.trim().length);
-  }
-
-  // Pro-only: rewrite the current draft, keeping the original for one-tap undo.
-  function onImprove() {
-    if (!content.trim() || improving) return;
-    startImprove(async () => {
-      const res = await improvePost(content);
-      if ("text" in res) {
-        setPreImprove(content);
-        applyText(res.text);
-      }
-      // locked (non-Pro) can't reach here — the button links to /pro instead.
-      // error → leave the draft untouched.
-    });
-  }
-
-  function undoImprove() {
-    if (preImprove === null) return;
-    applyText(preImprove);
-    setPreImprove(null);
   }
 
   function removeFile(i: number) {
@@ -244,26 +195,9 @@ export default function PostComposer({
     <form
       ref={ref}
       onSubmit={onSubmit}
-      className="rounded-2xl border border-[var(--border)] bg-[var(--surface-card)] p-4 transition-[border-color,box-shadow] duration-300 focus-within:border-[var(--border-strong)] focus-within:shadow-[0_0_0_4px_var(--blue-glow)] sm:p-5"
+      className="card-raised p-4 transition-[border-color,box-shadow] duration-300 focus-within:border-[var(--border-strong)] focus-within:shadow-[0_0_0_4px_var(--blue-glow)] sm:p-5"
     >
-      {hint && (
-        <button
-          type="button"
-          onClick={useHint}
-          className="mb-2 block w-full text-left text-xs italic text-[var(--ink-muted)] hover:underline"
-        >
-          {hint} <span className="not-italic">(click to use)</span>
-        </button>
-      )}
-      {overCap && (
-        <p className="mb-2 text-xs text-[var(--ink-muted)]">
-          Out of AI prompts for today.{" "}
-          <Link href="/pro" className="font-medium text-[var(--ink)] underline">
-            Upgrade for a smarter model
-          </Link>
-          .
-        </p>
-      )}
+      <input type="hidden" name="context_label" value={label ?? ""} />
       <MentionTextarea
         textareaRef={textareaRef}
         name="content"
@@ -288,7 +222,7 @@ export default function PostComposer({
           {files.map((f, i) => (
             <div key={f.url} className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md border border-[var(--border)]">
               {f.type === "image" ? (
-                // eslint-disable-next-line @next/next/no-img-element
+                // eslint-disable-next-line @next/next/no-img-element -- blob: preview from FileReader; next/image cannot optimize local object URLs
                 <img src={f.url} alt="" className="h-full w-full object-cover" />
               ) : (
                 <video src={f.url} className="h-full w-full object-cover" />
@@ -337,42 +271,33 @@ export default function PostComposer({
             />
             Add media
           </label>
-          <button
-            type="button"
-            onClick={onNudge}
-            disabled={nudging}
-            className="btn-accent text-xs px-2.5 py-1"
-          >
-            {nudging ? "Thinking…" : "Need an idea?"}
-          </button>
-          {isPro ? (
-            preImprove !== null ? (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {CONTEXT_LABELS.map((key) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setLabel((cur) => (cur === key ? null : key))}
+                aria-pressed={label === key}
+                className={`rounded-full border px-2.5 py-0.5 text-xs font-medium transition ${
+                  label === key
+                    ? "border-[var(--blue)] bg-[color-mix(in_srgb,var(--blue)_12%,transparent)] text-[var(--blue)]"
+                    : "border-[var(--border)] text-[var(--ink-muted)] hover:text-[var(--ink)]"
+                }`}
+              >
+                {CONTEXT_LABEL_COPY[key]}
+              </button>
+            ))}
+            {label && (
               <button
                 type="button"
-                onClick={undoImprove}
-                className="text-xs text-[var(--ink-muted)] underline"
+                onClick={() => setLabel(null)}
+                aria-label="Remove label"
+                className="grid h-6 w-6 place-items-center rounded-full text-[var(--ink-muted)] hover:text-[var(--ink)]"
               >
-                Undo improve
+                <X strokeWidth={1.5} className="h-3.5 w-3.5" />
               </button>
-            ) : (
-              <button
-                type="button"
-                onClick={onImprove}
-                disabled={improving || len === 0}
-                className="btn-accent text-xs px-2.5 py-1"
-              >
-                {improving ? "Improving…" : "✦ Improve"}
-              </button>
-            )
-          ) : (
-            <Link
-              href="/pro"
-              title="Improve is a Pro feature. Upgrade to rewrite your drafts."
-              className="rounded-full bg-[var(--featured-surface)] px-2.5 py-1 text-xs font-medium text-[var(--ink-muted)]"
-            >
-              ✦ Improve <span className="text-[var(--ink-faint)]">(Pro)</span>
-            </Link>
-          )}
+            )}
+          </div>
         </div>
         <button
           type="submit"

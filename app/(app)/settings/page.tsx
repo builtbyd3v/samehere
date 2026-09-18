@@ -78,7 +78,7 @@ export default async function SettingsPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("username, is_private, hide_school, heatmap_visibility, leaderboard_opt_out, email_digest_opt_out, verified_student")
+    .select("username, is_private, hide_school, heatmap_visibility, email_digest_opt_out, verified_student")
     .eq("id", user.id)
     .single();
   if (!profile) redirect("/login");

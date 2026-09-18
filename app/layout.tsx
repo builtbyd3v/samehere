@@ -1,22 +1,18 @@
 import "./globals.css";
+import "./landing-xai.css";
 import type { Metadata } from "next";
-import { Figtree, Fraunces } from "next/font/google";
+import { Figtree } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
-import { SpeedInsights } from "@vercel/speed-insights/next"
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
 
-// humanist warmth as a stand-in for Camera Plain Variable (see DESIGN.md)
 const figtree = Figtree({ subsets: ["latin"], weight: ["400", "500", "600"] });
-// Editorial display face — the warm, characterful headline voice (see DESIGN.md
-// overhaul). Exposed as --font-display; use via the .font-display utility.
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  style: ["normal", "italic"],
-  variable: "--font-display",
-});
 
-const TITLE = "samehere: the social network built for students";
-const DESCRIPTION = "Built for students. Join free, post what's real, and find people who get it. A .edu email gets you the verified student badge.";
+const TITLE = "samehere: Find your people. Show what you’re building.";
+const DESCRIPTION =
+  "A place for CS students to share the work, find a familiar struggle, and build a profile that feels like them.";
+
+const THEME_INIT = `(function(){try{var k="samehere-theme";var t=localStorage.getItem(k);if(t!=="light"&&t!=="dark"&&t!=="system"){localStorage.setItem(k,"dark");t="dark";}var r=document.documentElement;r.classList.remove("light","dark");if(t==="light")r.classList.add("light");else if(t==="dark")r.classList.add("dark");}catch(e){document.documentElement.classList.add("dark");}})();`;
 
 // No `images` in either block on purpose. Next merges the file-based
 // opengraph-image / twitter-image routes in automatically, and an explicit
@@ -40,8 +36,6 @@ export const metadata: Metadata = {
     description: DESCRIPTION,
     locale: "en_US",
   },
-  // Without an explicit card, Twitter and several other unfurlers fall back to
-  // the small square `summary` layout and crop the 1200x630 card to an avatar.
   twitter: {
     card: "summary_large_image",
     title: TITLE,
@@ -56,8 +50,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${figtree.className} ${fraunces.variable} min-h-full bg-[var(--canvas)] text-[var(--ink)] antialiased`}>
-        {children}
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
+      </head>
+      <body className={`${figtree.className} min-h-full bg-[var(--canvas)] text-[var(--ink)] antialiased`}>
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
         <Analytics />
         <SpeedInsights />
       </body>

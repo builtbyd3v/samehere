@@ -1,9 +1,26 @@
 // Shared reaction icons — single source so the feed, post page, and landing
-// stay consistent. Soft, fully-rounded strokes; the fillable ones go solid when
-// `on` (active). SameHere is a two-people glyph ("this is me too").
-const s = { fill: "none", stroke: "currentColor", strokeWidth: 1.9, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, viewBox: "0 0 24 24" };
+// stay consistent. Lucide for general actions; SameHere stays the two-people glyph.
+import {
+  Bell,
+  Bookmark,
+  Briefcase,
+  ChevronLeft,
+  Hash,
+  Mail,
+  MapPin,
+  MessageCircle,
+  Pencil,
+  Plus,
+  Repeat2,
+  Search,
+  Send,
+  Trash2,
+} from "lucide-react";
+
+const s = { fill: "none", stroke: "currentColor", strokeWidth: 1.5, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, viewBox: "0 0 24 24" };
 const cls = "h-5 w-5";
 const fillIf = (on?: boolean) => (on ? "currentColor" : "none");
+const lucide = { size: 20, strokeWidth: 1.5, "aria-hidden": true } as const;
 
 export const IconSame = ({ on, className = cls }: { on?: boolean; className?: string }) => (
   <svg className={className} {...s} fill={fillIf(on)}>
@@ -14,25 +31,12 @@ export const IconSame = ({ on, className = cls }: { on?: boolean; className?: st
   </svg>
 );
 
-export const IconComment = () => (
-  <svg className={cls} {...s}>
-    <path d="M21 15a2 2 0 0 1-2 2H8l-4 4V5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2Z" />
-  </svg>
-);
+export const IconComment = () => <MessageCircle className={cls} {...lucide} />;
 
-export const IconRepost = () => (
-  <svg className={cls} {...s}>
-    <path d="M17 2l4 4-4 4" />
-    <path d="M3 11V9a4 4 0 0 1 4-4h14" />
-    <path d="M7 22l-4-4 4-4" />
-    <path d="M21 13v2a4 4 0 0 1-4 4H3" />
-  </svg>
-);
+export const IconRepost = () => <Repeat2 className={cls} {...lucide} />;
 
 export const IconBookmark = ({ on }: { on?: boolean }) => (
-  <svg className={cls} {...s} fill={fillIf(on)}>
-    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z" />
-  </svg>
+  <Bookmark className={cls} {...lucide} fill={fillIf(on)} />
 );
 
 /** Pro member badge — blue bolt beside display name */
@@ -104,47 +108,18 @@ export const IconFlag = ({ className = "h-4 w-4" }: { className?: string }) => (
 
 /** Jobs nav — briefcase. */
 export const IconBriefcase = ({ className = cls }: { className?: string }) => (
-  <svg className={className} {...s}>
-    <rect x="3" y="7.5" width="18" height="12" rx="2" />
-    <path d="M8 7.5V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1.5" />
-    <path d="M3 13h18" />
-  </svg>
+  <Briefcase className={className} {...lucide} />
 );
 
-export const IconSearch = () => (
-  <svg className={cls} {...s}>
-    <circle cx="11" cy="11" r="7" />
-    <path d="m20 20-3.5-3.5" />
-  </svg>
-);
+export const IconSearch = () => <Search className={cls} {...lucide} />;
 
-export const IconCompose = () => (
-  <svg className={cls} {...s}>
-    <path d="M12 20h9" />
-    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
-  </svg>
-);
+export const IconCompose = () => <Pencil className={cls} {...lucide} />;
 
-export const IconMail = () => (
-  <svg className={cls} {...s}>
-    <path d="M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z" />
-    <path d="m22 8-10 6L2 8" />
-  </svg>
-);
+export const IconMail = () => <Mail className={cls} {...lucide} />;
 
-export const IconBell = () => (
-  <svg className={cls} {...s}>
-    <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
-    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-  </svg>
-);
+export const IconBell = () => <Bell className={cls} {...lucide} />;
 
-export const IconSend = () => (
-  <svg className="h-4 w-4" {...s}>
-    <path d="m22 2-7 20-4-9-9-4Z" />
-    <path d="M22 2 11 13" />
-  </svg>
-);
+export const IconSend = () => <Send className="h-4 w-4" size={16} strokeWidth={1.5} aria-hidden />;
 
 /** Mention notification badge — @-sign. */
 export const IconAt = ({ className = "h-2.5 w-2.5" }: { className?: string }) => (
@@ -155,9 +130,7 @@ export const IconAt = ({ className = "h-2.5 w-2.5" }: { className?: string }) =>
 );
 
 export const IconChevronLeft = () => (
-  <svg className="h-4 w-4" {...s}>
-    <path d="m15 6-6 6 6 6" />
-  </svg>
+  <ChevronLeft className="h-4 w-4" size={16} strokeWidth={1.5} aria-hidden />
 );
 
 /** Community nav — group of people (clubs + threads). */
@@ -177,10 +150,7 @@ export const IconCommunity = ({ className = cls }: { className?: string }) => (
 
 /** Pinned item marker. */
 export const IconPin = ({ className = cls }: { className?: string }) => (
-  <svg className={className} {...s}>
-    <path d="M12 21s7-6.5 7-11a7 7 0 1 0-14 0c0 4.5 7 11 7 11Z" />
-    <circle cx="12" cy="10" r="2.3" />
-  </svg>
+  <MapPin className={className} {...lucide} />
 );
 
 /**
@@ -196,24 +166,15 @@ export const IconVerified = ({ className = "h-4 w-4" }: { className?: string }) 
 
 /** Channel name marker — hash prefix (club channel names). */
 export const IconHash = ({ className = "h-4 w-4" }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
-    <path d="M9 4 7 20M17 4l-2 16M4 9h16M3 15h16" />
-  </svg>
+  <Hash className={className} size={16} strokeWidth={1.5} aria-hidden />
 );
 
 /** Generic add action — e.g. create channel. */
 export const IconPlus = ({ className = "h-4 w-4" }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
-    <path d="M12 5v14M5 12h14" />
-  </svg>
+  <Plus className={className} size={16} strokeWidth={1.5} aria-hidden />
 );
 
 /** Generic delete action — e.g. delete channel. */
 export const IconTrash = ({ className = "h-4 w-4" }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
-    <path d="M4 7h16" />
-    <path d="M10 11v6M14 11v6" />
-    <path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13" />
-    <path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3" />
-  </svg>
+  <Trash2 className={className} size={16} strokeWidth={1.5} aria-hidden />
 );

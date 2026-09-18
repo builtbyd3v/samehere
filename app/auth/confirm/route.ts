@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getPostHogServerClient } from "@/lib/posthog-server";
 import { sendEmail } from "@/lib/email";
 import { welcomeEmail } from "@/lib/emails/welcome";
+import { authSuccessDest } from "@/lib/auth-dest";
 
 // Email-confirmation landing (the emailRedirectTo target from signUp).
 // Supports both Supabase link shapes: the PKCE `?code=` default and the
@@ -23,9 +24,7 @@ export async function GET(request: NextRequest) {
 
   // Open-redirect guard: only same-origin absolute paths, never protocol-relative.
   const nextParam = searchParams.get("next");
-  const dest = nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//")
-    ? nextParam
-    : "/onboarding";
+  const dest = authSuccessDest(nextParam);
 
   const supabase = await createClient();
   let ok = false;

@@ -1,3 +1,4 @@
+import FeedStagger from "@/components/feed/FeedStagger";
 import PostCard, { type FeedPost } from "@/components/feed/PostCard";
 import QuotedRepostCard, { type QuotedRepost } from "@/components/feed/QuotedRepostCard";
 import ProfileHoverLink from "@/components/profile/ProfileHoverLink";
@@ -13,7 +14,7 @@ export default function FeedTimeline({
   viewerId: string | null;
 }) {
   return (
-    <>
+    <FeedStagger>
       {items.map((item) => {
         if (item.kind === "post") {
           return <PostCard key={`post-${item.post.id}`} post={item.post} viewerId={viewerId} />;
@@ -40,7 +41,7 @@ export default function FeedTimeline({
           </div>
         );
       })}
-    </>
+    </FeedStagger>
   );
 }
 

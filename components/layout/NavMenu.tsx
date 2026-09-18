@@ -8,6 +8,7 @@ import FeedbackButton from "@/components/feedback/FeedbackButton";
 import { signOut } from "@/app/(auth)/actions";
 
 import { menuItemClass } from "@/lib/ui/menu-styles";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 
 function MenuLink({ href, children }: { href: string; children: React.ReactNode }) {
   const close = useMenuClose();
@@ -37,6 +38,9 @@ function MenuItems({ isAdmin }: { isAdmin: boolean }) {
       <div className="lg:hidden">
         <MenuLink href="/saved">Saved</MenuLink>
         <FeedbackButton className={menuItemClass} />
+      </div>
+      <div className="px-2 py-2">
+        <ThemeToggle />
       </div>
       <MenuLink href="/settings">Settings</MenuLink>
       {isAdmin && <MenuLink href="/admin">Admin</MenuLink>}

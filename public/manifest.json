@@ -1,11 +1,11 @@
 {
   "name": "samehere",
   "short_name": "samehere",
-  "description": "The social network built for students.",
+  "description": "A place for CS students to share the work, find a familiar struggle, and build a profile that feels like them.",
   "start_url": "/feed",
   "display": "standalone",
-  "background_color": "#f7f4ed",
-  "theme_color": "#0075de",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
   "icons": [
     {
       "src": "/icon.svg",

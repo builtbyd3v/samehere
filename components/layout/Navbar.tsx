@@ -1,4 +1,5 @@
 import Link from "next/link";
+import AppBrand from "@/components/brand/AppBrand";
 import NavMenu from "./NavMenu";
 import SearchBar from "@/components/search/SearchBar";
 import { IconBolt } from "@/components/icons";
@@ -17,11 +18,9 @@ export default function Navbar({
 }) {
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--canvas)]/85 backdrop-blur-md">
-      <nav className="app-nav mx-auto flex h-14 max-w-[1320px] items-center justify-between px-5">
+      <nav className="app-nav brand-header-bar">
         <div className="flex items-center gap-2">
-          <Link href={username ? "/feed" : "/"} aria-label="samehere home" className="font-semibold tracking-[-0.03em] transition hover:opacity-80">
-            <span className="text-[var(--ink)]">same</span><span className="text-[var(--blue)]">here</span>
-          </Link>
+          <AppBrand href={username ? "/feed" : "/"} />
           {isPro && (
             <Link
               href="/pro"
