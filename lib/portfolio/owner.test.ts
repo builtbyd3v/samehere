@@ -94,13 +94,14 @@ function memoryClient(init?: {
         return { data: updated.length === 1 ? updated[0] : updated, error: null };
       }
       if (mode === "update") {
+        const patch = Array.isArray(payload) ? (payload[0] ?? {}) : payload;
         const found = match();
         if (found.length === 0) return { data: null, error: null };
-        Object.assign(found[0], payload, { updated_at: "2026-09-10T00:00:01.000Z" });
-        if (payload.status === "published" && !found[0].published_at) {
+        Object.assign(found[0], patch, { updated_at: "2026-09-10T00:00:01.000Z" });
+        if (patch.status === "published" && !found[0].published_at) {
           found[0].published_at = "2026-09-10T00:00:01.000Z";
         }
-        if (payload.status === "draft") found[0].published_at = null;
+        if (patch.status === "draft") found[0].published_at = null;
         return { data: found[0], error: null };
       }
       if (mode === "delete") {
