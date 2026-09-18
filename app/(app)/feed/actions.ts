@@ -13,6 +13,7 @@ import { type AiResult } from "@/lib/ai";
 import { getPostHogServerClient } from "@/lib/posthog-server";
 import { TEXT_LIMITS, textLimitError } from "@/lib/utils/validation";
 import { contextLabelError, parseContextLabel } from "@/lib/context-label";
+import { fetchLabeledPosts } from "@/lib/feed-labeled";
 import { peopleSearchCore, type PeopleSearchState } from "@/lib/people-search";
 
 export type ComposerState = { error?: string; ok?: boolean };
@@ -85,6 +86,32 @@ export async function loadMorePosts(
   const last = items[items.length - 1];
   const nextCursor = last ? encodeCursor(last.created_at, itemId(last)) : null;
   return { items, nextCursor };
+}
+
+// Next page for a label filter. Posts only (no quotes/reposts). `label` is
+// parsed again here because this is a Server Action — the client can send
+// anything. Junk labels stop pagination instead of scanning the firehose.
+export async function loadMoreLabeledPosts(
+  labelRaw: string,
+  cursor: string,
+): Promise<{ items: FeedTimelineItem[]; nextCursor: string | null }> {
+  const label = parseContextLabel(labelRaw);
+  const decoded = decodeCursor(cursor);
+  if (!label || !decoded) return { items: [], nextCursor: null };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const posts = await fetchLabeledPosts(supabase, {
+    viewerId: user?.id ?? null,
+    label,
+    cursor: decoded,
+    limit: PAGE,
+  });
+  const items = posts.map((post) => ({ kind: "post" as const, created_at: post.created_at, post }));
+  const last = items[items.length - 1];
+  return { items, nextCursor: last ? encodeCursor(last.created_at, itemId(last)) : null };
 }
 
 const MAX = TEXT_LIMITS.post;
@@ -225,10 +252,18 @@ export async function peopleSearch(query: string, _verifiedOnly?: boolean): Prom
 // Count posts newer than a timestamp, for the feed's "N new posts" pill. Capped
 // at 30 — the pill only needs "many", not an exact count. Blocked authors are
 // filtered app-side, mirroring the first-page query in page.tsx.
-export async function countNewerPosts(sinceIso: string): Promise<number> {
+export async function countNewerPosts(sinceIso: string, labelRaw?: string | null): Promise<number> {
   const supabase = await createClient();
+  const label = parseContextLabel(labelRaw);
+  let query = supabase
+    .from("posts")
+    .select("id, user_id")
+    .gt("created_at", sinceIso)
+    .order("created_at", { ascending: false })
+    .limit(30);
+  if (label) query = query.eq("context_label", label);
   const [{ data }, { data: blockedIds }] = await Promise.all([
-    supabase.from("posts").select("id, user_id").gt("created_at", sinceIso).order("created_at", { ascending: false }).limit(30),
+    query,
     supabase.rpc("get_blocked_ids"),
   ]);
   if (!data) return 0;

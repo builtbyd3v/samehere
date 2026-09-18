@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { countNewerPosts } from "./actions";
 
-export default function NewPostsPill({ since }: { since: string }) {
+export default function NewPostsPill({ since, label }: { since: string; label?: string }) {
   const router = useRouter();
   const [count, setCount] = useState(0);
   // Reset the count whenever `since` changes (e.g. the feed's baseline moves
@@ -21,7 +21,7 @@ export default function NewPostsPill({ since }: { since: string }) {
 
     async function poll() {
       if (document.hidden) return;
-      const n = await countNewerPosts(since);
+      const n = await countNewerPosts(since, label);
       if (!cancelled) setCount(n);
     }
 
@@ -39,7 +39,7 @@ export default function NewPostsPill({ since }: { since: string }) {
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("focus", onVisible);
     };
-  }, [since]);
+  }, [since, label]);
 
   if (count <= 0) return null;
 
