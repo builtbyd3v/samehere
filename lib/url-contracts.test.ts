@@ -9,8 +9,8 @@ import { profileSharePath } from "@/lib/portfolio/share";
  * Helpers define the URLs; feature PRs wire them into pages without changing shapes.
  */
 describe("URL query contracts", () => {
-  it("locks /feed?label=stuck|learning|building", () => {
-    expect(FEED_FILTER_LABELS).toEqual(["stuck", "learning", "building"]);
+  it("locks /feed?label=stuck|learning|building|looking_for_team", () => {
+    expect(FEED_FILTER_LABELS).toEqual(["stuck", "learning", "building", "looking_for_team"]);
     for (const label of FEED_FILTER_LABELS) {
       expect(feedPath({ label })).toBe(`/feed?label=${label}`);
       expect(parseFeedView({ label })).toEqual({ tab: "latest", label });
