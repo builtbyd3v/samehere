@@ -51,6 +51,9 @@ body {
   --stagger: 40ms;
   --elev-hairline: inset 0 1px 0 rgba(255, 255, 255, 0.05);
   --elev-raised: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 1px 1px rgba(0, 0, 0, 0.2), 0 12px 28px -8px rgba(0, 0, 0, 0.5);
+  --label-stuck: #e0a83a;
+  --label-building: #4f9fe8;
+  --label-learning: #5fce8f;
 }
 
 .dark {
@@ -79,6 +82,9 @@ body {
   --accent-blue-strong: #4f9fe8;
   --accent-blue-soft: rgba(0, 117, 222, 0.14);
   --nav-muted: rgba(255, 255, 255, 0.55);
+  --label-stuck: #e0a83a;
+  --label-building: #4f9fe8;
+  --label-learning: #5fce8f;
 }
 
 .light {
@@ -109,6 +115,9 @@ body {
   --accent-blue-strong: #005bb3;
   --accent-blue-soft: rgba(0, 117, 222, 0.10);
   --nav-muted: rgba(10, 10, 10, 0.55);
+  --label-stuck: #e0a83a;
+  --label-building: #0075de;
+  --label-learning: #5fce8f;
 }
 
 @media (prefers-color-scheme: light) {
@@ -140,6 +149,9 @@ body {
     --accent-blue-strong: #005bb3;
     --accent-blue-soft: rgba(0, 117, 222, 0.10);
     --nav-muted: rgba(10, 10, 10, 0.55);
+    --label-stuck: #e0a83a;
+    --label-building: #0075de;
+    --label-learning: #5fce8f;
   }
 }
 
@@ -795,30 +807,61 @@ summary {
   }
 }
 
-.label-chip {
+.context-label-badge {
   display: inline-flex;
   align-items: center;
-  border-radius: 9999px;
-  padding: 0.125rem 0.5rem;
+  gap: 0.3rem;
+  color: var(--ink-muted);
   font-size: 12px;
   font-weight: 500;
+  letter-spacing: 0.01em;
   line-height: 1.2;
-  background: transparent;
+  transition: color var(--dur-micro) var(--ease-out);
 }
 
-.label-chip-stuck {
-  color: #e0a83a;
-  border: 1px solid color-mix(in srgb, #e0a83a 60%, transparent);
+.context-label-badge:hover {
+  color: var(--ink);
 }
 
-.label-chip-building {
-  color: var(--blue);
-  border: 1px solid color-mix(in srgb, var(--blue) 60%, transparent);
+.context-label-badge[data-label="stuck"] .label-glyph {
+  color: var(--label-stuck);
 }
 
-.label-chip-learning {
-  color: #5fce8f;
-  border: 1px solid color-mix(in srgb, #5fce8f 60%, transparent);
+.context-label-badge[data-label="building"] .label-glyph {
+  color: var(--label-building);
+}
+
+.context-label-badge[data-label="learning"] .label-glyph {
+  color: var(--label-learning);
+}
+
+.label-glyph {
+  display: block;
+  flex-shrink: 0;
+}
+
+@keyframes label-glyph-draw {
+  from { stroke-dashoffset: 32; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes label-glyph-fill {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (max-width: 399.98px) {
+  .context-label-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
 }
 
 .eyebrow {
@@ -921,6 +964,24 @@ summary {
   .feed-enter {
     animation: feed-enter var(--dur-med) var(--ease-out) both;
     animation-delay: calc(var(--stagger-i, 0) * var(--stagger));
+  }
+
+  .label-glyph-draw[data-label="stuck"] .label-glyph-stroke,
+  .label-glyph-draw[data-label="building"] .label-glyph-stroke,
+  .feed-enter .label-glyph[data-label="stuck"] .label-glyph-stroke,
+  .feed-enter .label-glyph[data-label="building"] .label-glyph-stroke {
+    stroke-dasharray: 32;
+    animation: label-glyph-draw 220ms var(--ease-out) both;
+  }
+
+  .label-glyph-draw[data-label="learning"] .label-glyph-stroke,
+  .feed-enter .label-glyph[data-label="learning"] .label-glyph-stroke {
+    animation: label-glyph-draw 220ms var(--ease-out) both;
+  }
+
+  .label-glyph-draw .label-glyph-fill,
+  .feed-enter .label-glyph-fill {
+    animation: label-glyph-fill 220ms var(--ease-out) both;
   }
 
   .new-posts-pill {
