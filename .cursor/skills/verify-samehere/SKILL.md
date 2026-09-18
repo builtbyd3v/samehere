@@ -71,6 +71,8 @@ $BIN browser wait --text "Create your account"
 $BIN browser snapshot --aria --path artifacts/landing/signup.aria.txt
 $BIN browser screenshot --path artifacts/landing/signup.png
 $BIN browser url
+$BIN browser stub-share
+$BIN browser share-last --expect-https --username "$SAMEHERE_VERIFY_PROFILE_USERNAME"
 $BIN http get --path /feed --expect-status 307
 ```
 

@@ -20,6 +20,8 @@ control-samehere — launch, inspect, and drive a disposable samehere instance.
   control-samehere browser snapshot --aria --path artifacts/landing/home.aria.txt
   control-samehere browser screenshot --path artifacts/landing/home.png [--full]
   control-samehere browser url
+  control-samehere browser stub-share
+  control-samehere browser share-last [--expect-https] [--username NAME] [--expect-path /profile/NAME] [--path artifacts/...]
   control-samehere http get --path /feed [--expect-status 307]
   control-samehere cleanup
 

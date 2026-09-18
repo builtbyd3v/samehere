@@ -295,6 +295,95 @@ async function cmdWait(page, args) {
   fail("wait needs --text, --url, or --role and --name");
 }
 
+
+const SHARE_STUB_SOURCE = `(() => {
+  if (window.__samehereVerifyShareStubbed) return;
+  window.__samehereVerifyShareStubbed = true;
+  window.__samehereVerifyShare = null;
+  const record = (url, via) => {
+    window.__samehereVerifyShare = { url: String(url || ""), via: String(via || "") };
+  };
+  try {
+    navigator.share = async (data) => {
+      record(data && data.url, "share");
+    };
+  } catch (_) {
+    // ignore
+  }
+  try {
+    const clipboard = navigator.clipboard;
+    if (clipboard && typeof clipboard.writeText === "function") {
+      const original = clipboard.writeText.bind(clipboard);
+      clipboard.writeText = async (text) => {
+        record(text, "clipboard");
+        return original(text);
+      };
+    } else {
+      Object.defineProperty(navigator, "clipboard", {
+        configurable: true,
+        value: {
+          writeText: async (text) => {
+            record(text, "clipboard");
+          },
+        },
+      });
+    }
+  } catch (_) {
+    // ignore
+  }
+})();`;
+
+async function installShareStub(page) {
+  const context = page.context();
+  // Playwright tracks init scripts per client connection; re-call each process.
+  await context.addInitScript({ content: SHARE_STUB_SOURCE });
+  if (!page.isClosed()) {
+    await page.evaluate(SHARE_STUB_SOURCE).catch(() => {});
+  }
+}
+
+async function cmdStubShare(page) {
+  writeState("share_stub", "1");
+  await installShareStub(page);
+  printOk({ stub: "share" });
+}
+
+async function cmdShareLast(page, args) {
+  const captured = await page.evaluate(() => window.__samehereVerifyShare);
+  if (!captured || !captured.url) {
+    fail("no share URL captured; run stub-share, open the profile, click Share");
+  }
+  const url = String(captured.url);
+  const via = String(captured.via || "");
+
+  if (args["expect-https"] === true) {
+    if (!/^https:\/\//.test(url)) {
+      fail(`share URL is not absolute https: ${url}`);
+    }
+  }
+
+  const username = args.username ? String(args.username) : "";
+  if (username) {
+    const needle = `/profile/${username}`;
+    if (!url.includes(needle)) {
+      fail(`share URL missing ${needle}: ${url}`);
+    }
+  }
+
+  const expectPath = args["expect-path"] ? String(args["expect-path"]) : "";
+  if (expectPath && !url.includes(expectPath)) {
+    fail(`share URL missing ${expectPath}: ${url}`);
+  }
+
+  if (args.path) {
+    const dest = resolveArtifactPath(args.path);
+    mkdirSync(dirname(dest), { recursive: true });
+    writeFileSync(dest, `${JSON.stringify({ url, via }, null, 2)}\n`);
+  }
+
+  printOk({ url, via, path: args.path || "" });
+}
+
 const commands = {
   goto: cmdGoto,
   click: cmdClick,
@@ -304,16 +393,23 @@ const commands = {
   screenshot: cmdScreenshot,
   url: cmdUrl,
   wait: cmdWait,
+  "stub-share": cmdStubShare,
+  "share-last": cmdShareLast,
 };
 
 const argv = process.argv.slice(2);
 const command = argv.shift();
 if (!command || !commands[command]) {
-  fail(`unknown command '${command || ""}'. Use goto|click|fill|press|snapshot|screenshot|url|wait`);
+  fail(`unknown command '${command || ""}'. Use goto|click|fill|press|snapshot|screenshot|url|wait|stub-share|share-last`);
 }
 
 const args = parseArgs(argv);
 const { page } = await connectPage();
+// Re-apply share stub on every reconnect when enabled (Playwright init scripts
+// do not survive a new CDP client). Install before goto so the next document sees it.
+if (command !== "stub-share" && readState("share_stub") === "1") {
+  await installShareStub(page);
+}
 await commands[command](page, args);
 // CDP keeps the event loop alive; do not browser.close() (that kills Chrome).
 process.exit(0);
