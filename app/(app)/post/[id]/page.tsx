@@ -184,8 +184,15 @@ async function hasAuthCookie() {
   return store.getAll().some((c) => c.name.startsWith("sb-") && c.name.includes("-auth-token"));
 }
 
-export default async function PostPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function PostPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ reply?: string }>;
+}) {
   const { id } = await params;
+  const { reply } = await searchParams;
   if (!(await hasAuthCookie())) return <PublicPostView id={id} />;
 
   const supabase = await createClient();
@@ -248,6 +255,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
           initialComments={comments ?? []}
           viewerId={viewerId}
           viewer={viewerAuthor}
+          autoFocus={reply === "1"}
         />
       </section>
     </main>

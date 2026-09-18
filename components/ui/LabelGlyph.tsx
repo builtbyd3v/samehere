@@ -52,6 +52,39 @@ function LearningGlyph() {
   );
 }
 
+function TeamGlyph() {
+  return (
+    <>
+      <circle
+        className="label-glyph-stroke"
+        cx="4"
+        cy="4.25"
+        r="2"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+      <circle
+        className="label-glyph-stroke"
+        cx="8.25"
+        cy="4.25"
+        r="2"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+      <path
+        className="label-glyph-stroke"
+        d="M1.5 10.5c.35-1.7 1.45-2.5 2.5-2.5h.7c.7 0 1.3.3 1.8.8M6.6 8.8c.45-.4 1-.6 1.65-.6h.5c1.05 0 2.15.8 2.5 2.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+    </>
+  );
+}
+
 export default function LabelGlyph({ label, size = 12, drawIn = false }: LabelGlyphProps) {
   return (
     <svg
@@ -65,6 +98,7 @@ export default function LabelGlyph({ label, size = 12, drawIn = false }: LabelGl
       {label === "stuck" ? <StuckGlyph /> : null}
       {label === "building" ? <BuildingGlyph /> : null}
       {label === "learning" ? <LearningGlyph /> : null}
+      {label === "looking_for_team" ? <TeamGlyph /> : null}
     </svg>
   );
 }

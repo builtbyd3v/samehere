@@ -17,7 +17,7 @@ export default async function EditProfilePage() {
   if (!user) redirect("/login");
 
   const profileSelect =
-    "username, display_name, avatar_url, banner_url, year, major, bio, goals, open_to, is_private, hide_school, heatmap_visibility, is_pro, pro_until, profile_theme";
+    "username, display_name, avatar_url, banner_url, year, major, bio, goals, open_to, study_mode, is_private, hide_school, heatmap_visibility, is_pro, pro_until, profile_theme";
   const profileFallback =
     "username, display_name, avatar_url, banner_url, year, major, bio, goals, is_private, hide_school, heatmap_visibility, is_pro, pro_until, profile_theme";
   const firstProfile = await supabase.from("profiles").select(profileSelect).eq("id", user.id).single();
@@ -64,6 +64,7 @@ export default async function EditProfilePage() {
           id: user.id,
           school: schoolRow?.school ?? "",
           open_to: "open_to" in profile && Array.isArray(profile.open_to) ? profile.open_to : [],
+          study_mode: "study_mode" in profile && typeof profile.study_mode === "string" ? profile.study_mode : null,
         }}
       />
       {/* Experience + Education auto-save through their own actions; the single

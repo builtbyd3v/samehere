@@ -1,6 +1,6 @@
 import LandingNav from "./LandingNav";
 import Hero from "./Hero";
-import SocialPreview from "./SocialPreview";
+import SocialPreviewLazy from "./SocialPreviewLazy";
 import ProjectStory from "./ProjectStory";
 import Pricing from "./Pricing";
 import CommunityInvite from "./CommunityInvite";
@@ -12,7 +12,7 @@ export default function LandingPage({ founderSpotsLeft }: { founderSpotsLeft?: n
     <main id="top" className="landing-xai">
       <LandingNav />
       <Hero />
-      <SocialPreview />
+      <SocialPreviewLazy />
       <ProjectStory />
       <Pricing />
       <CommunityInvite spotsLeft={founderSpotsLeft} />

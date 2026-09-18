@@ -4,9 +4,11 @@ import {
   OPEN_TO_TAGS,
   PORTFOLIO_LIMITS,
   PORTFOLIO_SECTIONS,
+  STUDY_MODES,
   contextLabelError,
   httpUrlError,
   openToError,
+  studyModeError,
   parseAnalysisDraft,
   portfolioPublishConflict,
   projectWriteError,
@@ -59,7 +61,7 @@ describe("contextLabelError", () => {
 
   it("rejects unknown labels", () => {
     expect(contextLabelError("shipping")).toBe(
-      "Context label must be building, learning, or stuck."
+      "Context label must be building, learning, stuck, or looking_for_team."
     );
   });
 });
@@ -76,6 +78,22 @@ describe("openToError", () => {
     );
     expect(openToError(["hiring"])).toBe(
       "Open-to tags must be collaborate, study, or feedback."
+    );
+  });
+});
+
+describe("studyModeError", () => {
+  it("accepts allowlisted modes and unset", () => {
+    for (const mode of STUDY_MODES) {
+      expect(studyModeError(mode)).toBeNull();
+    }
+    expect(studyModeError(null)).toBeNull();
+    expect(studyModeError("")).toBeNull();
+  });
+
+  it("rejects unknown modes", () => {
+    expect(studyModeError("remote")).toBe(
+      "Study mode must be on campus, online, hybrid, bootcamp, or self-taught."
     );
   });
 });
