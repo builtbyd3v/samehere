@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion, useReducedMotion } from "motion/react";
 import { House, User } from "lucide-react";
 import { IconBell, IconMail, IconSearch } from "@/components/icons";
 
@@ -15,6 +16,7 @@ export default function MobileNav({
   notifUnread?: number;
 }) {
   const pathname = usePathname();
+  const reduceMotion = useReducedMotion();
 
   const items = [
     {
@@ -48,13 +50,18 @@ export default function MobileNav({
           aria-current={item.active ? "page" : undefined}
           className={`relative flex min-h-11 flex-1 items-center justify-center py-3 transition-colors duration-[var(--dur-micro)] ease-out ${item.active ? "text-[var(--blue)]" : "text-[var(--ink-muted)]"}`}
         >
-          {item.active && (
-            <span
-              aria-hidden
-              className="pointer-events-none absolute h-8 w-8 rounded-full blur-md"
-              style={{ background: "var(--blue-glow)" }}
-            />
-          )}
+          {item.active ? (
+            reduceMotion ? (
+              <span className="shell-mobile-mark" aria-hidden />
+            ) : (
+              <motion.span
+                layoutId="shell-mobile-active"
+                className="shell-mobile-mark"
+                transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+                aria-hidden
+              />
+            )
+          ) : null}
           <span className="relative">{item.icon}</span>
           {"dot" in item && item.dot ? (
             <span className="absolute right-[calc(50%-16px)] top-2 h-2 w-2 rounded-full bg-[var(--blue)] ring-2 ring-[var(--canvas)]" />
