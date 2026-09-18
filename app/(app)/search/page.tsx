@@ -4,6 +4,7 @@ import { FeedSearchResults } from "@/components/feed/FeedSearch";
 import FeedTimeline from "@/components/feed/FeedTimeline";
 import EmptyState from "@/components/ui/EmptyState";
 import SearchBar from "@/components/search/SearchBar";
+import SearchIdlePeople from "@/components/search/SearchIdlePeople";
 import {
   SEARCH_PAGE,
   tokensFor,
@@ -39,7 +40,11 @@ export default async function SearchPage({
     return (
       <main className="page-enter mx-auto max-w-2xl px-4 py-8">
         <SearchBar />
-        <EmptyState title="Search people, projects, and posts" />
+        <EmptyState
+          title="Search people, projects, and posts"
+          description="Type a name, username, or major — or follow someone below to start your feed."
+        />
+        <SearchIdlePeople />
       </main>
     );
   }
