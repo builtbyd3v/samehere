@@ -1,8 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import { updateProfile, uploadAvatar, uploadBanner, type AvatarState, type EditState } from "@/app/(app)/profile/edit/actions";
+import { isSupabaseStorageUrl } from "@/lib/storage-image";
 import { isPro } from "@/lib/pro";
 import { PROFILE_THEME_KEYS, PROFILE_THEMES, isProfileTheme, type ProfileTheme } from "@/lib/themes";
 import { OPEN_TO_TAGS } from "@/lib/portfolio/validation";
@@ -83,10 +85,14 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
             <label className={label}>Profile banner</label>
             {pro ? (
               <>
-                <div className="mt-1.5 aspect-[4/1] w-full overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--canvas)]">
+                <div className="relative mt-1.5 aspect-[4/1] w-full overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--canvas)]">
                   {bannerUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={bannerUrl} alt="" className="h-full w-full object-cover" />
+                    isSupabaseStorageUrl(bannerUrl) ? (
+                      <Image src={bannerUrl} alt="" fill sizes="(max-width: 640px) 100vw, 576px" className="object-cover" />
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element -- host not in images.remotePatterns
+                      <img src={bannerUrl} alt="" className="h-full w-full object-cover" />
+                    )
                   ) : (
                     <div className="grid h-full place-items-center text-xs text-[var(--ink-faint)]">No banner yet</div>
                   )}

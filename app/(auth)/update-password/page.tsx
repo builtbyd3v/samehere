@@ -1,5 +1,3 @@
-"use client";
-
 import AuthShell from "@/components/auth/AuthShell";
 import UpdatePasswordForm, { UpdatePasswordFooter } from "@/components/auth/UpdatePasswordForm";
 
