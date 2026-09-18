@@ -60,13 +60,9 @@ export default function ProjectCard({
         <p className="mt-3 whitespace-pre-line break-words text-[15px] leading-6 text-[var(--ink)]">{description}</p>
       )}
       {technologies.length > 0 && (
-        <ul className="mt-3 flex flex-wrap gap-1.5">
-          {technologies.map((tag) => (
-            <li key={tag} className="rounded-full border border-[var(--border)] px-2 py-0.5 text-[11px] text-[var(--ink-muted)]">
-              {tag}
-            </li>
-          ))}
-        </ul>
+        <p className="mt-3 text-[12px] font-medium tracking-[0.01em] text-[var(--ink-muted)]">
+          {technologies.join(" · ")}
+        </p>
       )}
       {features.length > 0 && (
         <ul className="mt-3 list-disc pl-5 text-sm text-[var(--ink-muted)]">
