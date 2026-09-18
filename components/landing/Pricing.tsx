@@ -33,7 +33,7 @@ function FeatureList({ items }: { items: readonly string[] }) {
 export default function Pricing() {
   return (
     <div className="landing-xai">
-      <section id="pricing" className="landing-pricing">
+      <section id="pricing" className="landing-pricing reveal-view">
         <h2 className="landing-pricing-title">Share your work. Make your portfolio your own.</h2>
         <div className="landing-pricing-band">
           <article className="landing-pricing-col">

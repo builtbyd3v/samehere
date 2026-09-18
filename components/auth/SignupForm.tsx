@@ -47,7 +47,7 @@ export default function SignupForm({ inviteOnly = false }: SignupFormProps) {
   }
 
   return (
-    <AuthCard title="Create your account">
+    <AuthCard title="Create your account" shake={hasError}>
       <form action={formAction} onFocus={handleFormFocus}>
         {inviteOnly && (
           <p className={`${authHint} mb-3`}>samehere is in private beta — ask a member for their code.</p>

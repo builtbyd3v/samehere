@@ -2,7 +2,7 @@ import PortfolioDemo from "./PortfolioDemo";
 
 export default function ProjectStory() {
   return (
-    <section id="product" className="landing-project-story">
+    <section id="product" className="landing-project-story reveal-view">
       <div className="landing-project-copy">
         <p>Projects</p>
         <h2>Give your project a story.</h2>

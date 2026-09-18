@@ -1,6 +1,11 @@
 import { httpUrlError } from "@/lib/portfolio/validation";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Github } from "lucide-react";
 import TrackedHttpLink from "./TrackedHttpLink";
+
+function LinkIcon({ kind }: { kind: "repo" | "demo" }) {
+  const Icon = kind === "repo" ? Github : ExternalLink;
+  return <Icon strokeWidth={1.5} className="h-3.5 w-3.5" aria-hidden />;
+}
 
 export default function SafeHttpLink({
   href,
@@ -12,9 +17,11 @@ export default function SafeHttpLink({
   track?: { projectId: string; clickKind: "repo" | "demo" };
 }) {
   if (!href || httpUrlError("Link", href)) return null;
+  const kind = track?.clickKind ?? (children === "Repository" ? "repo" : "demo");
   if (track) {
     return (
-      <TrackedHttpLink href={href} projectId={track.projectId} clickKind={track.clickKind}>
+      <TrackedHttpLink href={href} projectId={track.projectId} clickKind={track.clickKind} className="project-link-pill">
+        <LinkIcon kind={kind} />
         {children}
       </TrackedHttpLink>
     );
@@ -24,10 +31,10 @@ export default function SafeHttpLink({
       href={href}
       rel="noopener noreferrer"
       target="_blank"
-      className="inline-flex items-center gap-1 text-sm text-[var(--blue)] underline-offset-2 hover:underline"
+      className="project-link-pill"
     >
+      <LinkIcon kind={kind} />
       {children}
-      <ExternalLink strokeWidth={1.5} className="h-3.5 w-3.5" aria-hidden />
     </a>
   );
 }

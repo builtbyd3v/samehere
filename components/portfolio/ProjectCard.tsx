@@ -31,10 +31,10 @@ export default function ProjectCard({
   const sourced = isOwner && isOwnerProject(project) && hasAnalysisSource(project);
 
   return (
-    <article className="card p-4 sm:p-5">
+    <article className="card-raised card-hover-raise p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="text-[17px] font-semibold tracking-[-0.02em] text-[var(--ink)]">{title}</h3>
+          <h3 className="text-[18px] font-semibold tracking-[-0.02em] text-[var(--ink)]">{title}</h3>
           {draft && (
             <p className="mt-1 text-xs font-medium uppercase tracking-wide text-[var(--ink-faint)]">Draft</p>
           )}
@@ -62,7 +62,7 @@ export default function ProjectCard({
       {technologies.length > 0 && (
         <ul className="mt-3 flex flex-wrap gap-1.5">
           {technologies.map((tag) => (
-            <li key={tag} className="rounded-full border border-[var(--border)] px-2 py-0.5 text-xs text-[var(--ink-muted)]">
+            <li key={tag} className="rounded-full border border-[var(--border)] px-2 py-0.5 text-[11px] text-[var(--ink-muted)]">
               {tag}
             </li>
           ))}

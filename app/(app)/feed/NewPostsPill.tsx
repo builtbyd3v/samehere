@@ -52,7 +52,7 @@ export default function NewPostsPill({ since }: { since: string }) {
           window.scrollTo({ top: 0, behavior: "smooth" });
           router.refresh();
         }}
-        className="cascade-up btn-tap rounded-full border border-[var(--border)] bg-[var(--surface-raised)] px-4 py-1.5 text-sm font-medium text-[var(--blue)] shadow-paper transition hover:brightness-105 active:translate-y-[1px]"
+        className="new-posts-pill btn-tap rounded-full border border-[var(--border)] bg-[var(--surface-raised)] px-4 py-1.5 text-sm font-medium text-[var(--blue)] shadow-paper transition hover:brightness-105 active:translate-y-[1px]"
       >
         {count} new post{count === 1 ? "" : "s"}
       </button>

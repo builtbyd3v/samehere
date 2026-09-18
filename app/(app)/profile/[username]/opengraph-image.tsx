@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { ImageResponse } from "next/og";
 import sharp from "sharp";
 import { BLUE, BORDER, CANVAS, CARD, GOLD, GREEN, HM, INK, INK_FAINT, INK_MUTED } from "@/lib/og-tokens";
+import { portfolioBannerOg } from "@/lib/portfolio/banner";
 import { portfolioViewerClient } from "@/lib/portfolio/client";
 import { getPublicPortfolio } from "@/lib/portfolio/public";
 
@@ -415,6 +416,7 @@ export default async function OgImage({ params }: { params: Promise<{ username: 
   const counts = countsRes.data?.[0] ?? null;
   const heat = heatRes.data ?? [];
   const showHeatmap = heat.length > 0;
+  const banner = portfolioBannerOg(profile.username);
 
   return new ImageResponse(
     (
@@ -436,28 +438,39 @@ export default async function OgImage({ params }: { params: Promise<{ username: 
             display: "flex",
             flexDirection: "column",
             flexGrow: 1,
+            overflow: "hidden",
             background: CARD,
-            backgroundImage:
-              "radial-gradient(ellipse 1000px 500px at 30% -15%, rgba(79, 159, 232, 0.30), transparent 65%)",
             border: `1px solid ${BORDER}`,
             borderRadius: 28,
-            // 630 - (44 outer * 2) = 542 inner card height. Content (identity +
-            // footer) must fit inside 542 - (44 * 2) = 454, or the card grows and
-            // eats the bottom outer padding while the top keeps its 44px.
-            padding: 44,
             justifyContent: "space-between",
           }}
         >
-          {/* alignItems:center vertically centres the heatmap against the taller
-              identity column — otherwise it top-aligns and leaves dead space. */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexGrow: 1 }}>
-            <div style={{ display: "flex", width: showHeatmap ? 470 : 1000 }}>
-              <Identity profile={profile} avatar={avatar} counts={counts} />
+          <div
+            style={{
+              display: "flex",
+              width: "100%",
+              height: 118,
+              backgroundColor: "#161616",
+              backgroundImage: `linear-gradient(120deg, ${banner.from} 0%, ${banner.to} 100%)`,
+            }}
+          />
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              flexGrow: 1,
+              padding: 36,
+              justifyContent: "space-between",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexGrow: 1 }}>
+              <div style={{ display: "flex", width: showHeatmap ? 470 : 1000 }}>
+                <Identity profile={profile} avatar={avatar} counts={counts} />
+              </div>
+              {showHeatmap && <Heatmap weeks={buildWeeks(heat)} streak={currentStreak(heat)} />}
             </div>
-            {showHeatmap && <Heatmap weeks={buildWeeks(heat)} streak={currentStreak(heat)} />}
+            <Footer username={profile.username} />
           </div>
-
-          <Footer username={profile.username} />
         </div>
       </div>
     ),
