@@ -618,6 +618,15 @@ exception when others then
   insert into tests_results values ('SOC_browse_filters', false, sqlerrm);
 end $$;
 
+-- SOC_suggested_stage — re-rank must not use text[] & (intarray)
+do $$
+begin
+  perform public.get_suggested_profiles(null, 3);
+  insert into tests_results values ('SOC_suggested_stage', true, 'ok');
+exception when others then
+  insert into tests_results values ('SOC_suggested_stage', false, sqlerrm);
+end $$;
+
 reset role;
 
 -- SOC_cron_unschedule (named retired only)

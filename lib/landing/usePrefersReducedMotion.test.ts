@@ -20,7 +20,7 @@ describe("usePrefersReducedMotion", () => {
     expect(html).toContain("people");
     expect(html).toContain("building.");
     expect(html).toContain("you’re");
-    expect(html).toContain("For students, building together");
+    expect(html).toContain("Online, transfer, commuter, or the only CS major you know");
     expect(html).toContain("Maya Chen");
     expect(html).toContain(">MC<");
     expect(html).toContain("Campus course planner");

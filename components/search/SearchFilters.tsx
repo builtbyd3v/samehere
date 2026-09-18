@@ -1,11 +1,11 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import LabelGlyph from "@/components/ui/LabelGlyph";
+import { CONTEXT_LABEL_COPY } from "@/lib/context-label";
 import { CONTEXT_LABELS, OPEN_TO_TAGS, STUDY_MODES } from "@/lib/portfolio/validation";
 import { OPEN_TO_LABELS, STUDY_MODE_LABELS } from "@/lib/portfolio/labels";
 import { YEAR_OPTIONS, YEAR_VALUES } from "@/lib/education-options";
 import { discoveryHref, toggleFilter, type DiscoveryFilters } from "@/lib/discovery";
-
-const LABEL_COPY = { building: "Building", learning: "Learning", stuck: "Stuck" } as const;
 
 const chip =
   "rounded-full border px-2.5 py-1 text-xs transition hover:border-[var(--border-strong)]";
@@ -57,9 +57,10 @@ export default function SearchFilters({
           <Link
             key={label}
             href={toggleFilter(filters, "label", label, q)}
-            className={`${chip} ${filters.label === label ? on : off}`}
+            className={`${chip} inline-flex items-center gap-1 ${filters.label === label ? on : off}`}
           >
-            {LABEL_COPY[label]}
+            <LabelGlyph label={label} />
+            {CONTEXT_LABEL_COPY[label]}
           </Link>
         ))}
       </FilterRow>

@@ -249,7 +249,11 @@ as $$
     and (p_school is null or ps.school = p_school)
   order by
     (p.study_mode is not null and v.study_mode is not null and p.study_mode = v.study_mode) desc,
-    coalesce(cardinality(p.open_to & v.open_to), 0) desc,
+    (
+      select count(*)::int
+      from unnest(coalesce(p.open_to, '{}'::text[])) as t(tag)
+      where t.tag = any(v.open_to)
+    ) desc,
     (ps.school is not null and v.school is not null and ps.school = v.school) desc,
     p.verified_student desc,
     p.created_at desc
