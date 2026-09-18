@@ -389,7 +389,7 @@ async function PublicProfileView({ username }: { username: string }) {
               pro={profile.is_pro}
               priority
               style={accentColor ? { borderColor: accentColor } : undefined}
-              className="-mt-12 h-24 w-24 shrink-0 rounded-full border-2 border-[var(--surface-raised)] text-3xl sm:-mt-14 sm:h-28 sm:w-28"
+              className="relative z-10 -mt-12 h-24 w-24 shrink-0 rounded-full border-2 border-[var(--surface-raised)] text-3xl sm:-mt-14 sm:h-28 sm:w-28"
             />
             <SharePortfolioButton username={profile.username} displayName={displayName} />
           </div>
@@ -665,7 +665,7 @@ export default async function ProfilePage({
                 name={displayName}
                 pro={pro}
                 style={accentColor ? { borderColor: accentColor } : undefined}
-                className="-mt-12 h-24 w-24 shrink-0 rounded-full border-2 border-[var(--surface-raised)] text-3xl sm:-mt-14 sm:h-28 sm:w-28"
+                className="relative z-10 -mt-12 h-24 w-24 shrink-0 rounded-full border-2 border-[var(--surface-raised)] text-3xl sm:-mt-14 sm:h-28 sm:w-28"
               />
               {isOwner ? (
                 <SharePortfolioButton username={profile.username} displayName={displayName} />
