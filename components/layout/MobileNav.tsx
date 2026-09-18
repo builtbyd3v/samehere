@@ -46,7 +46,7 @@ export default function MobileNav({
           href={item.href}
           aria-label={item.label}
           aria-current={item.active ? "page" : undefined}
-          className={`relative flex min-h-11 flex-1 items-center justify-center py-3 transition-colors duration-200 ease-out ${item.active ? "text-[var(--blue)]" : "text-[var(--ink-muted)]"}`}
+          className={`relative flex min-h-11 flex-1 items-center justify-center py-3 transition-colors duration-[var(--dur-micro)] ease-out ${item.active ? "text-[var(--blue)]" : "text-[var(--ink-muted)]"}`}
         >
           {item.active && (
             <span

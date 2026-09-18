@@ -25,8 +25,8 @@ export function IntroSection({
 }) {
   if (!bio && !goals && openTo.length === 0) return null;
   return (
-    <section className="card mt-4 p-5 sm:p-6">
-      <h2 className="text-sm font-semibold text-[var(--ink)]">Introduction</h2>
+    <section className="card-surface p-5 sm:p-6">
+      <h2 className="eyebrow">Introduction</h2>
       <OpenToTags tags={openTo} />
       {bio && (
         <p className="mt-3 max-w-[60ch] whitespace-pre-line break-words text-[17px] leading-[1.6] text-[var(--ink)]">
@@ -58,8 +58,8 @@ export function ExperienceList({
 }) {
   if (items.length === 0) return null;
   return (
-    <section className="card mt-4 p-5 sm:p-6">
-      <h2 className="text-sm font-semibold text-[var(--ink)]">Experience</h2>
+    <section className="card-surface p-5 sm:p-6">
+      <h2 className="eyebrow">Experience</h2>
       <div className="mt-3 flex flex-col gap-5">
         {EXPERIENCE_GROUPS.map(({ kind, label }) => {
           const group = items
@@ -69,12 +69,12 @@ export function ExperienceList({
           return (
             <div key={kind}>
               <p className="text-[10px] font-semibold tracking-wide text-[var(--ink-faint)] uppercase">{label}</p>
-              <ul className="mt-2 flex flex-col gap-2">
+              <ul className="portfolio-divided mt-2">
                 {group.map((exp) => {
                   const dateRange = formatDateRange(exp.start_date, exp.end_date, exp.term);
                   const bullets = descriptionBullets(exp.note);
                   return (
-                    <li key={exp.id} className="flex gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3">
+                    <li key={exp.id} className="flex gap-3">
                       <CompanyLogo name={exp.org} logoUrl={logos?.get(exp.org.trim().toLowerCase()) ?? null} size="md" />
                       <div className="min-w-0">
                         <p className="text-[15px] font-medium text-[var(--ink)]">{exp.role}</p>
@@ -107,14 +107,14 @@ export function EducationList({
 }) {
   if (items.length === 0) return null;
   return (
-    <section className="card mt-4 p-5 sm:p-6">
-      <h2 className="text-sm font-semibold text-[var(--ink)]">Education</h2>
-      <ul className="mt-3 flex flex-col gap-2">
+    <section className="card-surface p-5 sm:p-6">
+      <h2 className="eyebrow">Education</h2>
+      <ul className="portfolio-divided mt-3">
         {items.map((edu) => {
           const dateRange = formatDateRange(edu.start_date, edu.end_date, null);
           const degreeLine = [edu.degree, edu.field, edu.class_year].filter(Boolean).join(", ");
           return (
-            <li key={edu.id} className="flex gap-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3">
+            <li key={edu.id} className="flex gap-3">
               <CompanyLogo name={edu.school} logoUrl={schoolLogoUrl(edu.school_domain ?? null)} size="md" />
               <div className="min-w-0">
                 <p className="text-[15px] font-medium text-[var(--ink)]">{edu.school}</p>
@@ -132,8 +132,8 @@ export function EducationList({
 export function PublicProjectList({ projects }: { projects: PublicPortfolioProject[] }) {
   if (projects.length === 0) return null;
   return (
-    <section className="mt-4">
-      <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">Projects</h2>
+    <section>
+      <h2 className="eyebrow mb-3">Projects</h2>
       <ul className="flex flex-col gap-3">
         {projects.map((project) => (
           <li key={project.id}>
@@ -161,7 +161,7 @@ export function ActivitySection({
   samehereKnown?: boolean;
 }) {
   return (
-    <div className="mt-4">
+    <div>
       <ActivityBoard
         samehere={samehere}
         github={github}

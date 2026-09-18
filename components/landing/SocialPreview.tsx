@@ -57,7 +57,7 @@ function FeedPanel() {
           <span>CS · senior</span>
         </div>
         <p>Anyone else drawing the page table twice before it sticks?</p>
-        <span className="landing-label-chip">Learning</span>
+        <span className="landing-label-chip" data-label="Learning">Learning</span>
         <ReactionBar />
       </article>
       <p className="landing-social-hint">You write the post. Labels are optional.</p>
@@ -129,7 +129,7 @@ export default function SocialPreview() {
   }
 
   return (
-    <section id="community" className="landing-path-system">
+    <section id="community" className="landing-path-system reveal-view">
       <div className="landing-path-copy">
         <p>Community</p>
         <h2>Talk it through.</h2>

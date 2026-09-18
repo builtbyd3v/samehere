@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { LazyMotion, domMax, m } from "motion/react";
 import ContributionHeatmap, { type HeatmapDay } from "@/components/profile/ContributionHeatmap";
 import { MANUAL_PROJECT_PATH } from "@/lib/github/config";
 import { usePrefersReducedMotion } from "@/lib/landing/usePrefersReducedMotion";
@@ -135,10 +136,10 @@ export default function ActivityBoard({
     (filter === "github" && githubKnown);
 
   return (
-    <section className="card p-5 sm:col-span-2 sm:p-6">
+    <section className="card-surface p-5 sm:col-span-2 sm:p-6">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-3">
-          <h2 className="text-sm font-semibold text-[var(--ink)]">Activity</h2>
+          <h2 className="eyebrow">Activity</h2>
           {isOwner ? (
             <Link href={MANUAL_PROJECT_PATH} className="text-sm text-[var(--ink-muted)] underline">
               Manage GitHub
@@ -152,6 +153,7 @@ export default function ActivityBoard({
           </p>
         )}
       </div>
+      <LazyMotion features={domMax} strict>
       <div className="mb-3 flex flex-wrap gap-1" role="group" aria-label="Activity source">
         {FILTERS.map((item) => (
           <button
@@ -159,16 +161,28 @@ export default function ActivityBoard({
             type="button"
             aria-pressed={filter === item.id}
             onClick={() => setFilter(item.id)}
-            className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border px-3 text-sm ${
+            className={`relative inline-flex min-h-11 min-w-11 items-center justify-center rounded-full px-3 text-sm ${
               filter === item.id
-                ? "border-[var(--ink)] text-[var(--ink)]"
-                : "border-[var(--border)] text-[var(--ink-muted)]"
+                ? "text-[var(--ink)]"
+                : "text-[var(--ink-muted)]"
             }`}
           >
-            {item.label}
+            {filter === item.id && (
+              <m.span
+                layoutId="activity-filter-thumb"
+                className="absolute inset-0 rounded-full border border-[var(--ink)]"
+                transition={reduceMotion ? { duration: 0 } : { duration: 0.22, ease: [0.65, 0, 0.35, 1] }}
+                aria-hidden
+              />
+            )}
+            {filter !== item.id && (
+              <span className="absolute inset-0 rounded-full border border-[var(--border)]" aria-hidden />
+            )}
+            <span className="relative">{item.label}</span>
           </button>
         ))}
       </div>
+      </LazyMotion>
       <p className="mb-3 text-sm text-[var(--ink-muted)]">
         {headline.value === null ? (
           headline.label

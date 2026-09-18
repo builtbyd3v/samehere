@@ -1,6 +1,6 @@
 "use client";
 
-import { ExternalLink } from "lucide-react";
+import type { ReactNode } from "react";
 import { beaconMetric } from "@/lib/portfolio/metrics-client";
 
 export default function TrackedHttpLink({
@@ -8,22 +8,23 @@ export default function TrackedHttpLink({
   children,
   projectId,
   clickKind,
+  className = "inline-flex items-center gap-1 text-sm text-[var(--blue)] underline-offset-2 hover:underline",
 }: {
   href: string;
-  children: string;
+  children: ReactNode;
   projectId: string;
   clickKind: "repo" | "demo";
+  className?: string;
 }) {
   return (
     <a
       href={href}
       rel="noopener noreferrer"
       target="_blank"
-      className="inline-flex items-center gap-1 text-sm text-[var(--blue)] underline-offset-2 hover:underline"
+      className={className}
       onClick={() => beaconMetric({ projectId, clickKind })}
     >
       {children}
-      <ExternalLink strokeWidth={1.5} className="h-3.5 w-3.5" aria-hidden />
     </a>
   );
 }

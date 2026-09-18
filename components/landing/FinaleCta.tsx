@@ -4,7 +4,8 @@ import { signupCta } from "./cta";
 
 export default function FinaleCta() {
   return (
-    <section className="landing-finale" aria-labelledby="finale-title">
+    <section className="landing-finale surface-grain" aria-labelledby="finale-title">
+      <div className="landing-finale-glow" aria-hidden />
       <div className="landing-finale-mark">
         <SameHereBrand mode="settled" />
       </div>

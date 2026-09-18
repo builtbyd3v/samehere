@@ -10,6 +10,12 @@ export const CONTEXT_LABEL_COPY: Record<ContextLabel, string> = {
   stuck: "Stuck",
 };
 
+export const CONTEXT_LABEL_CHIP: Record<ContextLabel, string> = {
+  building: "label-chip label-chip-building",
+  learning: "label-chip label-chip-learning",
+  stuck: "label-chip label-chip-stuck",
+};
+
 export function parseContextLabel(raw: unknown): ContextLabel | null {
   if (raw == null) return null;
   const s = String(raw).trim().toLowerCase();

@@ -195,7 +195,7 @@ export default function PostComposer({
     <form
       ref={ref}
       onSubmit={onSubmit}
-      className="rounded-2xl border border-[var(--border)] bg-[var(--surface-card)] p-4 transition-[border-color,box-shadow] duration-300 focus-within:border-[var(--border-strong)] focus-within:shadow-[0_0_0_4px_var(--blue-glow)] sm:p-5"
+      className="card-raised p-4 transition-[border-color,box-shadow] duration-300 focus-within:border-[var(--border-strong)] focus-within:shadow-[0_0_0_4px_var(--blue-glow)] sm:p-5"
     >
       <input type="hidden" name="context_label" value={label ?? ""} />
       <MentionTextarea
