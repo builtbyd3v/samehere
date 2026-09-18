@@ -189,7 +189,7 @@ export default function SocialScene() {
       data-live={profileLive || undefined}
       aria-label="Example feed and profile"
     >
-      <div className="landing-scene-glow" aria-hidden />
+      <div className="landing-scene-glow surface-grain" aria-hidden />
       <div className="landing-scene-stage">
         <div className="landing-scene-chrome">
           <span className="landing-scene-dots" aria-hidden>
@@ -225,7 +225,7 @@ export default function SocialScene() {
                         <span>{author.year}</span>
                       </span>
                     </button>
-                    <span className="landing-label-chip">{post.label}</span>
+                    <span className="landing-label-chip" data-label={post.label}>{post.label}</span>
                   </header>
                   <p>{post.body}</p>
                   <p className="landing-scene-snippet">{post.snippet}</p>
@@ -291,7 +291,7 @@ export default function SocialScene() {
                   <span>{PREVIEW.body}</span>
                 </span>
               </button>
-              <span className="landing-label-chip">{PREVIEW.label}</span>
+              <span className="landing-label-chip" data-label={PREVIEW.label}>{PREVIEW.label}</span>
             </article>
           </div>
 

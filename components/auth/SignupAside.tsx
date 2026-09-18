@@ -28,7 +28,7 @@ const POINTS = [
 // Reassurance bullets — left column on desktop, below the form on mobile.
 export default function SignupReassurance() {
   return (
-    <ul className="space-y-3 text-sm leading-relaxed text-[var(--ink-muted)]">
+    <ul className="auth-enter-aside space-y-3 text-sm leading-relaxed text-[var(--ink-muted)]">
       {POINTS.map((p) => (
         <li key={p} className="flex items-start gap-2.5">
           <CheckMark />
