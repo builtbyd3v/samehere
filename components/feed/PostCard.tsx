@@ -11,7 +11,7 @@ import LocalTime from "@/components/ui/LocalTime";
 import type { PostMedia } from "@/lib/media";
 import type { ViewerMineState } from "@/lib/feed-engagement";
 import type { ContextLabel } from "@/types/portfolio";
-import { CONTEXT_LABEL_CHIP, CONTEXT_LABEL_COPY } from "@/lib/context-label";
+import ContextLabelBadge from "@/components/ui/ContextLabelBadge";
 import { feedPath, stuckReplyPath } from "@/lib/feed-label";
 
 export const POST_SELECT =
@@ -158,7 +158,7 @@ export default function PostCard({
 
         <div className="min-w-0 flex-1">
           {!embedded && (
-            <div className="flex items-start gap-2">
+            <div className="flex items-center gap-2">
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
                   {a ? (
@@ -173,17 +173,12 @@ export default function PostCard({
                     <span className="font-semibold">{name}</span>
                   )}
                   {a && <UserBadges isPro={a.is_pro} isFounder={a.is_founder} isCampusFounder={a.is_campus_founder} isVerifiedStudent={a.verified_student} isBot={a.is_bot} />}
-                  {post.hidden && (
-                    <span className="rounded-full bg-[var(--danger)]/[0.06] px-2 py-0.5 text-xs font-medium text-[var(--danger)]">
-                      Hidden
-                    </span>
-                  )}
-                  {post.context_label && (
-                    <Link href={feedPath({ label: post.context_label })} className={CONTEXT_LABEL_CHIP[post.context_label]}>
-                      {CONTEXT_LABEL_COPY[post.context_label]}
-                    </Link>
-                  )}
                 </div>
+                {post.hidden && (
+                  <span className="mt-0.5 inline-flex rounded-full bg-[var(--danger)]/[0.06] px-2 py-0.5 text-xs font-medium text-[var(--danger)]">
+                    Hidden
+                  </span>
+                )}
                 <p className="mt-0.5 text-[12.5px] text-[var(--ink-faint)]">
                   {a && <span>@{a.username}</span>}
                   {school && <span>{a ? ", " : ""}{school}</span>}
@@ -197,6 +192,12 @@ export default function PostCard({
                   )}
                 </p>
               </div>
+
+              {post.context_label ? (
+                <Link href={feedPath({ label: post.context_label })} className="ml-auto shrink-0">
+                  <ContextLabelBadge label={post.context_label} />
+                </Link>
+              ) : null}
 
               {a && !embedded && (
                 <PostMenu postId={post.id} authorId={post.user_id} authorUsername={a.username} viewerId={viewerId} />

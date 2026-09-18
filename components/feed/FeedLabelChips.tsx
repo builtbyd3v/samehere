@@ -1,9 +1,7 @@
 import Link from "next/link";
-import { CONTEXT_LABEL_CHIP, CONTEXT_LABEL_COPY, type ContextLabel } from "@/lib/context-label";
+import ContextLabelBadge from "@/components/ui/ContextLabelBadge";
+import type { ContextLabel } from "@/lib/context-label";
 import { FEED_FILTER_LABELS, feedPath } from "@/lib/feed-label";
-
-const idle =
-  "rounded-full border border-[var(--border)] px-2.5 py-0.5 text-xs font-medium text-[var(--ink-muted)] transition hover:text-[var(--ink)]";
 
 export default function FeedLabelChips({ active }: { active: ContextLabel | null }) {
   return (
@@ -15,9 +13,9 @@ export default function FeedLabelChips({ active }: { active: ContextLabel | null
             key={key}
             href={on ? feedPath() : feedPath({ label: key })}
             aria-current={on ? "page" : undefined}
-            className={on ? CONTEXT_LABEL_CHIP[key] : idle}
+            className={on ? undefined : "opacity-55 transition hover:opacity-100"}
           >
-            {CONTEXT_LABEL_COPY[key]}
+            <ContextLabelBadge label={key} />
           </Link>
         );
       })}
