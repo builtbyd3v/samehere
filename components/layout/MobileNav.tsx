@@ -21,16 +21,14 @@ export default function MobileNav({
       label: "Feed",
       href: "/feed",
       icon: <House size={22} strokeWidth={1.5} aria-hidden />,
-      prefetch: true as boolean,
     },
-    { label: "Search", href: "/search", icon: <IconSearch />, prefetch: true },
-    { label: "Messages", href: "/messages", icon: <IconMail />, dot: dmUnread > 0, prefetch: true },
-    { label: "Notifications", href: "/notifications", icon: <IconBell />, dot: notifUnread > 0, prefetch: true },
+    { label: "Search", href: "/search", icon: <IconSearch /> },
+    { label: "Messages", href: "/messages", icon: <IconMail />, dot: dmUnread > 0 },
+    { label: "Notifications", href: "/notifications", icon: <IconBell />, dot: notifUnread > 0 },
     {
       label: "Profile",
       href: username ? `/profile/${username}` : "#",
       icon: <User size={22} strokeWidth={1.5} aria-hidden />,
-      prefetch: Boolean(username),
     },
   ].map((item) => ({
     ...item,
@@ -46,7 +44,6 @@ export default function MobileNav({
         <Link
           key={item.label}
           href={item.href}
-          prefetch={item.prefetch}
           aria-label={item.label}
           aria-current={item.active ? "page" : undefined}
           className={`relative flex min-h-11 flex-1 items-center justify-center py-3 transition-colors duration-[var(--dur-micro)] ease-out ${item.active ? "text-[var(--blue)]" : "text-[var(--ink-muted)]"}`}

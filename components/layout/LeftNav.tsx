@@ -31,17 +31,15 @@ export default function LeftNav({
       label: "Feed",
       href: "/feed",
       icon: <House size={20} strokeWidth={1.5} aria-hidden />,
-      prefetch: true,
     },
-    { label: "Messages", href: "/messages", icon: <IconMail />, badge: dmUnread, prefetch: true },
+    { label: "Messages", href: "/messages", icon: <IconMail />, badge: dmUnread },
     {
       label: "Profile",
       href: username ? `/profile/${username}` : "#",
       icon: <User size={20} strokeWidth={1.5} aria-hidden />,
-      prefetch: Boolean(username),
     },
-    { label: "Search", href: "/search", icon: <IconSearch />, prefetch: true },
-    { label: "Notifications", href: "/notifications", icon: <IconBell />, badge: notifUnread, prefetch: true },
+    { label: "Search", href: "/search", icon: <IconSearch /> },
+    { label: "Notifications", href: "/notifications", icon: <IconBell />, badge: notifUnread },
   ];
 
   const secondary = [
