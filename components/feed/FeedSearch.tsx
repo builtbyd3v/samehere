@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import SearchPersonCard from "@/components/search/SearchPersonCard";
+import EmptyState from "@/components/ui/EmptyState";
 import {
   SEARCH_PAGE,
   clampSearchOffset,
@@ -51,18 +52,20 @@ export async function FeedSearchResults({
   if (results.length === 0) {
     return (
       <div>
-        <div className="card mt-4 px-6 py-10 text-center">
-          <p className="font-medium text-[var(--ink)]">
-            {peoplePage > 1 ? "No more people for this query." : "No students found"}
-          </p>
-          {peoplePage === 1 && (
-            <p className="mt-1.5 text-sm text-[var(--ink-muted)]">
-              {q
-                ? <>Nothing matched &ldquo;{q}&rdquo;. Try a different name, username, or filter.</>
-                : "Nobody matches these filters yet. Try another stage or tag."}
-            </p>
-          )}
-        </div>
+        {peoplePage > 1 ? (
+          <EmptyState title="No more people for this query." />
+        ) : (
+          <EmptyState
+            title="No students found"
+            description={
+              q
+                ? `Nothing matched “${q}”. Try another name, username, or project — or browse Latest while the network is thin.`
+                : "Nobody matches these filters yet. Try another stage or tag."
+            }
+            action={{ label: "Browse Latest", href: "/feed" }}
+            secondaryAction={{ label: "Clear search", href: "/search" }}
+          />
+        )}
         {peoplePage > 1 && (
           <div className="mt-3 text-sm">
             <Link href={searchHref({ ...hrefOpts, peoplePage: peoplePage - 1 })} className="text-[var(--ink-muted)] underline hover:text-[var(--ink)]">

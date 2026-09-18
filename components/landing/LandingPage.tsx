@@ -10,6 +10,9 @@ import LandingFooter from "./LandingFooter";
 export default function LandingPage({ founderSpotsLeft }: { founderSpotsLeft?: number }) {
   return (
     <main id="top" className="landing-xai">
+      <a href="#main-content" className="landing-skip-link">
+        Skip to content
+      </a>
       <LandingNav />
       <Hero />
       <SocialPreviewLazy />

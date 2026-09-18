@@ -2,12 +2,12 @@
 
 import RouteError from "@/components/ui/RouteError";
 
-export default function AppError({
+export default function SearchError({
   error,
   reset,
 }: {
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  return <RouteError error={error} reset={reset} homeHref="/feed" homeLabel="Back to feed" />;
+  return <RouteError error={error} reset={reset} homeHref="/search" homeLabel="Back to search" />;
 }

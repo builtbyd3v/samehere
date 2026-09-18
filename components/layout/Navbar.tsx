@@ -25,9 +25,10 @@ export default function Navbar({
             <Link
               href="/pro"
               title="Pro"
+              aria-label="Pro"
               className="grid h-7 w-7 place-items-center rounded-full text-[var(--blue)] transition hover:bg-[var(--featured-surface)]"
             >
-              <IconBolt className="h-4 w-4" />
+              <IconBolt className="h-4 w-4" aria-hidden />
             </Link>
           )}
         </div>

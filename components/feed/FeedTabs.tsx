@@ -25,7 +25,9 @@ export default function FeedTabs({
         <Link
           href={feedPath()}
           role="tab"
+          id="feed-tab-latest"
           aria-selected={tab === "latest"}
+          aria-controls="feed-panel"
           className={
             tab === "latest"
               ? `${pill} text-[var(--blue)]`
@@ -45,7 +47,9 @@ export default function FeedTabs({
         <Link
           href={feedPath({ tab: "following" })}
           role="tab"
+          id="feed-tab-following"
           aria-selected={tab === "following"}
+          aria-controls="feed-panel"
           className={
             tab === "following"
               ? `${pill} text-[var(--blue)]`

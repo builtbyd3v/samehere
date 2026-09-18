@@ -5,6 +5,7 @@ import { fetchQuotedReposts, toQuotedRepost } from "@/lib/feed-quotes";
 import { fetchPlainReposts } from "@/lib/feed-reposts";
 import { mergeFeedTimeline } from "@/lib/feed-timeline";
 import { attachSignedMedia } from "@/lib/media";
+import EmptyState from "@/components/ui/EmptyState";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function ProfileRecentPosts({
@@ -24,25 +25,27 @@ export default async function ProfileRecentPosts({
 }) {
   if (isBlocked) {
     return (
-      <section>
-        <h2 className="eyebrow mb-3">Posts</h2>
-        <div className="card px-6 py-12 text-center">
-          <p className="font-medium text-[var(--ink)]">Posts unavailable</p>
-          <p className="mt-1.5 text-sm text-[var(--ink-muted)]">
-            You and @{username} cannot see each other&apos;s posts.
-          </p>
-        </div>
+      <section aria-labelledby="profile-posts-heading">
+        <h2 id="profile-posts-heading" className="eyebrow mb-3">
+          Posts
+        </h2>
+        <EmptyState
+          title="Posts unavailable"
+          description={`You and @${username} cannot see each other’s posts.`}
+        />
       </section>
     );
   }
   if (contentHidden) {
     return (
-      <section>
-        <h2 className="eyebrow mb-3">Posts</h2>
-        <div className="card px-6 py-12 text-center">
-          <p className="font-medium text-[var(--ink)]">This account is private</p>
-          <p className="mt-1.5 text-sm text-[var(--ink-muted)]">Follow @{username} to see their posts.</p>
-        </div>
+      <section aria-labelledby="profile-posts-heading">
+        <h2 id="profile-posts-heading" className="eyebrow mb-3">
+          Posts
+        </h2>
+        <EmptyState
+          title="This account is private"
+          description={`Follow @${username} to see their posts.`}
+        />
       </section>
     );
   }
@@ -85,15 +88,20 @@ export default async function ProfileRecentPosts({
   const timeline = mergeFeedTimeline(posts, quotes, reposts).slice(0, 20);
 
   return (
-    <section>
-      <h2 className="eyebrow mb-3">Posts</h2>
+    <section aria-labelledby="profile-posts-heading">
+      <h2 id="profile-posts-heading" className="eyebrow mb-3">
+        Posts
+      </h2>
       {timeline.length === 0 ? (
-        <div className="card px-6 py-12 text-center">
-          <p className="font-medium text-[var(--ink)]">No posts yet</p>
-          <p className="mt-1.5 text-sm text-[var(--ink-muted)]">
-            {isOwner ? "Share something to fill your feed." : `@${username} has not posted yet.`}
-          </p>
-        </div>
+        <EmptyState
+          title="No posts yet"
+          description={
+            isOwner
+              ? "Share something Stuck, Learning, or Building to fill this section."
+              : `@${username} has not posted yet.`
+          }
+          action={isOwner ? { label: "Go to feed", href: "/feed" } : undefined}
+        />
       ) : (
         <div className="flex flex-col gap-3">
           <FeedTimeline items={timeline} viewerId={viewerId} />

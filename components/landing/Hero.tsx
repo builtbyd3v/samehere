@@ -59,7 +59,7 @@ export default function Hero() {
   }, []);
 
   return (
-    <section ref={heroRef} className="landing-hero">
+    <section ref={heroRef} id="main-content" className="landing-hero" tabIndex={-1}>
       <LandingAtmosphereLazy />
       <div className="landing-hero-copy">
         <p className="landing-hero-announcement landing-announce">

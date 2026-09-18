@@ -2,9 +2,9 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { FeedSearchResults } from "@/components/feed/FeedSearch";
 import FeedTimeline from "@/components/feed/FeedTimeline";
-import EmptyState from "@/components/ui/EmptyState";
 import SearchBar from "@/components/search/SearchBar";
 import SearchFilters from "@/components/search/SearchFilters";
+import SearchIdle from "@/components/search/SearchIdle";
 import SearchIdlePeople from "@/components/search/SearchIdlePeople";
 import {
   SEARCH_PAGE,
@@ -64,12 +64,10 @@ export default async function SearchPage({
   if (!hasQuery && !browsing) {
     return (
       <main className="page-enter mx-auto max-w-2xl px-4 py-8">
+        <h1 className="sr-only">Search</h1>
         <SearchBar keep={keep} />
         <SearchFilters q="" filters={filters} viewerMajor={viewer?.major} />
-        <EmptyState
-          title="Search people, projects, and posts"
-          description="Type a name, username, or major — or follow someone below to start your feed."
-        />
+        <SearchIdle />
         <SearchIdlePeople />
       </main>
     );
@@ -90,12 +88,13 @@ export default async function SearchPage({
 
   return (
     <main className="page-enter mx-auto max-w-2xl px-4 py-8">
+      <h1 className="sr-only">Search results for {q}</h1>
       <SearchBar initialQuery={q} keep={keep} />
       <SearchFilters q={q} filters={filters} viewerMajor={viewer?.major} />
 
       {showPeople && (
-        <section className="mt-6">
-          <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">
+        <section className="mt-6" aria-labelledby="search-people-heading">
+          <h2 id="search-people-heading" className="mb-3 text-sm font-semibold text-[var(--ink)]">
             {browsing && hasPeopleFilters(filters) ? "Browse people at your stage" : "People"}
           </h2>
           <FeedSearchResults q={q} page={peoplePage} offset={peopleOffset} projectPage={projectPage} filters={filters} />
@@ -103,8 +102,10 @@ export default async function SearchPage({
       )}
 
       {showProjects && (
-        <section className="mt-6">
-          <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">Projects</h2>
+        <section className="mt-6" aria-labelledby="search-projects-heading">
+          <h2 id="search-projects-heading" className="mb-3 text-sm font-semibold text-[var(--ink)]">
+            Projects
+          </h2>
           {projects.length > 0 ? (
             <ul className="flex flex-col gap-2">
               {projects.map((p) => (
@@ -138,8 +139,10 @@ export default async function SearchPage({
       )}
 
       {postItems.length > 0 && (
-        <section className="mt-6">
-          <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">Posts</h2>
+        <section className="mt-6" aria-labelledby="search-posts-heading">
+          <h2 id="search-posts-heading" className="mb-3 text-sm font-semibold text-[var(--ink)]">
+            Posts
+          </h2>
           <div className="flex flex-col gap-3">
             <FeedTimeline items={postItems} viewerId={viewerId} />
           </div>

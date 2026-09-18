@@ -53,13 +53,15 @@ export default async function FeedPage({
         </Suspense>
 
         <Suspense fallback={<FeedTimelineFallback />}>
-          {tab === "following" ? (
-            <FollowingTab userId={user?.id ?? null} viewerId={viewerId} />
-          ) : label ? (
-            <LabeledTab viewerId={viewerId} label={label} />
-          ) : (
-            <LatestTab viewerId={viewerId} />
-          )}
+          <div id="feed-panel" role="tabpanel" aria-labelledby={tab === "following" ? "feed-tab-following" : "feed-tab-latest"}>
+            {tab === "following" ? (
+              <FollowingTab userId={user?.id ?? null} viewerId={viewerId} />
+            ) : label ? (
+              <LabeledTab viewerId={viewerId} label={label} />
+            ) : (
+              <LatestTab viewerId={viewerId} />
+            )}
+          </div>
         </Suspense>
       </div>
 
@@ -209,8 +211,9 @@ async function LatestTab({ viewerId }: { viewerId: string | null }) {
     return (
       <EmptyState
         title="Nothing here yet"
-        description="Be the first to share what you are building or figuring out."
+        description="Be the first to share what you’re building, learning, or stuck on."
         action={{ label: "Find people", href: "/search" }}
+        secondaryAction={{ label: "Edit profile", href: "/profile/edit" }}
       />
     );
   }
@@ -327,6 +330,7 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
   }));
   const timeline =
     feedPosts.length || quotes.length || reposts.length ? mergeFeedTimeline(feedPosts, quotes, reposts).slice(0, PAGE) : [];
+  const thinFollowing = acceptedIds.length === 0;
 
   const seed = shouldSeedFollowing(acceptedIds.length) && timeline.length === 0;
   const seedPosts = seed
@@ -347,11 +351,19 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
         <FeedTimeline items={timeline} viewerId={viewerId} />
       ) : seed ? (
         <FollowingSeed posts={seedPosts} viewerId={viewerId} />
+      ) : thinFollowing ? (
+        <EmptyState
+          title="Follow people to shape this feed"
+          description="Until you follow a few students, Latest is the best place to find Stuck, Learning, and Building posts."
+          action={{ label: "Find people", href: "/search" }}
+          secondaryAction={{ label: "See Latest", href: "/feed" }}
+        />
       ) : (
         <EmptyState
-          title="Your feed is empty"
-          description="Follow students to see their posts here."
-          action={{ label: "Find people", href: "/search" }}
+          title="Quiet for now"
+          description="People you follow haven’t posted yet. Check Latest for Stuck posts from the wider network."
+          action={{ label: "See Latest", href: "/feed" }}
+          secondaryAction={{ label: "Find more people", href: "/search" }}
         />
       )}
     </section>

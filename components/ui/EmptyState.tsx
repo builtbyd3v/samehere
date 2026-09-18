@@ -4,24 +4,48 @@ export default function EmptyState({
   title,
   description,
   action,
+  secondaryAction,
+  children,
 }: {
   title: string;
   description?: string;
   action?: { label: string; href: string };
+  secondaryAction?: { label: string; href: string };
+  children?: React.ReactNode;
 }) {
   return (
-    <div className="card px-6 py-16 text-center">
-      <div className="mx-auto grid h-12 w-12 place-items-center">
-        <svg viewBox="0 0 392 488" className="h-8 w-8 text-[var(--ink)] opacity-[0.12]" aria-hidden>
-          <use href="/samehere-mark.svg#samehere-mark-path" fill="currentColor" />
+    <div className="card px-6 py-14 text-center sm:py-16" role="status">
+      <div
+        className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-[var(--featured-surface)] text-[var(--ink-muted)]"
+        aria-hidden
+      >
+        <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+          <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
+          <path
+            d="M9 10.5c0-1.4 1.2-2.5 3-2.5s3 1 3 2.2c0 1.6-1.8 1.9-2.6 3"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+          <circle cx="12" cy="16.2" r="0.9" fill="currentColor" />
         </svg>
       </div>
-      <p className="mt-4 font-medium text-[var(--ink)]">{title}</p>
+      <h2 className="mt-4 text-base font-medium text-[var(--ink)]">{title}</h2>
       {description && <p className="mt-1.5 text-sm text-[var(--ink-muted)]">{description}</p>}
-      {action && (
-        <Link href={action.href} className="btn-primary mt-5 inline-flex">
-          {action.label}
-        </Link>
+      {children}
+      {(action || secondaryAction) && (
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+          {action && (
+            <Link href={action.href} className="btn-primary inline-flex">
+              {action.label}
+            </Link>
+          )}
+          {secondaryAction && (
+            <Link href={secondaryAction.href} className="btn-ghost inline-flex">
+              {secondaryAction.label}
+            </Link>
+          )}
+        </div>
       )}
     </div>
   );

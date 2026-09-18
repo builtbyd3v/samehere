@@ -4,12 +4,16 @@ import Link from "next/link";
 import { useEffect } from "react";
 import posthog from "posthog-js";
 
-export default function RootError({
+export default function RouteError({
   error,
   reset,
+  homeHref = "/",
+  homeLabel = "Back home",
 }: {
   error: Error & { digest?: string };
   reset: () => void;
+  homeHref?: string;
+  homeLabel?: string;
 }) {
   useEffect(() => {
     posthog.captureException(error);
@@ -24,8 +28,8 @@ export default function RootError({
           <button type="button" onClick={reset} className="btn-primary">
             Try again
           </button>
-          <Link href="/" className="btn-ghost">
-            Back home
+          <Link href={homeHref} className="btn-ghost">
+            {homeLabel}
           </Link>
         </div>
       </div>
