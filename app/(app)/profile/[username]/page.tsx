@@ -26,6 +26,7 @@ import { pickPrimaryEducation } from "@/lib/education-options";
 import { createAnonPortfolioClient, hasPortfolioAuthCookie, portfolioReadClient, type PortfolioClient } from "@/lib/portfolio/client";
 import { getOwnerGithubConnection, getOwnerGithubDays, loadPublicPortfolioBundle } from "@/lib/portfolio/public";
 import { listOwnerProjects } from "@/lib/portfolio/owner";
+import { profileShareTitle } from "@/lib/og/copy";
 import { metadataDescription, profileIntro, publicSectionVisible, robotsForProjection } from "@/lib/portfolio/projection";
 import { effectiveSectionOrder, eligiblePublicView } from "@/lib/portfolio/metrics";
 import { PORTFOLIO_SECTIONS } from "@/lib/portfolio/validation";
@@ -97,12 +98,13 @@ export async function generateMetadata({
   if (!profile) return { title: "Profile not found", robots };
   const name = profile.display_name ?? username;
   const description = metadataDescription(username);
+  const shareTitle = profileShareTitle(name);
   return {
     title: `${name} (@${username})`,
     description,
     robots,
-    openGraph: { title: `${name} on samehere`, description, type: "profile" },
-    twitter: { card: "summary_large_image", title: `${name} on samehere`, description },
+    openGraph: { title: shareTitle, description, type: "profile" },
+    twitter: { card: "summary_large_image", title: shareTitle, description },
   };
 }
 

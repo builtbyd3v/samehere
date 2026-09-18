@@ -5,12 +5,12 @@ import { Figtree } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { SITE_OG_DESCRIPTION, SITE_OG_TITLE } from "@/lib/og/copy";
 
 const figtree = Figtree({ subsets: ["latin"], weight: ["400", "500", "600"] });
 
-const TITLE = "samehere: Find your people. Show what you’re building.";
-const DESCRIPTION =
-  "A place for CS students to share the work, find a familiar struggle, and build a profile that feels like them.";
+const TITLE = SITE_OG_TITLE;
+const DESCRIPTION = SITE_OG_DESCRIPTION;
 
 const THEME_INIT = `(function(){try{var k="samehere-theme";var t=localStorage.getItem(k);if(t!=="light"&&t!=="dark"&&t!=="system"){localStorage.setItem(k,"dark");t="dark";}var r=document.documentElement;r.classList.remove("light","dark");if(t==="light")r.classList.add("light");else if(t==="dark")r.classList.add("dark");}catch(e){document.documentElement.classList.add("dark");}})();`;
 

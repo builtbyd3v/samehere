@@ -6,6 +6,7 @@ import type {
   PublicPortfolioProject,
   PublicPortfolioProjection,
 } from "@/types/portfolio";
+import { profileShareDescription } from "@/lib/og/copy";
 import { PORTFOLIO_SECTIONS, sectionOrderError } from "./validation";
 
 export type ProfileIdentity = {
@@ -83,7 +84,9 @@ export function profileIntro(
 }
 
 export function metadataDescription(username: string): string {
-  return `Join @${username} on samehere. Built for students.`;
+  // Deliberately not the bio — unfurl caches keep text long after privacy flips.
+  // Clarity when pasted in iMessage / LinkedIn / X: this is a portfolio link.
+  return profileShareDescription(username);
 }
 
 export function assertNoDraftLeak(
