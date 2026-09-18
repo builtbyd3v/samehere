@@ -10,6 +10,14 @@ export const CONTEXT_LABEL_COPY: Record<ContextLabel, string> = {
   stuck: "Stuck",
 };
 
+export const CONTEXT_LABEL_COLOR: Record<ContextLabel, string> = {
+  building: "var(--label-building)",
+  learning: "var(--label-learning)",
+  stuck: "var(--label-stuck)",
+};
+
+export const COMPOSER_LABELS: readonly ContextLabel[] = ["stuck", "building", "learning"];
+
 export function parseContextLabel(raw: unknown): ContextLabel | null {
   if (raw == null) return null;
   const s = String(raw).trim().toLowerCase();

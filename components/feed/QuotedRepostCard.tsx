@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import AvatarBase from "@/components/ui/Avatar";
 import MentionText from "@/components/ui/MentionText";

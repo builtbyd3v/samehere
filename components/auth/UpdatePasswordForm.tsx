@@ -77,7 +77,7 @@ export default function UpdatePasswordForm() {
   }
 
   return (
-    <AuthCard title="Set a new password">
+    <AuthCard title="Set a new password" shake={!!error}>
       <form onSubmit={handleSubmit}>
         {error && <AuthAlert message={error} />}
 

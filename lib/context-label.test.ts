@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseContextLabel, contextLabelError } from "./context-label";
+import { parseContextLabel, contextLabelError, CONTEXT_LABEL_COLOR } from "./context-label";
 
 describe("parseContextLabel", () => {
   it("accepts the three allowlisted labels", () => {
@@ -17,6 +17,14 @@ describe("parseContextLabel", () => {
   it("rejects unknown values instead of coercing them", () => {
     expect(parseContextLabel("built")).toBeNull();
     expect(parseContextLabel("ai")).toBeNull();
+  });
+});
+
+describe("CONTEXT_LABEL_COLOR", () => {
+  it("maps each label to its own token", () => {
+    expect(CONTEXT_LABEL_COLOR.stuck).toBe("var(--label-stuck)");
+    expect(CONTEXT_LABEL_COLOR.building).toBe("var(--label-building)");
+    expect(CONTEXT_LABEL_COLOR.learning).toBe("var(--label-learning)");
   });
 });
 

@@ -1,18 +1,12 @@
 import "./globals.css";
 import "./landing-xai.css";
 import type { Metadata } from "next";
-import { Figtree, Fraunces } from "next/font/google";
+import { Figtree } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 
 const figtree = Figtree({ subsets: ["latin"], weight: ["400", "500", "600"] });
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  style: ["normal", "italic"],
-  variable: "--font-display",
-});
 
 const TITLE = "samehere: Find your people. Show what you’re building.";
 const DESCRIPTION =
@@ -59,7 +53,7 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
       </head>
-      <body className={`${figtree.className} ${fraunces.variable} min-h-full bg-[var(--canvas)] text-[var(--ink)] antialiased`}>
+      <body className={`${figtree.className} min-h-full bg-[var(--canvas)] text-[var(--ink)] antialiased`}>
         <ThemeProvider>
           {children}
         </ThemeProvider>

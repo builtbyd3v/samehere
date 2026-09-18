@@ -1,14 +1,21 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
-import { X } from "lucide-react";
+import { LazyMotion, domMax, m } from "motion/react";
 import { createPost, type ComposerState } from "@/app/(app)/feed/actions";
 import { getBrowserClient } from "@/lib/supabase/client";
 import { useSubmitShortcut } from "@/lib/useSubmitShortcut";
 import { submitShortcutLabel } from "@/lib/keyboard";
 import { TEXT_LIMITS } from "@/lib/utils/validation";
 import MentionTextarea from "@/components/ui/MentionTextarea";
-import { CONTEXT_LABELS, CONTEXT_LABEL_COPY, type ContextLabel } from "@/lib/context-label";
+import LabelGlyph from "@/components/ui/LabelGlyph";
+import { usePrefersReducedMotion } from "@/lib/landing/usePrefersReducedMotion";
+import {
+  COMPOSER_LABELS,
+  CONTEXT_LABEL_COLOR,
+  CONTEXT_LABEL_COPY,
+  type ContextLabel,
+} from "@/lib/context-label";
 
 // 150 chars earns a heatmap point, it does NOT gate posting.
 const POINT_AT = 150; // ponytail: mirrors posts_award_contribution post threshold
@@ -51,6 +58,54 @@ async function downscaleImage(file: File): Promise<File> {
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/webp", WEBP_QUALITY));
   if (!blob) return file; // encode failed, fall back to the original file
   return new File([blob], file.name.replace(/\.\w+$/, "") + ".webp", { type: "image/webp" });
+}
+
+function ComposerLabelPicker({
+  value,
+  onChange,
+}: {
+  value: ContextLabel | null;
+  onChange: (next: ContextLabel | null) => void;
+}) {
+  const reduceMotion = usePrefersReducedMotion();
+
+  return (
+    <LazyMotion features={domMax} strict>
+      <div
+        className="relative inline-flex gap-0.5 rounded-full border border-[var(--border)] p-0.5"
+        role="group"
+        aria-label="Post label"
+      >
+        {COMPOSER_LABELS.map((key) => {
+          const selected = value === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => onChange(selected ? null : key)}
+              aria-pressed={selected}
+              className="relative z-10 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-medium tracking-[0.01em] text-[var(--ink-muted)] transition-colors duration-[var(--dur-micro)] hover:text-[var(--ink)]"
+            >
+              {selected ? (
+                <m.span
+                  layoutId="composer-label-thumb"
+                  className="absolute inset-0 rounded-full bg-[var(--blue-glow)]"
+                  transition={reduceMotion ? { duration: 0 } : { duration: 0.22, ease: [0.65, 0, 0.35, 1] }}
+                  aria-hidden
+                />
+              ) : null}
+              <span className="relative inline-flex items-center gap-1">
+                <span style={{ color: selected ? CONTEXT_LABEL_COLOR[key] : "var(--ink-faint)" }}>
+                  <LabelGlyph label={key} />
+                </span>
+                <span>{CONTEXT_LABEL_COPY[key]}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </LazyMotion>
+  );
 }
 
 export default function PostComposer({
@@ -107,7 +162,6 @@ export default function PostComposer({
 
   useEffect(() => {
     if (autoFocus) textareaRef.current?.focus();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoFocus]);
 
   const qualifies = len >= POINT_AT;
@@ -195,7 +249,7 @@ export default function PostComposer({
     <form
       ref={ref}
       onSubmit={onSubmit}
-      className="rounded-2xl border border-[var(--border)] bg-[var(--surface-card)] p-4 transition-[border-color,box-shadow] duration-300 focus-within:border-[var(--border-strong)] focus-within:shadow-[0_0_0_4px_var(--blue-glow)] sm:p-5"
+      className="card-raised p-4 transition-[border-color,box-shadow] duration-300 focus-within:border-[var(--border-strong)] focus-within:shadow-[0_0_0_4px_var(--blue-glow)] sm:p-5"
     >
       <input type="hidden" name="context_label" value={label ?? ""} />
       <MentionTextarea
@@ -222,7 +276,7 @@ export default function PostComposer({
           {files.map((f, i) => (
             <div key={f.url} className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md border border-[var(--border)]">
               {f.type === "image" ? (
-                // eslint-disable-next-line @next/next/no-img-element
+                // eslint-disable-next-line @next/next/no-img-element -- blob: preview from FileReader; next/image cannot optimize local object URLs
                 <img src={f.url} alt="" className="h-full w-full object-cover" />
               ) : (
                 <video src={f.url} className="h-full w-full object-cover" />
@@ -271,33 +325,7 @@ export default function PostComposer({
             />
             Add media
           </label>
-          <div className="flex flex-wrap items-center gap-1.5">
-            {CONTEXT_LABELS.map((key) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setLabel((cur) => (cur === key ? null : key))}
-                aria-pressed={label === key}
-                className={`rounded-full border px-2.5 py-0.5 text-xs font-medium transition ${
-                  label === key
-                    ? "border-[var(--blue)] bg-[color-mix(in_srgb,var(--blue)_12%,transparent)] text-[var(--blue)]"
-                    : "border-[var(--border)] text-[var(--ink-muted)] hover:text-[var(--ink)]"
-                }`}
-              >
-                {CONTEXT_LABEL_COPY[key]}
-              </button>
-            ))}
-            {label && (
-              <button
-                type="button"
-                onClick={() => setLabel(null)}
-                aria-label="Remove label"
-                className="grid h-6 w-6 place-items-center rounded-full text-[var(--ink-muted)] hover:text-[var(--ink)]"
-              >
-                <X strokeWidth={1.5} className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
+          <ComposerLabelPicker value={label} onChange={setLabel} />
         </div>
         <button
           type="submit"

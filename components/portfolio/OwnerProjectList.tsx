@@ -34,9 +34,9 @@ export default function OwnerProjectList({
   }
 
   return (
-    <section className="mt-4">
+    <section>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold text-[var(--ink)]">Projects</h2>
+        <h2 className="eyebrow">Projects</h2>
         {!previewPublic && (
           <Link href="/profile/projects/new" className="btn-primary inline-flex items-center gap-1.5 !px-3 !py-1.5 text-sm">
             <Plus strokeWidth={1.5} className="h-4 w-4" />

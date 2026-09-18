@@ -45,11 +45,11 @@ export default function OAuthButtons({ variant }: { variant?: "signup" | "login"
 
   return (
     <div className="mb-4 flex flex-col gap-2.5">
-      <button type="button" onClick={() => start("google")} className="btn-ghost w-full py-2 text-[15px] sm:py-2.5">
+      <button type="button" onClick={() => start("google")} className="btn-surface w-full py-2 text-[15px] sm:py-2.5">
         <GoogleMark />
         <span>Continue with Google</span>
       </button>
-      <button type="button" onClick={() => start("github")} className="btn-ghost w-full py-2 text-[15px] sm:py-2.5">
+      <button type="button" onClick={() => start("github")} className="btn-surface w-full py-2 text-[15px] sm:py-2.5">
         <GitHubMark />
         <span>Continue with GitHub</span>
       </button>

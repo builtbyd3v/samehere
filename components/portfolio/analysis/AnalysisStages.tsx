@@ -1,5 +1,3 @@
-"use client";
-
 import { Check } from "lucide-react";
 import LoadingState from "@/components/landing/LoadingState";
 import { stageRowStates } from "@/lib/portfolio/analysis-ui";

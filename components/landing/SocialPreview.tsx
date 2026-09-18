@@ -5,6 +5,7 @@ import { MessageCircle } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { IconSame } from "@/components/icons";
 import { usePrefersReducedMotion } from "@/lib/landing/usePrefersReducedMotion";
+import ContextLabelBadge from "@/components/ui/ContextLabelBadge";
 
 const TABS = [
   {
@@ -57,7 +58,7 @@ function FeedPanel() {
           <span>CS · senior</span>
         </div>
         <p>Anyone else drawing the page table twice before it sticks?</p>
-        <span className="landing-label-chip">Learning</span>
+        <ContextLabelBadge label="learning" className="mt-2.5" />
         <ReactionBar />
       </article>
       <p className="landing-social-hint">You write the post. Labels are optional.</p>
@@ -98,7 +99,9 @@ function PortfolioPanel() {
           <span>Draft</span>
         </div>
         <p>Ranks campus sections by time conflicts so you can lock a term before add/drop.</p>
-        <span className="landing-label-chip">Project</span>
+        <span className="mt-2.5 inline-block text-[12px] font-medium tracking-[0.01em] text-[var(--ink-muted)]">
+          Project
+        </span>
       </article>
       <p className="landing-social-hint">A repo link is a source. The story is yours.</p>
     </div>
@@ -129,7 +132,7 @@ export default function SocialPreview() {
   }
 
   return (
-    <section id="community" className="landing-path-system">
+    <section id="community" className="landing-path-system reveal-view">
       <div className="landing-path-copy">
         <p>Community</p>
         <h2>Talk it through.</h2>

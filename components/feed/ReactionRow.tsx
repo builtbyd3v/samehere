@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
+import { ICON_SPRING } from "@/lib/motion/spring";
 import { getBrowserClient } from "@/lib/supabase/client";
 import { IconSame, IconComment, IconRepost, IconBookmark } from "@/components/icons";
 import { useRepostState, setRepostState } from "@/lib/repost-store";
@@ -85,9 +86,8 @@ export default function ReactionRow(props: Props) {
     const d = mine ? -1 : 1;
     setS((p) => ({ ...p, mineSamehere: !mine, samehere: p.samehere + d }));
     if (!mine && !reduceMotion) {
-      // Activating (not undoing): fire the signature spring micro-burst.
       setPop(true);
-      setTimeout(() => setPop(false), 260);
+      setTimeout(() => setPop(false), 500);
     }
     const { error } = mine
       ? await supabase.from("reactions").delete().eq(targetCol, targetId).eq("user_id", viewerId).eq("type", type)
@@ -135,13 +135,22 @@ export default function ReactionRow(props: Props) {
           aria-label={s.mineSamehere ? "SameHere added" : "SameHere"}
           className={`${action} ${sameColor(s.mineSamehere)}`}
         >
-          <motion.span
-            className="inline-flex"
-            animate={{ scale: pop ? 1.25 : 1 }}
-            transition={{ type: "spring", stiffness: 100, damping: 20 }}
-          >
-            <IconSame on={s.mineSamehere} />
-          </motion.span>
+          <span className="relative inline-flex">
+            <motion.span
+              className="inline-flex"
+              animate={{ scale: pop ? 1.3 : 1 }}
+              transition={reduceMotion ? { duration: 0 } : ICON_SPRING}
+            >
+              <IconSame on={s.mineSamehere} />
+            </motion.span>
+            {pop ? (
+              <span className="same-burst pointer-events-none absolute left-1/2 top-1/2" aria-hidden>
+                <span />
+                <span />
+                <span />
+              </span>
+            ) : null}
+          </span>
           {s.samehere > 0 && (
             <span className="same-tick inline-block tabular-nums" key={s.samehere}>
               {s.samehere}
@@ -166,7 +175,14 @@ export default function ReactionRow(props: Props) {
           title={authorPrivate ? "Private posts can't be reposted" : undefined}
           className={`${action} ${repostColor(repostState.mine)}`}
         >
-          <IconRepost />
+          <motion.span
+            className="inline-flex"
+            animate={{ scale: 1 }}
+            whileTap={reduceMotion ? undefined : { scale: 1.15 }}
+            transition={reduceMotion ? { duration: 0 } : ICON_SPRING}
+          >
+            <IconRepost />
+          </motion.span>
           {repostState.count > 0 && <span>{repostState.count}</span>}
         </ActionButton>
 
@@ -177,7 +193,14 @@ export default function ReactionRow(props: Props) {
           aria-label={s.mineBookmark ? "Bookmarked" : "Bookmark"}
           className={`${action} ml-auto ${bookmarkColor(s.mineBookmark)}`}
         >
-          <IconBookmark on={s.mineBookmark} />
+          <motion.span
+            className="inline-flex"
+            animate={{ scale: 1 }}
+            whileTap={reduceMotion ? undefined : { scale: 1.15 }}
+            transition={reduceMotion ? { duration: 0 } : ICON_SPRING}
+          >
+            <IconBookmark on={s.mineBookmark} />
+          </motion.span>
         </ActionButton>
       </div>
     </>

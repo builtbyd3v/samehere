@@ -3,6 +3,8 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LazyMotion, domMax, m } from "motion/react";
+import { usePrefersReducedMotion } from "@/lib/landing/usePrefersReducedMotion";
 import { House, MessageCircle, Settings, User, UserPlus } from "lucide-react";
 import { IconBell, IconMail, IconBookmark, IconBolt, IconSearch } from "@/components/icons";
 import FeedbackButton from "@/components/feedback/FeedbackButton";
@@ -25,6 +27,7 @@ export default function LeftNav({
   notifUnread?: number;
 }) {
   const pathname = usePathname();
+  const reduceMotion = usePrefersReducedMotion();
 
   const primary = [
     {
@@ -69,9 +72,17 @@ export default function LeftNav({
         key={item.label}
         href={item.href}
         aria-current={active ? "page" : undefined}
-        className={`relative flex items-center gap-3.5 rounded-md px-3 py-2.5 text-[15px] font-medium transition-colors duration-200 ease-out hover:bg-[var(--featured-surface)] ${active ? "bg-[var(--accent-blue-soft)] font-semibold text-[var(--blue)]" : "text-[var(--ink)]"}`}
+        className={`relative flex items-center gap-3.5 rounded-md px-3 py-2.5 text-[15px] font-medium transition-colors duration-[var(--dur-micro)] ease-out hover:bg-[var(--featured-surface)] ${active ? "bg-[var(--accent-blue-soft)] font-semibold text-[var(--blue)]" : "text-[var(--ink)]"}`}
       >
-        <span className={`grid h-6 w-6 shrink-0 place-items-center ${active ? "text-[var(--blue)]" : "text-[var(--ink-muted)]"}`}>
+        {active && (
+          <m.span
+            layoutId="left-nav-bar"
+            className="absolute top-1.5 bottom-1.5 left-0 w-0.5 rounded-full bg-[var(--blue)]"
+            transition={reduceMotion ? { duration: 0 } : { duration: 0.22, ease: [0.65, 0, 0.35, 1] }}
+            aria-hidden
+          />
+        )}
+        <span className={`grid h-6 w-6 shrink-0 place-items-center transition-colors duration-[var(--dur-micro)] ${active ? "text-[var(--blue)]" : "text-[var(--ink-muted)]"}`}>
           {item.icon}
         </span>
         {item.label}
@@ -87,6 +98,7 @@ export default function LeftNav({
   }
 
   return (
+    <LazyMotion features={domMax} strict>
     <nav className="flex flex-col gap-0.5">
       {primary.map((item) => renderItem(item))}
 
@@ -106,5 +118,6 @@ export default function LeftNav({
         </FeedbackButton>
       </div>
     </nav>
+    </LazyMotion>
   );
 }

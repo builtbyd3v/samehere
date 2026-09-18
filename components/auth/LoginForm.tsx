@@ -32,7 +32,7 @@ function LoginFormInner({ inviteOnly }: { inviteOnly: boolean }) {
   const hasError = !!state.error || oauthError;
 
   return (
-    <AuthCard title="Log in">
+    <AuthCard title="Log in" shake={hasError}>
       <form action={formAction}>
         {state.error && <AuthAlert message={state.error} />}
         {!state.error && oauthError && <AuthAlert message="Sign-in failed, try again." />}

@@ -14,11 +14,11 @@ body {
 :root {
   color-scheme: dark;
   --canvas: #0a0a0a;
-  --surface: #1a1a1a;
+  --surface: #161616;
   --surface-raised: #1f2228;
   --surface-post: #1f2228;
-  --surface-card: #1a1a1a;
-  --border: rgba(255, 255, 255, 0.10);
+  --surface-card: #161616;
+  --border: rgba(255, 255, 255, 0.08);
   --border-strong: rgba(255, 255, 255, 0.22);
   --ink: #f5f5f5;
   --ink-muted: #a1a5ab;
@@ -39,18 +39,31 @@ body {
   --nav-muted: rgba(255, 255, 255, 0.55);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-brand: cubic-bezier(0.22, 1, 0.36, 1);
   --dur-micro: 120ms;
   --dur-short: 220ms;
+  --dur-med: 320ms;
+  --dur-long: 600ms;
+  --dur-brand: 1500ms;
+  --rise-1: 4px;
+  --rise-2: 8px;
+  --rise-3: 12px;
+  --stagger: 40ms;
+  --elev-hairline: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --elev-raised: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 1px 1px rgba(0, 0, 0, 0.2), 0 12px 28px -8px rgba(0, 0, 0, 0.5);
+  --label-stuck: #e0a83a;
+  --label-building: #4f9fe8;
+  --label-learning: #5fce8f;
 }
 
 .dark {
   color-scheme: dark;
   --canvas: #0a0a0a;
-  --surface: #1a1a1a;
+  --surface: #161616;
   --surface-raised: #1f2228;
   --surface-post: #1f2228;
-  --surface-card: #1a1a1a;
-  --border: rgba(255, 255, 255, 0.10);
+  --surface-card: #161616;
+  --border: rgba(255, 255, 255, 0.08);
   --border-strong: rgba(255, 255, 255, 0.22);
   --ink: #f5f5f5;
   --ink-muted: #a1a5ab;
@@ -69,6 +82,9 @@ body {
   --accent-blue-strong: #4f9fe8;
   --accent-blue-soft: rgba(0, 117, 222, 0.14);
   --nav-muted: rgba(255, 255, 255, 0.55);
+  --label-stuck: #e0a83a;
+  --label-building: #4f9fe8;
+  --label-learning: #5fce8f;
 }
 
 .light {
@@ -78,7 +94,9 @@ body {
   --surface-raised: #ffffff;
   --surface-post: #ffffff;
   --surface-card: #ffffff;
-  --border: rgba(10, 10, 10, 0.10);
+  --border: rgba(10, 10, 10, 0.08);
+  --elev-hairline: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --elev-raised: inset 0 1px 0 rgba(255, 255, 255, 1), 0 1px 1px rgba(0, 0, 0, 0.04), 0 12px 28px -8px rgba(0, 0, 0, 0.12);
   --border-strong: rgba(10, 10, 10, 0.22);
   --ink: #0a0a0a;
   --ink-muted: #52525b;
@@ -97,6 +115,9 @@ body {
   --accent-blue-strong: #005bb3;
   --accent-blue-soft: rgba(0, 117, 222, 0.10);
   --nav-muted: rgba(10, 10, 10, 0.55);
+  --label-stuck: #e0a83a;
+  --label-building: #0075de;
+  --label-learning: #5fce8f;
 }
 
 @media (prefers-color-scheme: light) {
@@ -107,7 +128,9 @@ body {
     --surface-raised: #ffffff;
     --surface-post: #ffffff;
     --surface-card: #ffffff;
-    --border: rgba(10, 10, 10, 0.10);
+    --border: rgba(10, 10, 10, 0.08);
+    --elev-hairline: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    --elev-raised: inset 0 1px 0 rgba(255, 255, 255, 1), 0 1px 1px rgba(0, 0, 0, 0.04), 0 12px 28px -8px rgba(0, 0, 0, 0.12);
     --border-strong: rgba(10, 10, 10, 0.22);
     --ink: #0a0a0a;
     --ink-muted: #52525b;
@@ -126,6 +149,9 @@ body {
     --accent-blue-strong: #005bb3;
     --accent-blue-soft: rgba(0, 117, 222, 0.10);
     --nav-muted: rgba(10, 10, 10, 0.55);
+    --label-stuck: #e0a83a;
+    --label-building: #0075de;
+    --label-learning: #5fce8f;
   }
 }
 
@@ -157,33 +183,10 @@ summary {
   }
 }
 
-/* Hero H1 per-word stagger — stays at opacity:1 the whole time (no invisible
- * state to depend on JS/CSS loading); only position offsets in via
- * `transform`. animation-delay set per word via --delay. */
-@keyframes word-rise {
-  from { transform: translateY(24px); }
-  to   { transform: none; }
-}
-@media (prefers-reduced-motion: no-preference) {
-  .word-rise {
-    animation: word-rise 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
-    animation-delay: var(--delay, 0s);
-  }
-}
-
-/* Hero fade-rise — badge/subhead/CTA/peer-card/demo-card entrance. Resting
- * opacity is 1 in the markup; only the keyframe's `from` (gated behind the
- * no-preference query) ever touches opacity, so no-JS / no-animation-support
- * renders the element visible. Offset via --y, stagger via --delay. */
+/* fade-rise keyframes — live `.reveal-view` sections use this. */
 @keyframes fade-rise {
   from { opacity: 0; transform: translateY(var(--y, 16px)); }
   to   { opacity: 1; transform: none; }
-}
-@media (prefers-reduced-motion: no-preference) {
-  .fade-rise {
-    animation: fade-rise 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
-    animation-delay: var(--delay, 0s);
-  }
 }
 
 /* Scroll-driven reveal for below-fold sections (Reveal/RevealItem only — hero
@@ -202,62 +205,7 @@ summary {
   }
 }
 
-/* Ambient breathing wash — two radial blobs drift on opposite phases. The
- * container masks to transparent at its base so the whole wash melts into the
- * canvas with no falloff seam. Radials ramp through a midpoint for a soft edge. */
-.canvas-wash {
-  -webkit-mask-image: linear-gradient(to bottom, #000 50%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 50%, transparent 100%);
-}
-.canvas-blob { opacity: 0.85; will-change: transform; filter: blur(55px); }
-/* Centers sit ABOVE the top edge (negative Y) and span wide, so each reads as
- * light spilling down from the top edge — not a circle. Overlapping in the
- * middle, the warm + cool merge into one continuous band. */
-.canvas-blob-a {
-  background: radial-gradient(130% 75% at 22% -18%, rgba(0, 117, 222, 0.18) 0%, rgba(0, 117, 222, 0.05) 40%, transparent 76%);
-}
-.canvas-blob-b {
-  opacity: 0.7;
-  background: radial-gradient(120% 68% at 82% -22%, rgba(79, 159, 232, 0.16) 0%, rgba(79, 159, 232, 0.05) 42%, transparent 72%);
-}
-.dark .canvas-blob-b {
-  opacity: 0.85;
-  background: radial-gradient(150% 85% at 82% -24%, rgba(79, 159, 232, 0.24) 0%, rgba(79, 159, 232, 0.08) 44%, transparent 78%);
-}
-/* Mobile: the wide radials read washed-out on a narrow viewport (only their pale
- * outer edge shows, and 55px blur over-diffuses). Pull the cores toward the top
- * edge, raise alpha, tighten blur, and hold the mask longer so it reads richer. */
-@media (max-width: 640px) {
-  .canvas-wash {
-    -webkit-mask-image: linear-gradient(to bottom, #000 62%, transparent 100%);
-    mask-image: linear-gradient(to bottom, #000 62%, transparent 100%);
-  }
-  .canvas-blob { filter: blur(42px); }
-  .canvas-blob-a {
-    background: radial-gradient(175% 95% at 30% -6%, rgba(0, 117, 222, 0.26) 0%, rgba(0, 117, 222, 0.08) 44%, transparent 80%);
-  }
-  .canvas-blob-b {
-    background: radial-gradient(160% 88% at 74% -10%, rgba(79, 159, 232, 0.22) 0%, rgba(79, 159, 232, 0.07) 46%, transparent 76%);
-  }
-}
-@media (prefers-reduced-motion: no-preference) {
-  .canvas-blob-a { animation: blob-a 26s ease-in-out infinite; }
-  .canvas-blob-b { animation: blob-b 34s ease-in-out infinite; }
-}
-@keyframes blob-a {
-  0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.85; }
-  50%      { transform: translate3d(4%, 3%, 0) scale(1.14); opacity: 1; }
-}
-@keyframes blob-b {
-  0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.7; }
-  50%      { transform: translate3d(-4%, 4%, 0) scale(1.12); opacity: 0.85; }
-}
-
-/* Editorial display face (Fraunces) — headline voice. Body stays Figtree. */
-.font-display {
-  font-family: var(--font-display), ui-serif, Georgia, "Times New Roman", serif;
-  font-optical-sizing: auto;
-}
+/* Figtree only. Display face was unused on live surfaces. */
 
 /* Tactile "paper" depth — warm-tinted soft shadow (never pure black) so cards
    sit on the cream like paper on a desk. Wow-surfaces only; calm surfaces keep
@@ -276,31 +224,7 @@ summary {
     0 2px 6px -2px rgba(0, 0, 0, 0.35);
 }
 
-/* Match-card surface — reused wherever a demo "person card" appears (hero
- * search results, scene-2 proof wall, scene-4 mini card). Lift on hover. */
-.match-card {
-  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 220ms ease;
-}
-.dark .match-card {
-  background: #1f2228;
-  border-color: rgba(255, 255, 255, 0.16);
-}
-.match-card:hover {
-  transform: translateY(-4px);
-  box-shadow:
-    0 2px 2px rgba(60, 40, 30, 0.05),
-    0 18px 40px -12px rgba(60, 40, 30, 0.28),
-    0 4px 10px -4px rgba(60, 40, 30, 0.14);
-}
-.dark .match-card:hover {
-  box-shadow:
-    0 2px 2px rgba(0, 0, 0, 0.30),
-    0 18px 40px -12px rgba(0, 0, 0, 0.55),
-    0 4px 10px -4px rgba(0, 0, 0, 0.40);
-}
-
-/* Live SameHere on the hero cards — count tick, icon pop, 3-particle burst.
- * Resting state (no animation) is the final state; keyframes only add motion. */
+/* Live SameHere count tick + 3-particle burst. */
 @media (prefers-reduced-motion: no-preference) {
   @keyframes same-tick {
     from { transform: translateY(0.45em); opacity: 0; }
@@ -308,16 +232,15 @@ summary {
   }
   .same-tick { animation: same-tick 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
 
-  @keyframes same-pop {
-    0%   { transform: scale(1); }
-    45%  { transform: scale(1.3); }
-    100% { transform: scale(1); }
-  }
-  .same-pop { animation: same-pop 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-
   @keyframes burst-fly {
     from { transform: translate(0, 0) scale(1); opacity: 1; }
     to   { transform: translate(var(--bx), var(--by)) scale(0.35); opacity: 0; }
+  }
+  .same-burst {
+    position: absolute;
+    inset: auto;
+    width: 0;
+    height: 0;
   }
   .same-burst span {
     position: absolute;
@@ -355,113 +278,6 @@ summary {
   }
 }
 
-/* ---------------------------------------------------------------------
- * Hero premium effects (landing hero rebuild). Mouse-follow glow, word
- * split-reveal, load cascade, premium CTA loop, amplified ambient + grain.
- * ------------------------------------------------------------------- */
-
-/* Static ambient field centered behind the scene-1 search bar. Present at rest,
- * breathing slowly. Light mode stays faint; dark mode carries a real blue wash. */
-.hero-ambient {
-  left: 50%;
-  top: 8%;
-  width: min(70vw, 900px);
-  aspect-ratio: 1;
-  border-radius: 9999px;
-  translate: -50% 0;
-  filter: blur(80px);
-  background: radial-gradient(closest-side, rgba(59, 130, 246, 0.12), transparent 72%);
-}
-.dark .hero-ambient {
-  background: radial-gradient(closest-side, rgba(80, 150, 255, 0.24), transparent 74%);
-}
-@keyframes ambient-breathe {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.12); opacity: 0.82; }
-}
-@media (prefers-reduced-motion: no-preference) {
-  .hero-ambient { animation: ambient-breathe 14s ease-in-out infinite; will-change: transform, opacity; }
-}
-@media (max-width: 767px) {
-  .hero-ambient { width: 130vw; }
-}
-
-/* Scene-1 search demo — glass field, breathing blue ring. Base box-shadow
- * lives outside the keyframe's `from` so the resting look is correct with no
- * animation (reduced motion / no JS). */
-.search-glass {
-  background: color-mix(in srgb, var(--surface-raised) 88%, transparent);
-  backdrop-filter: blur(14px);
-  border: 1px solid var(--border-strong);
-  box-shadow: 0 0 0 6px var(--blue-glow), 0 20px 50px -20px rgba(0, 117, 222, 0.35);
-}
-@keyframes search-breathe {
-  0%, 100% { box-shadow: 0 0 0 6px var(--blue-glow), 0 20px 50px -20px rgba(0, 117, 222, 0.35); }
-  50%      { box-shadow: 0 0 0 12px var(--blue-glow), 0 24px 60px -18px rgba(0, 117, 222, 0.45); }
-}
-@media (prefers-reduced-motion: no-preference) {
-  .search-glass { animation: search-breathe 5s ease-in-out infinite; }
-}
-
-@keyframes caret-blink {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: 0; }
-}
-.type-caret {
-  display: inline-block;
-  width: 2px;
-  margin-left: 2px;
-  background: var(--blue);
-  animation: caret-blink 0.9s step-end infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  .type-caret { animation: none; }
-}
-
-/* Finale outline headline — stroke only, transparent fill. WebKit-prefixed
- * property has no unprefixed equivalent in supported browsers yet. */
-.text-stroke {
-  color: transparent;
-  -webkit-text-stroke: 1.5px var(--ink);
-}
-@media (max-width: 640px) {
-  .text-stroke { -webkit-text-stroke-width: 1px; }
-}
-
-.finale-ambient {
-  left: 50%;
-  top: 50%;
-  width: min(90vw, 1100px);
-  aspect-ratio: 1;
-  translate: -50% -50%;
-  border-radius: 9999px;
-  filter: blur(90px);
-  background: radial-gradient(closest-side, var(--blue-glow), transparent 72%);
-}
-@media (prefers-reduced-motion: no-preference) {
-  .finale-ambient { animation: ambient-breathe 12s ease-in-out infinite; will-change: transform, opacity; }
-}
-
-/* Headline word-by-word reveal — parent clips (`.word-wrap`), child slides
- * up from fully offscreen. Resting transform is `none` outside the
- * no-preference query, so no-JS/no-animation-support renders in place. */
-.word-wrap {
-  display: inline-block;
-  overflow: hidden;
-  vertical-align: top;
-}
-@keyframes word-slide {
-  from { transform: translateY(110%); }
-  to   { transform: none; }
-}
-@media (prefers-reduced-motion: no-preference) {
-  .word-slide {
-    display: inline-block;
-    animation: word-slide 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
-    animation-delay: var(--delay, 0s);
-  }
-}
-
 /* Load cascade — subhead/CTA/demo entrance, 0.8s fadeUp, staggered via
  * --delay in 100ms-ish steps set inline per element. */
 @keyframes cascade-up {
@@ -473,34 +289,6 @@ summary {
     animation: cascade-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
     animation-delay: var(--delay, 0s);
   }
-}
-
-/* Premium primary CTA — slow gradient drift between two blues + one
- * restrained light-sweep shimmer loop. Only infinite animations besides
- * the ambient blobs, per design brief. */
-@keyframes btn-premium-shift {
-  0%, 100% { background-position: 0% 50%; }
-  50%      { background-position: 100% 50%; }
-}
-.btn-premium {
-  background-image: linear-gradient(120deg, var(--blue), var(--blue-2));
-  background-size: 200% 200%;
-}
-@media (prefers-reduced-motion: no-preference) {
-  .btn-premium { animation: btn-premium-shift 4s ease-in-out infinite; }
-}
-@keyframes btn-premium-sweep {
-  from { transform: translateX(-130%) skewX(-12deg); }
-  to   { transform: translateX(130%) skewX(-12deg); }
-}
-.btn-premium-sweep {
-  position: absolute;
-  inset: -20% -10%;
-  background: linear-gradient(100deg, transparent 42%, rgba(255, 255, 255, 0.3) 50%, transparent 58%);
-  pointer-events: none;
-}
-@media (prefers-reduced-motion: no-preference) {
-  .btn-premium-sweep { animation: btn-premium-sweep 3s ease-in-out infinite; }
 }
 
 /* Ultra-subtle grain over the hero — cheap static SVG noise, near-invisible,
@@ -778,6 +566,29 @@ summary {
   border-radius: 0.75rem;
   border: 1px solid var(--border);
   background: var(--surface-card);
+  box-shadow: var(--elev-hairline);
+}
+.card-surface {
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--elev-hairline);
+}
+.card-raised {
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
+  box-shadow: var(--elev-raised);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .card-raised.card-hover:hover,
+  .card-hover-raise:hover {
+    border-color: color-mix(in srgb, var(--ink) 16%, transparent);
+    transform: translateY(-1px);
+  }
+  .card-hover-raise:active {
+    transform: scale(0.995);
+  }
 }
 .card-hover:hover {
   border-color: var(--border-strong);
@@ -823,12 +634,12 @@ summary {
 /* Page-enter ------------------------------------------------------------ */
 
 @keyframes page-enter {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(var(--rise-1)); }
   to   { opacity: 1; transform: none; }
 }
 @media (prefers-reduced-motion: no-preference) {
   .page-enter {
-    animation: page-enter 320ms ease both;
+    animation: page-enter var(--dur-med) var(--ease-out) both;
   }
 }
 
@@ -920,6 +731,278 @@ summary {
   .auth-aside-mobile {
     display: none;
   }
+
+  .auth-focus {
+    text-align: center;
+  }
+
+  .auth-focus .auth-copy h2 {
+    max-width: 18ch;
+    margin-inline: auto;
+  }
+
+  .auth-focus .auth-sub {
+    margin-inline: auto;
+  }
+
+  .auth-focus .auth-form,
+  .auth-focus .auth-footer {
+    margin-inline: auto;
+  }
+}
+
+@keyframes auth-enter {
+  from { opacity: 0; transform: translateY(var(--rise-2)); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes auth-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+@keyframes feed-enter {
+  from { opacity: 0; transform: translateY(var(--rise-3)); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes new-posts-in {
+  0% { opacity: 0; transform: translateY(-8px) scale(1); }
+  70% { opacity: 1; transform: translateY(0) scale(1.04); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes brand-hairline-draw {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+.auth-card-title {
+  margin-bottom: 1.5rem;
+}
+
+.auth-copy {
+  margin-bottom: 0.5rem;
+}
+
+.auth-focus .auth-copy {
+  margin-bottom: 2.5rem;
+}
+
+.auth-card-panel {
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+
+@media (min-width: 40rem) {
+  .auth-card-panel {
+    padding: 1.5rem;
+  }
+}
+
+@media (min-width: 48rem) {
+  .auth-card-panel {
+    padding: 2rem;
+  }
+}
+
+.context-label-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--ink-muted);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  transition: color var(--dur-micro) var(--ease-out);
+}
+
+.context-label-badge:hover {
+  color: var(--ink);
+}
+
+.context-label-badge[data-label="stuck"] .label-glyph {
+  color: var(--label-stuck);
+}
+
+.context-label-badge[data-label="building"] .label-glyph {
+  color: var(--label-building);
+}
+
+.context-label-badge[data-label="learning"] .label-glyph {
+  color: var(--label-learning);
+}
+
+.label-glyph {
+  display: block;
+  flex-shrink: 0;
+}
+
+@keyframes label-glyph-draw {
+  from { stroke-dashoffset: 32; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes label-glyph-fill {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (max-width: 399.98px) {
+  .context-label-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+}
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.surface-grain {
+  position: relative;
+  isolation: isolate;
+}
+
+.surface-grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
+.share-copied {
+  background: var(--accent-blue-soft) !important;
+}
+
+.project-link-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border: 1px solid var(--border);
+  border-radius: 9999px;
+  padding: 0.25rem 0.625rem;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.project-link-pill:hover {
+  border-color: var(--border-strong);
+}
+
+.portfolio-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.portfolio-divided > li {
+  border-top: 1px solid var(--border);
+  padding-block: 0.75rem;
+}
+
+.portfolio-divided > li:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.portfolio-divided > li:last-child {
+  padding-bottom: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .auth-enter-headline {
+    animation: auth-enter var(--dur-med) var(--ease-out) 200ms both;
+  }
+
+  .auth-enter-card {
+    animation: auth-enter var(--dur-med) var(--ease-out) 900ms both;
+  }
+
+  .auth-enter-aside {
+    animation: auth-enter var(--dur-med) var(--ease-out) 1000ms both;
+  }
+
+  .auth-card-panel > form > * {
+    animation: auth-enter var(--dur-med) var(--ease-out) both;
+  }
+
+  .auth-card-panel > form > *:nth-child(1) { animation-delay: 1000ms; }
+  .auth-card-panel > form > *:nth-child(2) { animation-delay: 1040ms; }
+  .auth-card-panel > form > *:nth-child(3) { animation-delay: 1080ms; }
+  .auth-card-panel > form > *:nth-child(4) { animation-delay: 1120ms; }
+  .auth-card-panel > form > *:nth-child(5) { animation-delay: 1160ms; }
+  .auth-card-panel > form > *:nth-child(n + 6) { animation-delay: 1200ms; }
+
+  .auth-card-panel button[type="submit"] {
+    animation-delay: 1200ms;
+  }
+
+  .auth-shake {
+    animation: auth-shake 240ms var(--ease-out);
+  }
+
+  .feed-enter {
+    animation: feed-enter var(--dur-med) var(--ease-out) both;
+    animation-delay: calc(var(--stagger-i, 0) * var(--stagger));
+  }
+
+  .label-glyph-draw[data-label="stuck"] .label-glyph-stroke,
+  .label-glyph-draw[data-label="building"] .label-glyph-stroke,
+  .feed-enter .label-glyph[data-label="stuck"] .label-glyph-stroke,
+  .feed-enter .label-glyph[data-label="building"] .label-glyph-stroke {
+    stroke-dasharray: 32;
+    animation: label-glyph-draw 220ms var(--ease-out) both;
+  }
+
+  .label-glyph-draw[data-label="learning"] .label-glyph-stroke,
+  .feed-enter .label-glyph[data-label="learning"] .label-glyph-stroke {
+    animation: label-glyph-draw 220ms var(--ease-out) both;
+  }
+
+  .label-glyph-draw .label-glyph-fill,
+  .feed-enter .label-glyph-fill {
+    animation: label-glyph-fill 220ms var(--ease-out) both;
+  }
+
+  .new-posts-pill {
+    animation: new-posts-in var(--dur-short) var(--ease-out) both;
+  }
+
+  .portfolio-enter-header {
+    animation: page-enter var(--dur-long) var(--ease-out) 480ms both;
+  }
+
+  .portfolio-stack > * {
+    animation: page-enter var(--dur-med) var(--ease-out) both;
+    animation-delay: calc(560ms + var(--i, 0) * var(--stagger));
+  }
+
+  .portfolio-stack > *:nth-child(1) { --i: 0; }
+  .portfolio-stack > *:nth-child(2) { --i: 1; }
+  .portfolio-stack > *:nth-child(3) { --i: 2; }
+  .portfolio-stack > *:nth-child(4) { --i: 3; }
+  .portfolio-stack > *:nth-child(5) { --i: 4; }
+  .portfolio-stack > *:nth-child(6) { --i: 5; }
 }
 
 

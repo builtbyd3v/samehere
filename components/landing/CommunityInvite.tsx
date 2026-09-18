@@ -10,7 +10,7 @@ export default function CommunityInvite({ spotsLeft }: { spotsLeft?: number }) {
         : "Join free to see whether a founder spot is still open.";
 
   return (
-    <section className="landing-community" aria-labelledby="community-invite-title">
+    <section className="landing-community reveal-view" aria-labelledby="community-invite-title">
       <div className="landing-community-copy">
         <p>Invite</p>
         <h2 id="community-invite-title">

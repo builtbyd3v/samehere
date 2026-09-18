@@ -11,7 +11,7 @@ import LocalTime from "@/components/ui/LocalTime";
 import type { PostMedia } from "@/lib/media";
 import type { ViewerMineState } from "@/lib/feed-engagement";
 import type { ContextLabel } from "@/types/portfolio";
-import { CONTEXT_LABEL_COPY } from "@/lib/context-label";
+import ContextLabelBadge from "@/components/ui/ContextLabelBadge";
 
 export const POST_SELECT =
   "id, content, created_at, user_id, media, hidden, context_label, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, is_private, is_pro, is_founder, is_campus_founder, verified_student, is_bot, profile_school(school)), reactions(count), reposts(count), comments(count)";
@@ -148,9 +148,7 @@ export default function PostCard({
 
   const shell = embedded
     ? "rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3"
-    : `rounded-2xl border border-[var(--border)] bg-[var(--surface-post)] p-4 sm:p-5${
-        detail ? "" : " transition-colors duration-200 hover:border-[var(--border-strong)]"
-      }`;
+    : `card-raised p-4 sm:p-5${detail ? "" : " card-hover-raise"}`;
 
   const body = (
     <article className={shell}>
@@ -159,7 +157,7 @@ export default function PostCard({
 
         <div className="min-w-0 flex-1">
           {!embedded && (
-            <div className="flex items-start gap-2">
+            <div className="flex items-center gap-2">
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
                   {a ? (
@@ -174,17 +172,12 @@ export default function PostCard({
                     <span className="font-semibold">{name}</span>
                   )}
                   {a && <UserBadges isPro={a.is_pro} isFounder={a.is_founder} isCampusFounder={a.is_campus_founder} isVerifiedStudent={a.verified_student} isBot={a.is_bot} />}
-                  {post.hidden && (
-                    <span className="rounded-full bg-[var(--danger)]/[0.06] px-2 py-0.5 text-xs font-medium text-[var(--danger)]">
-                      Hidden
-                    </span>
-                  )}
-                  {post.context_label && (
-                    <span className="rounded-full border border-[var(--border)] px-2 py-0.5 text-xs text-[var(--ink-muted)]">
-                      {CONTEXT_LABEL_COPY[post.context_label]}
-                    </span>
-                  )}
                 </div>
+                {post.hidden && (
+                  <span className="mt-0.5 inline-flex rounded-full bg-[var(--danger)]/[0.06] px-2 py-0.5 text-xs font-medium text-[var(--danger)]">
+                    Hidden
+                  </span>
+                )}
                 <p className="mt-0.5 text-[12.5px] text-[var(--ink-faint)]">
                   {a && <span>@{a.username}</span>}
                   {school && <span>{a ? ", " : ""}{school}</span>}
@@ -198,6 +191,10 @@ export default function PostCard({
                   )}
                 </p>
               </div>
+
+              {post.context_label ? (
+                <ContextLabelBadge label={post.context_label} className="ml-auto shrink-0" />
+              ) : null}
 
               {a && !embedded && (
                 <PostMenu postId={post.id} authorId={post.user_id} authorUsername={a.username} viewerId={viewerId} />
