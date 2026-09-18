@@ -16,9 +16,16 @@ export default async function RightRail() {
 
   const profile = await getViewerProfile();
   const school = profile?.profile_school?.school ?? null;
+  const schoolCountRes = school
+    ? await supabase.from("profile_school").select("profile_id", { count: "exact", head: true }).eq("school", school)
+    : { count: 0 };
+  const schoolMemberCount = schoolCountRes.count ?? 0;
+  const showSchool = Boolean(school) && schoolMemberCount >= 5;
   const [{ data: suggestedRows }, { data: schoolRows }] = await Promise.all([
     supabase.rpc("get_suggested_profiles", { p_limit: 5 }),
-    school ? supabase.rpc("get_suggested_profiles", { p_school: school, p_limit: 3 }) : Promise.resolve({ data: [] }),
+    showSchool && school
+      ? supabase.rpc("get_suggested_profiles", { p_school: school, p_limit: 3 })
+      : Promise.resolve({ data: [] }),
   ]);
   const suggested = suggestedRows ?? [];
   const schoolPeople = schoolRows ?? [];
@@ -27,7 +34,9 @@ export default async function RightRail() {
     <>
       {suggested.length > 0 && (
         <section className="card p-5">
-          <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">People you should meet</h2>
+          <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">
+            {showSchool ? "People you should meet" : "People at your stage"}
+          </h2>
           <div className="flex flex-col gap-2">
             {suggested.map((p, i) => {
               const nm = p.display_name ?? p.username;

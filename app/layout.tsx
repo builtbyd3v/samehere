@@ -1,12 +1,17 @@
 import "./globals.css";
-import "./landing-xai.css";
 import type { Metadata } from "next";
 import { Figtree } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 
-const figtree = Figtree({ subsets: ["latin"], weight: ["400", "500", "600"] });
+// display:swap + adjustFontFallback keep text visible while Figtree loads;
+const figtree = Figtree({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  display: "swap",
+  adjustFontFallback: true,
+});
 
 const TITLE = "samehere: Find your people. Show what you’re building.";
 const DESCRIPTION =

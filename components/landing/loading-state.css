@@ -1,0 +1,46 @@
+/* Shared with portfolio AnalysisStages — kept out of landing-xai.css so
+   app shell routes do not pay for the full landing stylesheet. */
+.landing-loading-state {
+  display: flex;
+  width: fit-content;
+  align-items: center;
+  gap: 0.625rem;
+  margin-top: 1rem;
+}
+
+.landing-loading-pixels {
+  display: grid;
+  grid-template-columns: repeat(3, 4px);
+  gap: 1.5px;
+}
+
+.landing-loading-pixel {
+  width: 4px;
+  height: 4px;
+  border-radius: 1px;
+  background: var(--accent-blue);
+  opacity: 0.15;
+}
+
+@keyframes pixel-on {
+  0%,
+  100% {
+    opacity: 0.15;
+  }
+  35%,
+  65% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .landing-loading-state[data-active="true"] .landing-loading-pixel {
+    animation: pixel-on 650ms ease-in-out infinite;
+  }
+}
+
+.landing-loading-label {
+  color: var(--ink-muted);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}

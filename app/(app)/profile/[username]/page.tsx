@@ -43,7 +43,7 @@ import {
   PublicProjectList,
 } from "@/components/portfolio/ProfileSections";
 const PROFILE_SELECT =
-  "id, username, display_name, avatar_url, banner_url, year, major, bio, goals, open_to, is_private, heatmap_visibility, is_pro, pro_until, is_founder, is_campus_founder, profile_theme, verified_student, is_bot";
+  "id, username, display_name, avatar_url, banner_url, year, major, bio, goals, open_to, study_mode, is_private, heatmap_visibility, is_pro, pro_until, is_founder, is_campus_founder, profile_theme, verified_student, is_bot";
 const PROFILE_SELECT_FALLBACK =
   "id, username, display_name, avatar_url, banner_url, year, major, bio, goals, is_private, heatmap_visibility, is_pro, pro_until, is_founder, is_campus_founder, profile_theme, verified_student, is_bot";
 
@@ -145,6 +145,7 @@ function PortfolioBody({
   posts,
   currentPro,
   intro,
+  username,
 }: {
   projection: PublicPortfolioProjection | null;
   unavailable: boolean;
@@ -158,19 +159,27 @@ function PortfolioBody({
   activity: ReactNode;
   posts: ReactNode;
   currentPro: boolean;
-  intro: { bio: string | null; goals: string | null; open_to: string[] };
+  intro: { bio: string | null; goals: string | null; open_to: string[]; study_mode: string | null };
+  username: string;
 }) {
   if (unavailable) {
     return (
       <>
         {isOwner && <UnavailableNotice />}
         {isOwner && !previewPublic && (
-          <IntroSection bio={intro.bio} goals={intro.goals} openTo={intro.open_to} />
+          <IntroSection
+            bio={intro.bio}
+            goals={intro.goals}
+            openTo={intro.open_to}
+            studyMode={intro.study_mode}
+            username={username}
+          />
         )}
         {posts}
       </>
     );
   }
+  const inviteDm = !isOwner || previewPublic;
   const order = effectiveSectionOrder(projection?.section_order ?? [], currentPro);
   const show = (section: (typeof order)[number]) => {
     if (isOwner && !previewPublic) return true;
@@ -181,7 +190,17 @@ function PortfolioBody({
     <div className="portfolio-stack mt-6">
       {order.map((section) => {
         if (section === "intro" && show("intro")) {
-          return <IntroSection key="intro" bio={intro.bio} goals={intro.goals} openTo={intro.open_to} />;
+          return (
+            <IntroSection
+              key="intro"
+              bio={intro.bio}
+              goals={intro.goals}
+              openTo={intro.open_to}
+              studyMode={intro.study_mode}
+              username={username}
+              linkToDm={inviteDm}
+            />
+          );
         }
         if (section === "projects" && show("projects")) {
           return isOwner && !previewPublic ? (
@@ -244,6 +263,7 @@ async function PublicPortfolioBelow({
     bio: string | null;
     goals: string | null;
     open_to: string[] | null;
+    study_mode?: string | null;
     is_private: boolean;
     is_pro: boolean;
     heatmap_visibility: string | null;
@@ -261,6 +281,7 @@ async function PublicPortfolioBelow({
       bio: profile.bio,
       goals: profile.goals,
       open_to: profile.open_to,
+      study_mode: "study_mode" in profile ? profile.study_mode ?? null : null,
       is_private: profile.is_private,
     },
     projection,
@@ -326,6 +347,7 @@ async function PublicPortfolioBelow({
           }
           currentPro={profile.is_pro}
           intro={intro}
+          username={username}
           posts={posts}
         />
       )}
@@ -557,6 +579,7 @@ export default async function ProfilePage({
       bio: profile.bio,
       goals: profile.goals,
       open_to: "open_to" in profile && Array.isArray(profile.open_to) ? profile.open_to : [],
+      study_mode: "study_mode" in profile ? (profile.study_mode as string | null) ?? null : null,
       is_private: profile.is_private,
     },
     projection,
@@ -678,7 +701,13 @@ export default async function ProfilePage({
           <>
             <UnavailableNotice />
             {!previewPublic && (
-              <IntroSection bio={intro.bio} goals={intro.goals} openTo={intro.open_to} />
+              <IntroSection
+                bio={intro.bio}
+                goals={intro.goals}
+                openTo={intro.open_to}
+                studyMode={intro.study_mode}
+                username={profile.username}
+              />
             )}
             {canReadHeatmap && (
               <div className="mt-4">
@@ -718,6 +747,7 @@ export default async function ProfilePage({
             activity={activitySection}
             currentPro={isOwner ? pro : Boolean(profile.is_pro)}
             intro={intro}
+            username={profile.username}
             posts={postsSection}
           />
         )}
