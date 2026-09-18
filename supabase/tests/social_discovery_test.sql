@@ -131,7 +131,9 @@ begin
     where id = v_priv;
   update public.profiles set
     username = 'soc_pub', is_private = false, bio = 'heatmap builder',
-    open_to = array['collaborate','study']::text[], created_at = '2026-05-01'
+    open_to = array['collaborate','study']::text[],
+    study_mode = 'online', year = 'junior', major = 'Computer Science',
+    created_at = '2026-05-01'
     where id = v_pub;
   update public.profiles set
     username = 'soc_noprop', is_private = false, created_at = '2026-05-02'
@@ -312,9 +314,9 @@ reset role;
 select tests.as_anon();
 do $$
 begin
-  if has_function_privilege('anon', 'public.search_people(text,integer,integer)', 'execute')
+  if has_function_privilege('anon', 'public.search_people(text,integer,integer,text,text,text,text)', 'execute')
      or has_function_privilege('anon', 'public.search_projects(text,integer,integer)', 'execute')
-     or has_function_privilege('anon', 'public.search_posts(text,integer,integer)', 'execute')
+     or has_function_privilege('anon', 'public.search_posts(text,integer,integer,text)', 'execute')
   then
     raise exception 'anon has execute on a search RPC';
   end if;
@@ -580,6 +582,40 @@ begin
   insert into tests_results values ('SOC_block_people', true, 'ok');
 exception when others then
   insert into tests_results values ('SOC_block_people', false, sqlerrm);
+end $$;
+
+-- SOC_browse_filters — empty query + facets; private tags never match
+do $$
+begin
+  if exists (select 1 from public.search_people('', 20, 0)) then
+    raise exception 'empty query without filters returned rows';
+  end if;
+  if not exists (
+    select 1 from public.search_people('', 20, 0, 'study', null, null, null)
+    where id = (select id from tests_fixture where key = 'pub')
+  ) then
+    raise exception 'browse study tag missed public';
+  end if;
+  if exists (
+    select 1 from public.search_people('', 20, 0, 'collaborate', null, null, null)
+    where id = (select id from tests_fixture where key = 'priv')
+  ) then
+    raise exception 'private open_to used as browse facet';
+  end if;
+  if not exists (
+    select 1 from public.search_people('', 20, 0, null, 'junior', 'Computer Science', 'online')
+    where id = (select id from tests_fixture where key = 'pub')
+  ) then
+    raise exception 'stage browse missed public';
+  end if;
+  if exists (
+    select 1 from public.search_posts('', 20, 0)
+  ) then
+    raise exception 'empty posts query without label returned rows';
+  end if;
+  insert into tests_results values ('SOC_browse_filters', true, 'ok');
+exception when others then
+  insert into tests_results values ('SOC_browse_filters', false, sqlerrm);
 end $$;
 
 reset role;
