@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { Component, useEffect, useState, type ReactNode } from "react";
+import { Component, useSyncExternalStore, type ReactNode } from "react";
 import { usePrefersReducedMotion } from "@/lib/landing/usePrefersReducedMotion";
 
 const LandingAtmosphere = dynamic(() => import("./LandingAtmosphere"), {
@@ -15,6 +15,10 @@ function canCreateWebGL(): boolean {
   } catch {
     return false;
   }
+}
+
+function subscribeWebGL() {
+  return () => {};
 }
 
 class AtmosphereBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
@@ -32,13 +36,9 @@ class AtmosphereBoundary extends Component<{ children: ReactNode }, { failed: bo
 
 export default function LandingAtmosphereLazy() {
   const reduceMotion = usePrefersReducedMotion();
-  const [load, setLoad] = useState(false);
+  const hasWebGL = useSyncExternalStore(subscribeWebGL, canCreateWebGL, () => false);
 
-  useEffect(() => {
-    setLoad(!reduceMotion && canCreateWebGL());
-  }, [reduceMotion]);
-
-  if (!load) return null;
+  if (reduceMotion || !hasWebGL) return null;
   return (
     <AtmosphereBoundary>
       <LandingAtmosphere />
