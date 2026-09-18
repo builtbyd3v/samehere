@@ -38,8 +38,11 @@ const CACHE_REVALIDATE = 3000; // 50min — must stay safely under TTL (3600s)
 // with a path that did not come from an RLS-gated posts query — doing so
 // would turn this cache into an unrestricted read primitive over the entire
 // private post-media bucket.
+const prefetch = new Map<string, string | null>();
+
 const signPath = unstable_cache(
   async (path: string): Promise<string | null> => {
+    if (prefetch.has(path)) return prefetch.get(path) ?? null;
     const admin = createAdminClient();
     const { data } = await admin.storage.from("post-media").createSignedUrls([path], TTL);
     return data?.[0]?.signedUrl ?? null;
@@ -61,11 +64,21 @@ export async function attachSignedMedia<T extends { media: unknown }>(
   const uniquePaths = [...new Set(paths)];
   const signed = new Map<string, string>();
   if (uniquePaths.length > 0) {
-    const urls = await Promise.all(uniquePaths.map((p) => signPath(p)));
-    uniquePaths.forEach((p, i) => {
-      const url = urls[i];
-      if (url) signed.set(p, url);
-    });
+    const missing = uniquePaths.filter((path) => !prefetch.has(path));
+    if (missing.length > 0) {
+      const admin = createAdminClient();
+      const { data } = await admin.storage.from("post-media").createSignedUrls(missing, TTL);
+      for (const path of missing) {
+        const url = data?.find((item) => item.path === path)?.signedUrl ?? null;
+        prefetch.set(path, url);
+      }
+      // Write each URL into the per-path Data Cache without extra storage calls.
+      await Promise.all(missing.map((path) => signPath(path)));
+    }
+    for (const path of uniquePaths) {
+      const url = prefetch.get(path);
+      if (url) signed.set(path, url);
+    }
   }
   return posts.map((p) => ({
     ...p,

@@ -13,6 +13,7 @@ import type { OwnerClient } from "./owner";
 
 type Row = Record<string, unknown>;
 type QueryResult = { data: unknown; error: PortfolioQueryError | null };
+type Payload = Row | Row[];
 
 function memoryClient(init?: {
   projects?: Row[];
@@ -28,7 +29,7 @@ function memoryClient(init?: {
   function table(name: string) {
     const rows = name === "portfolio_settings" ? settings : projects;
     let mode: "select" | "insert" | "update" | "delete" | "upsert" = "select";
-    let payload: Row = {};
+    let payload: Payload = {};
     const filters: Array<[string, unknown]> = [];
 
     const run = () => {
@@ -43,11 +44,12 @@ function memoryClient(init?: {
         return { data: found, error: null };
       }
       if (mode === "insert") {
-        if (name === "portfolio_settings" && rows.some((row) => row.owner_id === payload.owner_id)) {
+        const inserted = Array.isArray(payload) ? payload[0] ?? {} : payload;
+        if (name === "portfolio_settings" && rows.some((row) => row.owner_id === inserted.owner_id)) {
           return { data: null, error: { code: "23505", message: "duplicate key value violates unique constraint" } };
         }
         const row = {
-          id: (payload.id as string) ?? `p${rows.length + 1}`,
+          id: (inserted.id as string) ?? `p${rows.length + 1}`,
           published_at: null,
           source_repository_id: null,
           source_commit_sha: null,
@@ -55,28 +57,41 @@ function memoryClient(init?: {
           created_at: "2026-09-10T00:00:00.000Z",
           updated_at: "2026-09-10T00:00:00.000Z",
           version: 1,
-          ...payload,
+          ...inserted,
         };
         rows.push(row);
         return { data: row, error: null };
       }
       if (mode === "upsert") {
-        const order = payload.section_order;
+        const items = Array.isArray(payload) ? payload : [payload];
+        const first = items[0] ?? {};
+        const order = first.section_order;
         if (
+          !Array.isArray(payload) &&
           Array.isArray(order) &&
           order.join(",") !== "intro,projects,activity,experience,education,posts"
         ) {
           return { data: null, error: { message: "section order requires pro" } };
         }
-        const index = rows.findIndex((row) => row.owner_id === payload.owner_id);
-        const row = {
-          version: 1,
-          updated_at: "2026-09-10T00:00:00.000Z",
-          ...payload,
-        };
-        if (index >= 0) rows[index] = { ...rows[index], ...row, version: Number(rows[index].version ?? 0) + 1 };
-        else rows.push(row);
-        return { data: index >= 0 ? rows[index] : row, error: null };
+        const updated: Row[] = [];
+        for (const item of items) {
+          const index = item.id
+            ? rows.findIndex((row) => row.id === item.id)
+            : rows.findIndex((row) => row.owner_id === item.owner_id);
+          const row = {
+            version: 1,
+            updated_at: "2026-09-10T00:00:00.000Z",
+            ...item,
+          };
+          if (index >= 0) {
+            rows[index] = { ...rows[index], ...row, version: Number(rows[index].version ?? 0) + 1 };
+            updated.push(rows[index]);
+          } else {
+            rows.push(row);
+            updated.push(row);
+          }
+        }
+        return { data: updated.length === 1 ? updated[0] : updated, error: null };
       }
       if (mode === "update") {
         const found = match();
@@ -111,7 +126,7 @@ function memoryClient(init?: {
         payload = values;
         return api;
       },
-      upsert(values: Row) {
+      upsert(values: Payload) {
         mode = "upsert";
         payload = values;
         return api;

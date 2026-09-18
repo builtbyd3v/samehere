@@ -223,12 +223,23 @@ export async function reorderProjects(
   if (ids.length !== owned.size || ids.some((id) => !owned.has(id))) {
     return fail("Invalid input.", 400);
   }
-  for (const [index, id] of ids.entries()) {
-    const result = await awaitQuery<null>(
-      client.from("portfolio_projects").update({ sort_order: index }).eq("id", id).eq("owner_id", ownerId)
-    );
-    if (!result.ok) return result;
-  }
+  const titles = new Map(listed.data.map((project) => [project.id, project.title]));
+  const result = await awaitQuery<ProjectRow[] | null>(
+    client
+      .from("portfolio_projects")
+      .upsert(
+        ids.map((id, sort_order) => ({
+          id,
+          owner_id: ownerId,
+          title: titles.get(id)!,
+          sort_order,
+        })),
+        { onConflict: "id" }
+      )
+      .select(PROJECT_SELECT)
+      .returns<ProjectRow[]>()
+  );
+  if (!result.ok) return result;
   return listOwnerProjects(client, ownerId);
 }
 

@@ -256,14 +256,14 @@ async function PublicHeatmapFallback({
 
 async function PublicProfileView({ username }: { username: string }) {
   const client = createAnonPortfolioClient();
-  const { data: profileRows } = await client.rpc("get_public_profile", { p_username: username });
+  const [{ data: profileRows }, bundle] = await Promise.all([
+    client.rpc("get_public_profile", { p_username: username }),
+    loadPublicPortfolioBundle(client, username),
+  ]);
   const profile = profileRows?.[0] ?? null;
   if (!profile) notFound();
 
-  const [{ data: countRows }, bundle] = await Promise.all([
-    client.rpc("get_public_profile_counts", { p_profile_id: profile.id }),
-    loadPublicPortfolioBundle(client, username),
-  ]);
+  const { data: countRows } = await client.rpc("get_public_profile_counts", { p_profile_id: profile.id });
   const counts = countRows?.[0] ?? { posts: 0, followers: 0, following: 0 };
   const projection = bundle.ok ? bundle.data.projection : null;
   const intro = profileIntro(
@@ -464,10 +464,38 @@ export default async function ProfilePage({
   const isAcceptedFollower = relRes.data?.status === "accepted";
   const postRows = postsRes.data ?? [];
   const allForSigning = [...postRows, ...quotesRes.map((q) => q.post), ...repostsRes.map((r) => r.post)];
-  const signedById = new Map(
-    (allForSigning.length ? await attachSignedMedia(supabase, allForSigning) : []).map((p) => [p.id, p]),
-  );
-  const mine = await fetchViewerMineState(supabase, viewerId, [...signedById.keys()], quotesRes.map((q) => q.id));
+  const canReadHeatmap = isOwner || isAcceptedFollower || profile.heatmap_visibility === "public";
+  const [signedPosts, mine, heatmapRes, streakRes, ownerExpEdu] = await Promise.all([
+    allForSigning.length ? attachSignedMedia(supabase, allForSigning) : Promise.resolve([]),
+    fetchViewerMineState(
+      supabase,
+      viewerId,
+      [...new Set(allForSigning.map((p) => p.id))],
+      quotesRes.map((q) => q.id),
+    ),
+    canReadHeatmap
+      ? supabase.rpc("get_heatmap", { p_profile_id: profile.id })
+      : Promise.resolve({
+          data: [] as { day: string; points: number; breakdown?: Record<string, number> }[],
+          error: null,
+        }),
+    supabase.rpc("get_streak", { p_profile_id: profile.id }),
+    isOwner && !previewPublic
+      ? Promise.all([
+          supabase
+            .from("experiences")
+            .select("id, kind, org, role, term, note, start_date, end_date, is_current")
+            .eq("user_id", profile.id)
+            .order("created_at", { ascending: false }),
+          supabase
+            .from("education")
+            .select("id, school, degree, field, class_year, start_date, end_date, school_domain, is_current")
+            .eq("user_id", profile.id)
+            .order("start_date", { ascending: false, nullsFirst: false }),
+        ])
+      : Promise.resolve(null),
+  ]);
+  const signedById = new Map(signedPosts.map((p) => [p.id, p]));
   const engagedById = new Map(withEngagement([...signedById.values()], mine).map((p) => [p.id, p]));
   const posts = postRows.map((r) => engagedById.get(r.id)!);
   const quotes = quotesRes.map((r) => toQuotedRepost(r, engagedById.get(r.post.id)!, mine));
@@ -494,19 +522,8 @@ export default async function ProfilePage({
   if (usePublicSections && bundle.ok) {
     experience = bundle.data.sections.experience;
     education = bundle.data.sections.education;
-  } else if (isOwner && !previewPublic) {
-    const [expRes, eduRes] = await Promise.all([
-      supabase
-        .from("experiences")
-        .select("id, kind, org, role, term, note, start_date, end_date, is_current")
-        .eq("user_id", profile.id)
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("education")
-        .select("id, school, degree, field, class_year, start_date, end_date, school_domain, is_current")
-        .eq("user_id", profile.id)
-        .order("start_date", { ascending: false, nullsFirst: false }),
-    ]);
+  } else if (ownerExpEdu) {
+    const [expRes, eduRes] = ownerExpEdu;
     experience = (expRes.data ?? []).map((row) => ({
       id: row.id,
       kind: row.kind,
@@ -587,11 +604,6 @@ export default async function ProfilePage({
     isOwner && !previewPublic ? "owner" : "public"
   );
 
-  const canReadHeatmap = isOwner || isAcceptedFollower || profile.heatmap_visibility === "public";
-  const heatmapRes = canReadHeatmap
-    ? await supabase.rpc("get_heatmap", { p_profile_id: profile.id })
-    : { data: [] as { day: string; points: number; breakdown?: Record<string, number> }[], error: null };
-  const streakRes = await supabase.rpc("get_streak", { p_profile_id: profile.id });
   const publicSamehere = bundle.ok ? bundle.data.samehere : [];
   const publicSamehereKnown = bundle.ok ? bundle.data.samehereKnown : false;
   const ownerHeatmapKnown = !heatmapRes.error;
