@@ -282,9 +282,10 @@ function Heatmap({ weeks, streak }: { weeks: number[][]; streak: number }) {
 
 function BrandFallback() {
   return (
-    <div style={ogCanvasStyle({ justifyContent: "center", padding: 80 })}>
-      <OgWordmark size={64} />
-      <div style={{ marginTop: 18, fontSize: 26, color: INK_MUTED }}>Portfolio for students.</div>
+    <div style={ogCanvasStyle({ justifyContent: "center", alignItems: "center", padding: 80 })}>
+      <OgWordmark size={72} />
+      <div style={{ marginTop: 20, fontSize: 24, color: INK_MUTED }}>Portfolio for students.</div>
+      <div style={{ marginTop: 10, fontSize: 18, color: INK_FAINT }}>samehere.dev</div>
     </div>
   );
 }
