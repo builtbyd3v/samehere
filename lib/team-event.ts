@@ -115,11 +115,3 @@ export function formatTeamEventLine(fields: {
   ].filter((part): part is string => part !== null);
   return parts.length > 0 ? parts.join(" · ") : null;
 }
-
-export function lookingForTeamFeedPath(): string {
-  return "/feed?label=looking_for_team";
-}
-
-export function isLookingForTeamFeed(params: { tab?: string; label?: string }): boolean {
-  return parseContextLabel(params.label) === LOOKING_FOR_TEAM;
-}

@@ -2,19 +2,21 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { POST_SELECT, PAGE, withEngagement, type FeedPost, type PostRow } from "@/components/feed/PostCard";
 import { attachSignedMedia } from "@/lib/media";
 import { fetchViewerMineState } from "@/lib/feed-engagement";
-import { LOOKING_FOR_TEAM } from "@/lib/team-event";
+import type { ContextLabel } from "@/lib/context-label";
 import type { FeedCursor } from "@/lib/feed-cursor";
 import type { Database } from "@/types/database.types";
 
-// Network-wide Looking for team posts, recency + id. Posts only — quotes
-// and reposts have no context_label of their own. Blocks filtered app-side
-// like LatestTab so we never interpolate untrusted ids into `in()`.
-export async function fetchLookingForTeamPosts(
+// Network-wide labeled posts, recency + id. Query only — no new table, no RPC.
+// Blocks and optional author excludes are applied after the select, same as
+// LatestTab, so we never interpolate untrusted ids into a PostgREST `in()`.
+export async function fetchLabeledPosts(
   supabase: SupabaseClient<Database>,
   opts: {
     viewerId: string | null;
+    label?: ContextLabel | null;
     cursor?: FeedCursor | null;
     limit?: number;
+    excludeUserIds?: Iterable<string>;
     blockedIds?: Iterable<string>;
   },
 ): Promise<FeedPost[]> {
@@ -22,10 +24,15 @@ export async function fetchLookingForTeamPosts(
   let query = supabase
     .from("posts")
     .select(POST_SELECT)
-    .eq("context_label", LOOKING_FOR_TEAM)
     .order("created_at", { ascending: false })
     .order("id", { ascending: false })
     .limit(limit);
+
+  if (opts.label) {
+    query = query.eq("context_label", opts.label);
+  } else {
+    query = query.not("context_label", "is", null);
+  }
 
   if (opts.cursor) {
     query = query.or(
@@ -44,7 +51,8 @@ export async function fetchLookingForTeamPosts(
   ]);
 
   const blocked = new Set(blockedResult.data ?? []);
-  const postRows = (data ?? []).filter((p) => !blocked.has(p.user_id));
+  const excluded = new Set(opts.excludeUserIds ?? []);
+  const postRows = (data ?? []).filter((p) => !blocked.has(p.user_id) && !excluded.has(p.user_id));
   if (postRows.length === 0) return [];
 
   const signed = await attachSignedMedia(supabase, postRows);

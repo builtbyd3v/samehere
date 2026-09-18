@@ -13,8 +13,8 @@ import { type AiResult } from "@/lib/ai";
 import { getPostHogServerClient } from "@/lib/posthog-server";
 import { TEXT_LIMITS, textLimitError } from "@/lib/utils/validation";
 import { contextLabelError, parseContextLabel } from "@/lib/context-label";
-import { fetchLookingForTeamPosts } from "@/lib/feed-looking-for-team";
-import { isLookingForTeamFeed, parseTeamEventFields, teamEventError } from "@/lib/team-event";
+import { fetchLabeledPosts } from "@/lib/feed-labeled";
+import { parseTeamEventFields, teamEventError } from "@/lib/team-event";
 import { peopleSearchCore, type PeopleSearchState } from "@/lib/people-search";
 
 export type ComposerState = { error?: string; ok?: boolean };
@@ -89,18 +89,24 @@ export async function loadMorePosts(
   return { items, nextCursor };
 }
 
-export async function loadMoreLookingForTeamPosts(
+// Next page for a label filter. Posts only (no quotes/reposts). `label` is
+// parsed again here because this is a Server Action — the client can send
+// anything. Junk labels stop pagination instead of scanning the firehose.
+export async function loadMoreLabeledPosts(
+  labelRaw: string,
   cursor: string,
 ): Promise<{ items: FeedTimelineItem[]; nextCursor: string | null }> {
+  const label = parseContextLabel(labelRaw);
   const decoded = decodeCursor(cursor);
-  if (!decoded) return { items: [], nextCursor: null };
+  if (!label || !decoded) return { items: [], nextCursor: null };
 
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const posts = await fetchLookingForTeamPosts(supabase, {
+  const posts = await fetchLabeledPosts(supabase, {
     viewerId: user?.id ?? null,
+    label,
     cursor: decoded,
     limit: PAGE,
   });
@@ -266,14 +272,14 @@ export async function peopleSearch(query: string, _verifiedOnly?: boolean): Prom
 // filtered app-side, mirroring the first-page query in page.tsx.
 export async function countNewerPosts(sinceIso: string, labelRaw?: string | null): Promise<number> {
   const supabase = await createClient();
-  const teamOnly = isLookingForTeamFeed({ label: labelRaw ?? undefined });
+  const label = parseContextLabel(labelRaw);
   let query = supabase
     .from("posts")
     .select("id, user_id")
     .gt("created_at", sinceIso)
     .order("created_at", { ascending: false })
     .limit(30);
-  if (teamOnly) query = query.eq("context_label", "looking_for_team");
+  if (label) query = query.eq("context_label", label);
   const [{ data }, { data: blockedIds }] = await Promise.all([
     query,
     supabase.rpc("get_blocked_ids"),

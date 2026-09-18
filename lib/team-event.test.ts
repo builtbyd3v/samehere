@@ -3,8 +3,6 @@ import {
   TEAM_EVENT_NAME_MAX,
   formatTeamEventDate,
   formatTeamEventLine,
-  isLookingForTeamFeed,
-  lookingForTeamFeedPath,
   parseTeamEventDate,
   parseTeamEventFields,
   parseTeamEventMode,
@@ -120,13 +118,5 @@ describe("formatTeamEventLine", () => {
     expect(formatTeamEventLine({ team_event_name: "HackMIT" })).toBe("HackMIT");
     expect(formatTeamEventDate("2026-10-04")).toBe("Oct 4");
     expect(formatTeamEventLine({})).toBeNull();
-  });
-});
-
-describe("lookingForTeamFeedPath", () => {
-  it("is the network-wide filter", () => {
-    expect(lookingForTeamFeedPath()).toBe("/feed?label=looking_for_team");
-    expect(isLookingForTeamFeed({ label: "looking_for_team", tab: "following" })).toBe(true);
-    expect(isLookingForTeamFeed({ label: "stuck" })).toBe(false);
   });
 });
