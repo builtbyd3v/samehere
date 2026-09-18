@@ -7,6 +7,7 @@ A published profile at `/profile/<username>` is reachable while logged out. A mi
 - `profile-missing` shows `Profile not found` for an unknown username.
 - `profile-edit-gated` keeps `/profile/edit` off the anonymous public surface (307 to `/signup`).
 - `profile-public` (only when `env_mode=repo` and `SAMEHERE_VERIFY_PROFILE_USERNAME` is set) renders that student's public page.
+- `profile-share` (same precondition as `profile-public`) shows a `Share` control whose share URL is an absolute `samehere.dev` / `NEXT_PUBLIC_SITE_URL` profile link — portfolio hard keep; never skip when the live profile ran.
 - `profile-brand` still offers a way off the missing-profile page (`Back to feed` / `Search`, which themselves gate to signup when logged out).
 
 ## How to get to it (user POV)

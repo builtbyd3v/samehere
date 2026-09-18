@@ -47,4 +47,4 @@ Keep implementation details out of the map. Name only user paths, stable handles
 - [Sign up](./signup.md) covers the create-account form, validation, footer cross-link, and the invite-only variant.
 - [Log in](./login.md) covers the login form, forgot-password, and the anonymous redirect into auth.
 - [Pricing](./pricing.md) covers `/pricing` and the landing `#pricing` band, including the Pro link.
-- [Public profile](./public-profile.md) covers a missing username and, when a live project is configured, a published `/profile/<username>` page.
+- [Public profile](./public-profile.md) covers a missing username and, when a live project is configured, a published `/profile/<username>` page plus the absolute Share URL hard keep.
