@@ -16,6 +16,7 @@ export const PORTFOLIO_FINALIZE_MIGRATION =
 
 export type ContextLabel = "building" | "learning" | "stuck";
 export type OpenToTag = "collaborate" | "study" | "feedback";
+export type StudyMode = "on_campus" | "online" | "hybrid" | "bootcamp" | "self_taught";
 export type PortfolioSection =
   | "intro"
   | "projects"
