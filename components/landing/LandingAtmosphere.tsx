@@ -8,7 +8,9 @@ import {
   BufferGeometry,
   CanvasTexture,
   Color,
+  Mesh,
   Points,
+  type MeshStandardMaterial,
   type PointsMaterial,
 } from "three";
 
@@ -23,10 +25,30 @@ const BREATHE = 0.03;
 const DISPERSE = 1.08;
 
 const PLANES = [
-  { z: -1.35, size: 0.06, salt: 11 },
-  { z: 0.05, size: 0.1, salt: 23 },
-  { z: 1.4, size: 0.14, salt: 41 },
+  { z: -2.4, size: 0.05, salt: 11 },
+  { z: -0.6, size: 0.08, salt: 17 },
+  { z: 0.7, size: 0.11, salt: 23 },
+  { z: 2.1, size: 0.16, salt: 41 },
 ] as const;
+
+const RAD2DEG = 180 / Math.PI;
+
+/** Shared pose for the WebGL camera and the DOM frame. */
+function framePose(t: number, scrollY: number) {
+  const swayX = Math.sin(t * 0.11) * 1.15;
+  const swayY = Math.cos(t * 0.09) * 0.42;
+  const camZ = 7.6 + Math.sin(t * 0.07) * 0.55;
+  const scroll = scrollY * 0.00032;
+  return {
+    camX: swayX,
+    camY: scroll + swayY,
+    camZ,
+    lookY: scroll,
+    rx: Math.atan2(swayY, camZ) * RAD2DEG,
+    ry: -Math.atan2(swayX, camZ) * RAD2DEG,
+    tz: Math.sin(t * 0.08) * 22,
+  };
+}
 
 /** Deterministic 0..1 — lint forbids Math.random during render. */
 function unit(i: number, salt: number): number {
@@ -139,6 +161,19 @@ function DepthPlane({
       }
       pos.needsUpdate = true;
       if (u === 1) settledRef.current = true;
+    } else {
+      const pos = points.current.geometry.getAttribute("position");
+      const wave = elapsed / 1000;
+      for (let i = 0; i < PER_PLANE; i++) {
+        const i3 = i * 3;
+        pos.setXYZ(
+          i,
+          field.rest[i3] + Math.sin(wave * 0.23 + i) * 0.12,
+          field.rest[i3 + 1] + Math.cos(wave * 0.17 + i * 0.4) * 0.08,
+          field.rest[i3 + 2],
+        );
+      }
+      pos.needsUpdate = true;
     }
 
     if (material.current) {
@@ -173,13 +208,72 @@ function DepthPlane({
   );
 }
 
-function DriftField({ sprite }: { sprite: CanvasTexture }) {
+function LightSheet() {
+  const sheet = useRef<Mesh>(null);
+  const material = useRef<MeshStandardMaterial>(null);
+
   useFrame((state) => {
-    state.camera.position.y = window.scrollY * 0.0004;
+    const t = state.clock.elapsedTime;
+    if (sheet.current) {
+      sheet.current.position.x = Math.sin(t * 0.11) * 1.4;
+      sheet.current.position.y = Math.cos(t * 0.09) * 0.45;
+      sheet.current.rotation.z = Math.sin(t * 0.07) * 0.15;
+    }
+    if (material.current) {
+      material.current.opacity = 0.07 + Math.sin(t * 0.2) * 0.015;
+    }
   });
 
   return (
+    <mesh ref={sheet} position={[0, 0, -3.2]}>
+      <circleGeometry args={[5.5, 48]} />
+      <meshStandardMaterial
+        ref={material}
+        color="#12304f"
+        roughness={1}
+        metalness={0}
+        transparent
+        opacity={0.07}
+        depthWrite={false}
+        toneMapped={false}
+      />
+    </mesh>
+  );
+}
+
+function DriftField({ sprite }: { sprite: CanvasTexture }) {
+  const heroRef = useRef<HTMLElement | null>(null);
+
+  useFrame((state) => {
+    const pose = framePose(state.clock.elapsedTime, window.scrollY);
+    state.camera.position.set(pose.camX, pose.camY, pose.camZ);
+    state.camera.lookAt(0, pose.lookY, 0);
+    if (!heroRef.current) {
+      const found = document.querySelector(".landing-hero");
+      heroRef.current = found instanceof HTMLElement ? found : null;
+    }
+    const hero = heroRef.current;
+    if (!hero) return;
+    hero.style.setProperty("--frame-rx", `${pose.rx.toFixed(3)}deg`);
+    hero.style.setProperty("--frame-ry", `${pose.ry.toFixed(3)}deg`);
+    hero.style.setProperty("--frame-tz", `${pose.tz.toFixed(2)}px`);
+  });
+
+  useEffect(() => {
+    return () => {
+      const hero = heroRef.current ?? document.querySelector(".landing-hero");
+      if (!(hero instanceof HTMLElement)) return;
+      hero.style.removeProperty("--frame-rx");
+      hero.style.removeProperty("--frame-ry");
+      hero.style.removeProperty("--frame-tz");
+    };
+  }, []);
+
+  return (
     <>
+      <ambientLight intensity={0.35} />
+      <directionalLight position={[3.2, 2.4, 4]} intensity={1.1} color="#4f9fe8" />
+      <LightSheet />
       {PLANES.map((plane) => (
         <DepthPlane key={plane.salt} z={plane.z} size={plane.size} salt={plane.salt} sprite={sprite} />
       ))}

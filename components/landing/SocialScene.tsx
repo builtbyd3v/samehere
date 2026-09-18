@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { House, User } from "lucide-react";
+import { House, RotateCcw, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { IconBell, IconComment, IconCompose, IconMail, IconRepost, IconSame, IconSearch } from "@/components/icons";
 import Avatar from "@/components/ui/Avatar";
@@ -9,8 +9,6 @@ import ContextLabelBadge from "@/components/ui/ContextLabelBadge";
 import { reactionAfterSelect } from "@/lib/landing/scene-control";
 import { usePrefersReducedMotion } from "@/lib/landing/usePrefersReducedMotion";
 import type { ContextLabel } from "@/lib/context-label";
-import { ghostCtaSm } from "./cta";
-
 type PersonId = "maya" | "jordan" | "priya";
 
 const PEOPLE = {
@@ -132,13 +130,12 @@ export default function SocialScene() {
   const rootRef = useRef<HTMLElement>(null);
   const [step, setStep] = useState(0);
   const [offscreen, setOffscreen] = useState(false);
-  const [userPaused, setUserPaused] = useState(false);
   const [controlled, setControlled] = useState(false);
   const [selectedId, setSelectedId] = useState<PersonId>("maya");
   const [reacted, setReacted] = useState(false);
   const displayStep = reduceMotion ? LAST_STEP : step;
   const complete = displayStep >= LAST_STEP;
-  const paused = offscreen || userPaused;
+  const paused = offscreen;
   const showAck = reduceMotion || displayStep >= 2 || controlled;
   const showSecond = reduceMotion || displayStep >= 3 || controlled;
   const autoReaction = reduceMotion || displayStep >= 1;
@@ -196,7 +193,6 @@ export default function SocialScene() {
     setSelectedId("maya");
     setReacted(false);
     setStep(0);
-    setUserPaused(false);
   }
 
   return (
@@ -349,21 +345,17 @@ export default function SocialScene() {
                 </motion.div>
               </AnimatePresence>
             ) : (
-              <p className="landing-scene-profile-wait">A profile appears here when the feed is ready.</p>
+              <div className="landing-scene-profile-skel" aria-hidden>
+                <span />
+                <span />
+                <span />
+              </div>
             )}
           </aside>
         </div>
-      </div>
-
-      <div className="landing-preview-row">
-        <p className="landing-preview-note">Product preview</p>
         {!reduceMotion && complete ? (
-          <button type="button" className={ghostCtaSm} onClick={replay}>
-            Replay
-          </button>
-        ) : !reduceMotion ? (
-          <button type="button" className={ghostCtaSm} onClick={() => setUserPaused((current) => !current)}>
-            {userPaused || offscreen ? "Resume" : "Pause"}
+          <button type="button" className="landing-scene-replay" onClick={replay} aria-label="Replay">
+            <RotateCcw size={16} strokeWidth={1.5} aria-hidden />
           </button>
         ) : null}
       </div>

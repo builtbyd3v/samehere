@@ -6,26 +6,25 @@ import { IconComment, IconRepost, IconSame } from "@/components/icons";
 import Avatar from "@/components/ui/Avatar";
 import ContextLabelBadge from "@/components/ui/ContextLabelBadge";
 import { usePrefersReducedMotion } from "@/lib/landing/usePrefersReducedMotion";
-import { ghostCtaSm } from "./cta";
 
 const TABS = [
   {
     id: "feed",
     name: "Feed",
     description: "Share what you are building, learning, or stuck on.",
-    stages: ["A post lands", "SameHere", "The thread grows", "Ready"],
+    last: 2,
   },
   {
     id: "messages",
     name: "Messages",
     description: "Talk with people on a similar path.",
-    stages: ["They write", "You reply", "Ready"],
+    last: 1,
   },
   {
     id: "portfolio",
     name: "Portfolio",
     description: "Keep a shareable project page at your username.",
-    stages: ["Title", "Summary", "Stack", "Ready"],
+    last: 2,
   },
 ] as const;
 
@@ -94,8 +93,6 @@ function FeedPanel({ step }: { step: number }) {
           </div>
         </article>
       ) : null}
-
-      {step >= 3 ? <p className="landing-social-hint landing-beat">You write the post. Labels are optional.</p> : null}
     </div>
   );
 }
@@ -111,12 +108,11 @@ function MessagesPanel({ step }: { step: number }) {
           </p>
         </div>
         {step >= 1 ? (
-          <p className="landing-beat max-w-[28rem] justify-self-end rounded-2xl rounded-br-md bg-[var(--ink)] px-3.5 py-2.5 text-[15px] leading-[1.45] text-[var(--canvas)]">
+          <p className="landing-beat landing-beat-x max-w-[28rem] justify-self-end rounded-2xl rounded-br-md bg-[var(--ink)] px-3.5 py-2.5 text-[15px] leading-[1.45] text-[var(--canvas)]">
             Yes. I can send the failing spec after lab.
           </p>
         ) : null}
       </div>
-      {step >= 2 ? <p className="landing-social-hint landing-beat">You choose who hears from you.</p> : null}
     </div>
   );
 }
@@ -124,14 +120,17 @@ function MessagesPanel({ step }: { step: number }) {
 function PortfolioPanel({ step }: { step: number }) {
   return (
     <div className="landing-social-panel">
-      <article className="card-raised p-4 sm:p-5">
+      <article className="card-raised landing-scan p-4 sm:p-5" data-scan={step >= 2 ? "true" : undefined}>
         <h3 className="text-[18px] font-semibold tracking-[-0.02em] text-[var(--ink)]">Campus course planner</h3>
         {step >= 1 ? (
           <p className="landing-beat mt-2 text-sm leading-6 text-[var(--ink-muted)]">
             Ranks campus sections by time conflicts so you can lock a term before add/drop.
           </p>
         ) : (
-          <p className="mt-2 text-sm text-[var(--ink-faint)]">The write-up fills in as the draft is ready.</p>
+          <div className="landing-scene-profile-skel is-lines" aria-hidden>
+            <span />
+            <span />
+          </div>
         )}
         {step >= 2 ? (
           <>
@@ -145,7 +144,6 @@ function PortfolioPanel({ step }: { step: number }) {
           </>
         ) : null}
       </article>
-      {step >= 3 ? <p className="landing-social-hint landing-beat">A repo link is a source. The story is yours.</p> : null}
     </div>
   );
 }
@@ -158,10 +156,9 @@ export default function SocialPreview() {
   const [paused, setPaused] = useState(false);
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const active = TABS[activeIndex];
-  const last = active.stages.length - 1;
+  const last = active.last;
   const displayStep = reduceMotion ? last : step;
   const complete = displayStep >= last;
-  const stageLabel = active.stages[Math.min(displayStep, last)];
 
   useEffect(() => {
     const root = rootRef.current;
@@ -254,13 +251,6 @@ export default function SocialPreview() {
       </div>
 
       <div className="landing-path-preview" aria-label="Example feed, messages, and portfolio">
-        <header>
-          <span className="landing-stage-mark">
-            <span aria-hidden className="landing-stage-dot" />
-            {stageLabel}
-          </span>
-          <span>{active.name}</span>
-        </header>
         <AnimatePresence initial={false} mode="wait">
           <motion.div
             key={active.id}
@@ -277,14 +267,6 @@ export default function SocialPreview() {
             {active.id === "portfolio" ? <PortfolioPanel step={displayStep} /> : null}
           </motion.div>
         </AnimatePresence>
-        <div className="landing-preview-row">
-          <p className="landing-preview-note">Product preview</p>
-          {!reduceMotion && complete ? (
-            <button type="button" className={ghostCtaSm} onClick={() => setStep(0)}>
-              Replay
-            </button>
-          ) : null}
-        </div>
       </div>
     </section>
   );

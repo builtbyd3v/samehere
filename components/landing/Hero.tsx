@@ -101,7 +101,9 @@ export default function Hero() {
       </div>
 
       <div className="landing-hero-stage">
-        <SocialSceneLazy />
+        <div className="landing-scene-rig">
+          <SocialSceneLazy />
+        </div>
       </div>
     </section>
   );
