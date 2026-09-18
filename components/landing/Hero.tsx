@@ -7,7 +7,7 @@ import {
   type CSSProperties,
 } from "react";
 import LandingAtmosphereLazy from "./LandingAtmosphereLazy";
-import SocialScene from "./SocialScene";
+import SocialSceneLazy from "./SocialSceneLazy";
 import { ghostCta, signupCta } from "./cta";
 
 const LINE_ONE = ["Find", "your"] as const;
@@ -88,12 +88,12 @@ export default function Hero() {
 
         <div className="landing-hero-actions">
           <div className="landing-hero-action landing-hero-action-primary">
-            <Link href="/signup" className={signupCta}>
+            <Link href="/signup" prefetch className={signupCta}>
               Join free
             </Link>
           </div>
           <div className="landing-hero-action landing-hero-action-secondary">
-            <Link href="#community" className={ghostCta}>
+            <Link href="#community" prefetch={false} className={ghostCta}>
               Explore the community
             </Link>
           </div>
@@ -101,7 +101,7 @@ export default function Hero() {
       </div>
 
       <div className="landing-hero-stage">
-        <SocialScene />
+        <SocialSceneLazy />
       </div>
     </section>
   );

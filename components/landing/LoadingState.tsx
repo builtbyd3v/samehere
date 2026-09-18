@@ -1,5 +1,6 @@
 // Source: https://www.beautifului.dev/ — Drive pixel grid adapted to SameHere
 // tokens. One-shot / stage-bounded only. No elapsed timer, no looping shimmer.
+import "./loading-state.css";
 
 const chevron = Array.from({ length: 9 }, (_, index) => {
   const row = Math.floor(index / 3);

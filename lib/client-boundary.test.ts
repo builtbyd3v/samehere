@@ -38,4 +38,11 @@ describe("client boundary audit", () => {
       expect(src, file).toMatch(/eslint-disable-next-line @next\/next\/no-img-element/);
     }
   });
+
+  it("keeps landing-xai.css off the root layout (route-scoped)", () => {
+    const layout = readFileSync("app/layout.tsx", "utf8");
+    expect(layout).not.toMatch(/landing-xai\.css/);
+    const landing = readFileSync("app/page.tsx", "utf8");
+    expect(landing).toMatch(/landing-xai\.css/);
+  });
 });
