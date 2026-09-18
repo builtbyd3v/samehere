@@ -2,8 +2,10 @@ import { Suspense } from "react";
 import { getViewer, getViewerProfile, getViewerProfileCounts } from "@/lib/viewer";
 import { POST_SELECT, PAGE, withEngagement, type PostRow } from "@/components/feed/PostCard";
 import FeedTabs from "@/components/feed/FeedTabs";
+import FeedLabelChips from "@/components/feed/FeedLabelChips";
 import FeedTimeline from "@/components/feed/FeedTimeline";
 import FeedLoadMore from "@/components/feed/FeedLoadMore";
+import FollowingSeed from "@/components/feed/FollowingSeed";
 import EmptyState from "@/components/ui/EmptyState";
 import FollowRequests, { type FollowRequest } from "@/components/profile/FollowRequests";
 import { attachSignedMedia } from "@/lib/media";
@@ -13,11 +15,15 @@ import { fetchPlainReposts } from "@/lib/feed-reposts";
 import { fetchViewerMineState } from "@/lib/feed-engagement";
 import { encodeCursor } from "@/lib/feed-cursor";
 import { isPro } from "@/lib/pro";
+import { CONTEXT_LABEL_COPY, type ContextLabel } from "@/lib/context-label";
+import { LABELED_SEED_LIMIT, parseFeedView, shouldSeedFollowing, type FeedTab } from "@/lib/feed-label";
+import { fetchLabeledPosts } from "@/lib/feed-labeled";
 import RightRail, { RightRailFallback } from "./RightRail";
 import ComposerToggle from "./ComposerToggle";
 import LeftRail, { LeftRailFallback } from "./LeftRail";
 import OnboardingChecklist from "@/components/feed/OnboardingChecklist";
 import NewPostsPill from "./NewPostsPill";
+import { loadMoreLabeledPosts } from "./actions";
 import { Skeleton, PostCardSkeleton } from "@/components/ui/Skeleton";
 
 // Desktop feed redesign, now the live /feed. The app shell (app/(app)/layout.tsx)
@@ -33,25 +39,26 @@ import { Skeleton, PostCardSkeleton } from "@/components/ui/Skeleton";
 export default async function FeedPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; label?: string }>;
 }) {
-  const params = await searchParams;
-  const tab = params.tab === "following" ? "following" : "latest";
+  const { tab, label } = parseFeedView(await searchParams);
   const { user } = await getViewer();
   const viewerId = user?.id ?? null;
 
   return (
     <main data-feed-page className="page-enter grid grid-cols-1 justify-center gap-7 py-6 lg:py-8 xl:grid-cols-[minmax(0,600px)_340px]">
       <div className="min-w-0">
-        <Suspense fallback={<FeedHeaderFallback tab={tab} />}>
-          <FeedHeader tab={tab} userId={user?.id ?? null} />
+        <Suspense fallback={<FeedHeaderFallback tab={tab} label={label} />}>
+          <FeedHeader tab={tab} label={label} userId={user?.id ?? null} />
         </Suspense>
 
         <Suspense fallback={<FeedTimelineFallback />}>
-          {tab === "latest" ? (
-            <LatestTab viewerId={viewerId} />
-          ) : (
+          {tab === "following" ? (
             <FollowingTab userId={user?.id ?? null} viewerId={viewerId} />
+          ) : label ? (
+            <LabeledTab viewerId={viewerId} label={label} />
+          ) : (
+            <LatestTab viewerId={viewerId} />
           )}
         </Suspense>
       </div>
@@ -71,10 +78,27 @@ export default async function FeedPage({
   );
 }
 
+function FeedFilters({ tab, label }: { tab: FeedTab; label: ContextLabel | null }) {
+  return (
+    <div className="mt-3 flex flex-col gap-2 min-[400px]:flex-row min-[400px]:items-center min-[400px]:justify-between">
+      <FeedTabs tab={tab} />
+      <FeedLabelChips active={label} />
+    </div>
+  );
+}
+
 // Composer trigger + tabs + onboarding checklist. Suspense-wrapped so its own
 // profile/counts fetch runs independently of (not before) the timeline
 // below — same reasoning as LeftRail/RightRail's own boundaries.
-async function FeedHeader({ tab, userId }: { tab: "latest" | "following"; userId: string | null }) {
+async function FeedHeader({
+  tab,
+  label,
+  userId,
+}: {
+  tab: FeedTab;
+  label: ContextLabel | null;
+  userId: string | null;
+}) {
   const composerProfile = userId ? await getViewerProfile() : null;
   const composerPro = isPro(composerProfile ?? { is_pro: false, pro_until: null });
 
@@ -95,9 +119,7 @@ async function FeedHeader({ tab, userId }: { tab: "latest" | "following"; userId
       <div className="sticky top-14 z-30 mb-4 -mt-2 border-b border-[var(--border)] bg-[var(--canvas)]/95 pt-2 pb-3 backdrop-blur">
         <h1 className="sr-only">Feed</h1>
         <ComposerToggle isPro={composerPro} avatarUrl={composerProfile?.avatar_url ?? null} isSuspended={isSuspended} />
-        <div className="mt-3">
-          <FeedTabs tab={tab} basePath="/feed" />
-        </div>
+        <FeedFilters tab={tab} label={label} />
       </div>
       {userId && (
         <OnboardingChecklist
@@ -112,14 +134,12 @@ async function FeedHeader({ tab, userId }: { tab: "latest" | "following"; userId
   );
 }
 
-function FeedHeaderFallback({ tab }: { tab: "latest" | "following" }) {
+function FeedHeaderFallback({ tab, label }: { tab: FeedTab; label: ContextLabel | null }) {
   return (
     <div className="sticky top-14 z-30 mb-4 -mt-2 border-b border-[var(--border)] bg-[var(--canvas)]/95 pt-2 pb-3 backdrop-blur">
       <h1 className="sr-only">Feed</h1>
       <Skeleton className="h-[68px] w-full rounded-2xl" />
-      <div className="mt-3">
-        <FeedTabs tab={tab} basePath="/feed" />
-      </div>
+      <FeedFilters tab={tab} label={label} />
     </div>
   );
 }
@@ -207,8 +227,44 @@ async function LatestTab({ viewerId }: { viewerId: string | null }) {
   );
 }
 
+// One label, network-wide, recency. Posts only — quotes/reposts have no
+// context_label of their own. Query-only; same RLS + block filter as Latest.
+async function LabeledTab({ viewerId, label }: { viewerId: string | null; label: ContextLabel }) {
+  const { supabase } = await getViewer();
+  const posts = await fetchLabeledPosts(supabase, { viewerId, label, limit: PAGE });
+
+  if (posts.length === 0) {
+    return (
+      <EmptyState
+        title={`No ${CONTEXT_LABEL_COPY[label]} posts yet`}
+        description="Be the first. Post what's getting you there."
+        action={{ label: "Back to Latest", href: "/feed" }}
+      />
+    );
+  }
+
+  const items = posts.map((post) => ({ kind: "post" as const, created_at: post.created_at, post }));
+  const last = items[items.length - 1];
+  const lastCursor = encodeCursor(last.created_at, itemId(last));
+  return (
+    <section className="flex flex-col gap-3">
+      <NewPostsPill since={items[0].created_at} label={label} />
+      <FeedTimeline items={items} viewerId={viewerId} />
+      <FeedLoadMore
+        key={`${label}:${lastCursor}`}
+        auto
+        cursor={lastCursor}
+        hasMore={items.length === PAGE}
+        viewerId={viewerId}
+        action={loadMoreLabeledPosts.bind(null, label)}
+      />
+    </section>
+  );
+}
+
 // Following = followed users' posts (first page). Pending follow requests render
 // above the timeline so private-account approvals still have a home on the feed.
+// Under 5 follows + empty timeline: seed with recent labeled posts (bet 2).
 async function FollowingTab({ userId, viewerId }: { userId: string | null; viewerId: string | null }) {
   if (!userId) return null; // proxy gates this route; null is a type edge case
 
@@ -272,11 +328,25 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
   const timeline =
     feedPosts.length || quotes.length || reposts.length ? mergeFeedTimeline(feedPosts, quotes, reposts).slice(0, PAGE) : [];
 
+  const seed = shouldSeedFollowing(acceptedIds.length) && timeline.length === 0;
+  const seedPosts = seed
+    ? (
+        await fetchLabeledPosts(supabase, {
+          viewerId,
+          limit: PAGE,
+          blockedIds: blocked,
+          excludeUserIds: [userId, ...acceptedIds],
+        })
+      ).slice(0, LABELED_SEED_LIMIT)
+    : [];
+
   return (
     <section className="flex flex-col gap-3">
       {visibleRequests.length > 0 && <FollowRequests requests={visibleRequests} />}
       {timeline.length > 0 ? (
         <FeedTimeline items={timeline} viewerId={viewerId} />
+      ) : seed ? (
+        <FollowingSeed posts={seedPosts} viewerId={viewerId} />
       ) : (
         <EmptyState
           title="Your feed is empty"

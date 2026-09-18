@@ -21,6 +21,9 @@ export type SearchPerson = {
   is_campus_founder: boolean;
   verified_student: boolean;
   open_to: string[] | null;
+  study_mode: string | null;
+  year: string | null;
+  major: string | null;
 };
 
 export type SearchProject = {
@@ -80,28 +83,54 @@ export function nextSearchOffset(offset: number): number | null {
   return next;
 }
 
-export type SearchHrefOpts = { q: string; peoplePage?: number; projectPage?: number };
+export type SearchHrefOpts = {
+  q: string;
+  peoplePage?: number;
+  projectPage?: number;
+  tag?: string | null;
+  year?: string | null;
+  major?: string | null;
+  mode?: string | null;
+  label?: string | null;
+};
 
-export function searchHref({ q, peoplePage = 1, projectPage = 1 }: SearchHrefOpts): string {
+export function searchHref({
+  q,
+  peoplePage = 1,
+  projectPage = 1,
+  tag,
+  year,
+  major,
+  mode,
+  label,
+}: SearchHrefOpts): string {
   const params = new URLSearchParams();
-  params.set("q", q);
+  if (q) params.set("q", q);
+  if (tag) params.set("tag", tag);
+  if (year) params.set("year", year);
+  if (major) params.set("major", major);
+  if (mode) params.set("mode", mode);
+  if (label) params.set("label", label);
   const people = parseSearchPage(peoplePage);
   const project = parseSearchPage(projectPage);
   if (people > 1) params.set("peoplePage", String(people));
   if (project > 1) params.set("projectPage", String(project));
-  return `/search?${params.toString()}`;
+  const qs = params.toString();
+  return qs ? `/search?${qs}` : "/search";
 }
 
 export function projectSearchHref(q: string, projectPage: number, peoplePage = 1): string {
   return searchHref({ q, projectPage, peoplePage });
 }
 
-export function postsSearchHref(q: string, offset: number): string {
+export function postsSearchHref(q: string, offset: number, label?: string | null): string {
   const params = new URLSearchParams();
-  params.set("q", q);
+  if (q) params.set("q", q);
+  if (label) params.set("label", label);
   const off = clampSearchOffset(offset);
   if (off > 0) params.set("offset", String(off));
-  return `/search/posts?${params.toString()}`;
+  const qs = params.toString();
+  return qs ? `/search/posts?${qs}` : "/search/posts";
 }
 
 /** exact-name/title > matched terms > recency+id. Visibility must already be applied. */
@@ -121,17 +150,31 @@ export function paginateRanked<T extends SearchRankRow>(
   return [...visible].sort(compareSearchRank).slice(clampSearchOffset(offset), clampSearchOffset(offset) + clampSearchLimit(limit));
 }
 
+export type SearchPeopleOpts = {
+  openTo?: string | null;
+  year?: string | null;
+  major?: string | null;
+  studyMode?: string | null;
+};
+
 export async function searchPeople(
   supabase: SupabaseServer,
   query: string,
   limit = SEARCH_PAGE,
   offset = 0,
+  opts: SearchPeopleOpts = {},
 ): Promise<SearchPerson[]> {
-  if (!tokensFor(query).length) return [];
+  const hasQuery = tokensFor(query).length > 0;
+  const hasFilters = Boolean(opts.openTo || opts.year || opts.major || opts.studyMode);
+  if (!hasQuery && !hasFilters) return [];
   const { data, error } = await supabase.rpc("search_people", {
     p_query: query,
     p_limit: clampSearchLimit(limit),
     p_offset: clampSearchOffset(offset),
+    p_open_to: opts.openTo ?? undefined,
+    p_year: opts.year ?? undefined,
+    p_major: opts.major ?? undefined,
+    p_study_mode: opts.studyMode ?? undefined,
   });
   if (error || !data) return [];
   return data;
@@ -158,12 +201,14 @@ export async function searchPosts(
   query: string,
   limit = SEARCH_PAGE,
   offset = 0,
+  label?: string | null,
 ): Promise<FeedPost[]> {
-  if (!tokensFor(query).length) return [];
+  if (!tokensFor(query).length && !label) return [];
   const { data: ranked, error } = await supabase.rpc("search_posts", {
     p_query: query,
     p_limit: clampSearchLimit(limit),
     p_offset: clampSearchOffset(offset),
+    p_label: label ?? undefined,
   });
   if (error || !ranked?.length) return [];
   const ids = ranked.map((r) => r.id);

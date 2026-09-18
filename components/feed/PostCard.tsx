@@ -10,11 +10,13 @@ import PostBodyLink from "./PostBodyLink";
 import LocalTime from "@/components/ui/LocalTime";
 import type { PostMedia } from "@/lib/media";
 import type { ViewerMineState } from "@/lib/feed-engagement";
-import type { ContextLabel } from "@/types/portfolio";
+import type { ContextLabel, TeamEventMode } from "@/types/portfolio";
 import ContextLabelBadge from "@/components/ui/ContextLabelBadge";
+import { formatTeamEventLine, parseTeamEventMode } from "@/lib/team-event";
+import { feedPath, stuckReplyPath } from "@/lib/feed-label";
 
 export const POST_SELECT =
-  "id, content, created_at, user_id, media, hidden, context_label, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, is_private, is_pro, is_founder, is_campus_founder, verified_student, is_bot, profile_school(school)), reactions(count), reposts(count), comments(count)";
+  "id, content, created_at, user_id, media, hidden, context_label, team_event_name, team_event_date, team_event_mode, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, is_private, is_pro, is_founder, is_campus_founder, verified_student, is_bot, profile_school(school)), reactions(count), reposts(count), comments(count)";
 
 export const PAGE = 20;
 
@@ -42,6 +44,9 @@ export type PostRow = {
   media: PostMedia[];
   hidden: boolean;
   context_label: ContextLabel | null;
+  team_event_name: string | null;
+  team_event_date: string | null;
+  team_event_mode: string | null;
   author: Author;
   reactions: { count: number }[];
   reposts: { count: number }[];
@@ -59,6 +64,9 @@ export type FeedPost = {
   media: PostMedia[];
   hidden: boolean;
   context_label: ContextLabel | null;
+  team_event_name: string | null;
+  team_event_date: string | null;
+  team_event_mode: TeamEventMode | null;
   author: Author;
   samehere_count: number;
   repost_count: number;
@@ -77,6 +85,9 @@ export function withEngagement(rows: PostRow[], mine: ViewerMineState): FeedPost
     media: r.media,
     hidden: r.hidden,
     context_label: r.context_label ?? null,
+    team_event_name: r.team_event_name ?? null,
+    team_event_date: r.team_event_date ?? null,
+    team_event_mode: parseTeamEventMode(r.team_event_mode),
     author: r.author,
     samehere_count: r.reactions?.[0]?.count ?? 0,
     repost_count: r.reposts?.[0]?.count ?? 0,
@@ -113,6 +124,45 @@ function Avatar({
     <ProfileHoverLink href={`/profile/${author.username}`} username={author.username} className="shrink-0 transition hover:opacity-85">
       {inner}
     </ProfileHoverLink>
+  );
+}
+
+function TeamEventMeta({
+  name,
+  date,
+  mode,
+  username,
+  viewerId,
+  authorId,
+}: {
+  name: string | null;
+  date: string | null;
+  mode: TeamEventMode | null;
+  username: string | null;
+  viewerId: string | null;
+  authorId: string;
+}) {
+  const line = formatTeamEventLine({
+    team_event_name: name,
+    team_event_date: date,
+    team_event_mode: mode,
+  });
+  const canMessage = Boolean(viewerId && username && viewerId !== authorId);
+
+  if (!line && !canMessage) return null;
+
+  return (
+    <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+      {line ? <p className="text-[13px] text-[var(--ink-muted)]">{line}</p> : null}
+      {canMessage ? (
+        <Link
+          href={`/messages?to=${encodeURIComponent(username!)}`}
+          className="text-[13px] font-medium text-[var(--ink-muted)] transition hover:text-[var(--ink)]"
+        >
+          Message
+        </Link>
+      ) : null}
+    </div>
   );
 }
 
@@ -193,7 +243,9 @@ export default function PostCard({
               </div>
 
               {post.context_label ? (
-                <ContextLabelBadge label={post.context_label} className="ml-auto shrink-0" />
+                <Link href={feedPath({ label: post.context_label })} className="ml-auto shrink-0">
+                  <ContextLabelBadge label={post.context_label} />
+                </Link>
               ) : null}
 
               {a && !embedded && (
@@ -210,6 +262,27 @@ export default function PostCard({
           )}
 
           <PostBody content={post.content} linked={linked} postId={post.id} />
+          {post.context_label === "looking_for_team" && !embedded ? (
+            <TeamEventMeta
+              name={post.team_event_name}
+              date={post.team_event_date}
+              mode={post.team_event_mode}
+              username={a?.username ?? null}
+              viewerId={viewerId}
+              authorId={post.user_id}
+            />
+          ) : null}
+          {post.context_label === "stuck" && !embedded && !detail && (
+            <p className="mt-2">
+              <Link
+                href={stuckReplyPath(post.id)}
+                aria-label="Reply: same here"
+                className="text-[13px] font-medium text-[var(--ink-muted)] transition hover:text-[var(--ink)]"
+              >
+                Same here
+              </Link>
+            </p>
+          )}
         </div>
       </div>
 

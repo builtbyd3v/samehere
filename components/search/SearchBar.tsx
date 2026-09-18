@@ -8,18 +8,29 @@ import { TEXT_LIMITS } from "@/lib/utils/validation";
 export default function SearchBar({
   initialQuery = "",
   variant = "page",
+  keep,
 }: {
   initialQuery?: string;
   variant?: "nav" | "page";
+  keep?: Record<string, string | null | undefined>;
 }) {
   const router = useRouter();
   const [q, setQ] = useState(initialQuery);
   const empty = q.trim() === "";
+  const kept = Object.entries(keep ?? {}).filter(([, value]) => Boolean(value));
+
+  function hrefFor(query: string) {
+    const next = new URLSearchParams();
+    if (query) next.set("q", query);
+    for (const [key, value] of kept) next.set(key, value as string);
+    const qs = next.toString();
+    return qs ? `/search?${qs}` : "/search";
+  }
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (empty) return;
-    router.push(`/search?${new URLSearchParams({ q: q.trim() }).toString()}`);
+    if (empty && kept.length === 0) return;
+    router.push(hrefFor(q.trim()));
   }
 
   if (variant === "nav") {
@@ -52,7 +63,7 @@ export default function SearchBar({
         placeholder="Search people, projects, posts"
         className="input-base w-full px-3 py-2 text-[15px]"
       />
-      <button type="submit" disabled={empty} className="btn-primary shrink-0 disabled:opacity-40">
+      <button type="submit" disabled={empty && kept.length === 0} className="btn-primary shrink-0 disabled:opacity-40">
         Search
       </button>
     </form>

@@ -20,10 +20,12 @@ describe("usePrefersReducedMotion", () => {
     expect(html).toContain("people");
     expect(html).toContain("building.");
     expect(html).toContain("you’re");
-    expect(html).toContain("For students, building together");
-    // SocialScene is next/dynamic ssr:false — reserved .landing-scene keeps CLS at 0
+    expect(html).toContain("Online, transfer, commuter, or the only CS major you know");
+    // SocialScene is next/dynamic ssr:false. Reserved .landing-scene keeps CLS at 0.
+    // Scene copy (Maya Chen and the rest) stays in SocialScene, not this SSR shell.
     expect(html).toContain('class="landing-scene"');
     expect(html).toContain("landing-hero-stage");
+    expect(html).not.toContain("Maya Chen");
     expect(html).not.toContain("Turn a public GitHub repo into an editable project");
     expect(html).not.toMatch(/landing-workbench/);
   });

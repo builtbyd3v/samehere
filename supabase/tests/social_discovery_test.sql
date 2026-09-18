@@ -131,7 +131,9 @@ begin
     where id = v_priv;
   update public.profiles set
     username = 'soc_pub', is_private = false, bio = 'heatmap builder',
-    open_to = array['collaborate','study']::text[], created_at = '2026-05-01'
+    open_to = array['collaborate','study']::text[],
+    study_mode = 'online', year = 'junior', major = 'Computer Science',
+    created_at = '2026-05-01'
     where id = v_pub;
   update public.profiles set
     username = 'soc_noprop', is_private = false, created_at = '2026-05-02'
@@ -218,6 +220,10 @@ begin
   values (v_pub, 'shipping the heatmap tonight', 'building')
   returning id into v_id;
   insert into tests_fixture values ('post_pub', v_id);
+  insert into public.posts (user_id, content, context_label, team_event_name)
+  values (v_pub, 'need a designer for HackMIT', 'looking_for_team', 'HackMIT')
+  returning id into v_id;
+  insert into tests_fixture values ('post_team', v_id);
   insert into public.posts (user_id, content)
   values (v_pub, 'hidden heatmap never search')
   returning id into v_id;
@@ -312,9 +318,9 @@ reset role;
 select tests.as_anon();
 do $$
 begin
-  if has_function_privilege('anon', 'public.search_people(text,integer,integer)', 'execute')
+  if has_function_privilege('anon', 'public.search_people(text,integer,integer,text,text,text,text)', 'execute')
      or has_function_privilege('anon', 'public.search_projects(text,integer,integer)', 'execute')
-     or has_function_privilege('anon', 'public.search_posts(text,integer,integer)', 'execute')
+     or has_function_privilege('anon', 'public.search_posts(text,integer,integer,text)', 'execute')
   then
     raise exception 'anon has execute on a search RPC';
   end if;
@@ -560,6 +566,43 @@ exception when others then
   insert into tests_results values ('SOC_posts_visibility', false, sqlerrm);
 end $$;
 
+-- SOC_looking_for_team_label — 4-arg p_label allowlists looking_for_team; event name searchable
+do $$
+declare
+  v_post_team uuid := (select id from tests_fixture where key = 'post_team');
+  v_post_pub uuid := (select id from tests_fixture where key = 'post_pub');
+begin
+  if exists (select 1 from public.search_posts('', 20, 0)) then
+    raise exception 'empty posts query without label returned rows';
+  end if;
+  if not exists (
+    select 1 from public.search_posts('', 20, 0, 'looking_for_team')
+    where id = v_post_team and context_label = 'looking_for_team'
+  ) then
+    raise exception 'looking_for_team label browse missed team post';
+  end if;
+  if exists (
+    select 1 from public.search_posts('', 20, 0, 'looking_for_team')
+    where id = v_post_pub
+  ) then
+    raise exception 'looking_for_team label browse included building post';
+  end if;
+  if not exists (
+    select 1 from public.search_posts('HackMIT', 20, 0)
+    where id = v_post_team
+  ) then
+    raise exception 'team_event_name not searchable';
+  end if;
+  if exists (
+    select 1 from public.search_posts('', 20, 0, 'shipping')
+  ) then
+    raise exception 'non-allowlisted p_label was accepted';
+  end if;
+  insert into tests_results values ('SOC_looking_for_team_label', true, 'ok');
+exception when others then
+  insert into tests_results values ('SOC_looking_for_team_label', false, sqlerrm);
+end $$;
+
 -- SOC_suspended_people
 do $$
 begin
@@ -580,6 +623,49 @@ begin
   insert into tests_results values ('SOC_block_people', true, 'ok');
 exception when others then
   insert into tests_results values ('SOC_block_people', false, sqlerrm);
+end $$;
+
+-- SOC_browse_filters — empty query + facets; private tags never match
+do $$
+begin
+  if exists (select 1 from public.search_people('', 20, 0)) then
+    raise exception 'empty query without filters returned rows';
+  end if;
+  if not exists (
+    select 1 from public.search_people('', 20, 0, 'study', null, null, null)
+    where id = (select id from tests_fixture where key = 'pub')
+  ) then
+    raise exception 'browse study tag missed public';
+  end if;
+  if exists (
+    select 1 from public.search_people('', 20, 0, 'collaborate', null, null, null)
+    where id = (select id from tests_fixture where key = 'priv')
+  ) then
+    raise exception 'private open_to used as browse facet';
+  end if;
+  if not exists (
+    select 1 from public.search_people('', 20, 0, null, 'junior', 'Computer Science', 'online')
+    where id = (select id from tests_fixture where key = 'pub')
+  ) then
+    raise exception 'stage browse missed public';
+  end if;
+  if exists (
+    select 1 from public.search_posts('', 20, 0)
+  ) then
+    raise exception 'empty posts query without label returned rows';
+  end if;
+  insert into tests_results values ('SOC_browse_filters', true, 'ok');
+exception when others then
+  insert into tests_results values ('SOC_browse_filters', false, sqlerrm);
+end $$;
+
+-- SOC_suggested_stage — re-rank must not use text[] & (intarray)
+do $$
+begin
+  perform public.get_suggested_profiles(null, 3);
+  insert into tests_results values ('SOC_suggested_stage', true, 'ok');
+exception when others then
+  insert into tests_results values ('SOC_suggested_stage', false, sqlerrm);
 end $$;
 
 reset role;
