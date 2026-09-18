@@ -2,6 +2,7 @@ import Link from "next/link";
 import AvatarBase from "@/components/ui/Avatar";
 import MessageTime from "@/components/messages/MessageTime";
 import type { InboxThread } from "@/lib/messages";
+import { messages as messagesCopy } from "@/lib/copy-voice";
 
 function Avatar({ url, seed, name, isPro }: { url: string | null; seed: string; name: string; isPro: boolean }) {
   return (
@@ -39,23 +40,12 @@ export default function MessageInboxList({
   threads: InboxThread[];
   viewerId: string;
 }) {
-  if (threads.length === 0) {
-    return (
-      <div className="px-6 py-14 text-center">
-        <p className="text-sm font-medium text-[var(--ink)]">No conversations yet</p>
-        <p className="mx-auto mt-1.5 max-w-[28ch] text-sm leading-relaxed text-[var(--ink-muted)]">
-          Start one from a profile, or search above.
-        </p>
-      </div>
-    );
-  }
-
   return (
     <ul className="divide-y divide-[var(--border)]">
       {threads.map((t) => {
         const unread = Number(t.unread_count) > 0;
         const mine = t.last_sender_id === viewerId;
-        const raw = t.last_message || "Say hello";
+        const raw = t.last_message || messagesCopy.previewFallback;
 
         if (t.kind === "group") {
           const sender = t.members.find((m) => m.id === t.last_sender_id);

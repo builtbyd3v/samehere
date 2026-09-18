@@ -5,6 +5,7 @@ import { startDmWithUsername, searchUsersForMessage, type MessageUserResult } fr
 import { IconSearch } from "@/components/icons";
 import { TEXT_LIMITS } from "@/lib/utils/validation";
 import AvatarBase from "@/components/ui/Avatar";
+import { messages as messagesCopy } from "@/lib/copy-voice";
 
 export default function NewMessageFinder() {
   const [open, setOpen] = useState(false);
@@ -81,7 +82,7 @@ export default function NewMessageFinder() {
             <li className="px-4 py-3 text-sm text-[var(--ink-muted)]">Searching…</li>
           )}
           {!loading && query.trim() && visibleResults.length === 0 && (
-            <li className="px-4 py-3 text-sm text-[var(--ink-muted)]">No one found.</li>
+            <li className="px-4 py-3 text-sm text-[var(--ink-muted)]">{messagesCopy.finderEmpty.title}</li>
           )}
           {visibleResults.map((u) => {
             const name = u.display_name ?? u.username;

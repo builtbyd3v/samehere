@@ -1,5 +1,6 @@
 import type {
   OpenToTag,
+  StudyMode,
   PortfolioProject,
   PortfolioPublishFlags,
   PortfolioSection,
@@ -10,7 +11,9 @@ import { PORTFOLIO_RPC_ERRORS } from "@/types/portfolio";
 import {
   OPEN_TO_TAGS,
   PORTFOLIO_SECTIONS,
+  STUDY_MODES,
   openToError,
+  studyModeError,
   portfolioPublishConflict,
   projectWriteError,
   sectionOrderError,
@@ -370,6 +373,14 @@ export function parseOpenTo(values: unknown): PortfolioResult<OpenToTag[]> {
   const error = openToError(tags);
   if (error) return fail(error, 400);
   return { ok: true, data: tags.filter((tag): tag is OpenToTag => (OPEN_TO_TAGS as readonly string[]).includes(tag)) };
+}
+
+export function parseStudyMode(value: unknown): PortfolioResult<StudyMode | null> {
+  const raw = typeof value === "string" ? value.trim() : "";
+  if (raw.length === 0) return { ok: true, data: null };
+  const error = studyModeError(raw);
+  if (error) return fail(error, 400);
+  return { ok: true, data: (STUDY_MODES as readonly string[]).includes(raw) ? (raw as StudyMode) : null };
 }
 
 export { isPortfolioSchemaMissing, failUnavailable, portfolioPublishConflict };

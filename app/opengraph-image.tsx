@@ -1,48 +1,28 @@
-import { readFile } from "node:fs/promises";
 import { ImageResponse } from "next/og";
-import { BLUE, BORDER, CANVAS, CARD, FEATURED, INK, INK_FAINT, INK_MUTED, POST } from "@/lib/og-tokens";
+import { BLUE, BORDER, INK, INK_FAINT, INK_MUTED, POST } from "@/lib/og-tokens";
+import {
+  SITE_OG_ANNOUNCE,
+  SITE_OG_DESCRIPTION,
+  SITE_OG_HEADLINE,
+  SITE_OG_TITLE,
+} from "@/lib/og/copy";
+import { loadOgFonts } from "@/lib/og/fonts";
+import { OgWordmark, ogCanvasStyle } from "@/lib/og/mark";
 
 // Site-wide OG card — what samehere.dev itself unfurls as.
 //
-// It shows the product, not a description of it: one real post card with the
-// reactions the app actually has. The previous version drew a fabricated
-// contribution heatmap under the heading "Activity", which is true on a profile
-// card and a lie here — it was nobody's year of work.
+// x.ai / premium language: full-bleed dark canvas, brand-first headline matching
+// the landing hero, one product glimpse (a labeled example post). No inset
+// "picture frame" card — that read as a generic SaaS unfurl.
 //
-// Like is deliberately absent. It has been retired; SameHere is now the native
-// reaction, so the card should not advertise a button that no longer exists.
-//
-// Dark by default: an unfurl lives in Discord, Slack and Twitter, which are dark
-// for most people, and a cream card in a dark feed reads as a blown-out
-// rectangle. Colours come from lib/og-tokens.ts, which mirrors the `.dark` block
-// in app/globals.css — Satori has no CSS variables, so the values must exist in TS.
+// Like is deliberately absent (retired). Colours from lib/og-tokens.ts.
 
-export const runtime = "nodejs"; // reads the font files off disk
+export const runtime = "nodejs";
 
-export const alt = "samehere: Find your people. Show what you’re building.";
+export const alt = SITE_OG_TITLE;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-// The app is set in Figtree (app/layout.tsx). Satori ships no fonts and falls
-// back to a generic sans, which renders 600-weight as something closer to 400.
-// Resolved with `new URL(..., import.meta.url)`, which Next traces statically;
-// `join(process.cwd(), ...)` is a runtime string and would be missing from the
-// deployed bundle.
-// Figtree matches app/layout.tsx. Site OG uses the same face as the landing.
-const fonts = async () => {
-  const [regular, medium] = await Promise.all([
-    readFile(new URL("./fonts/Figtree-Regular.ttf", import.meta.url)),
-    readFile(new URL("./fonts/Figtree-SemiBold.ttf", import.meta.url)),
-  ]);
-  return [
-    { name: "Figtree", data: regular, weight: 400 as const, style: "normal" as const },
-    { name: "Figtree", data: medium, weight: 500 as const, style: "normal" as const },
-    { name: "Figtree", data: medium, weight: 600 as const, style: "normal" as const },
-  ];
-};
-
-// Reaction glyphs, traced from components/icons.tsx: soft fully-rounded strokes,
-// and the fillable ones go solid when active. SameHere is the two-people mark.
 const strokeProps = {
   fill: "none",
   stroke: "currentColor",
@@ -53,7 +33,7 @@ const strokeProps = {
 
 function IconSame({ color }: { color: string }) {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" {...strokeProps} stroke={color} fill={color}>
+    <svg width="18" height="18" viewBox="0 0 24 24" {...strokeProps} stroke={color} fill={color}>
       <circle cx="9" cy="8" r="3.6" />
       <path d="M2.5 20v-1a6.5 6.5 0 0 1 13 0v1Z" />
       <circle cx="17" cy="8.5" r="2.8" />
@@ -64,200 +44,98 @@ function IconSame({ color }: { color: string }) {
 
 function IconComment({ color }: { color: string }) {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" {...strokeProps} stroke={color}>
+    <svg width="18" height="18" viewBox="0 0 24 24" {...strokeProps} stroke={color}>
       <path d="M21 15a2 2 0 0 1-2 2H8l-4 4V5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2Z" />
     </svg>
   );
 }
 
-
-function IconRepost({ color }: { color: string }) {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" {...strokeProps} stroke={color}>
-      <path d="M17 2l4 4-4 4" />
-      <path d="M3 11V9a4 4 0 0 1 4-4h14" />
-      <path d="M7 22l-4-4 4-4" />
-      <path d="M21 13v2a4 4 0 0 1-4 4H3" />
-    </svg>
-  );
-}
-
-/** The wordmark: `same` in ink, `here` in blue. Matches Navbar and LandingNav. */
-function Wordmark({ size: s }: { size: number }) {
-  return (
-    <div style={{ display: "flex", fontSize: s, fontWeight: 600, letterSpacing: "-0.02em" }}>
-      <div style={{ display: "flex", color: INK }}>same</div>
-      <div style={{ display: "flex", color: BLUE }}>here</div>
-    </div>
-  );
-}
-
-function Reaction({ icon, count, active }: { icon: React.ReactNode; count: number; active?: boolean }) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-        padding: "7px 13px",
-        borderRadius: 999,
-        background: active ? FEATURED : "transparent",
-        color: active ? BLUE : INK_FAINT,
-        fontSize: 17,
-        fontWeight: active ? 600 : 400,
-      }}
-    >
-      {icon}
-      <div style={{ display: "flex" }}>{count}</div>
-    </div>
-  );
-}
-
-function PostCard() {
+function ExamplePost() {
   return (
     <div
       style={{
         display: "flex",
         flexDirection: "column",
-        width: 440,
+        width: 420,
         background: POST,
         border: `1px solid ${BORDER}`,
-        borderRadius: 20,
-        padding: 26,
+        borderRadius: 16,
+        padding: 28,
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 13 }}>
-        <div
-          style={{
-            display: "flex",
-            width: 48,
-            height: 48,
-            borderRadius: "50%",
-            border: `2px solid ${BORDER}`,
-            background: CANVAS,
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 20,
-            fontWeight: 600,
-            color: INK_MUTED,
-          }}
-        >
-          M
-        </div>
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <div style={{ fontSize: 20, fontWeight: 600, color: INK }}>Preview</div>
-          <div style={{ marginTop: 1, fontSize: 16, color: INK_FAINT }}>Example post · not a real person</div>
-        </div>
+      <div style={{ display: "flex", fontSize: 14, fontWeight: 600, letterSpacing: "0.04em", color: BLUE, textTransform: "uppercase" }}>
+        Example · Feed
       </div>
-
-      <div style={{ marginTop: 20, fontSize: 21, lineHeight: 1.45, color: INK }}>
-        Rewrote the scheduler twice and the tests still fail on Fridays. Anyone else stuck here?
+      <div style={{ display: "flex", marginTop: 18, flexDirection: "column" }}>
+        <div style={{ fontSize: 20, fontWeight: 600, color: INK }}>Priya Shah</div>
+        <div style={{ marginTop: 2, fontSize: 16, color: INK_FAINT }}>CS · senior</div>
       </div>
-
-      <div style={{ display: "flex", marginTop: 22, alignItems: "center", gap: 6 }}>
-        <Reaction icon={<IconSame color={BLUE} />} count={14} active />
-        <Reaction icon={<IconComment color={INK_FAINT} />} count={6} />
-        <Reaction icon={<IconRepost color={INK_FAINT} />} count={2} />
+      <div style={{ marginTop: 18, fontSize: 20, lineHeight: 1.45, color: INK }}>
+        Anyone else drawing the page table twice before it sticks?
+      </div>
+      <div style={{ display: "flex", marginTop: 22, alignItems: "center", gap: 18, color: INK_FAINT, fontSize: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, color: BLUE }}>
+          <IconSame color={BLUE} />
+          <div style={{ display: "flex" }}>3</div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <IconComment color={INK_FAINT} />
+          <div style={{ display: "flex" }}>2</div>
+        </div>
       </div>
     </div>
   );
 }
 
 export default async function OgImage() {
-  const font = await fonts();
+  const fonts = await loadOgFonts();
 
   return new ImageResponse(
     (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          background: CANVAS,
-          backgroundImage:
-            "radial-gradient(ellipse 900px 600px at 50% -10%, rgba(79, 159, 232, 0.16), transparent 70%)",
-          padding: 44,
-          fontFamily: "Figtree",
-        }}
-      >
+      <div style={ogCanvasStyle({ padding: "56px 64px", justifyContent: "space-between" })}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexGrow: 1 }}>
+          <div style={{ display: "flex", flexDirection: "column", width: 580 }}>
+            <div style={{ display: "flex", fontSize: 18, fontWeight: 500, color: BLUE }}>{SITE_OG_ANNOUNCE}</div>
+
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                marginTop: 22,
+                fontSize: 58,
+                fontWeight: 500,
+                letterSpacing: "-0.035em",
+                lineHeight: 1.05,
+                color: INK,
+              }}
+            >
+              <div style={{ display: "flex" }}>{SITE_OG_HEADLINE[0]}</div>
+              <div style={{ display: "flex" }}>{SITE_OG_HEADLINE[1]}</div>
+            </div>
+
+            <div style={{ marginTop: 24, fontSize: 22, lineHeight: 1.45, color: INK_MUTED, maxWidth: 520 }}>
+              {SITE_OG_DESCRIPTION}
+            </div>
+          </div>
+
+          <ExamplePost />
+        </div>
+
         <div
           style={{
             display: "flex",
-            flexDirection: "column",
-            flexGrow: 1,
-            background: CARD,
-            backgroundImage:
-              "radial-gradient(ellipse 1000px 500px at 30% -15%, rgba(79, 159, 232, 0.30), transparent 65%)",
-            border: `1px solid ${BORDER}`,
-            borderRadius: 28,
-            padding: 52,
+            alignItems: "flex-end",
             justifyContent: "space-between",
+            marginTop: 28,
+            paddingTop: 22,
+            borderTop: `1px solid ${BORDER}`,
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexGrow: 1 }}>
-            <div style={{ display: "flex", flexDirection: "column", width: 550 }}>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  alignSelf: "flex-start",
-                  fontSize: 17,
-                  fontWeight: 600,
-                  color: BLUE,
-                  background: FEATURED,
-                  border: `1px solid ${BORDER}`,
-                  borderRadius: 999,
-                  padding: "8px 18px",
-                }}
-              >
-                <div style={{ display: "flex" }}>For students, building together</div>
-              </div>
-
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  marginTop: 26,
-                  fontSize: 56,
-                  fontWeight: 500,
-                  letterSpacing: "-0.03em",
-                  lineHeight: 1.05,
-                  color: INK,
-                }}
-              >
-                <div style={{ display: "flex" }}>Find your people.</div>
-                <div style={{ display: "flex" }}>Show what you’re building.</div>
-              </div>
-
-              <div style={{ marginTop: 22, fontSize: 23, lineHeight: 1.4, color: INK_MUTED }}>
-                A place for CS students to share the work, find a familiar struggle, and build a profile that feels like them.
-              </div>
-            </div>
-
-            <PostCard />
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "flex-end",
-              justifyContent: "space-between",
-              marginTop: 24,
-              paddingTop: 24,
-              borderTop: `1px solid ${BORDER}`,
-            }}
-          >
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              <Wordmark size={26} />
-              <div style={{ marginTop: 3, fontSize: 17, color: INK_MUTED }}>Built for students.</div>
-            </div>
-            <div style={{ fontSize: 17, color: INK_FAINT }}>samehere.dev</div>
-          </div>
+          <OgWordmark size={28} />
+          <div style={{ fontSize: 18, color: INK_FAINT }}>samehere.dev</div>
         </div>
       </div>
     ),
-    { ...size, fonts: font },
+    { ...size, fonts },
   );
 }

@@ -7,8 +7,9 @@ import { updateProfile, uploadAvatar, uploadBanner, type AvatarState, type EditS
 import { isSupabaseStorageUrl } from "@/lib/storage-image";
 import { isPro } from "@/lib/pro";
 import { PROFILE_THEME_KEYS, PROFILE_THEMES, isProfileTheme, type ProfileTheme } from "@/lib/themes";
-import { OPEN_TO_TAGS } from "@/lib/portfolio/validation";
-import { OPEN_TO_LABELS } from "@/lib/portfolio/labels";
+import { OPEN_TO_TAGS, STUDY_MODES } from "@/lib/portfolio/validation";
+import { OPEN_TO_LABELS, STUDY_MODE_LABELS } from "@/lib/portfolio/labels";
+import type { StudyMode } from "@/types/portfolio";
 import AvatarBase from "@/components/ui/Avatar";
 
 export type EditInitial = {
@@ -23,6 +24,7 @@ export type EditInitial = {
   bio: string | null;
   goals: string | null;
   open_to: string[];
+  study_mode: string | null;
   is_private: boolean;
   hide_school: boolean;
   heatmap_visibility: string;
@@ -45,6 +47,10 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
     isProfileTheme(initial.profile_theme) ? initial.profile_theme : null
   );
   const pro = isPro(initial);
+  const [studyMode, setStudyMode] = useState<StudyMode | "">(
+    STUDY_MODES.includes(initial.study_mode as StudyMode) ? (initial.study_mode as StudyMode) : ""
+  );
+  const suggestStudyTogether = studyMode === "online" || studyMode === "self_taught";
 
   function onAvatar(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -156,9 +162,31 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
               defaultValue={initial.goals ?? ""} placeholder="What are you working toward?" className={field} />
           </div>
 
+          <div>
+            <label htmlFor="study_mode" className={label}>Study mode</label>
+            <select
+              id="study_mode"
+              name="study_mode"
+              value={studyMode}
+              onChange={(e) => setStudyMode(e.target.value as StudyMode | "")}
+              className={field}
+            >
+              <option value="">Not set</option>
+              {STUDY_MODES.map((mode) => (
+                <option key={mode} value={mode}>
+                  {STUDY_MODE_LABELS[mode]}
+                </option>
+              ))}
+            </select>
+            <p className={hint}>Optional. How you study — campus, online, bootcamp, or on your own.</p>
+          </div>
+
           <fieldset>
             <legend className={label}>Open to</legend>
             <p className={hint}>Optional. An invitation to message, not a DM bypass.</p>
+            {suggestStudyTogether && (
+              <p className={hint}>Suggested for online or self-taught students: Study together. Never applied for you.</p>
+            )}
             <ul className="mt-2 flex flex-col gap-2">
               {OPEN_TO_TAGS.map((tag) => (
                 <li key={tag}>

@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import AvatarBase from "@/components/ui/Avatar";
 import UserBadges from "@/components/profile/UserBadges";
 import FollowButton, { type FollowState } from "@/components/profile/FollowButton";
+import { profile as profileCopy } from "@/lib/copy-voice";
 
 type FollowRow = {
   id: string;
@@ -105,12 +106,13 @@ export default async function FollowList({
       <div className="card mt-3 divide-y divide-[var(--border)]">
         {rows.length === 0 ? (
           target.is_private && user?.id !== target.id ? (
-            <p className="px-6 py-12 text-center font-medium text-[var(--ink)]">
-              This account is private. Follow them to see this.
-            </p>
+            <div className="px-6 py-12 text-center" role="status">
+              <p className="font-medium text-[var(--ink)]">{profileCopy.listPrivate.title}</p>
+              <p className="mt-1.5 text-sm text-[var(--ink-muted)]">{profileCopy.listPrivate.description}</p>
+            </div>
           ) : (
-            <p className="px-6 py-12 text-center text-sm text-[var(--ink-muted)]">
-              {kind === "followers" ? "No followers yet." : "Not following anyone yet."}
+            <p className="px-6 py-12 text-center text-sm text-[var(--ink-muted)]" role="status">
+              {kind === "followers" ? profileCopy.noFollowers.title : profileCopy.noFollowing.title}
             </p>
           )
         ) : (

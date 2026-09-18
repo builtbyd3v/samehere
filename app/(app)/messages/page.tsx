@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import MessageInboxList from "@/components/messages/MessageInboxList";
 import MessageInboxRealtime from "@/components/messages/MessageInboxRealtime";
 import NewMessageFinder from "@/components/messages/NewMessageFinder";
 import NewGroupButton from "@/components/messages/NewGroupButton";
+import EmptyState from "@/components/ui/EmptyState";
+import { CTA, messages as messagesCopy } from "@/lib/copy-voice";
 import type { DmInboxRow, GroupInboxRow, InboxThread } from "@/lib/messages";
 
 export default async function MessagesPage({
@@ -51,17 +52,34 @@ export default async function MessagesPage({
     ...((groupThreads ?? []) as GroupInboxRow[]).map((t) => ({ kind: "group" as const, ...t })),
   ].sort((a, b) => b.last_message_at.localeCompare(a.last_message_at));
 
+  const loadFailed = Boolean(dmError || groupError);
+
   return (
     <main className="page-enter mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8">
       <h1 className="mb-5 text-2xl font-semibold tracking-[-0.02em] text-[var(--ink)]">Messages</h1>
 
-      {dmError || groupError ? (
-        <div className="card px-6 py-14 text-center">
-          <p className="text-sm font-medium text-[var(--ink)]">Couldn&apos;t load messages</p>
-          <p className="mt-1.5 text-sm text-[var(--ink-muted)]">Something went wrong on our end.</p>
-          <Link href="/messages" className="btn-ghost mt-5 inline-flex">
-            Try again
-          </Link>
+      {loadFailed ? (
+        <EmptyState
+          title={messagesCopy.inboxLoadFailed.title}
+          description={messagesCopy.inboxLoadFailed.description}
+          action={{ label: CTA.tryAgain, href: "/messages" }}
+          secondaryAction={{ label: CTA.seeLatest, href: "/feed" }}
+        />
+      ) : threads.length === 0 ? (
+        <div className="space-y-3">
+          <section className="card overflow-hidden">
+            <NewMessageFinder />
+            <NewGroupButton />
+          </section>
+          <EmptyState
+            title={messagesCopy.inboxEmpty.title}
+            description={messagesCopy.inboxEmpty.description}
+            action={{ label: CTA.findPeople, href: "/search" }}
+            secondaryAction={{ label: CTA.seeLatest, href: "/feed" }}
+          />
+          {/* Keep the empty inbox live too: a viewer's first-ever DM must swap this
+              empty state for the thread list without a manual reload. */}
+          <MessageInboxRealtime />
         </div>
       ) : (
         <section className="card overflow-hidden">

@@ -27,7 +27,7 @@ export type PortfolioResult<T> = PortfolioOk<T> | PortfolioUnavailable | Portfol
 const SCHEMA_CODES = new Set(["42P01", "42883", "PGRST202", "PGRST205"]);
 
 const SCHEMA_NAME =
-  /portfolio_projects|portfolio_settings|portfolio_daily_metrics|record_portfolio_daily_metric|get_public_portfolio|get_public_github|github_contribution|github_connections|open_to/i;
+  /portfolio_projects|portfolio_settings|portfolio_daily_metrics|record_portfolio_daily_metric|get_public_portfolio|get_public_github|github_contribution|github_connections|open_to|study_mode/i;
 
 export function isPortfolioSchemaMissing(error: PortfolioQueryError | null | undefined): boolean {
   if (!error) return false;

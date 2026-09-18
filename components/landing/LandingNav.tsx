@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { LazyMotion, domMax, m } from "motion/react";
 import { Menu, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePrefersReducedMotion } from "@/lib/landing/usePrefersReducedMotion";
@@ -137,6 +136,8 @@ export default function LandingNav() {
       closeMenu(true);
     }
     window.addEventListener("keydown", onKeyDown);
+    const first = document.querySelector<HTMLElement>("#landing-mobile-menu a");
+    first?.focus();
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [closeMenu, menuOpen]);
 
@@ -175,7 +176,7 @@ export default function LandingNav() {
     activeId === id ? "landing-nav-active" : "landing-nav-link";
 
   return (
-    <LazyMotion features={domMax} strict>
+    <>
       {menuOpen && (
         <button
           type="button"
@@ -205,9 +206,7 @@ export default function LandingNav() {
                 >
                   {link.label}
                   {activeId === link.id && (
-                    <m.span
-                      layoutId="nav-underline"
-                      transition={reduceMotion ? { duration: 0 } : { duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                    <span
                       className="absolute inset-x-3 -bottom-0.5 h-[2px] rounded-full bg-[var(--accent-blue)]"
                       aria-hidden
                     />
@@ -217,13 +216,13 @@ export default function LandingNav() {
             </nav>
 
             <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-              <Link href="/login" className="landing-nav-secondary hidden md:inline-flex">
+              <Link href="/login" prefetch className="landing-nav-secondary hidden md:inline-flex">
                 Log in
               </Link>
-              <Link href="/signup" className={`${signupCtaSm} landing-nav-mobile-primary md:hidden`}>
+              <Link href="/signup" prefetch className={`${signupCtaSm} landing-nav-mobile-primary md:hidden`}>
                 Join
               </Link>
-              <Link href="/signup" className="landing-nav-primary-single hidden md:inline-flex">
+              <Link href="/signup" prefetch className="landing-nav-primary-single hidden md:inline-flex">
                 Join free
               </Link>
               <button
@@ -266,6 +265,7 @@ export default function LandingNav() {
                 <li className="mt-2 border-t border-[var(--border)] pt-2">
                   <Link
                     href="/login"
+                    prefetch
                     className="flex items-center rounded-lg px-3 py-2.5 text-[15px] text-[var(--ink-muted)] transition hover:bg-[var(--featured-surface)] hover:text-[var(--ink)]"
                     onClick={() => closeMenu()}
                   >
@@ -277,6 +277,6 @@ export default function LandingNav() {
           )}
         </div>
       </header>
-    </LazyMotion>
+    </>
   );
 }
