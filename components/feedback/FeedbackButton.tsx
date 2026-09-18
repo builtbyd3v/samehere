@@ -13,7 +13,7 @@ const CATEGORIES: { value: Category; label: string }[] = [
   { value: "other", label: "Other" },
 ];
 
-export function FeedbackModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+function FeedbackModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [category, setCategory] = useState<Category>("bug");
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);

@@ -109,16 +109,6 @@ export async function updateProjectAction(
   return {};
 }
 
-export async function publishProjectAction(id: string, formData: FormData): Promise<ProjectActionState> {
-  const ctx = await ownerContext();
-  if (!ctx.ok) return actionError(ctx);
-  const confirmed = formData.get("roleConfirmed") === "on" || formData.get("roleConfirmed") === "true";
-  const result = await setProjectStatus(ctx.data.client, ctx.data.userId, id, "published", confirmed);
-  if (!result.ok) return actionError(result);
-  revalidateProfile(ctx.data.username, id);
-  return {};
-}
-
 export async function saveAndPublishProjectAction(
   id: string,
   _prev: ProjectActionState,
