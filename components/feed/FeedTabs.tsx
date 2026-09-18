@@ -26,7 +26,10 @@ export default function FeedTabs({
         <Link
           href={basePath}
           role="tab"
+          id="feed-tab-latest"
           aria-selected={tab === "latest"}
+          aria-controls="feed-panel"
+          tabIndex={tab === "latest" ? 0 : -1}
           className={
             tab === "latest"
               ? `${pill} text-[var(--blue)]`
@@ -46,7 +49,10 @@ export default function FeedTabs({
         <Link
           href={`${basePath}?tab=following`}
           role="tab"
+          id="feed-tab-following"
           aria-selected={tab === "following"}
+          aria-controls="feed-panel"
+          tabIndex={tab === "following" ? 0 : -1}
           className={
             tab === "following"
               ? `${pill} text-[var(--blue)]`

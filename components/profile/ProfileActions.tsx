@@ -52,7 +52,7 @@ export default function ProfileActions({
             Message
           </button>
         </form>
-        <Menu trigger={<span aria-hidden>⋯</span>} align="end">
+        <Menu trigger={<span aria-hidden>⋯</span>} align="end" label={`More actions for @${username}`}>
           <button type="button" onClick={() => setReportOpen(true)} className={menuItemClass}>
             Report @{username}
           </button>

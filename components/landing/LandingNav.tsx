@@ -137,6 +137,8 @@ export default function LandingNav() {
       closeMenu(true);
     }
     window.addEventListener("keydown", onKeyDown);
+    const first = document.querySelector<HTMLElement>("#landing-mobile-menu a");
+    first?.focus();
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [closeMenu, menuOpen]);
 

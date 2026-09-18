@@ -70,7 +70,12 @@ export default async function SearchPostsPage({
           </Link>
         </div>
       ) : (
-        <EmptyState title="No posts found" description={`Nothing matched “${q}”.`} />
+        <EmptyState
+          title="No posts found"
+          description={`Nothing matched “${q}”. Try another phrase, or browse Latest for Stuck posts.`}
+          action={{ label: "Browse Latest", href: "/feed" }}
+          secondaryAction={{ label: "Back to search", href: q ? `/search?q=${encodeURIComponent(q)}` : "/search" }}
+        />
       )}
     </main>
   );

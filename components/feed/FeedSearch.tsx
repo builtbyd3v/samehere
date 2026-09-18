@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import UserBadges from "@/components/profile/UserBadges";
 import AvatarBase from "@/components/ui/Avatar";
+import EmptyState from "@/components/ui/EmptyState";
 import {
   SEARCH_PAGE,
   clampSearchOffset,
@@ -35,16 +36,16 @@ export async function FeedSearchResults({
   if (results.length === 0) {
     return (
       <div>
-        <div className="card mt-4 px-6 py-10 text-center">
-          <p className="font-medium text-[var(--ink)]">
-            {peoplePage > 1 ? "No more people for this query." : "No students found"}
-          </p>
-          {peoplePage === 1 && (
-            <p className="mt-1.5 text-sm text-[var(--ink-muted)]">
-              Nothing matched &ldquo;{q}&rdquo;. Try a different name, username, or project.
-            </p>
-          )}
-        </div>
+        {peoplePage > 1 ? (
+          <EmptyState title="No more people for this query." />
+        ) : (
+          <EmptyState
+            title="No students found"
+            description={`Nothing matched “${q}”. Try another name, username, or project — or browse Latest while the network is thin.`}
+            action={{ label: "Browse Latest", href: "/feed" }}
+            secondaryAction={{ label: "Clear search", href: "/search" }}
+          />
+        )}
         {peoplePage > 1 && (
           <div className="mt-3 text-sm">
             <Link href={searchHref({ q, peoplePage: peoplePage - 1, projectPage })} className="text-[var(--ink-muted)] underline hover:text-[var(--ink)]">

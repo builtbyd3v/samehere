@@ -2,7 +2,7 @@
 
 import RouteError from "@/components/ui/RouteError";
 
-export default function AppError({
+export default function FeedError({
   error,
   reset,
 }: {

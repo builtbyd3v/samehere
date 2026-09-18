@@ -29,6 +29,7 @@ export default function Menu({
   onOpenChange,
   customTrigger = false,
   fullWidth = false,
+  label,
 }: {
   trigger: React.ReactNode;
   children: React.ReactNode;
@@ -43,6 +44,8 @@ export default function Menu({
   customTrigger?: boolean;
   /** Stretch the wrapper (and panel) to the trigger's full width — for select-style dropdowns in grid/flex cells. */
   fullWidth?: boolean;
+  /** Accessible name for the default trigger button (icon-only menus). */
+  label?: string;
 }) {
   const [internalOpen, setInternalOpen] = useState(false);
   const open = openProp ?? internalOpen;
@@ -108,6 +111,7 @@ export default function Menu({
               onClick={() => setOpen(!open)}
               aria-haspopup="menu"
               aria-expanded={open}
+              aria-label={label}
               className={
                 variant === "avatar"
                   ? "h-8 w-8 shrink-0 overflow-hidden rounded-full border border-[var(--border)] transition hover:opacity-90 hover:border-[var(--border-strong)]"

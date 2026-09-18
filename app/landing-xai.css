@@ -9,9 +9,9 @@
   --border-strong: rgba(255, 255, 255, 0.15);
   --ink: #ffffff;
   --ink-muted: #a1a5ab;
-  --ink-faint: rgba(255, 255, 255, 0.55);
+  --ink-faint: rgba(255, 255, 255, 0.68);
   --featured-surface: rgba(255, 255, 255, 0.05);
-  --nav-muted: rgba(255, 255, 255, 0.55);
+  --nav-muted: rgba(255, 255, 255, 0.68);
   --accent-blue: #0075de;
   --accent-blue-strong: #4f9fe8;
   --accent-blue-soft: rgba(0, 117, 222, 0.14);
@@ -86,7 +86,28 @@ main.landing-xai {
 
 .landing-xai :is(a, button, summary):focus-visible {
   outline: none;
-  box-shadow: rgba(0, 0, 0, 0.1) 0 4px 12px, 0 0 0 3px rgba(59, 130, 246, 0.35);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-blue-strong) 55%, transparent);
+}
+
+.landing-skip-link {
+  position: absolute;
+  left: 1rem;
+  top: 0.75rem;
+  z-index: 60;
+  border-radius: 0.5rem;
+  background: var(--surface-raised);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--ink);
+  transform: translateY(-150%);
+  transition: transform 120ms var(--ease-out);
+}
+
+.landing-skip-link:focus {
+  transform: translateY(0);
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-blue-strong) 55%, transparent);
 }
 
 .landing-nav {

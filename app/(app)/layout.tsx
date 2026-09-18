@@ -53,7 +53,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       )}
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-50 focus:rounded-md focus:bg-[var(--surface)] focus:px-3 focus:py-2 focus:text-sm focus:text-[var(--ink)]"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-50 focus:rounded-md focus:bg-[var(--surface)] focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-[var(--ink)] focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--accent-blue-strong)_45%,transparent)]"
       >
         Skip to content
       </a>

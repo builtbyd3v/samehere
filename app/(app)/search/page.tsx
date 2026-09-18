@@ -2,8 +2,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { FeedSearchResults } from "@/components/feed/FeedSearch";
 import FeedTimeline from "@/components/feed/FeedTimeline";
-import EmptyState from "@/components/ui/EmptyState";
 import SearchBar from "@/components/search/SearchBar";
+import SearchIdle from "@/components/search/SearchIdle";
 import {
   SEARCH_PAGE,
   tokensFor,
@@ -38,8 +38,9 @@ export default async function SearchPage({
   if (!q || !tokensFor(q).length) {
     return (
       <main className="page-enter mx-auto max-w-2xl px-4 py-8">
+        <h1 className="sr-only">Search</h1>
         <SearchBar />
-        <EmptyState title="Search people, projects, and posts" />
+        <SearchIdle />
       </main>
     );
   }
@@ -62,16 +63,21 @@ export default async function SearchPage({
 
   return (
     <main className="page-enter mx-auto max-w-2xl px-4 py-8">
+      <h1 className="sr-only">Search results for {q}</h1>
       <SearchBar initialQuery={q} />
 
-      <section className="mt-6">
-        <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">People</h2>
+      <section className="mt-6" aria-labelledby="search-people-heading">
+        <h2 id="search-people-heading" className="mb-3 text-sm font-semibold text-[var(--ink)]">
+          People
+        </h2>
         {peopleBlock}
       </section>
 
       {showProjects && (
-        <section className="mt-6">
-          <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">Projects</h2>
+        <section className="mt-6" aria-labelledby="search-projects-heading">
+          <h2 id="search-projects-heading" className="mb-3 text-sm font-semibold text-[var(--ink)]">
+            Projects
+          </h2>
           {projects.length > 0 ? (
             <ul className="flex flex-col gap-2">
               {projects.map((p) => (
@@ -105,8 +111,10 @@ export default async function SearchPage({
       )}
 
       {postItems.length > 0 && (
-        <section className="mt-6">
-          <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">Posts</h2>
+        <section className="mt-6" aria-labelledby="search-posts-heading">
+          <h2 id="search-posts-heading" className="mb-3 text-sm font-semibold text-[var(--ink)]">
+            Posts
+          </h2>
           <div className="flex flex-col gap-3">
             <FeedTimeline items={postItems} viewerId={viewerId} />
           </div>
