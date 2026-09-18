@@ -16,14 +16,6 @@ const BLUE = "#0075de"; // --blue
 
 const FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif";
 
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
 // Wraps caller-supplied <tr> rows in the cream canvas, white card, and two-tone
 // wordmark header. Callers own their rows' padding (welcome needs a padded
 // body; digest rows sit edge-to-edge), so the shell stays a thin frame rather
