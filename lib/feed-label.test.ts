@@ -35,6 +35,7 @@ describe("feedPath", () => {
   it("makes a label filter network-wide and drops the following tab", () => {
     expect(feedPath({ label: "stuck" })).toBe("/feed?label=stuck");
     expect(feedPath({ tab: "following", label: "learning" })).toBe("/feed?label=learning");
+    expect(feedPath({ label: "building" })).toBe("/feed?label=building");
   });
 });
 
@@ -44,7 +45,10 @@ describe("parseFeedView", () => {
     expect(parseFeedView({ tab: "following" })).toEqual({ tab: "following", label: null });
   });
 
-  it("treats a valid label as Latest + filter", () => {
+  it("locks /feed?label=stuck|learning|building as Latest + filter", () => {
+    expect(parseFeedView({ label: "stuck" })).toEqual({ tab: "latest", label: "stuck" });
+    expect(parseFeedView({ label: "learning" })).toEqual({ tab: "latest", label: "learning" });
+    expect(parseFeedView({ label: "building" })).toEqual({ tab: "latest", label: "building" });
     expect(parseFeedView({ label: "Stuck" })).toEqual({ tab: "latest", label: "stuck" });
     expect(parseFeedView({ tab: "following", label: "building" })).toEqual({
       tab: "latest",
