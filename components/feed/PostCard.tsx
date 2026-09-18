@@ -12,6 +12,7 @@ import type { PostMedia } from "@/lib/media";
 import type { ViewerMineState } from "@/lib/feed-engagement";
 import type { ContextLabel } from "@/types/portfolio";
 import ContextLabelBadge from "@/components/ui/ContextLabelBadge";
+import { feedPath, stuckReplyPath } from "@/lib/feed-label";
 
 export const POST_SELECT =
   "id, content, created_at, user_id, media, hidden, context_label, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, is_private, is_pro, is_founder, is_campus_founder, verified_student, is_bot, profile_school(school)), reactions(count), reposts(count), comments(count)";
@@ -193,7 +194,9 @@ export default function PostCard({
               </div>
 
               {post.context_label ? (
-                <ContextLabelBadge label={post.context_label} className="ml-auto shrink-0" />
+                <Link href={feedPath({ label: post.context_label })} className="ml-auto shrink-0">
+                  <ContextLabelBadge label={post.context_label} />
+                </Link>
               ) : null}
 
               {a && !embedded && (
@@ -210,6 +213,17 @@ export default function PostCard({
           )}
 
           <PostBody content={post.content} linked={linked} postId={post.id} />
+          {post.context_label === "stuck" && !embedded && !detail && (
+            <p className="mt-2">
+              <Link
+                href={stuckReplyPath(post.id)}
+                aria-label="Reply: same here"
+                className="text-[13px] font-medium text-[var(--ink-muted)] transition hover:text-[var(--ink)]"
+              >
+                Same here
+              </Link>
+            </p>
+          )}
         </div>
       </div>
 

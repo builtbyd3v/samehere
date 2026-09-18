@@ -26,11 +26,13 @@ export default function CommentThread({
   initialComments,
   viewerId,
   viewer,
+  autoFocus = false,
 }: {
   postId: string;
   initialComments: Comment[];
   viewerId: string | null;
   viewer: CommentAuthor | null;
+  autoFocus?: boolean;
 }) {
   const [comments, addOptimisticComment] = useOptimistic(
     initialComments,
@@ -48,6 +50,7 @@ export default function CommentThread({
         viewerId={viewerId}
         viewer={viewer}
         onOptimisticAdd={addOptimisticComment}
+        autoFocus={autoFocus}
       />
 
       <div className="mt-6 space-y-5">
