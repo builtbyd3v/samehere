@@ -24,6 +24,36 @@ export function PostCardSkeleton() {
   );
 }
 
+export function HeatmapSkeleton() {
+  return (
+    <div className="card-surface mt-3 p-5 sm:p-6">
+      <Skeleton className="mb-4 h-3 w-20" />
+      <Skeleton className="h-24 w-full" />
+    </div>
+  );
+}
+
+export function ProfilePostsSkeleton() {
+  return (
+    <section>
+      <Skeleton className="mb-3 h-3 w-14" />
+      <div className="flex flex-col gap-3">
+        <PostCardSkeleton />
+        <PostCardSkeleton />
+      </div>
+    </section>
+  );
+}
+
+export function PortfolioSectionsFallback() {
+  return (
+    <div className="portfolio-stack mt-6">
+      <HeatmapSkeleton />
+      <ProfilePostsSkeleton />
+    </div>
+  );
+}
+
 export function ProfileSkeleton() {
   return (
     <div className="space-y-3">

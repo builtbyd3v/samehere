@@ -1,5 +1,3 @@
-"use client";
-
 import { useSyncExternalStore } from "react";
 
 const QUERY = "(min-width: 768px)";

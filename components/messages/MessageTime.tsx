@@ -1,5 +1,3 @@
-"use client";
-
 import { formatMessageTime } from "@/lib/messages";
 
 export default function MessageTime({

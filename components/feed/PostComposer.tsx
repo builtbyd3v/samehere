@@ -276,7 +276,7 @@ export default function PostComposer({
           {files.map((f, i) => (
             <div key={f.url} className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md border border-[var(--border)]">
               {f.type === "image" ? (
-                // eslint-disable-next-line @next/next/no-img-element
+                // eslint-disable-next-line @next/next/no-img-element -- blob: preview from FileReader; next/image cannot optimize local object URLs
                 <img src={f.url} alt="" className="h-full w-full object-cover" />
               ) : (
                 <video src={f.url} className="h-full w-full object-cover" />

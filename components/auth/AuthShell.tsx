@@ -1,5 +1,3 @@
-"use client";
-
 import AppBrand from "@/components/brand/AppBrand";
 
 const COPY = {

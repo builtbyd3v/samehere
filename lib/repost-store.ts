@@ -1,5 +1,3 @@
-"use client";
-
 import { useSyncExternalStore } from "react";
 
 export type RepostState = { mine: boolean; count: number };
