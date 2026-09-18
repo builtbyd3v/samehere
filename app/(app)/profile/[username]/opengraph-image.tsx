@@ -1,7 +1,8 @@
-import { readFile } from "node:fs/promises";
 import { ImageResponse } from "next/og";
 import sharp from "sharp";
-import { BLUE, BORDER, CANVAS, CARD, GOLD, GREEN, HM, INK, INK_FAINT, INK_MUTED } from "@/lib/og-tokens";
+import { BLUE, BORDER, CANVAS, GOLD, GREEN, HM, INK, INK_FAINT, INK_MUTED } from "@/lib/og-tokens";
+import { loadOgFonts } from "@/lib/og/fonts";
+import { OgWordmark, ogCanvasStyle } from "@/lib/og/mark";
 import { portfolioBannerOg } from "@/lib/portfolio/banner";
 import { portfolioViewerClient } from "@/lib/portfolio/client";
 import { getPublicPortfolio } from "@/lib/portfolio/public";
@@ -10,54 +11,20 @@ import { getPublicPortfolio } from "@/lib/portfolio/public";
 //
 // Crawlers have no session cookie, so this uses the anon key. A signed-in
 // viewer keeps the session client so block context is not erased. RPCs:
-//   get_public_profile        — nulls a private account's fields itself
-//   get_public_profile_counts — three integers, never the follower lists
-//   get_public_heatmap        — self-guards on heatmap_visibility + is_private
-// Private / heatmap-hidden profiles fall back to the identity card, leaking nothing.
+//   get_public_profile / get_public_profile_counts / get_public_heatmap
+// Private / heatmap-hidden profiles fall back to the identity card.
 //
-// Dark by default: an unfurl sits in Discord, Slack and Twitter, which are dark
-// for most people. A cream card in a dark feed reads as a blown-out rectangle.
-// Colours come from lib/og-tokens.ts, which mirrors the `.dark` block in
-// app/globals.css — Satori has no CSS variables, so the values must exist in TS.
-//
-// sharp is a direct dependency for exactly one reason: Satori decodes PNG and
-// JPEG only, and avatars are uploaded as WebP, which it silently draws as
-// nothing (an empty ring). Supabase's image transform would serve a PNG but is
-// a paid add-on. We fetch, transcode, and inline as a data URI.
-// ponytail: one fetch + transcode per render. If it shows in traces, cache the
-// PNG next to avatar_url at upload time instead.
+// Premium / x.ai language: full-bleed dark canvas + soft banner strip (no inset
+// picture-frame). Share button on /profile/[username] is unchanged.
 
-export const runtime = "nodejs"; // sharp is not available on the edge runtime.
+export const runtime = "nodejs";
 
-export const alt = "samehere profile";
+export const alt = "samehere portfolio";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
-export const revalidate = 3600; // 1h — crawlers/unfurls re-hit the same profile
-// repeatedly; the card only needs to reflect activity/stat changes roughly
-// hourly, not on every hit. See lib/leaderboard.ts / lib/founder.ts for the
-// same revalidate-window reasoning applied elsewhere in this repo.
+export const revalidate = 3600;
 
 const level = (points: number) => (points === 0 ? 0 : points <= 3 ? 1 : points <= 7 ? 2 : 3);
-
-// The app is set in Figtree (app/layout.tsx). Satori ships no fonts and falls
-// back to a generic sans, which renders 600-weight as something closer to 400 —
-// that is why the wordmark looked thin next to the real navbar.
-//
-// Resolved with `new URL(..., import.meta.url)`, which Next traces statically.
-// `join(process.cwd(), ...)` is a runtime string, so the font would be missing
-// from the deployed bundle: fine locally, a 500 in production. This route is
-// dynamic (its key is `/profile/[username]/opengraph-image-<hash>`), so unlike
-// the root card it is not prerendered and really does read this at request time.
-const fonts = async () => {
-  const [regular, semibold] = await Promise.all([
-    readFile(new URL("../../../fonts/Figtree-Regular.ttf", import.meta.url)),
-    readFile(new URL("../../../fonts/Figtree-SemiBold.ttf", import.meta.url)),
-  ]);
-  return [
-    { name: "Figtree", data: regular, weight: 400 as const, style: "normal" as const },
-    { name: "Figtree", data: semibold, weight: 600 as const, style: "normal" as const },
-  ];
-};
 
 type HeatmapRow = { day: string; points: number };
 type Profile = {
@@ -90,7 +57,6 @@ const YEAR_LABEL: Record<string, string> = {
   grad: "Grad student",
 };
 
-// Platform's day boundary is midnight America/New_York (matches get_streak/get_heatmap).
 function easternTodayAnchor(): Date {
   const [y, m, d] = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" })
     .format(new Date())
@@ -133,8 +99,6 @@ function currentStreak(rows: HeatmapRow[]): number {
   return streak;
 }
 
-// Satori decodes PNG/JPEG only. Transcode anything else (avatars are WebP) and
-// inline it, so the card shows the real face rather than an empty ring.
 async function avatarDataUri(url: string | null): Promise<string | null> {
   if (!url) return null;
   try {
@@ -148,9 +112,7 @@ async function avatarDataUri(url: string | null): Promise<string | null> {
   }
 }
 
-/** 45% alpha of a #rrggbb, for the butterfly's set-back wings. */
 const fade = (hex: string) => `${hex}73`;
-
 const ICON = 28;
 
 function IconCrown({ color }: { color: string }) {
@@ -169,7 +131,6 @@ function IconBolt({ color }: { color: string }) {
   );
 }
 
-/** Same drawing as components/icons.tsx IconGraduationCap. */
 function IconGradCap({ color }: { color: string }) {
   return (
     <svg width={ICON} height={ICON} viewBox="0 0 24 24">
@@ -179,7 +140,6 @@ function IconGradCap({ color }: { color: string }) {
   );
 }
 
-/** Same drawing as components/icons.tsx — wings separate by tone, not by gaps. */
 function IconButterfly({ color }: { color: string }) {
   return (
     <svg width={ICON} height={ICON} viewBox="0 0 24 24">
@@ -195,9 +155,14 @@ function IconButterfly({ color }: { color: string }) {
 }
 
 function Avatar({ src, letter }: { src: string | null; letter: string }) {
-  const s = 112;
+  const s = 120;
   return src ? (
-    <img src={src} width={s} height={s} style={{ borderRadius: "50%", objectFit: "cover", border: `3px solid ${BORDER}` }} />
+    <img
+      src={src}
+      width={s}
+      height={s}
+      style={{ borderRadius: "50%", objectFit: "cover", border: `3px solid ${CANVAS}` }}
+    />
   ) : (
     <div
       style={{
@@ -206,10 +171,10 @@ function Avatar({ src, letter }: { src: string | null; letter: string }) {
         height: s,
         borderRadius: "50%",
         border: `3px solid ${BORDER}`,
-        background: CANVAS,
+        background: "#161616",
         alignItems: "center",
         justifyContent: "center",
-        fontSize: 46,
+        fontSize: 48,
         fontWeight: 600,
         color: INK_MUTED,
       }}
@@ -219,11 +184,6 @@ function Avatar({ src, letter }: { src: string | null; letter: string }) {
   );
 }
 
-/**
- * Badges sit beside the display name as bare icons, exactly as UserBadges
- * renders them in the app. Pills on their own row read as a different product,
- * and they cost ~50px of height the card doesn't have.
- */
 function NameRow({ name, profile }: { name: string; profile: Profile }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -242,7 +202,7 @@ function Stat({ value, label }: { value: number; label: string }) {
   return (
     <div style={{ display: "flex", alignItems: "baseline" }}>
       <div style={{ fontSize: 26, fontWeight: 600, color: INK }}>{value.toLocaleString()}</div>
-      <div style={{ marginLeft: 7, fontSize: 19, color: INK_MUTED }}>{label}</div>
+      <div style={{ marginLeft: 7, fontSize: 18, color: INK_MUTED }}>{label}</div>
     </div>
   );
 }
@@ -256,15 +216,16 @@ function Identity({ profile, avatar, counts }: { profile: Profile; avatar: strin
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
       <Avatar src={avatar} letter={name.charAt(0).toUpperCase()} />
-      <div style={{ display: "flex", marginTop: 22 }}>
+      <div style={{ display: "flex", marginTop: 20 }}>
         <NameRow name={name} profile={profile} />
       </div>
-      <div style={{ marginTop: 2, fontSize: 24, color: INK_MUTED }}>{`@${profile.username}`}</div>
+      <div style={{ marginTop: 4, fontSize: 24, color: INK_MUTED }}>{`@${profile.username}`}</div>
+      <div style={{ marginTop: 10, fontSize: 18, color: BLUE }}>Portfolio on samehere</div>
 
-      {meta.length > 0 && <div style={{ marginTop: 16, fontSize: 20, color: INK_FAINT }}>{meta}</div>}
+      {meta.length > 0 && <div style={{ marginTop: 14, fontSize: 20, color: INK_FAINT }}>{meta}</div>}
 
       {counts && (
-        <div style={{ display: "flex", marginTop: 20, gap: 28 }}>
+        <div style={{ display: "flex", marginTop: 18, gap: 28 }}>
           <Stat value={counts.posts} label="posts" />
           <Stat value={counts.followers} label="followers" />
           <Stat value={counts.following} label="following" />
@@ -272,7 +233,7 @@ function Identity({ profile, avatar, counts }: { profile: Profile; avatar: strin
       )}
 
       {profile.is_private && (
-        <div style={{ marginTop: 18, fontSize: 20, color: INK_FAINT }}>This account is private.</div>
+        <div style={{ marginTop: 16, fontSize: 20, color: INK_FAINT }}>This account is private.</div>
       )}
     </div>
   );
@@ -281,29 +242,16 @@ function Identity({ profile, avatar, counts }: { profile: Profile; avatar: strin
 function Heatmap({ weeks, streak }: { weeks: number[][]; streak: number }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
-      {/* "Activity" and "{n}-day streak" are the app's own strings — see the h2 in
-          profile/[username]/page.tsx and ProfileActivitySection. */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ fontSize: 20, fontWeight: 600, color: INK }}>Activity</div>
+        <div style={{ fontSize: 18, fontWeight: 600, color: INK }}>Activity</div>
         {streak > 0 && (
-          <div
-            style={{
-              display: "flex",
-              fontSize: 17,
-              fontWeight: 600,
-              color: BLUE,
-              background: "rgba(79, 159, 232, 0.14)",
-              border: "1px solid rgba(79, 159, 232, 0.30)",
-              borderRadius: 999,
-              padding: "5px 14px",
-            }}
-          >
+          <div style={{ display: "flex", fontSize: 16, fontWeight: 600, color: BLUE }}>
             {`${streak}-day streak`}
           </div>
         )}
       </div>
 
-      <div style={{ display: "flex", marginTop: 22, gap: GAP }}>
+      <div style={{ display: "flex", marginTop: 18, gap: GAP }}>
         {weeks.map((col, w) => (
           <div key={w} style={{ display: "flex", flexDirection: "column", gap: GAP }}>
             {col.map((pts, d) => (
@@ -312,7 +260,7 @@ function Heatmap({ weeks, streak }: { weeks: number[][]; streak: number }) {
                 style={{
                   width: CELL,
                   height: CELL,
-                  borderRadius: 4,
+                  borderRadius: 3,
                   background: pts < 0 ? "transparent" : HM[level(pts)],
                 }}
               />
@@ -321,44 +269,23 @@ function Heatmap({ weeks, streak }: { weeks: number[][]; streak: number }) {
         ))}
       </div>
 
-      <div style={{ display: "flex", marginTop: 20, alignItems: "center", gap: 7 }}>
-        <div style={{ fontSize: 16, color: INK_FAINT }}>Less</div>
+      <div style={{ display: "flex", marginTop: 16, alignItems: "center", gap: 7 }}>
+        <div style={{ fontSize: 15, color: INK_FAINT }}>Less</div>
         {HM.map((c, i) => (
-          <div key={i} style={{ width: 14, height: 14, borderRadius: 3, background: c }} />
+          <div key={i} style={{ width: 13, height: 13, borderRadius: 2, background: c }} />
         ))}
-        <div style={{ fontSize: 16, color: INK_FAINT }}>More</div>
+        <div style={{ fontSize: 15, color: INK_FAINT }}>More</div>
       </div>
     </div>
   );
 }
 
-/** The wordmark: `same` in ink, `here` in blue. Matches Navbar and LandingNav. */
-function Wordmark({ size: s }: { size: number }) {
+function BrandFallback() {
   return (
-    <div style={{ display: "flex", fontSize: s, fontWeight: 600, letterSpacing: "-0.02em" }}>
-      <div style={{ display: "flex", color: INK }}>same</div>
-      <div style={{ display: "flex", color: BLUE }}>here</div>
-    </div>
-  );
-}
-
-function Footer({ username }: { username: string }) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "flex-end",
-        justifyContent: "space-between",
-        marginTop: 24,
-        paddingTop: 22,
-        borderTop: `1px solid ${BORDER}`,
-      }}
-    >
-      <div style={{ display: "flex", flexDirection: "column" }}>
-        <Wordmark size={24} />
-        <div style={{ marginTop: 3, fontSize: 17, color: INK_MUTED }}>Built for students.</div>
-      </div>
-      <div style={{ fontSize: 17, color: INK_FAINT }}>{`samehere.dev/profile/${username}`}</div>
+    <div style={ogCanvasStyle({ justifyContent: "center", alignItems: "center", padding: 80 })}>
+      <OgWordmark size={72} />
+      <div style={{ marginTop: 20, fontSize: 24, color: INK_MUTED }}>Portfolio for students.</div>
+      <div style={{ marginTop: 10, fontSize: 18, color: INK_FAINT }}>samehere.dev</div>
     </div>
   );
 }
@@ -368,35 +295,12 @@ export default async function OgImage({ params }: { params: Promise<{ username: 
   const supabase = await portfolioViewerClient();
 
   const { data: rows } = await supabase.rpc("get_public_profile", { p_username: username });
-  const profile = rows?.[0] ?? null;
+  const profile = (rows as Profile[] | null)?.[0] ?? null;
 
-  const font = await fonts();
+  const fonts = await loadOgFonts();
 
-  // No such user: brand card, nothing personal.
   if (!profile) {
-    return new ImageResponse(
-      (
-        <div
-          style={{
-            width: "100%",
-            height: "100%",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            padding: 80,
-            background: CANVAS,
-            backgroundImage:
-              "radial-gradient(ellipse 1000px 600px at 40% -10%, rgba(79, 159, 232, 0.28), transparent 70%)",
-            color: INK,
-            fontFamily: "Figtree",
-          }}
-        >
-          <Wordmark size={60} />
-          <div style={{ marginTop: 18, fontSize: 26, color: INK_MUTED }}>Built for students.</div>
-        </div>
-      ),
-      { ...size, fonts: font },
-    );
+    return new ImageResponse(<BrandFallback />, { ...size, fonts });
   }
 
   const projection = await getPublicPortfolio(supabase, username);
@@ -404,7 +308,7 @@ export default async function OgImage({ params }: { params: Promise<{ username: 
     ? Boolean(projection.data?.activity_visible)
     : !projection.unavailable && profile.heatmap_visibility === "public" && !profile.is_private;
   const heatmapFallback =
-    (!projection.ok && projection.unavailable && profile.heatmap_visibility === "public" && !profile.is_private);
+    !projection.ok && projection.unavailable && profile.heatmap_visibility === "public" && !profile.is_private;
   const [avatar, countsRes, heatRes] = await Promise.all([
     avatarDataUri(profile.avatar_url),
     supabase.rpc("get_public_profile_counts", { p_profile_id: profile.id }),
@@ -413,67 +317,56 @@ export default async function OgImage({ params }: { params: Promise<{ username: 
       : Promise.resolve({ data: null }),
   ]);
 
-  const counts = countsRes.data?.[0] ?? null;
-  const heat = heatRes.data ?? [];
+  const counts = ((countsRes.data as Counts[] | null)?.[0] ?? null) as Counts | null;
+  const heat = (heatRes.data as HeatmapRow[] | null) ?? [];
   const showHeatmap = heat.length > 0;
   const banner = portfolioBannerOg(profile.username);
 
   return new ImageResponse(
     (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          background: CANVAS,
-          backgroundImage:
-            "radial-gradient(ellipse 900px 600px at 50% -10%, rgba(79, 159, 232, 0.16), transparent 70%)",
-          padding: 44,
-          fontFamily: "Figtree",
-        }}
-      >
+      <div style={ogCanvasStyle()}>
+        <div
+          style={{
+            display: "flex",
+            width: "100%",
+            height: 96,
+            backgroundColor: "#161616",
+            backgroundImage: `linear-gradient(120deg, ${banner.from} 0%, ${banner.to} 100%)`,
+          }}
+        />
+
         <div
           style={{
             display: "flex",
             flexDirection: "column",
             flexGrow: 1,
-            overflow: "hidden",
-            background: CARD,
-            border: `1px solid ${BORDER}`,
-            borderRadius: 28,
+            padding: "28px 56px 40px",
             justifyContent: "space-between",
           }}
         >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexGrow: 1 }}>
+            <div style={{ display: "flex", width: showHeatmap ? 480 : 1000 }}>
+              <Identity profile={profile} avatar={avatar} counts={counts} />
+            </div>
+            {showHeatmap && <Heatmap weeks={buildWeeks(heat)} streak={currentStreak(heat)} />}
+          </div>
+
           <div
             style={{
               display: "flex",
-              width: "100%",
-              height: 118,
-              backgroundColor: "#161616",
-              backgroundImage: `linear-gradient(120deg, ${banner.from} 0%, ${banner.to} 100%)`,
-            }}
-          />
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              flexGrow: 1,
-              padding: 36,
+              alignItems: "flex-end",
               justifyContent: "space-between",
+              marginTop: 20,
+              paddingTop: 20,
+              borderTop: `1px solid ${BORDER}`,
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexGrow: 1 }}>
-              <div style={{ display: "flex", width: showHeatmap ? 470 : 1000 }}>
-                <Identity profile={profile} avatar={avatar} counts={counts} />
-              </div>
-              {showHeatmap && <Heatmap weeks={buildWeeks(heat)} streak={currentStreak(heat)} />}
-            </div>
-            <Footer username={profile.username} />
+            <OgWordmark size={24} />
+            <div style={{ fontSize: 17, color: INK_FAINT }}>{`samehere.dev/profile/${profile.username}`}</div>
           </div>
         </div>
       </div>
     ),
-    { ...size, fonts: font },
+    { ...size, fonts },
   );
 }

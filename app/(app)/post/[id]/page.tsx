@@ -14,6 +14,7 @@ import LocalTime from "@/components/ui/LocalTime";
 import { IconChevronLeft, IconSame, IconRepost } from "@/components/icons";
 import { attachSignedMedia } from "@/lib/media";
 import { fetchViewerMineState } from "@/lib/feed-engagement";
+import { postShareTitle } from "@/lib/og/copy";
 import { getViewerProfile } from "@/lib/viewer";
 import type { Comment, CommentAuthor } from "@/components/feed/comment-types";
 
@@ -45,10 +46,10 @@ export async function generateMetadata({
   // The tab title goes through the root `template: "%s · samehere"`, so it must
   // NOT say "samehere" itself. og:/twitter: titles have no template and do.
   const tabTitle = `${name} (@${post.author_username})`;
-  const shareTitle = `${tabTitle} on samehere`;
+  const shareTitle = postShareTitle(name, post.author_username);
 
-  // No `images`: the root opengraph-image route supplies the card. An explicit
-  // images entry here would override it.
+  // No `images`: the file-based opengraph-image route supplies the post card.
+  // An explicit images entry here would override it.
   return {
     title: tabTitle,
     description,

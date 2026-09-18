@@ -121,6 +121,8 @@ describe("publicIntro + draft leak", () => {
     expect(assertNoDraftLeak([draft])).toEqual(["Hidden draft"]);
     expect(ownerPreviewProjects([draft])).toEqual([]);
     expect(metadataDescription("ada")).not.toContain("secret");
+    expect(metadataDescription("ada")).toContain("@ada");
+    expect(metadataDescription("ada")).toMatch(/portfolio/i);
   });
 
   it("keeps owner bio on a private account and still gates public preview", () => {
