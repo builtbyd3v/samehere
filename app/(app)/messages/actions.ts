@@ -111,12 +111,6 @@ export async function searchUsersForMessage(query: string): Promise<MessageUserR
   return (profiles ?? []).filter((p) => !blockedSet.has(p.id));
 }
 
-export type IcebreakerResult = { locked: true } | { text: string } | { error: true };
-
-export async function icebreaker(_peerId: string): Promise<IcebreakerResult> {
-  return { error: true };
-}
-
 export type GroupMemberActionResult = { error?: string };
 
 // Thin wrappers around the add_group_member / remove_group_member definer

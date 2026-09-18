@@ -3,18 +3,13 @@
 import {
   Bell,
   Bookmark,
-  Briefcase,
   ChevronLeft,
-  Hash,
   Mail,
-  MapPin,
   MessageCircle,
   Pencil,
-  Plus,
   Repeat2,
   Search,
   Send,
-  Trash2,
 } from "lucide-react";
 
 const s = { fill: "none", stroke: "currentColor", strokeWidth: 1.5, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, viewBox: "0 0 24 24" };
@@ -50,13 +45,6 @@ export const IconBolt = ({ className = "h-4 w-4" }: { className?: string }) => (
 export const IconCrown = ({ className = "h-4 w-4" }: { className?: string }) => (
   <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
     <path d="M3 8l4.5 3.2L12 5l4.5 6.2L21 8l-1.6 10.4a1 1 0 0 1-1 .6H5.6a1 1 0 0 1-1-.6L3 8Z" />
-  </svg>
-);
-
-/** Leaderboard nav — trophy (distinct from IconCrown = Founder badge). */
-export const IconTrophy = ({ className = "h-4 w-4" }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
-    <path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z" />
   </svg>
 );
 
@@ -98,19 +86,6 @@ export const IconGraduationCap = ({ className = "h-4 w-4" }: { className?: strin
   </svg>
 );
 
-// Retained: still referenced by the landing profile demo (owned by the landing worktree).
-export const IconFlag = ({ className = "h-4 w-4" }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
-    <path d="M6 2a1 1 0 0 1 1 1v18a1 1 0 1 1-2 0V3a1 1 0 0 1 1-1Z" />
-    <path d="M7 3.5h10.3a1 1 0 0 1 .8 1.6L15.4 9l2.7 3.9a1 1 0 0 1-.8 1.6H7Z" />
-  </svg>
-);
-
-/** Jobs nav — briefcase. */
-export const IconBriefcase = ({ className = cls }: { className?: string }) => (
-  <Briefcase className={className} {...lucide} />
-);
-
 export const IconSearch = () => <Search className={cls} {...lucide} />;
 
 export const IconCompose = () => <Pencil className={cls} {...lucide} />;
@@ -148,33 +123,3 @@ export const IconCommunity = ({ className = cls }: { className?: string }) => (
   </svg>
 );
 
-/** Pinned item marker. */
-export const IconPin = ({ className = cls }: { className?: string }) => (
-  <MapPin className={className} {...lucide} />
-);
-
-/**
- * Verified club badge — check-badge glyph. Stroke-only (no fill+cutout) so it
- * doesn't assume a background color to contrast against.
- */
-export const IconVerified = ({ className = "h-4 w-4" }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
-    <path d="M8 3h8l5 5v8l-5 5H8l-5-5V8Z" />
-    <path d="M8.5 12.3l2.3 2.3 4.5-5" />
-  </svg>
-);
-
-/** Channel name marker — hash prefix (club channel names). */
-export const IconHash = ({ className = "h-4 w-4" }: { className?: string }) => (
-  <Hash className={className} size={16} strokeWidth={1.5} aria-hidden />
-);
-
-/** Generic add action — e.g. create channel. */
-export const IconPlus = ({ className = "h-4 w-4" }: { className?: string }) => (
-  <Plus className={className} size={16} strokeWidth={1.5} aria-hidden />
-);
-
-/** Generic delete action — e.g. delete channel. */
-export const IconTrash = ({ className = "h-4 w-4" }: { className?: string }) => (
-  <Trash2 className={className} size={16} strokeWidth={1.5} aria-hidden />
-);

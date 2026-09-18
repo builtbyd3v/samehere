@@ -8,9 +8,3 @@ export async function markNotificationsRead() {
   await supabase.rpc("mark_all_notifications_read");
   revalidatePath("/feed");
 }
-
-export async function getNotificationUnreadCount(): Promise<number> {
-  const supabase = await createClient();
-  const { data } = await supabase.rpc("get_notification_unread_total");
-  return Number(data ?? 0);
-}

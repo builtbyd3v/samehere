@@ -23,18 +23,18 @@ type Props = {
   hideComments?: boolean;
 };
 
-export const action =
+const action =
   "inline-flex min-h-9 items-center gap-1.5 rounded-full px-2.5 text-[13px] font-medium transition duration-150 hover:bg-[var(--featured-surface)] active:translate-y-[1px] disabled:opacity-40 disabled:active:translate-y-0";
 
 const inactive = "text-[var(--ink-muted)] hover:bg-[var(--featured-surface)] hover:text-[var(--ink)]";
 
-export const sameColor = (on: boolean) =>
+const sameColor = (on: boolean) =>
   on ? "bg-[var(--featured-surface)] text-[var(--blue)]" : inactive;
-export const repostColor = (on: boolean) =>
+const repostColor = (on: boolean) =>
   on ? "bg-[var(--featured-surface)] text-[#00ba7c]" : inactive;
-export const bookmarkColor = (on: boolean) =>
+const bookmarkColor = (on: boolean) =>
   on ? "bg-[var(--featured-surface)] text-[var(--blue)]" : inactive;
-export const commentColor = "text-[var(--ink-muted)] hover:text-[var(--ink)]";
+const commentColor = "text-[var(--ink-muted)] hover:text-[var(--ink)]";
 
 function ActionButton({
   children,

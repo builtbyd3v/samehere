@@ -9,11 +9,9 @@ import { fetchPlainReposts } from "@/lib/feed-reposts";
 import { fetchViewerMineState } from "@/lib/feed-engagement";
 import { mergeFeedTimeline, itemId, type FeedTimelineItem } from "@/lib/feed-timeline";
 import { decodeCursor, encodeCursor } from "@/lib/feed-cursor";
-import { type AiResult } from "@/lib/ai";
 import { getPostHogServerClient } from "@/lib/posthog-server";
 import { TEXT_LIMITS, textLimitError } from "@/lib/utils/validation";
 import { contextLabelError, parseContextLabel } from "@/lib/context-label";
-import { peopleSearchCore, type PeopleSearchState } from "@/lib/people-search";
 
 export type ComposerState = { error?: string; ok?: boolean };
 
@@ -182,16 +180,6 @@ export async function createPost(_prev: ComposerState, formData: FormData): Prom
   return { ok: true };
 }
 
-export async function composerNudge(): Promise<AiResult> {
-  return { text: "" };
-}
-
-export type ImproveResult = { locked: true } | { text: string } | { error: true };
-
-export async function improvePost(_draft: string): Promise<ImproveResult> {
-  return { error: true };
-}
-
 // Delete own post. RLS restricts the delete to the owner, so a non-owner's
 // call affects 0 rows — safe to run through the plain session client.
 // ponytail: best-effort media purge on delete; orphan sweep later if it matters.
@@ -211,15 +199,6 @@ export async function deletePost(postId: string): Promise<void> {
   await supabase.from("posts").delete().eq("id", postId);
 
   revalidatePath("/feed");
-}
-
-export async function peopleSearch(query: string, _verifiedOnly?: boolean): Promise<PeopleSearchState> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "You must be logged in." };
-  return peopleSearchCore(supabase, user, query);
 }
 
 // Count posts newer than a timestamp, for the feed's "N new posts" pill. Capped
