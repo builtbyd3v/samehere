@@ -39,6 +39,7 @@ import { PORTFOLIO_SECTIONS } from "@/lib/portfolio/validation";
 import TrackPortfolioView from "@/components/portfolio/TrackPortfolioView";
 import { OwnerAnalyticsSection, PortfolioAnalyticsFallback } from "@/components/portfolio/PortfolioAnalytics";
 import SharePortfolioButton from "@/components/portfolio/SharePortfolioButton";
+import PortfolioBanner from "@/components/portfolio/PortfolioBanner";
 import UnavailableNotice from "@/components/portfolio/UnavailableNotice";
 import {
   ActivitySection,
@@ -72,14 +73,14 @@ const loadViewerPublicMeta = cache(async (username: string, hasAuth: boolean) =>
 
 function Stat({ value, label, accent, href }: { value: number; label: string; accent?: boolean; href?: string }) {
   const content = (
-    <span className="text-[15px]">
+    <span className="text-[13px] text-[var(--ink-muted)]">
       <b
-        className={`font-semibold tracking-[-0.01em] ${accent ? "" : "text-[var(--ink)]"}`}
+        className={`font-semibold tabular-nums tracking-[-0.01em] ${accent ? "" : "text-[var(--ink)]"}`}
         style={accent ? { color: "var(--profile-accent)" } : undefined}
       >
         {value.toLocaleString()}
       </b>{" "}
-      <span className="text-[var(--ink-muted)]">{label}</span>
+      <span>{label}</span>
     </span>
   );
   return href ? (
@@ -192,7 +193,7 @@ function PortfolioBody({
     return publicSectionVisible(projection, section);
   };
   return (
-    <>
+    <div className="portfolio-stack mt-6">
       {order.map((section) => {
         if (section === "intro" && show("intro")) {
           return <IntroSection key="intro" bio={intro.bio} goals={intro.goals} openTo={intro.open_to} />;
@@ -228,7 +229,7 @@ function PortfolioBody({
         }
         return null;
       })}
-    </>
+    </div>
   );
 }
 
@@ -247,8 +248,8 @@ async function PublicHeatmapFallback({
   }));
   if (heatmap.length === 0) return null;
   return (
-    <section className="card mt-3 p-5 sm:p-6">
-      <h2 className="mb-4 text-sm font-semibold text-[var(--ink)]">Activity</h2>
+    <section className="card-surface mt-3 p-5 sm:p-6">
+      <h2 className="eyebrow mb-4">Activity</h2>
       <ContributionHeatmap data={heatmap} />
     </section>
   );
@@ -301,21 +302,10 @@ async function PublicProfileView({ username }: { username: string }) {
       style={accentColor ? ({ "--profile-accent": accentColor } as CSSProperties) : undefined}
     >
       {trackView && <TrackPortfolioView username={profile.username} />}
-      <section className="card overflow-hidden">
-        {bannerUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={bannerUrl} alt="" className="aspect-[3/1] w-full object-cover" />
-        ) : (
-          <div
-            aria-hidden
-            className="aspect-[4/1] w-full"
-            style={{
-              background: `linear-gradient(120deg, color-mix(in srgb, ${accentColor ?? "var(--blue)"} 14%, var(--surface-card)) 0%, var(--surface-card) 62%)`,
-            }}
-          />
-        )}
+      <section className="card-raised portfolio-enter-header overflow-hidden">
+        <PortfolioBanner username={profile.username} src={bannerUrl} accent={accentColor} />
         <div className="px-5 pb-5 sm:px-6 sm:pb-6">
-          <div className="flex items-end justify-between gap-3">
+          <div className="flex flex-col gap-3 min-[391px]:flex-row min-[391px]:items-end min-[391px]:justify-between">
             <AvatarBase
               src={profile.avatar_url}
               seed={profile.username}
@@ -323,13 +313,13 @@ async function PublicProfileView({ username }: { username: string }) {
               pro={profile.is_pro}
               priority
               style={accentColor ? { borderColor: accentColor } : undefined}
-              className="-mt-12 h-24 w-24 shrink-0 rounded-full border-4 border-[var(--surface-card)] text-3xl sm:-mt-14 sm:h-28 sm:w-28"
+              className="-mt-12 h-24 w-24 shrink-0 rounded-full border-2 border-[var(--surface-raised)] text-3xl sm:-mt-14 sm:h-28 sm:w-28"
             />
             <SharePortfolioButton username={profile.username} displayName={displayName} />
           </div>
           <div className="mt-3">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-              <h1 className="text-2xl font-semibold tracking-[-0.025em] sm:text-[28px]">{displayName}</h1>
+              <h1 className="text-[32px] font-semibold tracking-[-0.025em]">{displayName}</h1>
               <UserBadges isPro={profile.is_pro} isFounder={profile.is_founder} isCampusFounder={profile.is_campus_founder} isVerifiedStudent={profile.verified_student} isBot={profile.is_bot} />
             </div>
             <p className="mt-0.5 text-[15px] text-[var(--ink-muted)]">@{profile.username}</p>
@@ -353,14 +343,12 @@ async function PublicProfileView({ username }: { username: string }) {
             <PublicHeatmapFallback client={client} profileId={profile.id} />
           )}
           <section className="mt-6">
-            <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">Posts</h2>
-            <div className="card px-6 py-12 text-center">
-              <p className="font-medium text-[var(--ink)]">Sign in to see their posts</p>
-              <div className="mt-4 flex justify-center gap-2">
-                <Link href="/login" className="btn-ghost !rounded-full !px-4 !py-1.5 text-sm">Sign in</Link>
-                <Link href="/signup" className="btn-primary !rounded-full !px-4 !py-1.5 text-sm">Sign up</Link>
-              </div>
-            </div>
+            <h2 className="eyebrow mb-3">Posts</h2>
+            <p className="flex flex-wrap items-center gap-2 text-sm text-[var(--ink-muted)]">
+              Sign in to see their posts
+              <Link href="/login" className="btn-ghost !rounded-full !px-3 !py-1 text-xs">Sign in</Link>
+              <Link href="/signup" className="btn-primary !rounded-full !px-3 !py-1 text-xs">Sign up</Link>
+            </p>
           </section>
         </>
       ) : (
@@ -383,18 +371,16 @@ async function PublicProfileView({ username }: { username: string }) {
           intro={intro}
           posts={
             <section className="mt-6">
-              <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">Posts</h2>
-              <div className="card px-6 py-12 text-center">
-                <p className="font-medium text-[var(--ink)]">Sign in to see their posts</p>
-                <div className="mt-4 flex justify-center gap-2">
-                  <Link href="/login" className="btn-ghost !rounded-full !px-4 !py-1.5 text-sm">
-                    Sign in
-                  </Link>
-                  <Link href="/signup" className="btn-primary !rounded-full !px-4 !py-1.5 text-sm">
-                    Sign up
-                  </Link>
-                </div>
-              </div>
+              <h2 className="eyebrow mb-3">Posts</h2>
+              <p className="flex flex-wrap items-center gap-2 text-sm text-[var(--ink-muted)]">
+                Sign in to see their posts
+                <Link href="/login" className="btn-ghost !rounded-full !px-3 !py-1 text-xs">
+                  Sign in
+                </Link>
+                <Link href="/signup" className="btn-primary !rounded-full !px-3 !py-1 text-xs">
+                  Sign up
+                </Link>
+              </p>
             </section>
           }
         />
@@ -628,8 +614,8 @@ export default async function ProfilePage({
       : !isBlocked && (portfolioUnavailable || (projection?.publish_posts ?? false) || !bundle.ok);
 
   const postsSection = (
-    <section className="mt-4">
-      <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">Posts</h2>
+    <section>
+      <h2 className="eyebrow mb-3">Posts</h2>
       {isBlocked ? (
         <div className="card px-6 py-12 text-center">
           <p className="font-medium text-[var(--ink)]">Posts unavailable</p>
@@ -685,34 +671,22 @@ export default async function ProfilePage({
               projection && PORTFOLIO_SECTIONS.some((section) => publicSectionVisible(projection, section))
             ),
           }) && <TrackPortfolioView username={profile.username} />}
-        <section className="card overflow-hidden">
-          {bannerUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={bannerUrl} alt="" className="aspect-[3/1] w-full object-cover" />
-          ) : (
-            <div
-              aria-hidden
-              className="aspect-[4/1] w-full"
-              style={{
-                background: `linear-gradient(120deg, color-mix(in srgb, ${theme ? "var(--profile-accent)" : "var(--blue)"} 14%, var(--surface-card)) 0%, var(--surface-card) 62%)`,
-              }}
-            />
-          )}
+        <section className="card-raised portfolio-enter-header overflow-hidden">
+          <PortfolioBanner username={profile.username} src={bannerUrl} accent={accentColor} />
           <div className="px-5 pb-5 sm:px-6 sm:pb-6">
-            <div className="flex items-end justify-between gap-3">
+            <div className="flex flex-col gap-3 min-[391px]:flex-row min-[391px]:items-end min-[391px]:justify-between">
               <AvatarBase
                 src={profile.avatar_url}
                 seed={profile.username}
                 name={displayName}
                 pro={pro}
                 style={accentColor ? { borderColor: accentColor } : undefined}
-                className="-mt-12 h-24 w-24 shrink-0 rounded-full border-4 border-[var(--surface-card)] text-3xl sm:-mt-14 sm:h-28 sm:w-28"
+                className="-mt-12 h-24 w-24 shrink-0 rounded-full border-2 border-[var(--surface-raised)] text-3xl sm:-mt-14 sm:h-28 sm:w-28"
               />
               {isOwner ? (
                 <SharePortfolioButton username={profile.username} displayName={displayName} />
               ) : (
-                <div className="flex shrink-0 flex-col items-end gap-2">
-                  <SharePortfolioButton username={profile.username} displayName={displayName} />
+                <div className="flex w-full shrink-0 flex-col items-stretch gap-2 min-[391px]:w-auto min-[391px]:items-end">
                   <ProfileActions
                     username={profile.username}
                     targetId={profile.id}
@@ -721,12 +695,13 @@ export default async function ProfilePage({
                     blocked={isBlocked}
                     amIBlocking={amIBlocking}
                   />
+                  <SharePortfolioButton username={profile.username} displayName={displayName} />
                 </div>
               )}
             </div>
             <div className="mt-3">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                <h1 className="text-2xl font-semibold tracking-[-0.025em] sm:text-[28px]">{displayName}</h1>
+                <h1 className="text-[32px] font-semibold tracking-[-0.025em]">{displayName}</h1>
                 <UserBadges isPro={profile.is_pro} isFounder={profile.is_founder} isCampusFounder={profile.is_campus_founder} isVerifiedStudent={profile.verified_student} isBot={profile.is_bot} />
               </div>
               <p className="mt-0.5 text-[15px] text-[var(--ink-muted)]">@{profile.username}</p>

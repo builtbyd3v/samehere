@@ -16,9 +16,9 @@
  */
 export const DARK = {
   "--canvas": "#0a0a0a",
-  "--surface": "#1a1a1a",
+  "--surface": "#161616",
   "--surface-post": "#1f2228",
-  "--border": "rgba(255, 255, 255, 0.10)",
+  "--border": "rgba(255, 255, 255, 0.08)",
   "--ink": "#f5f5f5",
   "--ink-muted": "#a1a5ab",
   "--ink-faint": "rgba(245, 245, 245, 0.55)",

@@ -6,6 +6,7 @@ import {
   useRef,
   type CSSProperties,
 } from "react";
+import LandingAtmosphereLazy from "./LandingAtmosphereLazy";
 import SocialScene from "./SocialScene";
 import { ghostCta, signupCta } from "./cta";
 
@@ -59,6 +60,7 @@ export default function Hero() {
 
   return (
     <section ref={heroRef} className="landing-hero">
+      <LandingAtmosphereLazy />
       <div className="landing-hero-copy">
         <p className="landing-hero-announcement landing-announce">
           For students, building together
