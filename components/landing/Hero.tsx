@@ -6,7 +6,6 @@ import {
   useRef,
   type CSSProperties,
 } from "react";
-import LandingAtmosphereLazy from "./LandingAtmosphereLazy";
 import SocialSceneLazy from "./SocialSceneLazy";
 import { ghostCta, signupCta } from "./cta";
 
@@ -60,7 +59,6 @@ export default function Hero() {
 
   return (
     <section ref={heroRef} id="main-content" className="landing-hero" tabIndex={-1}>
-      <LandingAtmosphereLazy />
       <div className="landing-hero-copy">
         <p className="landing-hero-announcement landing-announce">
           Online, transfer, commuter, or the only CS major you know
@@ -101,9 +99,7 @@ export default function Hero() {
       </div>
 
       <div className="landing-hero-stage">
-        <div className="landing-scene-rig">
-          <SocialSceneLazy />
-        </div>
+        <SocialSceneLazy />
       </div>
     </section>
   );

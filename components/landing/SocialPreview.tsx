@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "motion/react";
+import { motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { IconComment, IconRepost, IconSame } from "@/components/icons";
 import Avatar from "@/components/ui/Avatar";
@@ -70,8 +70,10 @@ function FeedPanel({ step }: { step: number }) {
         </div>
       </article>
 
-      {step >= 2 ? (
-        <article className="card-raised landing-beat p-4">
+      <article
+        className={`card-raised p-4${step >= 2 ? " landing-beat" : " landing-held"}`}
+        aria-hidden={step >= 2 ? undefined : true}
+      >
           <div className="flex gap-3">
             <Avatar seed="maya" name="Maya Chen" className="h-10 w-10 shrink-0 rounded-full border border-[var(--border)] text-sm" />
             <div className="min-w-0 flex-1">
@@ -92,7 +94,6 @@ function FeedPanel({ step }: { step: number }) {
             </div>
           </div>
         </article>
-      ) : null}
     </div>
   );
 }
@@ -107,11 +108,12 @@ function MessagesPanel({ step }: { step: number }) {
             Same here. I hit that exact test flake. Want to compare notes?
           </p>
         </div>
-        {step >= 1 ? (
-          <p className="landing-beat landing-beat-x max-w-[28rem] justify-self-end rounded-2xl rounded-br-md bg-[var(--ink)] px-3.5 py-2.5 text-[15px] leading-[1.45] text-[var(--canvas)]">
+        <p
+          className={`${step >= 1 ? "landing-beat" : "landing-held"} max-w-[28rem] justify-self-end rounded-2xl rounded-br-md bg-[var(--ink)] px-3.5 py-2.5 text-[15px] leading-[1.45] text-[var(--canvas)]`}
+          aria-hidden={step >= 1 ? undefined : true}
+        >
             Yes. I can send the failing spec after lab.
           </p>
-        ) : null}
       </div>
     </div>
   );
@@ -122,27 +124,21 @@ function PortfolioPanel({ step }: { step: number }) {
     <div className="landing-social-panel">
       <article className="card-raised landing-scan p-4 sm:p-5" data-scan={step >= 2 ? "true" : undefined}>
         <h3 className="text-[18px] font-semibold tracking-[-0.02em] text-[var(--ink)]">Campus course planner</h3>
-        {step >= 1 ? (
-          <p className="landing-beat mt-2 text-sm leading-6 text-[var(--ink-muted)]">
-            Ranks campus sections by time conflicts so you can lock a term before add/drop.
+        <p
+          className={`${step >= 1 ? "landing-beat" : "landing-held"} mt-2 text-sm leading-6 text-[var(--ink-muted)]`}
+          aria-hidden={step >= 1 ? undefined : true}
+        >
+          Ranks campus sections by time conflicts so you can lock a term before add/drop.
+        </p>
+        <div className={step >= 2 ? undefined : "landing-held"} aria-hidden={step >= 2 ? undefined : true}>
+          <p className={`${step >= 2 ? "landing-beat" : ""} mt-2 text-sm text-[var(--ink)]`}>
+            <span className="text-[var(--ink-muted)]">Role </span>
+            Scheduler for my lab section
           </p>
-        ) : (
-          <div className="landing-scene-profile-skel is-lines" aria-hidden>
-            <span />
-            <span />
-          </div>
-        )}
-        {step >= 2 ? (
-          <>
-            <p className="landing-beat mt-2 text-sm text-[var(--ink)]">
-              <span className="text-[var(--ink-muted)]">Role </span>
-              Scheduler for my lab section
-            </p>
-            <p className="landing-beat mt-3 text-[12px] font-medium tracking-[0.01em] text-[var(--ink-muted)]">
-              TypeScript · Next.js
-            </p>
-          </>
-        ) : null}
+          <p className={`${step >= 2 ? "landing-beat" : ""} mt-3 text-[12px] font-medium tracking-[0.01em] text-[var(--ink-muted)]`}>
+            TypeScript · Next.js
+          </p>
+        </div>
       </article>
     </div>
   );
@@ -251,22 +247,26 @@ export default function SocialPreview() {
       </div>
 
       <div className="landing-path-preview" aria-label="Example feed, messages, and portfolio">
-        <AnimatePresence initial={false} mode="wait">
-          <motion.div
-            key={active.id}
-            id={`landing-panel-${active.id}`}
-            role="tabpanel"
-            aria-labelledby={`landing-tab-${active.id}`}
-            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8 }}
-            transition={{ duration: reduceMotion ? 0.01 : 0.42, ease: EASE }}
-          >
-            {active.id === "feed" ? <FeedPanel step={displayStep} /> : null}
-            {active.id === "messages" ? <MessagesPanel step={displayStep} /> : null}
-            {active.id === "portfolio" ? <PortfolioPanel step={displayStep} /> : null}
-          </motion.div>
-        </AnimatePresence>
+        <div className="landing-reserve">
+          {TABS.map((tab, index) => {
+            const on = index === activeIndex;
+            const panelStep = on ? displayStep : tab.last;
+            return (
+              <div
+                key={tab.id}
+                id={on ? `landing-panel-${tab.id}` : undefined}
+                role={on ? "tabpanel" : undefined}
+                aria-labelledby={on ? `landing-tab-${tab.id}` : undefined}
+                className={on ? undefined : "landing-held"}
+                aria-hidden={on ? undefined : true}
+              >
+                {tab.id === "feed" ? <FeedPanel step={panelStep} /> : null}
+                {tab.id === "messages" ? <MessagesPanel step={panelStep} /> : null}
+                {tab.id === "portfolio" ? <PortfolioPanel step={panelStep} /> : null}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </section>
   );

@@ -243,8 +243,6 @@ main.landing-xai {
 
 .landing-hero {
   position: relative;
-  perspective: 1400px;
-  transform-style: preserve-3d;
   padding: 5.5rem clamp(1rem, 4vw, 2rem) 2.25rem;
 }
 
@@ -279,7 +277,6 @@ main.landing-xai {
   font-weight: 500;
   line-height: 1.05;
   letter-spacing: -0.03em;
-  perspective: 1200px;
 }
 
 .landing-hero-copy > p {
@@ -308,39 +305,27 @@ main.landing-xai {
 @keyframes landing-hero-word-in {
   from {
     opacity: 0;
-    filter: blur(8px);
-    transform: translateY(30%) rotateX(-12deg);
   }
   to {
     opacity: 1;
-    filter: blur(0);
-    transform: none;
   }
 }
 
 @keyframes landing-hero-item-in {
   from {
     opacity: 0;
-    filter: blur(4px);
-    transform: translateY(8px);
   }
   to {
     opacity: 1;
-    filter: blur(0);
-    transform: none;
   }
 }
 
 @keyframes landing-hero-subhead-in {
   from {
     opacity: 0;
-    filter: blur(4px);
-    transform: translateY(16px);
   }
   to {
     opacity: 1;
-    filter: blur(0);
-    transform: none;
   }
 }
 
@@ -362,11 +347,9 @@ main.landing-xai {
 @keyframes landing-hero-stage-in {
   from {
     opacity: 0;
-    transform: translateY(18px);
   }
   to {
     opacity: 1;
-    transform: none;
   }
 }
 
@@ -401,7 +384,6 @@ main.landing-xai {
     animation: landing-hero-word-in 650ms cubic-bezier(0.22, 1, 0.36, 1)
       both;
     animation-delay: calc(100ms + var(--word-index) * 55ms);
-    will-change: filter, transform;
   }
 
   .landing-hero-announcement {
@@ -437,24 +419,7 @@ main.landing-xai {
       2200ms both;
   }
 
-  .landing-hero-announcement,
-  .landing-hero-subhead {
-    will-change: filter, transform;
-  }
-
   @supports (animation-timeline: scroll()) {
-    .landing-hero-stage .landing-scene {
-      animation: landing-hero-stage-depth linear both;
-      animation-timeline: scroll();
-      animation-range: 0 72vh;
-    }
-
-    .landing-atmosphere {
-      animation: landing-atmosphere-depth linear both;
-      animation-timeline: scroll();
-      animation-range: 0 72vh;
-    }
-
     .landing-nav-shell::after {
       animation:
         brand-hairline-draw 180ms cubic-bezier(0.77, 0, 0.175, 1) 870ms both,
@@ -491,23 +456,6 @@ main.landing-xai {
   margin: 2rem auto 0;
 }
 
-.landing-scene-rig {
-  transform:
-    rotateX(var(--frame-rx, 0deg))
-    rotateY(var(--frame-ry, 0deg))
-    translateZ(var(--frame-tz, 0px));
-  transform-origin: 50% 42%;
-  transform-style: preserve-3d;
-}
-
-.landing-atmosphere {
-  pointer-events: none;
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  height: auto;
-}
-
 .landing-scene {
   position: relative;
   min-height: 28rem;
@@ -519,16 +467,8 @@ main.landing-xai {
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: var(--landing-radius);
-  background:
-    linear-gradient(
-      calc(118deg + var(--frame-ry, 0deg)),
-      rgba(255, 255, 255, 0.045),
-      transparent 32%
-    ),
-    var(--surface);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 28px 48px rgba(0, 0, 0, 0.32);
+  background: var(--surface);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .landing-scene-body {
@@ -710,22 +650,18 @@ main.landing-xai {
 @keyframes landing-beat-in {
   from {
     opacity: 0;
-    transform: translateY(10px);
   }
   to {
     opacity: 1;
-    transform: none;
   }
 }
 
 @keyframes landing-beat-x {
   from {
     opacity: 0;
-    transform: translateX(14px);
   }
   to {
     opacity: 1;
-    transform: none;
   }
 }
 
@@ -1497,6 +1433,18 @@ main.landing-xai {
 .landing-scan {
   position: relative;
   overflow: hidden;
+}
+
+.landing-reserve {
+  display: grid;
+}
+
+.landing-reserve > * {
+  grid-area: 1 / 1;
+}
+
+.landing-held {
+  visibility: hidden;
 }
 
 .landing-social-panel {

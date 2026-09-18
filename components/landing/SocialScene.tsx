@@ -1,6 +1,5 @@
 "use client";
 
-import { AnimatePresence, motion } from "motion/react";
 import { House, RotateCcw, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { IconBell, IconComment, IconCompose, IconMail, IconRepost, IconSame, IconSearch } from "@/components/icons";
@@ -224,16 +223,18 @@ export default function SocialScene() {
             </div>
 
             {POSTS.map((post) => {
-              if (post.id === "jordan-building" && !showSecond) return null;
               const author = PEOPLE[post.authorId];
               const active = selectedId === post.authorId;
               const sameCount = post.id === "maya-stuck" ? (reactionOn ? post.samehere + 1 : post.samehere) : post.samehere;
+              const postHeld = post.id === "jordan-building" && !showSecond;
+              const replyHeld = "reply" in post && !showAck;
               return (
                 <article
                   key={post.id}
-                  className="card-raised landing-beat p-4"
+                  className={`card-raised p-4${postHeld ? " landing-held" : " landing-beat"}`}
                   data-active={active || undefined}
                   data-ack={"reply" in post && showAck ? "true" : undefined}
+                  aria-hidden={postHeld || undefined}
                 >
                   <div className="flex gap-3">
                     <PersonButton personId={post.authorId} onSelect={selectPerson} />
@@ -253,8 +254,11 @@ export default function SocialScene() {
                     </div>
                   </div>
 
-                  {"reply" in post && showAck ? (
-                    <div className="landing-beat mt-3 flex gap-3 border-t border-[var(--border)] pt-3">
+                  {"reply" in post ? (
+                    <div
+                      className={`mt-3 flex gap-3 border-t border-[var(--border)] pt-3${replyHeld ? " landing-held" : " landing-beat"}`}
+                      aria-hidden={replyHeld || undefined}
+                    >
                       <PersonButton personId={post.reply.authorId} onSelect={selectPerson} size="sm" />
                       <div className="min-w-0 flex-1">
                         <button type="button" className="text-left text-sm" onClick={() => selectPerson(post.reply.authorId)}>
@@ -298,59 +302,55 @@ export default function SocialScene() {
             })}
           </div>
 
-          <aside className="landing-scene-profile" aria-label={profileLive ? `${selected.name} profile example` : "Profile example"}>
-            {profileLive ? (
-              <AnimatePresence initial={false} mode="popLayout">
-                <motion.div
-                  key={selected.id}
-                  className="card-raised landing-beat p-4"
-                  initial={reduceMotion ? false : { opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={reduceMotion ? undefined : { opacity: 0, y: -6 }}
-                  transition={{ duration: reduceMotion ? 0 : 0.32, ease: [0.16, 1, 0.3, 1] }}
+          <aside
+            className="landing-scene-profile landing-reserve"
+            aria-label={profileLive ? `${selected.name} profile example` : "Profile example"}
+          >
+            {(Object.keys(PEOPLE) as PersonId[]).map((id) => {
+              const person = PEOPLE[id];
+              const shown = profileLive && id === selectedId;
+              return (
+                <div
+                  key={person.id}
+                  className={`card-raised p-4${shown ? " landing-beat" : " landing-held"}`}
+                  aria-hidden={shown ? undefined : true}
                 >
                   <Avatar
-                    seed={selected.handle}
-                    name={selected.name}
+                    seed={person.handle}
+                    name={person.name}
                     className="h-14 w-14 rounded-full border-2 border-[var(--surface-raised)] text-lg"
                   />
-                  <p className="landing-scene-profile-name">{selected.name}</p>
-                  <p className="landing-scene-profile-meta">@{selected.handle}</p>
+                  <p className="landing-scene-profile-name">{person.name}</p>
+                  <p className="landing-scene-profile-meta">@{person.handle}</p>
                   <p className="landing-scene-profile-meta">
-                    {selected.school}
+                    {person.school}
                     <span className="mx-1">·</span>
-                    {selected.year}
+                    {person.year}
                   </p>
                   <p className="landing-scene-stats">
                     <span>
-                      <b>{selected.posts}</b> posts
+                      <b>{person.posts}</b> posts
                     </span>
                     <span>
-                      <b>{selected.followers}</b> followers
+                      <b>{person.followers}</b> followers
                     </span>
                     <span>
-                      <b>{selected.following}</b> following
+                      <b>{person.following}</b> following
                     </span>
                   </p>
-                  <p className="landing-scene-open">{selected.openTo}</p>
+                  <p className="landing-scene-open">{person.openTo}</p>
                   <div className="landing-scene-project">
-                    <h3>{selected.project.title}</h3>
-                    <p>{selected.project.summary}</p>
+                    <h3>{person.project.title}</h3>
+                    <p>{person.project.summary}</p>
                     <p>
                       <span>Role </span>
-                      {selected.project.role}
+                      {person.project.role}
                     </p>
-                    <p className="landing-scene-stack">{selected.project.stack}</p>
+                    <p className="landing-scene-stack">{person.project.stack}</p>
                   </div>
-                </motion.div>
-              </AnimatePresence>
-            ) : (
-              <div className="landing-scene-profile-skel" aria-hidden>
-                <span />
-                <span />
-                <span />
-              </div>
-            )}
+                </div>
+              );
+            })}
           </aside>
         </div>
         {!reduceMotion && complete ? (
