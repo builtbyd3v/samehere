@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import UserBadges from "@/components/profile/UserBadges";
 import AvatarBase from "@/components/ui/Avatar";
 import EmptyState from "@/components/ui/EmptyState";
+import { CTA, search } from "@/lib/copy-voice";
 import {
   SEARCH_PAGE,
   clampSearchOffset,
@@ -37,13 +38,13 @@ export async function FeedSearchResults({
     return (
       <div>
         {peoplePage > 1 ? (
-          <EmptyState title="No more people for this query." />
+          <EmptyState title={search.noMorePeople.title} />
         ) : (
           <EmptyState
-            title="No students found"
-            description={`Nothing matched “${q}”. Try another name, username, or project — or browse Latest while the network is thin.`}
-            action={{ label: "Browse Latest", href: "/feed" }}
-            secondaryAction={{ label: "Clear search", href: "/search" }}
+            title={search.noPeople.title}
+            description={search.noPeople.description(q)}
+            action={{ label: CTA.browseLatest, href: "/feed" }}
+            secondaryAction={{ label: CTA.clearSearch, href: "/search" }}
           />
         )}
         {peoplePage > 1 && (

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import FeedTimeline from "@/components/feed/FeedTimeline";
 import EmptyState from "@/components/ui/EmptyState";
+import { CTA, search } from "@/lib/copy-voice";
 import {
   SEARCH_PAGE,
   tokensFor,
@@ -64,17 +65,17 @@ export default async function SearchPostsPage({
         </div>
       ) : offset > 0 ? (
         <div>
-          <p className="text-sm text-[var(--ink-muted)]">No more posts for this query.</p>
+          <p className="text-sm text-[var(--ink-muted)]">{search.noMorePosts.title}</p>
           <Link href={postsSearchHref(q, prevOffset)} className="mt-3 inline-block text-sm text-[var(--ink-muted)] underline hover:text-[var(--ink)]">
             Previous
           </Link>
         </div>
       ) : (
         <EmptyState
-          title="No posts found"
-          description={`Nothing matched “${q}”. Try another phrase, or browse Latest for Stuck posts.`}
-          action={{ label: "Browse Latest", href: "/feed" }}
-          secondaryAction={{ label: "Back to search", href: q ? `/search?q=${encodeURIComponent(q)}` : "/search" }}
+          title={search.noPosts.title}
+          description={search.noPosts.description(q)}
+          action={{ label: CTA.browseLatest, href: "/feed" }}
+          secondaryAction={{ label: CTA.backToSearch, href: q ? `/search?q=${encodeURIComponent(q)}` : "/search" }}
         />
       )}
     </main>
