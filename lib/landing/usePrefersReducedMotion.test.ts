@@ -14,18 +14,16 @@ describe("usePrefersReducedMotion", () => {
     expect(renderToString(createElement(Probe))).toBe("<span>false</span>");
   });
 
-  it("SSR Hero is the social scene, not the GitHub workbench", () => {
+  it("SSR Hero ships copy + reserved scene shell (scene JS deferred)", () => {
     const html = renderToString(createElement(Hero));
     expect(html).toContain("Find");
     expect(html).toContain("people");
     expect(html).toContain("building.");
     expect(html).toContain("you’re");
     expect(html).toContain("For students, building together");
-    expect(html).toContain("Maya Chen");
-    expect(html).toContain(">MC<");
-    expect(html).toContain("Campus course planner");
-    expect(html).toContain("Priya Shah");
-    expect(html).toContain("Example");
+    // SocialScene is next/dynamic ssr:false — reserved .landing-scene keeps CLS at 0
+    expect(html).toContain('class="landing-scene"');
+    expect(html).toContain("landing-hero-stage");
     expect(html).not.toContain("Turn a public GitHub repo into an editable project");
     expect(html).not.toMatch(/landing-workbench/);
   });
