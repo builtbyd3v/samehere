@@ -1485,6 +1485,7 @@ export type Database = {
           major: string | null
           onboarded_at: string | null
           open_to: string[]
+          study_mode: string | null
           pro_source: string | null
           pro_until: string | null
           profile_theme: string | null
@@ -1520,6 +1521,7 @@ export type Database = {
           major?: string | null
           onboarded_at?: string | null
           open_to?: string[]
+          study_mode?: string | null
           pro_source?: string | null
           pro_until?: string | null
           profile_theme?: string | null
@@ -1555,6 +1557,7 @@ export type Database = {
           major?: string | null
           onboarded_at?: string | null
           open_to?: string[]
+          study_mode?: string | null
           pro_source?: string | null
           pro_until?: string | null
           profile_theme?: string | null
@@ -2291,6 +2294,7 @@ export type Database = {
           major: string
           open_to: string[] | null
           school: string
+          study_mode: string | null
           username: string
           verified_student: boolean
           year: string

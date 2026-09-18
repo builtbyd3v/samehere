@@ -337,6 +337,12 @@ begin
   if v_open is not null or v_bio is not null then
     raise exception 'suspended profile leaked content';
   end if;
+  if exists (
+    select 1 from public.get_public_profile('pf_test_c')
+    where study_mode is not null
+  ) then
+    raise exception 'suspended profile leaked study_mode';
+  end if;
   insert into tests_results values ('PORT_suspended', true, 'ok');
 exception when others then
   insert into tests_results values ('PORT_suspended', false, sqlerrm);
