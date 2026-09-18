@@ -77,6 +77,9 @@ export default async function MessagesPage({
             action={{ label: CTA.findPeople, href: "/search" }}
             secondaryAction={{ label: CTA.seeLatest, href: "/feed" }}
           />
+          {/* Keep the empty inbox live too: a viewer's first-ever DM must swap this
+              empty state for the thread list without a manual reload. */}
+          <MessageInboxRealtime />
         </div>
       ) : (
         <section className="card overflow-hidden">
