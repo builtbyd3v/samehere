@@ -2,6 +2,7 @@ import type {
   AnalysisDraft,
   ContextLabel,
   OpenToTag,
+  StudyMode,
   PortfolioPublishFlags,
   PortfolioSection,
   ProjectStatus,
@@ -25,6 +26,13 @@ export const PORTFOLIO_LIMITS = {
 
 export const CONTEXT_LABELS = ["building", "learning", "stuck"] as const satisfies readonly ContextLabel[];
 export const OPEN_TO_TAGS = ["collaborate", "study", "feedback"] as const satisfies readonly OpenToTag[];
+export const STUDY_MODES = [
+  "on_campus",
+  "online",
+  "hybrid",
+  "bootcamp",
+  "self_taught",
+] as const satisfies readonly StudyMode[];
 export const PORTFOLIO_SECTIONS = [
   "intro",
   "projects",
@@ -92,6 +100,13 @@ export function contextLabelError(label: string | null | undefined): string | nu
   if (normalized === null) return null;
   if ((CONTEXT_LABELS as readonly string[]).includes(normalized)) return null;
   return "Context label must be building, learning, or stuck.";
+}
+
+export function studyModeError(mode: string | null | undefined): string | null {
+  const normalized = normalizeOptional(mode);
+  if (normalized === null) return null;
+  if ((STUDY_MODES as readonly string[]).includes(normalized)) return null;
+  return "Study mode must be on campus, online, hybrid, bootcamp, or self-taught.";
 }
 
 export function openToError(tags: readonly string[]): string | null {

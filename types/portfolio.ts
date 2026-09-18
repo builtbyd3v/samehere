@@ -16,6 +16,7 @@ export const PORTFOLIO_FINALIZE_MIGRATION =
 
 export type ContextLabel = "building" | "learning" | "stuck";
 export type OpenToTag = "collaborate" | "study" | "feedback";
+export type StudyMode = "on_campus" | "online" | "hybrid" | "bootcamp" | "self_taught";
 export type PortfolioSection =
   | "intro"
   | "projects"
@@ -402,8 +403,8 @@ export type AnalysisUsageMonth = {
  *   get_public_portfolio*: activity_visible = portfolio_activity_readable
  *     (section). GitHub rows are get_public_github_contributions only.
  *   get_public_github_contributions
- *   get_public_profile: open_to; blocked viewer → 0 rows; suspended →
- *     identity only (content/open_to nulled)
+ *   get_public_profile: open_to + study_mode; blocked viewer → 0 rows; suspended →
+ *     identity only (content/open_to/study_mode nulled)
  *   get_public_post: context_label; 0 rows if private/hidden/suspended/blocked
  *
  * Table SELECT is owner-only for portfolio_projects, portfolio_settings,
