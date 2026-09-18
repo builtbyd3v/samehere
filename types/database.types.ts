@@ -1370,6 +1370,9 @@ export type Database = {
           id: string
           media: Json
           post_type: string | null
+          team_event_date: string | null
+          team_event_mode: string | null
+          team_event_name: string | null
           user_id: string | null
         }
         Insert: {
@@ -1380,6 +1383,9 @@ export type Database = {
           id?: string
           media?: Json
           post_type?: string | null
+          team_event_date?: string | null
+          team_event_mode?: string | null
+          team_event_name?: string | null
           user_id?: string | null
         }
         Update: {
@@ -1390,6 +1396,9 @@ export type Database = {
           id?: string
           media?: Json
           post_type?: string | null
+          team_event_date?: string | null
+          team_event_mode?: string | null
+          team_event_name?: string | null
           user_id?: string | null
         }
         Relationships: [

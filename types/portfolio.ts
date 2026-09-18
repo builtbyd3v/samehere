@@ -14,7 +14,8 @@ export const PORTFOLIO_MIGRATION = "20260910100000_portfolio_data_contracts.sql"
 export const PORTFOLIO_FINALIZE_MIGRATION =
   "20260910130000_repository_analysis_finalize.sql" as const;
 
-export type ContextLabel = "building" | "learning" | "stuck";
+export type ContextLabel = "building" | "learning" | "stuck" | "looking_for_team";
+export type TeamEventMode = "remote" | "in_person";
 export type OpenToTag = "collaborate" | "study" | "feedback";
 export type PortfolioSection =
   | "intro"

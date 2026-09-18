@@ -59,7 +59,7 @@ describe("contextLabelError", () => {
 
   it("rejects unknown labels", () => {
     expect(contextLabelError("shipping")).toBe(
-      "Context label must be building, learning, or stuck."
+      "Context label must be building, learning, stuck, or looking_for_team."
     );
   });
 });

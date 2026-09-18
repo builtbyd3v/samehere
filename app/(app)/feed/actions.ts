@@ -13,6 +13,8 @@ import { type AiResult } from "@/lib/ai";
 import { getPostHogServerClient } from "@/lib/posthog-server";
 import { TEXT_LIMITS, textLimitError } from "@/lib/utils/validation";
 import { contextLabelError, parseContextLabel } from "@/lib/context-label";
+import { fetchLookingForTeamPosts } from "@/lib/feed-looking-for-team";
+import { isLookingForTeamFeed, parseTeamEventFields, teamEventError } from "@/lib/team-event";
 import { peopleSearchCore, type PeopleSearchState } from "@/lib/people-search";
 
 export type ComposerState = { error?: string; ok?: boolean };
@@ -87,6 +89,26 @@ export async function loadMorePosts(
   return { items, nextCursor };
 }
 
+export async function loadMoreLookingForTeamPosts(
+  cursor: string,
+): Promise<{ items: FeedTimelineItem[]; nextCursor: string | null }> {
+  const decoded = decodeCursor(cursor);
+  if (!decoded) return { items: [], nextCursor: null };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const posts = await fetchLookingForTeamPosts(supabase, {
+    viewerId: user?.id ?? null,
+    cursor: decoded,
+    limit: PAGE,
+  });
+  const items = posts.map((post) => ({ kind: "post" as const, created_at: post.created_at, post }));
+  const last = items[items.length - 1];
+  return { items, nextCursor: last ? encodeCursor(last.created_at, itemId(last)) : null };
+}
+
 const MAX = TEXT_LIMITS.post;
 
 // Create a post. Any non-empty content is allowed — the 150-char threshold only
@@ -141,10 +163,25 @@ export async function createPost(_prev: ComposerState, formData: FormData): Prom
   const labelErr = contextLabelError(rawLabel);
   if (labelErr) return { error: labelErr };
   const context_label = parseContextLabel(rawLabel);
+  const eventInput = {
+    label: rawLabel,
+    name: formData.get("team_event_name"),
+    date: formData.get("team_event_date"),
+    mode: formData.get("team_event_mode"),
+  };
+  const eventErr = teamEventError(eventInput);
+  if (eventErr) return { error: eventErr };
+  const event = parseTeamEventFields(eventInput);
 
-  const { error } = await supabase
-    .from("posts")
-    .insert({ user_id: user.id, content, media, context_label });
+  const { error } = await supabase.from("posts").insert({
+    user_id: user.id,
+    content,
+    media,
+    context_label,
+    team_event_name: event.team_event_name,
+    team_event_date: event.team_event_date,
+    team_event_mode: event.team_event_mode,
+  });
   if (error) return { error: "Could not publish your post. Try again." };
 
   const posthog = getPostHogServerClient();
@@ -155,6 +192,8 @@ export async function createPost(_prev: ComposerState, formData: FormData): Prom
       has_media: media.length > 0,
       media_count: media.length,
       character_count: content.length,
+      context_label,
+      has_team_event: Boolean(event.team_event_name || event.team_event_date || event.team_event_mode),
     },
   });
 
@@ -225,10 +264,18 @@ export async function peopleSearch(query: string, _verifiedOnly?: boolean): Prom
 // Count posts newer than a timestamp, for the feed's "N new posts" pill. Capped
 // at 30 — the pill only needs "many", not an exact count. Blocked authors are
 // filtered app-side, mirroring the first-page query in page.tsx.
-export async function countNewerPosts(sinceIso: string): Promise<number> {
+export async function countNewerPosts(sinceIso: string, labelRaw?: string | null): Promise<number> {
   const supabase = await createClient();
+  const teamOnly = isLookingForTeamFeed({ label: labelRaw ?? undefined });
+  let query = supabase
+    .from("posts")
+    .select("id, user_id")
+    .gt("created_at", sinceIso)
+    .order("created_at", { ascending: false })
+    .limit(30);
+  if (teamOnly) query = query.eq("context_label", "looking_for_team");
   const [{ data }, { data: blockedIds }] = await Promise.all([
-    supabase.from("posts").select("id, user_id").gt("created_at", sinceIso).order("created_at", { ascending: false }).limit(30),
+    query,
     supabase.rpc("get_blocked_ids"),
   ]);
   if (!data) return 0;

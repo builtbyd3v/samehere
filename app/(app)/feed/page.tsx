@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { getViewer, getViewerProfile, getViewerProfileCounts } from "@/lib/viewer";
 import { POST_SELECT, PAGE, withEngagement, type PostRow } from "@/components/feed/PostCard";
 import FeedTabs from "@/components/feed/FeedTabs";
+import LookingForTeamChip from "@/components/feed/LookingForTeamChip";
 import FeedTimeline from "@/components/feed/FeedTimeline";
 import FeedLoadMore from "@/components/feed/FeedLoadMore";
 import EmptyState from "@/components/ui/EmptyState";
@@ -18,6 +19,9 @@ import ComposerToggle from "./ComposerToggle";
 import LeftRail, { LeftRailFallback } from "./LeftRail";
 import OnboardingChecklist from "@/components/feed/OnboardingChecklist";
 import NewPostsPill from "./NewPostsPill";
+import { loadMoreLookingForTeamPosts } from "./actions";
+import { fetchLookingForTeamPosts } from "@/lib/feed-looking-for-team";
+import { isLookingForTeamFeed, lookingForTeamFeedPath } from "@/lib/team-event";
 import { Skeleton, PostCardSkeleton } from "@/components/ui/Skeleton";
 
 // Desktop feed redesign, now the live /feed. The app shell (app/(app)/layout.tsx)
@@ -33,25 +37,28 @@ import { Skeleton, PostCardSkeleton } from "@/components/ui/Skeleton";
 export default async function FeedPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; label?: string }>;
 }) {
   const params = await searchParams;
-  const tab = params.tab === "following" ? "following" : "latest";
+  const lookingForTeam = isLookingForTeamFeed(params);
+  const tab = lookingForTeam ? "latest" : params.tab === "following" ? "following" : "latest";
   const { user } = await getViewer();
   const viewerId = user?.id ?? null;
 
   return (
     <main data-feed-page className="page-enter grid grid-cols-1 justify-center gap-7 py-6 lg:py-8 xl:grid-cols-[minmax(0,600px)_340px]">
       <div className="min-w-0">
-        <Suspense fallback={<FeedHeaderFallback tab={tab} />}>
-          <FeedHeader tab={tab} userId={user?.id ?? null} />
+        <Suspense fallback={<FeedHeaderFallback tab={tab} lookingForTeam={lookingForTeam} />}>
+          <FeedHeader tab={tab} lookingForTeam={lookingForTeam} userId={user?.id ?? null} />
         </Suspense>
 
         <Suspense fallback={<FeedTimelineFallback />}>
-          {tab === "latest" ? (
-            <LatestTab viewerId={viewerId} />
-          ) : (
+          {tab === "following" ? (
             <FollowingTab userId={user?.id ?? null} viewerId={viewerId} />
+          ) : lookingForTeam ? (
+            <LookingForTeamTab viewerId={viewerId} />
+          ) : (
+            <LatestTab viewerId={viewerId} />
           )}
         </Suspense>
       </div>
@@ -74,7 +81,24 @@ export default async function FeedPage({
 // Composer trigger + tabs + onboarding checklist. Suspense-wrapped so its own
 // profile/counts fetch runs independently of (not before) the timeline
 // below — same reasoning as LeftRail/RightRail's own boundaries.
-async function FeedHeader({ tab, userId }: { tab: "latest" | "following"; userId: string | null }) {
+function FeedFilters({ tab, lookingForTeam }: { tab: "latest" | "following"; lookingForTeam: boolean }) {
+  return (
+    <div className="mt-3 flex flex-col gap-2 min-[400px]:flex-row min-[400px]:items-center min-[400px]:justify-between">
+      <FeedTabs tab={tab} basePath="/feed" />
+      <LookingForTeamChip active={lookingForTeam} />
+    </div>
+  );
+}
+
+async function FeedHeader({
+  tab,
+  lookingForTeam,
+  userId,
+}: {
+  tab: "latest" | "following";
+  lookingForTeam: boolean;
+  userId: string | null;
+}) {
   const composerProfile = userId ? await getViewerProfile() : null;
   const composerPro = isPro(composerProfile ?? { is_pro: false, pro_until: null });
 
@@ -95,9 +119,7 @@ async function FeedHeader({ tab, userId }: { tab: "latest" | "following"; userId
       <div className="sticky top-14 z-30 mb-4 -mt-2 border-b border-[var(--border)] bg-[var(--canvas)]/95 pt-2 pb-3 backdrop-blur">
         <h1 className="sr-only">Feed</h1>
         <ComposerToggle isPro={composerPro} avatarUrl={composerProfile?.avatar_url ?? null} isSuspended={isSuspended} />
-        <div className="mt-3">
-          <FeedTabs tab={tab} basePath="/feed" />
-        </div>
+        <FeedFilters tab={tab} lookingForTeam={lookingForTeam} />
       </div>
       {userId && (
         <OnboardingChecklist
@@ -112,14 +134,18 @@ async function FeedHeader({ tab, userId }: { tab: "latest" | "following"; userId
   );
 }
 
-function FeedHeaderFallback({ tab }: { tab: "latest" | "following" }) {
+function FeedHeaderFallback({
+  tab,
+  lookingForTeam,
+}: {
+  tab: "latest" | "following";
+  lookingForTeam: boolean;
+}) {
   return (
     <div className="sticky top-14 z-30 mb-4 -mt-2 border-b border-[var(--border)] bg-[var(--canvas)]/95 pt-2 pb-3 backdrop-blur">
       <h1 className="sr-only">Feed</h1>
       <Skeleton className="h-[68px] w-full rounded-2xl" />
-      <div className="mt-3">
-        <FeedTabs tab={tab} basePath="/feed" />
-      </div>
+      <FeedFilters tab={tab} lookingForTeam={lookingForTeam} />
     </div>
   );
 }
@@ -203,6 +229,39 @@ async function LatestTab({ viewerId }: { viewerId: string | null }) {
       {/* key by the last cursor so a router.refresh() (new-posts pill) remounts
           this with fresh pagination state instead of keeping the stale cursor. */}
       <FeedLoadMore key={lastCursor} auto cursor={lastCursor} hasMore={timeline.length === PAGE} viewerId={viewerId} />
+    </section>
+  );
+}
+
+async function LookingForTeamTab({ viewerId }: { viewerId: string | null }) {
+  const { supabase } = await getViewer();
+  const posts = await fetchLookingForTeamPosts(supabase, { viewerId, limit: PAGE });
+
+  if (posts.length === 0) {
+    return (
+      <EmptyState
+        title="No Looking for team posts yet"
+        description="Be the first. Event name, date, and remote/in person are optional."
+        action={{ label: "Back to Latest", href: "/feed" }}
+      />
+    );
+  }
+
+  const items = posts.map((post) => ({ kind: "post" as const, created_at: post.created_at, post }));
+  const last = items[items.length - 1];
+  const lastCursor = encodeCursor(last.created_at, itemId(last));
+  return (
+    <section className="flex flex-col gap-3">
+      <NewPostsPill since={items[0].created_at} label="looking_for_team" />
+      <FeedTimeline items={items} viewerId={viewerId} />
+      <FeedLoadMore
+        key={`${lookingForTeamFeedPath()}:${lastCursor}`}
+        auto
+        cursor={lastCursor}
+        hasMore={items.length === PAGE}
+        viewerId={viewerId}
+        action={loadMoreLookingForTeamPosts}
+      />
     </section>
   );
 }
