@@ -28,17 +28,20 @@ describe("stretch empty / a11y polish", () => {
   });
 
   it("Following empty states point to search and Latest", () => {
-    const feed = readFileSync(join(root, "app/(app)/feed/page.tsx"), "utf8");
-    expect(feed).toMatch(/Follow people to shape this feed/);
-    expect(feed).toMatch(/Quiet for now/);
-    expect(feed).toMatch(/href: "\/search"/);
-    expect(feed).toMatch(/href: "\/feed"/);
-    expect(feed).not.toMatch(/href: "\/community"/);
+    const page = readFileSync(join(root, "app/(app)/feed/page.tsx"), "utf8");
+    expect(page).toMatch(/feed\.followingThin/);
+    expect(page).toMatch(/feed\.followingQuiet/);
+    expect(page).toMatch(/href: "\/search"/);
+    expect(page).toMatch(/href: "\/feed"/);
+    expect(page).not.toMatch(/href: "\/community"/);
+    const copy = readFileSync(join(root, "lib/copy-voice.ts"), "utf8");
+    expect(copy).toMatch(/Follow people to shape this feed/);
+    expect(copy).toMatch(/Quiet for now/);
   });
 
   it("search idle and page search are labeled", () => {
     const idle = readFileSync(join(root, "components/search/SearchIdle.tsx"), "utf8");
-    expect(idle).toMatch(/Browse Latest/);
+    expect(idle).toMatch(/CTA\.browseLatest/);
     const bar = readFileSync(join(root, "components/search/SearchBar.tsx"), "utf8");
     expect(bar).toMatch(/aria-label="Search people, projects, and posts"/);
     expect(bar).toMatch(/role="search"/);
@@ -58,6 +61,7 @@ describe("stretch empty / a11y polish", () => {
       "app/(app)/feed/error.tsx",
       "app/(app)/search/error.tsx",
       "app/(app)/profile/[username]/error.tsx",
+      "app/(app)/messages/error.tsx",
       "app/(auth)/loading.tsx",
       "app/(app)/profile/projects/new/loading.tsx",
     ]) {

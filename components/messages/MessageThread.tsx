@@ -7,6 +7,7 @@ import DmMessageReport from "@/components/messages/DmMessageReport";
 import DmThreadMenu from "@/components/messages/DmThreadMenu";
 import GroupManage from "@/components/messages/GroupManage";
 import type { DmMessage, GroupMember, ChatParticipant } from "@/lib/messages";
+import { messages as messagesCopy } from "@/lib/copy-voice";
 
 export default function MessageThread({
   messages,
@@ -26,9 +27,10 @@ export default function MessageThread({
 }) {
   if (messages.length === 0) {
     return (
-      <p className="px-5 py-16 text-center text-sm text-[var(--ink-muted)]">
-        No messages yet. Say hello.
-      </p>
+      <div className="px-5 py-16 text-center" role="status">
+        <p className="text-sm font-medium text-[var(--ink)]">{messagesCopy.threadEmpty.title}</p>
+        <p className="mt-1.5 text-sm text-[var(--ink-muted)]">{messagesCopy.threadEmpty.description}</p>
+      </div>
     );
   }
 

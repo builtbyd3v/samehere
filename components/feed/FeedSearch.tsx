@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import SearchPersonCard from "@/components/search/SearchPersonCard";
 import EmptyState from "@/components/ui/EmptyState";
+import { CTA, search } from "@/lib/copy-voice";
 import {
   SEARCH_PAGE,
   clampSearchOffset,
@@ -53,17 +54,17 @@ export async function FeedSearchResults({
     return (
       <div>
         {peoplePage > 1 ? (
-          <EmptyState title="No more people for this query." />
+          <EmptyState title={search.noMorePeople.title} />
         ) : (
           <EmptyState
-            title="No students found"
+            title={search.noPeople.title}
             description={
               q
-                ? `Nothing matched “${q}”. Try another name, username, or project — or browse Latest while the network is thin.`
+                ? search.noPeople.description(q)
                 : "Nobody matches these filters yet. Try another stage or tag."
             }
-            action={{ label: "Browse Latest", href: "/feed" }}
-            secondaryAction={{ label: "Clear search", href: "/search" }}
+            action={{ label: CTA.browseLatest, href: "/feed" }}
+            secondaryAction={{ label: CTA.clearSearch, href: "/search" }}
           />
         )}
         {peoplePage > 1 && (

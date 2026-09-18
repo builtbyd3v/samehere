@@ -8,6 +8,7 @@ import FeedLoadMore from "@/components/feed/FeedLoadMore";
 import FollowingSeed from "@/components/feed/FollowingSeed";
 import EmptyState from "@/components/ui/EmptyState";
 import FollowRequests, { type FollowRequest } from "@/components/profile/FollowRequests";
+import { CTA, feed } from "@/lib/copy-voice";
 import { attachSignedMedia } from "@/lib/media";
 import { mergeFeedTimeline, itemId } from "@/lib/feed-timeline";
 import { fetchQuotedReposts, toQuotedRepost } from "@/lib/feed-quotes";
@@ -210,10 +211,10 @@ async function LatestTab({ viewerId }: { viewerId: string | null }) {
   if (timeline.length === 0) {
     return (
       <EmptyState
-        title="Nothing here yet"
-        description="Be the first to share what you’re building, learning, or stuck on."
-        action={{ label: "Find people", href: "/search" }}
-        secondaryAction={{ label: "Edit profile", href: "/profile/edit" }}
+        title={feed.latestEmpty.title}
+        description={feed.latestEmpty.description}
+        action={{ label: CTA.findPeople, href: "/search" }}
+        secondaryAction={{ label: CTA.editProfile, href: "/profile/edit" }}
       />
     );
   }
@@ -353,17 +354,17 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
         <FollowingSeed posts={seedPosts} viewerId={viewerId} />
       ) : thinFollowing ? (
         <EmptyState
-          title="Follow people to shape this feed"
-          description="Until you follow a few students, Latest is the best place to find Stuck, Learning, and Building posts."
-          action={{ label: "Find people", href: "/search" }}
-          secondaryAction={{ label: "See Latest", href: "/feed" }}
+          title={feed.followingThin.title}
+          description={feed.followingThin.description}
+          action={{ label: CTA.findPeople, href: "/search" }}
+          secondaryAction={{ label: CTA.seeLatest, href: "/feed" }}
         />
       ) : (
         <EmptyState
-          title="Quiet for now"
-          description="People you follow haven’t posted yet. Check Latest for Stuck posts from the wider network."
-          action={{ label: "See Latest", href: "/feed" }}
-          secondaryAction={{ label: "Find more people", href: "/search" }}
+          title={feed.followingQuiet.title}
+          description={feed.followingQuiet.description}
+          action={{ label: CTA.seeLatest, href: "/feed" }}
+          secondaryAction={{ label: CTA.findPeople, href: "/search" }}
         />
       )}
     </section>

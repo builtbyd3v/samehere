@@ -6,6 +6,7 @@ import { fetchPlainReposts } from "@/lib/feed-reposts";
 import { mergeFeedTimeline } from "@/lib/feed-timeline";
 import { attachSignedMedia } from "@/lib/media";
 import EmptyState from "@/components/ui/EmptyState";
+import { CTA, profile as profileCopy } from "@/lib/copy-voice";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function ProfileRecentPosts({
@@ -30,8 +31,8 @@ export default async function ProfileRecentPosts({
           Posts
         </h2>
         <EmptyState
-          title="Posts unavailable"
-          description={`You and @${username} cannot see each other’s posts.`}
+          title={profileCopy.postsUnavailable.title}
+          description={profileCopy.postsUnavailable.description(username)}
         />
       </section>
     );
@@ -43,8 +44,8 @@ export default async function ProfileRecentPosts({
           Posts
         </h2>
         <EmptyState
-          title="This account is private"
-          description={`Follow @${username} to see their posts.`}
+          title={profileCopy.postsPrivate.title}
+          description={profileCopy.postsPrivate.description(username)}
         />
       </section>
     );
@@ -94,13 +95,13 @@ export default async function ProfileRecentPosts({
       </h2>
       {timeline.length === 0 ? (
         <EmptyState
-          title="No posts yet"
+          title={isOwner ? profileCopy.postsEmptyOwner.title : profileCopy.postsEmptyViewer.title}
           description={
             isOwner
-              ? "Share something Stuck, Learning, or Building to fill this section."
-              : `@${username} has not posted yet.`
+              ? profileCopy.postsEmptyOwner.description
+              : profileCopy.postsEmptyViewer.description(username)
           }
-          action={isOwner ? { label: "Go to feed", href: "/feed" } : undefined}
+          action={isOwner ? { label: CTA.openFeed, href: "/feed" } : undefined}
         />
       ) : (
         <div className="flex flex-col gap-3">
