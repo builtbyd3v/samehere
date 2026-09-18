@@ -1,0 +1,9 @@
+{
+  "name": "samehere-verify-helpers",
+  "private": true,
+  "type": "module",
+  "description": "Playwright-core CDP driver for the verify-samehere skill. Not part of the app.",
+  "dependencies": {
+    "playwright-core": "^1.55.2"
+  }
+}

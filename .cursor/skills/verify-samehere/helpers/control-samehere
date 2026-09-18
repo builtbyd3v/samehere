@@ -1,0 +1,290 @@
+#!/usr/bin/env bash
+# Drive a disposable samehere verification instance. See SKILL.md.
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/common.sh
+source "$SCRIPT_DIR/lib/common.sh"
+
+usage() {
+  cat <<'EOF'
+control-samehere — launch, inspect, and drive a disposable samehere instance.
+
+  control-samehere launch [--port 4173] [--host 127.0.0.1]
+  control-samehere doctor
+  control-samehere browser goto --path /
+  control-samehere browser click --role link --name "Join free" [--nth 0] [--exact]
+  control-samehere browser fill --role textbox --name "Email" --value "you@school.edu"
+  control-samehere browser press --key Enter [--role textbox --name "Email"]
+  control-samehere browser wait --text "Create your account"
+  control-samehere browser snapshot --aria --path artifacts/landing/home.aria.txt
+  control-samehere browser screenshot --path artifacts/landing/home.png [--full]
+  control-samehere browser url
+  control-samehere browser stub-share
+  control-samehere browser share-last [--expect-https] [--username NAME] [--expect-path /profile/NAME] [--path artifacts/...]
+  control-samehere http get --path /feed [--expect-status 307]
+  control-samehere cleanup
+
+State lives in $SAMEHERE_VERIFY_STATE_DIR (default: this skill's .run/).
+Evidence lives in $SAMEHERE_VERIFY_ARTIFACTS_DIR (default: this skill's artifacts/).
+cleanup never deletes evidence.
+EOF
+}
+
+cmd_launch() {
+  local host port
+  host="$(default_host)"
+  port="$(default_port)"
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --host) host="$2"; shift 2 ;;
+      --port) port="$2"; shift 2 ;;
+      *) echo "control-samehere launch: unknown arg $1" >&2; return 2 ;;
+    esac
+  done
+
+  local root skill state
+  root="$(repo_root)"
+  skill="$(skill_dir)"
+  state="$(state_dir)"
+  mkdir -p "$state"
+
+  local existing
+  existing="$(read_state pid)"
+  if pid_alive "$existing"; then
+    echo "control-samehere launch: instance already running (pid $existing). Run cleanup first." >&2
+    return 1
+  fi
+
+  local listeners
+  listeners="$(port_pids "$port")"
+  if [[ -n "$listeners" ]]; then
+    echo "control-samehere launch: port $port is already in use by pid(s): $listeners" >&2
+    echo "Refuse to share a port. Pick --port or stop the other listener." >&2
+    return 1
+  fi
+
+  local other_next
+  other_next="$(pgrep -f "$root/node_modules/next/dist/bin/next" || true)"
+  if [[ -n "$other_next" ]]; then
+    echo "control-samehere launch: another Next.js process is already using this checkout:" >&2
+    echo "$other_next" >&2
+    echo "Refuse to double-drive a shared .next. Stop it, or verify from a separate worktree." >&2
+    return 1
+  fi
+
+  local run_id env_mode invite_only
+  run_id="${SAMEHERE_VERIFY_RUN_ID:-$(date +%Y%m%dT%H%M%S)-$$}"
+  env_mode="repo"
+  invite_only="no"
+
+  # Next does not overwrite existing process env with .env.local. Export
+  # verification identity always; only inject placeholder Supabase when the
+  # checkout has no .env.local (marked scaffolding — cleanup leaves no file).
+  export SAMEHERE_VERIFY=1
+  export SAMEHERE_VERIFY_RUN_ID="$run_id"
+  export PORT="$port"
+  export HOSTNAME="$host"
+
+  if [[ -f "$root/.env.local" ]]; then
+    env_mode="repo"
+    if grep -q '^INVITE_ONLY=1' "$root/.env.local"; then
+      invite_only="yes"
+    fi
+  else
+    env_mode="scaffolded"
+    export NEXT_PUBLIC_SUPABASE_URL="${NEXT_PUBLIC_SUPABASE_URL:-$(placeholder_supabase_url)}"
+    export NEXT_PUBLIC_SUPABASE_ANON_KEY="${NEXT_PUBLIC_SUPABASE_ANON_KEY:-$(placeholder_anon_key)}"
+    export NEXT_PUBLIC_SITE_URL="${NEXT_PUBLIC_SITE_URL:-http://$host:$port}"
+    unset INVITE_ONLY || true
+    printf '%s\n' "$NEXT_PUBLIC_SUPABASE_URL" > "$state/scaffold_supabase_url"
+  fi
+
+  write_state host "$host"
+  write_state port "$port"
+  write_state run_id "$run_id"
+  write_state env_mode "$env_mode"
+  write_state invite_only "$invite_only"
+  write_state repo "$root"
+  write_state skill "$skill"
+  : > "$state/next.log"
+
+  (
+    cd "$root"
+    exec setsid npm run dev -- --hostname "$host" --port "$port"
+  ) >>"$state/next.log" 2>&1 &
+  local pid=$!
+  write_state pid "$pid"
+
+  local ready=0
+  local i
+  for i in $(seq 1 90); do
+    if ! pid_alive "$pid"; then
+      echo "control-samehere launch: Next.js exited before it was ready. Log: $state/next.log" >&2
+      tail -n 40 "$state/next.log" >&2 || true
+      return 1
+    fi
+    if curl -sS -o /dev/null -w '%{http_code}' --max-time 2 "http://$host:$port/" 2>/dev/null | grep -qE '200|307|308'; then
+      # First compile of / can still be in flight after the port opens.
+      if curl -sS --max-time 8 "http://$host:$port/" 2>/dev/null | grep -q 'samehere'; then
+        ready=1
+        break
+      fi
+    fi
+    sleep 1
+  done
+
+  if [[ "$ready" -ne 1 ]]; then
+    echo "control-samehere launch: timed out waiting for http://$host:$port/ . Log: $state/next.log" >&2
+    tail -n 40 "$state/next.log" >&2 || true
+    cmd_cleanup || true
+    return 1
+  fi
+
+  echo "ok url=http://$host:$port pid=$pid run_id=$run_id env_mode=$env_mode invite_only=$invite_only"
+}
+
+cmd_doctor() {
+  require_state || return 1
+  local pid host port url env_mode invite_only run_id
+  pid="$(read_state pid)"
+  host="$(read_state host)"
+  port="$(read_state port)"
+  env_mode="$(read_state env_mode)"
+  invite_only="$(read_state invite_only)"
+  run_id="$(read_state run_id)"
+  url="$(base_url)"
+
+  local listeners
+  listeners="$(port_pids "$port")"
+  if [[ -z "$listeners" ]]; then
+    echo "control-samehere doctor: nothing is listening on $port" >&2
+    return 1
+  fi
+  if ! printf '%s\n' "$listeners" | grep -qx "$pid"; then
+    # Next.js workers may own the socket; accept if they share our process group.
+    local pgid child
+    pgid="$(ps -o pgid= -p "$pid" 2>/dev/null | tr -d ' ')"
+    local owned=0
+    for child in $listeners; do
+      if [[ "$(ps -o pgid= -p "$child" 2>/dev/null | tr -d ' ')" == "$pgid" ]]; then
+        owned=1
+        break
+      fi
+    done
+    if [[ "$owned" -ne 1 ]]; then
+      echo "control-samehere doctor: port $port is not owned by this run (pid $pid, listeners: $listeners)" >&2
+      return 1
+    fi
+  fi
+
+  local tmp status body
+  tmp="$(mktemp)"
+  status="$(curl -sS -o "$tmp" -w '%{http_code}' --max-time 10 "$url/" || true)"
+  body="$(cat "$tmp")"
+  rm -f "$tmp"
+
+  if [[ "$status" != "200" ]]; then
+    echo "control-samehere doctor: GET / returned $status (expected 200)" >&2
+    return 1
+  fi
+  if ! printf '%s' "$body" | grep -q 'samehere'; then
+    echo "control-samehere doctor: GET / body does not identify samehere" >&2
+    return 1
+  fi
+
+  local landing="no"
+  if printf '%s' "$body" | grep -q 'landing-xai' && printf '%s' "$body" | grep -q 'Join free'; then
+    landing="yes"
+  fi
+
+  local title
+  title="$(printf '%s' "$body" | sed -n 's/.*<title>\([^<]*\)<\/title>.*/\1/p' | head -n 1)"
+
+  echo "ok url=$url pid=$pid port=$port run_id=$run_id env_mode=$env_mode invite_only=$invite_only landing=$landing title=$title"
+  if [[ "$env_mode" == "scaffolded" ]]; then
+    echo "note auth mutations and live public profiles are unreachable without a real .env.local"
+  fi
+}
+
+cmd_http() {
+  local action="${1:-}"
+  shift || true
+  if [[ "$action" != "get" ]]; then
+    echo "control-samehere http: only 'get' is supported" >&2
+    return 2
+  fi
+  require_state || return 1
+  local path="/" expect=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --path) path="$2"; shift 2 ;;
+      --expect-status) expect="$2"; shift 2 ;;
+      *) echo "control-samehere http get: unknown arg $1" >&2; return 2 ;;
+    esac
+  done
+  [[ "$path" == /* ]] || path="/$path"
+  local url tmp status location
+  url="$(base_url)$path"
+  tmp="$(mktemp)"
+  status="$(curl -sS -D "$tmp.hdr" -o "$tmp" -w '%{http_code}' --max-time 15 "$url" || true)"
+  location="$(grep -i '^location:' "$tmp.hdr" | awk '{print $2}' | tr -d '\r' | tail -n 1)"
+  rm -f "$tmp" "$tmp.hdr"
+  if [[ -n "$expect" && "$status" != "$expect" ]]; then
+    echo "control-samehere http get: $url returned $status (expected $expect)" >&2
+    return 1
+  fi
+  echo "ok url=$url status=$status location=${location:-}"
+}
+
+cmd_browser() {
+  require_state || return 1
+  local helpers
+  helpers="$(helpers_dir)"
+  if [[ ! -d "$helpers/node_modules/playwright-core" ]]; then
+    echo "control-samehere browser: installing playwright-core into helpers/ (one-time)" >&2
+    (cd "$helpers" && npm install --omit=dev --no-fund --no-audit)
+  fi
+  export SAMEHERE_VERIFY_STATE_DIR
+  SAMEHERE_VERIFY_STATE_DIR="$(state_dir)"
+  export SAMEHERE_VERIFY_ARTIFACTS_DIR
+  SAMEHERE_VERIFY_ARTIFACTS_DIR="$(artifacts_dir)"
+  node "$helpers/lib/browser.mjs" "$@"
+}
+
+cmd_cleanup() {
+  local state pid chrome
+  state="$(state_dir)"
+  pid="$(read_state pid)"
+  chrome="$(read_state chrome_pid)"
+  if pid_alive "$chrome"; then
+    kill_pid_tree "$chrome"
+  fi
+  if pid_alive "$pid"; then
+    kill_pid_tree "$pid"
+  fi
+  # Drop launch/browser scratch only. Evidence stays in artifacts/.
+  if [[ -d "$state" ]]; then
+    rm -rf "$state"
+  fi
+  echo "ok cleaned state=$state evidence=$(artifacts_dir)"
+}
+
+main() {
+  local cmd="${1:-}"
+  if [[ -z "$cmd" || "$cmd" == "-h" || "$cmd" == "--help" ]]; then
+    usage
+    return 0
+  fi
+  shift || true
+  case "$cmd" in
+    launch) cmd_launch "$@" ;;
+    doctor) cmd_doctor "$@" ;;
+    browser) cmd_browser "$@" ;;
+    http) cmd_http "$@" ;;
+    cleanup) cmd_cleanup "$@" ;;
+    *) echo "control-samehere: unknown command '$cmd'" >&2; usage >&2; return 2 ;;
+  esac
+}
+
+main "$@"
