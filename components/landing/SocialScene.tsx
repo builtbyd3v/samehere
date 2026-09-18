@@ -7,6 +7,8 @@ import { IconSame } from "@/components/icons";
 import { reactionAfterSelect } from "@/lib/landing/scene-control";
 import { usePrefersReducedMotion } from "@/lib/landing/usePrefersReducedMotion";
 import { ghostCtaSm } from "./cta";
+import ContextLabelBadge from "@/components/ui/ContextLabelBadge";
+import { parseContextLabel } from "@/lib/context-label";
 
 type PersonId = "maya" | "jordan" | "priya";
 
@@ -206,6 +208,7 @@ export default function SocialScene() {
             {POSTS.map((post) => {
               const author = PEOPLE[post.authorId];
               const active = selectedId === post.authorId;
+              const label = parseContextLabel(post.label);
               return (
                 <article
                   key={post.id}
@@ -225,7 +228,7 @@ export default function SocialScene() {
                         <span>{author.year}</span>
                       </span>
                     </button>
-                    <span className="landing-label-chip" data-label={post.label}>{post.label}</span>
+                    {label ? <ContextLabelBadge label={label} drawIn className="shrink-0" /> : null}
                   </header>
                   <p>{post.body}</p>
                   <p className="landing-scene-snippet">{post.snippet}</p>
@@ -291,7 +294,7 @@ export default function SocialScene() {
                   <span>{PREVIEW.body}</span>
                 </span>
               </button>
-              <span className="landing-label-chip" data-label={PREVIEW.label}>{PREVIEW.label}</span>
+              <ContextLabelBadge label="learning" drawIn className="shrink-0" />
             </article>
           </div>
 

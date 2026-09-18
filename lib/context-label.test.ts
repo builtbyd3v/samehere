@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseContextLabel, contextLabelError, CONTEXT_LABEL_CHIP } from "./context-label";
+import { parseContextLabel, contextLabelError, CONTEXT_LABEL_COLOR } from "./context-label";
 
 describe("parseContextLabel", () => {
   it("accepts the three allowlisted labels", () => {
@@ -20,11 +20,11 @@ describe("parseContextLabel", () => {
   });
 });
 
-describe("CONTEXT_LABEL_CHIP", () => {
-  it("keeps the three labels visually distinct", () => {
-    expect(CONTEXT_LABEL_CHIP.stuck).toContain("stuck");
-    expect(CONTEXT_LABEL_CHIP.building).toContain("building");
-    expect(CONTEXT_LABEL_CHIP.learning).toContain("learning");
+describe("CONTEXT_LABEL_COLOR", () => {
+  it("maps each label to its own token", () => {
+    expect(CONTEXT_LABEL_COLOR.stuck).toBe("var(--label-stuck)");
+    expect(CONTEXT_LABEL_COLOR.building).toBe("var(--label-building)");
+    expect(CONTEXT_LABEL_COLOR.learning).toBe("var(--label-learning)");
   });
 });
 
