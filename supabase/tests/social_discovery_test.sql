@@ -218,6 +218,10 @@ begin
   values (v_pub, 'shipping the heatmap tonight', 'building')
   returning id into v_id;
   insert into tests_fixture values ('post_pub', v_id);
+  insert into public.posts (user_id, content, context_label, team_event_name)
+  values (v_pub, 'need a designer for HackMIT', 'looking_for_team', 'HackMIT')
+  returning id into v_id;
+  insert into tests_fixture values ('post_team', v_id);
   insert into public.posts (user_id, content)
   values (v_pub, 'hidden heatmap never search')
   returning id into v_id;
@@ -314,7 +318,7 @@ do $$
 begin
   if has_function_privilege('anon', 'public.search_people(text,integer,integer)', 'execute')
      or has_function_privilege('anon', 'public.search_projects(text,integer,integer)', 'execute')
-     or has_function_privilege('anon', 'public.search_posts(text,integer,integer)', 'execute')
+     or has_function_privilege('anon', 'public.search_posts(text,integer,integer,text)', 'execute')
   then
     raise exception 'anon has execute on a search RPC';
   end if;
@@ -558,6 +562,43 @@ begin
   insert into tests_results values ('SOC_posts_visibility', true, 'ok');
 exception when others then
   insert into tests_results values ('SOC_posts_visibility', false, sqlerrm);
+end $$;
+
+-- SOC_looking_for_team_label — 4-arg p_label allowlists looking_for_team; event name searchable
+do $$
+declare
+  v_post_team uuid := (select id from tests_fixture where key = 'post_team');
+  v_post_pub uuid := (select id from tests_fixture where key = 'post_pub');
+begin
+  if exists (select 1 from public.search_posts('', 20, 0)) then
+    raise exception 'empty posts query without label returned rows';
+  end if;
+  if not exists (
+    select 1 from public.search_posts('', 20, 0, 'looking_for_team')
+    where id = v_post_team and context_label = 'looking_for_team'
+  ) then
+    raise exception 'looking_for_team label browse missed team post';
+  end if;
+  if exists (
+    select 1 from public.search_posts('', 20, 0, 'looking_for_team')
+    where id = v_post_pub
+  ) then
+    raise exception 'looking_for_team label browse included building post';
+  end if;
+  if not exists (
+    select 1 from public.search_posts('HackMIT', 20, 0)
+    where id = v_post_team
+  ) then
+    raise exception 'team_event_name not searchable';
+  end if;
+  if exists (
+    select 1 from public.search_posts('', 20, 0, 'shipping')
+  ) then
+    raise exception 'non-allowlisted p_label was accepted';
+  end if;
+  insert into tests_results values ('SOC_looking_for_team_label', true, 'ok');
+exception when others then
+  insert into tests_results values ('SOC_looking_for_team_label', false, sqlerrm);
 end $$;
 
 -- SOC_suspended_people
