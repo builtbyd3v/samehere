@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import posthog from "posthog-js";
+import { CTA, ERROR } from "@/lib/copy-voice";
 
 export default function RootError({
   error,
@@ -17,14 +18,12 @@ export default function RootError({
 
   return (
     <main className="page-enter mx-auto max-w-2xl px-5 py-10">
-      <div className="card p-10 text-center">
-        <p className="text-lg font-semibold tracking-[-0.02em] text-[var(--ink)]">Something went wrong</p>
-        <p className="mt-1.5 text-sm text-[var(--ink-muted)]">
-          Give it another try.
-        </p>
-        <div className="mt-6 flex items-center justify-center gap-3">
-          <button onClick={reset} className="btn-primary">
-            Try again
+      <div className="card p-10 text-center" role="alert">
+        <h1 className="text-lg font-semibold tracking-[-0.02em] text-[var(--ink)]">{ERROR.title}</h1>
+        <p className="mt-1.5 text-sm text-[var(--ink-muted)]">{ERROR.description}</p>
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          <button type="button" onClick={reset} className="btn-primary">
+            {CTA.tryAgain}
           </button>
           <Link href="/" className="btn-ghost">
             Back home

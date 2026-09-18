@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import "./landing-xai.css";
 import LandingPage from "@/components/landing/LandingPage";
 import LandingAnalytics from "@/components/landing/LandingAnalytics";
 import { getFounderSpotsLeft } from "@/lib/founder";

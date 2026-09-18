@@ -9,8 +9,16 @@ import {
 } from "./feed-label";
 
 describe("FEED_FILTER_LABELS", () => {
-  it("surfaces Stuck first, then Learning, then Building", () => {
-    expect(FEED_FILTER_LABELS).toEqual(["stuck", "learning", "building"]);
+  it("surfaces Stuck first, then Learning, Building, and Looking for team", () => {
+    expect(FEED_FILTER_LABELS).toEqual(["stuck", "learning", "building", "looking_for_team"]);
+  });
+
+  it("routes the Looking for team chip through the same label filter", () => {
+    expect(feedPath({ label: "looking_for_team" })).toBe("/feed?label=looking_for_team");
+    expect(parseFeedView({ tab: "following", label: "looking_for_team" })).toEqual({
+      tab: "latest",
+      label: "looking_for_team",
+    });
   });
 });
 

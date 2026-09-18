@@ -24,7 +24,7 @@ export const PORTFOLIO_LIMITS = {
   url: 2048,
 } as const;
 
-export const CONTEXT_LABELS = ["building", "learning", "stuck"] as const satisfies readonly ContextLabel[];
+export const CONTEXT_LABELS = ["building", "learning", "stuck", "looking_for_team"] as const satisfies readonly ContextLabel[];
 export const OPEN_TO_TAGS = ["collaborate", "study", "feedback"] as const satisfies readonly OpenToTag[];
 export const STUDY_MODES = [
   "on_campus",
@@ -99,7 +99,14 @@ export function contextLabelError(label: string | null | undefined): string | nu
   const normalized = normalizeOptional(label);
   if (normalized === null) return null;
   if ((CONTEXT_LABELS as readonly string[]).includes(normalized)) return null;
-  return "Context label must be building, learning, or stuck.";
+  return "Context label must be building, learning, stuck, or looking_for_team.";
+}
+
+export function studyModeError(mode: string | null | undefined): string | null {
+  const normalized = normalizeOptional(mode);
+  if (normalized === null) return null;
+  if ((STUDY_MODES as readonly string[]).includes(normalized)) return null;
+  return "Study mode must be on campus, online, hybrid, bootcamp, or self-taught.";
 }
 
 export function openToError(tags: readonly string[]): string | null {

@@ -3,7 +3,7 @@ import { parseContextLabel, type ContextLabel } from "@/lib/context-label";
 export type FeedTab = "latest" | "following";
 
 /** Chip order on the feed. Composer still uses CONTEXT_LABELS. */
-export const FEED_FILTER_LABELS = ["stuck", "learning", "building"] as const satisfies readonly ContextLabel[];
+export const FEED_FILTER_LABELS = ["stuck", "learning", "building", "looking_for_team"] as const satisfies readonly ContextLabel[];
 
 /** Following stays in seed mode until the viewer follows this many people. */
 export const FOLLOWING_SEED_MAX = 5;

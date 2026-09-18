@@ -11,6 +11,7 @@ import ActivityBoard from "./ActivityBoard";
 import OwnerProjectList from "./OwnerProjectList";
 import ProjectCard from "./ProjectCard";
 import OpenToTags from "./OpenToTags";
+import StudyModeChip from "./StudyModeChip";
 import type { GithubConnectionPublic, GithubContributionDay } from "@/types/portfolio";
 import type { SamehereDay } from "@/lib/portfolio/activity";
 
@@ -18,16 +19,27 @@ export function IntroSection({
   bio,
   goals,
   openTo,
+  studyMode,
+  username,
+  linkToDm = false,
 }: {
   bio: string | null;
   goals: string | null;
   openTo: readonly string[];
+  studyMode?: string | null;
+  username?: string;
+  linkToDm?: boolean;
 }) {
-  if (!bio && !goals && openTo.length === 0) return null;
+  if (!bio && !goals && openTo.length === 0 && !studyMode) return null;
   return (
     <section className="card-surface p-5 sm:p-6">
       <h2 className="eyebrow">Introduction</h2>
-      <OpenToTags tags={openTo} />
+      {studyMode ? (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <StudyModeChip mode={studyMode} />
+        </div>
+      ) : null}
+      <OpenToTags tags={openTo} username={username} linkToDm={linkToDm} />
       {bio && (
         <p className="mt-3 max-w-[60ch] whitespace-pre-line break-words text-[17px] leading-[1.6] text-[var(--ink)]">
           {bio}

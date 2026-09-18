@@ -22,7 +22,7 @@ body {
   --border-strong: rgba(255, 255, 255, 0.22);
   --ink: #f5f5f5;
   --ink-muted: #a1a5ab;
-  --ink-faint: rgba(245, 245, 245, 0.55);
+  --ink-faint: rgba(245, 245, 245, 0.68);
   --featured-surface: rgba(255, 255, 255, 0.05);
   --blue: #4f9fe8;
   --blue-2: #7ec4ff;
@@ -36,7 +36,7 @@ body {
   --accent-blue: #0075de;
   --accent-blue-strong: #4f9fe8;
   --accent-blue-soft: rgba(0, 117, 222, 0.14);
-  --nav-muted: rgba(255, 255, 255, 0.55);
+  --nav-muted: rgba(255, 255, 255, 0.68);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
   --ease-brand: cubic-bezier(0.22, 1, 0.36, 1);
@@ -54,6 +54,7 @@ body {
   --label-stuck: #e0a83a;
   --label-building: #4f9fe8;
   --label-learning: #5fce8f;
+  --label-team: #e07a5f;
 }
 
 .dark {
@@ -67,7 +68,7 @@ body {
   --border-strong: rgba(255, 255, 255, 0.22);
   --ink: #f5f5f5;
   --ink-muted: #a1a5ab;
-  --ink-faint: rgba(245, 245, 245, 0.55);
+  --ink-faint: rgba(245, 245, 245, 0.68);
   --featured-surface: rgba(255, 255, 255, 0.05);
   --blue: #4f9fe8;
   --blue-2: #7ec4ff;
@@ -81,10 +82,11 @@ body {
   --accent-blue: #0075de;
   --accent-blue-strong: #4f9fe8;
   --accent-blue-soft: rgba(0, 117, 222, 0.14);
-  --nav-muted: rgba(255, 255, 255, 0.55);
+  --nav-muted: rgba(255, 255, 255, 0.68);
   --label-stuck: #e0a83a;
   --label-building: #4f9fe8;
   --label-learning: #5fce8f;
+  --label-team: #e07a5f;
 }
 
 .light {
@@ -100,7 +102,7 @@ body {
   --border-strong: rgba(10, 10, 10, 0.22);
   --ink: #0a0a0a;
   --ink-muted: #52525b;
-  --ink-faint: rgba(10, 10, 10, 0.50);
+  --ink-faint: rgba(10, 10, 10, 0.58);
   --featured-surface: rgba(10, 10, 10, 0.04);
   --blue: #0075de;
   --blue-2: #2f9bff;
@@ -114,10 +116,11 @@ body {
   --accent-blue: #0075de;
   --accent-blue-strong: #005bb3;
   --accent-blue-soft: rgba(0, 117, 222, 0.10);
-  --nav-muted: rgba(10, 10, 10, 0.55);
+  --nav-muted: rgba(10, 10, 10, 0.62);
   --label-stuck: #e0a83a;
   --label-building: #0075de;
   --label-learning: #5fce8f;
+  --label-team: #c45c42;
 }
 
 @media (prefers-color-scheme: light) {
@@ -134,7 +137,7 @@ body {
     --border-strong: rgba(10, 10, 10, 0.22);
     --ink: #0a0a0a;
     --ink-muted: #52525b;
-    --ink-faint: rgba(10, 10, 10, 0.50);
+    --ink-faint: rgba(10, 10, 10, 0.58);
     --featured-surface: rgba(10, 10, 10, 0.04);
     --blue: #0075de;
     --blue-2: #2f9bff;
@@ -148,10 +151,11 @@ body {
     --accent-blue: #0075de;
     --accent-blue-strong: #005bb3;
     --accent-blue-soft: rgba(0, 117, 222, 0.10);
-    --nav-muted: rgba(10, 10, 10, 0.55);
+    --nav-muted: rgba(10, 10, 10, 0.62);
     --label-stuck: #e0a83a;
     --label-building: #0075de;
     --label-learning: #5fce8f;
+    --label-team: #c45c42;
   }
 }
 
@@ -348,10 +352,10 @@ summary {
   100% { transform: scale(1); }
 }
 
-/* Soft, warm focus-visible per DESIGN.md — no harsh outlines. */
+/* Soft focus-visible within the x.ai blue palette — no harsh outlines. */
 :focus-visible {
   outline: none;
-  box-shadow: rgba(0, 0, 0, 0.1) 0 4px 12px, 0 0 0 3px rgba(59, 130, 246, 0.35);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-blue-strong) 45%, transparent);
 }
 
 /* iOS Safari zooms the page when focusing any text field under 16px. The app's
@@ -835,6 +839,10 @@ summary {
   color: var(--label-learning);
 }
 
+.context-label-badge[data-label="looking_for_team"] .label-glyph {
+  color: var(--label-team);
+}
+
 .label-glyph {
   display: block;
   flex-shrink: 0;
@@ -968,8 +976,10 @@ summary {
 
   .label-glyph-draw[data-label="stuck"] .label-glyph-stroke,
   .label-glyph-draw[data-label="building"] .label-glyph-stroke,
+  .label-glyph-draw[data-label="looking_for_team"] .label-glyph-stroke,
   .feed-enter .label-glyph[data-label="stuck"] .label-glyph-stroke,
-  .feed-enter .label-glyph[data-label="building"] .label-glyph-stroke {
+  .feed-enter .label-glyph[data-label="building"] .label-glyph-stroke,
+  .feed-enter .label-glyph[data-label="looking_for_team"] .label-glyph-stroke {
     stroke-dasharray: 32;
     animation: label-glyph-draw 220ms var(--ease-out) both;
   }

@@ -20,9 +20,10 @@ type Props = {
   viewerId?: string | null;
   viewer?: CommentAuthor | null;
   onOptimisticAdd?: (comment: Comment) => void;
+  autoFocus?: boolean;
 };
 
-export default function CommentComposer({ postId, viewerId, viewer, onOptimisticAdd }: Props) {
+export default function CommentComposer({ postId, viewerId, viewer, onOptimisticAdd, autoFocus = false }: Props) {
   const [state, formAction, pending] = useActionState<CommentState, FormData>(createComment, {});
   const [, startSubmit] = useTransition();
   const ref = useRef<HTMLFormElement>(null);
@@ -38,6 +39,10 @@ export default function CommentComposer({ postId, viewerId, viewer, onOptimistic
     // eslint-disable-next-line react-hooks/set-state-in-effect -- navigator-based label deferred to post-hydration to avoid an SSR/client mismatch
     setShortcutLabel(submitShortcutLabel());
   }, []);
+
+  useEffect(() => {
+    if (autoFocus) textareaRef.current?.focus();
+  }, [autoFocus]);
 
   useEffect(() => {
     if (state.ok) {
@@ -103,9 +108,13 @@ export default function CommentComposer({ postId, viewerId, viewer, onOptimistic
           setLen(v.trim().length);
         }}
         placeholder={
-          shortcutLabel
-            ? `Add a comment… Type @ to mention (${shortcutLabel} to post)`
-            : "Add a comment… Type @ to mention"
+          autoFocus
+            ? shortcutLabel
+              ? `Same here — what's getting you stuck? (${shortcutLabel} to post)`
+              : "Same here — what's getting you stuck?"
+            : shortcutLabel
+              ? `Add a comment… Type @ to mention (${shortcutLabel} to post)`
+              : "Add a comment… Type @ to mention"
         }
         className="w-full resize-y bg-transparent text-[15px] leading-relaxed text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
       />

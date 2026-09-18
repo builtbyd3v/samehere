@@ -14,7 +14,8 @@ export const PORTFOLIO_MIGRATION = "20260910100000_portfolio_data_contracts.sql"
 export const PORTFOLIO_FINALIZE_MIGRATION =
   "20260910130000_repository_analysis_finalize.sql" as const;
 
-export type ContextLabel = "building" | "learning" | "stuck";
+export type ContextLabel = "building" | "learning" | "stuck" | "looking_for_team";
+export type TeamEventMode = "remote" | "in_person";
 export type OpenToTag = "collaborate" | "study" | "feedback";
 export type StudyMode = "on_campus" | "online" | "hybrid" | "bootcamp" | "self_taught";
 export type PortfolioSection =
@@ -403,8 +404,8 @@ export type AnalysisUsageMonth = {
  *   get_public_portfolio*: activity_visible = portfolio_activity_readable
  *     (section). GitHub rows are get_public_github_contributions only.
  *   get_public_github_contributions
- *   get_public_profile: open_to; blocked viewer → 0 rows; suspended →
- *     identity only (content/open_to nulled)
+ *   get_public_profile: open_to + study_mode; blocked viewer → 0 rows; suspended →
+ *     identity only (content/open_to/study_mode nulled)
  *   get_public_post: context_label; 0 rows if private/hidden/suspended/blocked
  *
  * Table SELECT is owner-only for portfolio_projects, portfolio_settings,

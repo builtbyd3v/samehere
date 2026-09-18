@@ -9,7 +9,7 @@ import { getPostHogServerClient } from "@/lib/posthog-server";
 import { DEGREE_VALUES as DEGREE_VALUES_RAW, pickPrimaryEducation } from "@/lib/education-options";
 import { resolveInstitutionDomain } from "@/lib/resolve-domain";
 import { isPortfolioSchemaMissing } from "@/lib/portfolio/errors";
-import { parseOpenTo } from "@/lib/portfolio/owner";
+import { parseOpenTo, parseStudyMode } from "@/lib/portfolio/owner";
 
 // DEGREE_VALUES infers as a narrow string-literal union array (mapped from an
 // `as const` options list), which Array.includes can't check against a plain
@@ -48,6 +48,8 @@ export async function updateProfile(_prev: EditState, formData: FormData): Promi
   };
   const openTo = parseOpenTo(formData.getAll("open_to"));
   if (!openTo.ok) return { error: openTo.unavailable ? openTo.message : openTo.error };
+  const studyMode = parseStudyMode(formData.get("study_mode"));
+  if (!studyMode.ok) return { error: studyMode.unavailable ? studyMode.message : studyMode.error };
 
   // Trust boundary: never take the client's word for Pro status. Non-Pro
   // requests simply don't touch profile_theme (a lapsed Pro keeps their
@@ -58,7 +60,7 @@ export async function updateProfile(_prev: EditState, formData: FormData): Promi
     updates.profile_theme = isProfileTheme(themeRaw) ? themeRaw : null;
   }
 
-  const withOpenTo = { ...updates, open_to: openTo.data };
+  const withOpenTo = { ...updates, open_to: openTo.data, study_mode: studyMode.data };
   const first = await supabase.from("profiles").update(withOpenTo).eq("id", user.id);
   if (first.error && isPortfolioSchemaMissing(first.error)) {
     const retry = await supabase.from("profiles").update(updates).eq("id", user.id);
