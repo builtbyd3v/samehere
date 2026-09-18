@@ -15,6 +15,7 @@ export type ProfileIdentity = {
   bio: string | null;
   goals: string | null;
   open_to: string[] | null;
+  study_mode: string | null;
   is_private: boolean;
 };
 
@@ -58,12 +59,13 @@ export function orderedSections(order: readonly string[]): PortfolioSection[] {
 
 export function publicIntro(identity: ProfileIdentity, projection: PublicPortfolioProjection | null) {
   if (!projection || !publicSectionVisible(projection, "intro")) {
-    return { bio: null, goals: null, open_to: [] as string[] };
+    return { bio: null, goals: null, open_to: [] as string[], study_mode: null as string | null };
   }
   return {
     bio: identity.bio,
     goals: identity.goals,
     open_to: identity.open_to ?? [],
+    study_mode: identity.study_mode ?? null,
   };
 }
 
@@ -77,6 +79,7 @@ export function profileIntro(
       bio: identity.bio,
       goals: identity.goals,
       open_to: identity.open_to ?? [],
+      study_mode: identity.study_mode ?? null,
     };
   }
   return publicIntro(identity, projection);

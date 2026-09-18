@@ -47,10 +47,10 @@ export default function Navbar({
           </div>
         ) : (
           <div className="flex items-center gap-2 text-sm">
-            <Link href="/login" className={ghostCtaSm}>
+            <Link href="/login" prefetch className={ghostCtaSm}>
               Sign in
             </Link>
-            <Link href="/signup" className={signupCtaSm}>
+            <Link href="/signup" prefetch className={signupCtaSm}>
               Sign up
             </Link>
           </div>

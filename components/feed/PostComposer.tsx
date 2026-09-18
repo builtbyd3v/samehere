@@ -12,10 +12,11 @@ import LabelGlyph from "@/components/ui/LabelGlyph";
 import { usePrefersReducedMotion } from "@/lib/landing/usePrefersReducedMotion";
 import {
   COMPOSER_LABELS,
+  COMPOSER_LABEL_COPY,
   CONTEXT_LABEL_COLOR,
-  CONTEXT_LABEL_COPY,
   type ContextLabel,
 } from "@/lib/context-label";
+import { LOOKING_FOR_TEAM, TEAM_EVENT_NAME_MAX, type TeamEventMode } from "@/lib/team-event";
 
 // 150 chars earns a heatmap point, it does NOT gate posting.
 const POINT_AT = 150; // ponytail: mirrors posts_award_contribution post threshold
@@ -72,7 +73,7 @@ function ComposerLabelPicker({
   return (
     <LazyMotion features={domMax} strict>
       <div
-        className="relative inline-flex gap-0.5 rounded-full border border-[var(--border)] p-0.5"
+        className="relative inline-flex max-w-full flex-wrap gap-0.5 rounded-full border border-[var(--border)] p-0.5"
         role="group"
         aria-label="Post label"
       >
@@ -98,7 +99,7 @@ function ComposerLabelPicker({
                 <span style={{ color: selected ? CONTEXT_LABEL_COLOR[key] : "var(--ink-faint)" }}>
                   <LabelGlyph label={key} />
                 </span>
-                <span>{CONTEXT_LABEL_COPY[key]}</span>
+                <span>{COMPOSER_LABEL_COPY[key]}</span>
               </span>
             </button>
           );
@@ -125,7 +126,19 @@ export default function PostComposer({
   const [supabase] = useState(getBrowserClient);
   const [shortcutLabel, setShortcutLabel] = useState("");
   const [label, setLabel] = useState<ContextLabel | null>(null);
+  const [eventName, setEventName] = useState("");
+  const [eventDate, setEventDate] = useState("");
+  const [eventMode, setEventMode] = useState<TeamEventMode | null>(null);
   const [, startSubmit] = useTransition();
+
+  function onLabelChange(next: ContextLabel | null) {
+    setLabel(next);
+    if (next !== LOOKING_FOR_TEAM) {
+      setEventName("");
+      setEventDate("");
+      setEventMode(null);
+    }
+  }
 
   // Latest files for the unmount-only revoke below (avoids a [files]-dep effect
   // that would revoke still-shown previews on every add).
@@ -146,6 +159,9 @@ export default function PostComposer({
       setContent("");
       setLen(0);
       setLabel(null);
+      setEventName("");
+      setEventDate("");
+      setEventMode(null);
       files.forEach((f) => URL.revokeObjectURL(f.url));
       setFiles([]);
     }
@@ -252,6 +268,9 @@ export default function PostComposer({
       className="card-raised p-4 transition-[border-color,box-shadow] duration-300 focus-within:border-[var(--border-strong)] focus-within:shadow-[0_0_0_4px_var(--blue-glow)] sm:p-5"
     >
       <input type="hidden" name="context_label" value={label ?? ""} />
+      <input type="hidden" name="team_event_name" value={label === LOOKING_FOR_TEAM ? eventName : ""} />
+      <input type="hidden" name="team_event_date" value={label === LOOKING_FOR_TEAM ? eventDate : ""} />
+      <input type="hidden" name="team_event_mode" value={label === LOOKING_FOR_TEAM ? eventMode ?? "" : ""} />
       <MentionTextarea
         textareaRef={textareaRef}
         name="content"
@@ -264,9 +283,13 @@ export default function PostComposer({
           setLen(v.trim().length);
         }}
         placeholder={
-          shortcutLabel
-            ? `Share what you're building… Type @ to mention (${shortcutLabel} to post)`
-            : "Share what you're building… Type @ to mention"
+          label === LOOKING_FOR_TEAM
+            ? shortcutLabel
+              ? `Who do you need on the team? (${shortcutLabel} to post)`
+              : "Who do you need on the team?"
+            : shortcutLabel
+              ? `Share what you're building… Type @ to mention (${shortcutLabel} to post)`
+              : "Share what you're building… Type @ to mention"
         }
         className="w-full resize-y bg-transparent text-[16px] leading-[1.55] text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
       />
@@ -294,46 +317,97 @@ export default function PostComposer({
         </div>
       )}
 
+      {label === LOOKING_FOR_TEAM ? (
+        <div className="mt-3 grid gap-2">
+          <label className="block">
+            <span className="sr-only">Event name</span>
+            <input
+              type="text"
+              value={eventName}
+              onChange={(e) => setEventName(e.target.value)}
+              maxLength={TEAM_EVENT_NAME_MAX}
+              placeholder="Event name (optional)"
+              className="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)] focus:border-[var(--border-strong)]"
+            />
+          </label>
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="block min-w-0 flex-1">
+              <span className="sr-only">Event date</span>
+              <input
+                type="date"
+                value={eventDate}
+                onChange={(e) => setEventDate(e.target.value)}
+                className="w-full min-w-[10rem] rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--border-strong)]"
+              />
+            </label>
+            <div className="inline-flex gap-0.5 rounded-full border border-[var(--border)] p-0.5" role="group" aria-label="Event format">
+              <button
+                type="button"
+                aria-pressed={eventMode === "remote"}
+                onClick={() => setEventMode((prev) => (prev === "remote" ? null : "remote"))}
+                className={`rounded-full px-2.5 py-1 text-[12px] font-medium ${
+                  eventMode === "remote" ? "bg-[var(--blue-glow)] text-[var(--blue)]" : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
+                }`}
+              >
+                Remote
+              </button>
+              <button
+                type="button"
+                aria-pressed={eventMode === "in_person"}
+                onClick={() => setEventMode((prev) => (prev === "in_person" ? null : "in_person"))}
+                className={`rounded-full px-2.5 py-1 text-[12px] font-medium ${
+                  eventMode === "in_person" ? "bg-[var(--blue-glow)] text-[var(--blue)]" : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
+                }`}
+              >
+                In person
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {(state.error || mediaErr) && (
         <p role="alert" className="mt-2 text-sm text-[var(--danger)]">
           {mediaErr ?? state.error}
         </p>
       )}
 
-      <div className="mt-3 flex items-center justify-between border-t border-[var(--border)] pt-3">
-        <div className="flex items-center gap-3">
-          <span
-            className={`text-xs transition-colors duration-300 motion-reduce:transition-none ${
-              len >= MAX ? "text-[var(--danger)]" : qualifies ? "text-[var(--blue)]" : "text-[var(--ink-muted)]"
-            }`}
+      <div className="mt-3 flex flex-col gap-3 border-t border-[var(--border)] pt-3">
+        <ComposerLabelPicker value={label} onChange={onLabelChange} />
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <span
+              className={`text-xs transition-colors duration-300 motion-reduce:transition-none ${
+                len >= MAX ? "text-[var(--danger)]" : qualifies ? "text-[var(--blue)]" : "text-[var(--ink-muted)]"
+              }`}
+            >
+              {len === 0
+                ? `${POINT_AT}+ characters earns +${AWARD} points`
+                : len >= MAX
+                  ? `${len}/${MAX}`
+                  : qualifies
+                    ? `+${AWARD} points earned`
+                    : `${POINT_AT - len} more characters to earn +${AWARD} points`}
+            </span>
+            <label className="cursor-pointer text-xs font-medium text-[var(--ink-muted)] underline">
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm"
+                multiple
+                onChange={onPickFiles}
+                className="hidden"
+              />
+              Add media
+            </label>
+          </div>
+          <button
+            type="submit"
+            disabled={pending || uploading || len === 0 || len > MAX}
+            className="btn-primary"
           >
-            {len === 0
-              ? `${POINT_AT}+ characters earns +${AWARD} points`
-              : len >= MAX
-                ? `${len}/${MAX}`
-                : qualifies
-                  ? `+${AWARD} points earned`
-                  : `${POINT_AT - len} more characters to earn +${AWARD} points`}
-          </span>
-          <label className="cursor-pointer text-xs font-medium text-[var(--ink-muted)] underline">
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm"
-              multiple
-              onChange={onPickFiles}
-              className="hidden"
-            />
-            Add media
-          </label>
-          <ComposerLabelPicker value={label} onChange={setLabel} />
+            {uploading ? "Uploading…" : pending ? "Posting…" : "Post"}
+          </button>
         </div>
-        <button
-          type="submit"
-          disabled={pending || uploading || len === 0 || len > MAX}
-          className="btn-primary"
-        >
-          {uploading ? "Uploading…" : pending ? "Posting…" : "Post"}
-        </button>
       </div>
     </form>
   );

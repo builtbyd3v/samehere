@@ -3,8 +3,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LazyMotion, domMax, m } from "motion/react";
-import { usePrefersReducedMotion } from "@/lib/landing/usePrefersReducedMotion";
 import { House, MessageCircle, Settings, User, UserPlus } from "lucide-react";
 import { IconBell, IconMail, IconBookmark, IconBolt, IconSearch } from "@/components/icons";
 import FeedbackButton from "@/components/feedback/FeedbackButton";
@@ -27,7 +25,6 @@ export default function LeftNav({
   notifUnread?: number;
 }) {
   const pathname = usePathname();
-  const reduceMotion = usePrefersReducedMotion();
 
   const primary = [
     {
@@ -46,22 +43,30 @@ export default function LeftNav({
   ];
 
   const secondary = [
-    { label: "Saved", href: "/saved", icon: <IconBookmark /> },
-    { label: "Pro", href: "/pro", icon: <IconBolt className="h-5 w-5" /> },
+    { label: "Saved", href: "/saved", icon: <IconBookmark />, prefetch: false },
+    { label: "Pro", href: "/pro", icon: <IconBolt className="h-5 w-5" />, prefetch: false },
     {
       label: "Invite friends",
       href: "/referrals",
       icon: <UserPlus size={20} strokeWidth={1.5} aria-hidden />,
+      prefetch: false,
     },
     {
       label: "Settings",
       href: "/settings",
       icon: <Settings size={20} strokeWidth={1.5} aria-hidden />,
+      prefetch: false,
     },
   ];
 
   function renderItem(
-    item: { label: string; href: string; icon: ReactNode; badge?: number },
+    item: {
+      label: string;
+      href: string;
+      icon: ReactNode;
+      badge?: number;
+      prefetch?: boolean;
+    },
     opts?: { proDot?: boolean },
   ) {
     const active = navActive(pathname, item.href, item.label);
@@ -71,14 +76,13 @@ export default function LeftNav({
       <Link
         key={item.label}
         href={item.href}
+        prefetch={item.prefetch}
         aria-current={active ? "page" : undefined}
         className={`relative flex items-center gap-3.5 rounded-md px-3 py-2.5 text-[15px] font-medium transition-colors duration-[var(--dur-micro)] ease-out hover:bg-[var(--featured-surface)] ${active ? "bg-[var(--accent-blue-soft)] font-semibold text-[var(--blue)]" : "text-[var(--ink)]"}`}
       >
         {active && (
-          <m.span
-            layoutId="left-nav-bar"
+          <span
             className="absolute top-1.5 bottom-1.5 left-0 w-0.5 rounded-full bg-[var(--blue)]"
-            transition={reduceMotion ? { duration: 0 } : { duration: 0.22, ease: [0.65, 0, 0.35, 1] }}
             aria-hidden
           />
         )}
@@ -98,7 +102,6 @@ export default function LeftNav({
   }
 
   return (
-    <LazyMotion features={domMax} strict>
     <nav className="flex flex-col gap-0.5">
       {primary.map((item) => renderItem(item))}
 
@@ -118,6 +121,5 @@ export default function LeftNav({
         </FeedbackButton>
       </div>
     </nav>
-    </LazyMotion>
   );
 }

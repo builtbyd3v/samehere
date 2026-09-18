@@ -1030,39 +1030,7 @@ main.landing-xai {
   font-size: 0.6875rem;
 }
 
-.landing-loading-state {
-  display: flex;
-  width: fit-content;
-  align-items: center;
-  gap: 0.625rem;
-  margin-top: 1rem;
-}
-
-.landing-loading-pixels {
-  display: grid;
-  grid-template-columns: repeat(3, 4px);
-  gap: 1.5px;
-}
-
-.landing-loading-pixel {
-  width: 4px;
-  height: 4px;
-  border-radius: 1px;
-  background: var(--accent-blue);
-  opacity: 0.15;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .landing-loading-state[data-active="true"] .landing-loading-pixel {
-    animation: pixel-on 650ms ease-in-out infinite;
-  }
-}
-
-.landing-loading-label {
-  color: var(--ink-muted);
-  font-size: 0.8125rem;
-  font-weight: 500;
-}
+/* .landing-loading-* lives in components/landing/loading-state.css (shared). */
 
 .landing-analysis-rows {
   display: flex;

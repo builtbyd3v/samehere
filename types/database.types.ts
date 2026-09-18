@@ -1370,6 +1370,9 @@ export type Database = {
           id: string
           media: Json
           post_type: string | null
+          team_event_date: string | null
+          team_event_mode: string | null
+          team_event_name: string | null
           user_id: string | null
         }
         Insert: {
@@ -1380,6 +1383,9 @@ export type Database = {
           id?: string
           media?: Json
           post_type?: string | null
+          team_event_date?: string | null
+          team_event_mode?: string | null
+          team_event_name?: string | null
           user_id?: string | null
         }
         Update: {
@@ -1390,6 +1396,9 @@ export type Database = {
           id?: string
           media?: Json
           post_type?: string | null
+          team_event_date?: string | null
+          team_event_mode?: string | null
+          team_event_name?: string | null
           user_id?: string | null
         }
         Relationships: [
@@ -1485,6 +1494,7 @@ export type Database = {
           major: string | null
           onboarded_at: string | null
           open_to: string[]
+          study_mode: string | null
           pro_source: string | null
           pro_until: string | null
           profile_theme: string | null
@@ -1520,6 +1530,7 @@ export type Database = {
           major?: string | null
           onboarded_at?: string | null
           open_to?: string[]
+          study_mode?: string | null
           pro_source?: string | null
           pro_until?: string | null
           profile_theme?: string | null
@@ -1555,6 +1566,7 @@ export type Database = {
           major?: string | null
           onboarded_at?: string | null
           open_to?: string[]
+          study_mode?: string | null
           pro_source?: string | null
           pro_until?: string | null
           profile_theme?: string | null
@@ -2291,6 +2303,7 @@ export type Database = {
           major: string
           open_to: string[] | null
           school: string
+          study_mode: string | null
           username: string
           verified_student: boolean
           year: string
@@ -2735,7 +2748,15 @@ export type Database = {
         }[]
       }
       search_people: {
-        Args: { p_limit?: number; p_offset?: number; p_query: string }
+        Args: {
+          p_limit?: number
+          p_major?: string
+          p_offset?: number
+          p_open_to?: string
+          p_query?: string
+          p_study_mode?: string
+          p_year?: string
+        }
         Returns: {
           avatar_url: string | null
           display_name: string | null
@@ -2743,13 +2764,16 @@ export type Database = {
           is_campus_founder: boolean
           is_founder: boolean
           is_pro: boolean
+          major: string | null
           open_to: string[] | null
+          study_mode: string | null
           username: string
           verified_student: boolean
+          year: string | null
         }[]
       }
       search_posts: {
-        Args: { p_limit?: number; p_offset?: number; p_query: string }
+        Args: { p_label?: string; p_limit?: number; p_offset?: number; p_query?: string }
         Returns: {
           content: string
           context_label: string | null
