@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import "./landing-xai.css";
 import Pricing from "@/components/landing/Pricing";
 import LandingFooter from "@/components/landing/LandingFooter";
 import PublicHeader from "@/components/brand/PublicHeader";

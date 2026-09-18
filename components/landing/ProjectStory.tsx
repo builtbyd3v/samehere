@@ -1,4 +1,4 @@
-import PortfolioDemo from "./PortfolioDemo";
+import PortfolioDemoLazy from "./PortfolioDemoLazy";
 
 export default function ProjectStory() {
   return (
@@ -11,7 +11,7 @@ export default function ProjectStory() {
           when you are ready.
         </p>
       </div>
-      <PortfolioDemo />
+      <PortfolioDemoLazy />
     </section>
   );
 }
