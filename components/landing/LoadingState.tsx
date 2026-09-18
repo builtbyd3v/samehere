@@ -1,5 +1,3 @@
-"use client";
-
 // Source: https://www.beautifului.dev/ — Drive pixel grid adapted to SameHere
 // tokens. One-shot / stage-bounded only. No elapsed timer, no looping shimmer.
 

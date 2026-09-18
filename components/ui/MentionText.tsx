@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import { parseMentions } from "@/lib/mentions";
 import ProfileHoverTarget from "@/components/profile/ProfileHoverTarget";

@@ -2,8 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { cache, Suspense, type CSSProperties, type ReactNode } from "react";
 import type {
-  GithubConnectionPublic,
-  GithubContributionDay,
   PortfolioProject,
   PublicPortfolioEducation,
   PublicPortfolioExperience,
@@ -15,24 +13,19 @@ import { createClient } from "@/lib/supabase/server";
 import type { FollowState } from "@/components/profile/FollowButton";
 import ProfileActions from "@/components/profile/ProfileActions";
 import BlockButton from "@/components/profile/BlockButton";
-import { POST_SELECT, withEngagement, type PostRow } from "@/components/feed/PostCard";
-import FeedTimeline from "@/components/feed/FeedTimeline";
 import ProfileActivitySection from "@/components/profile/ProfileActivitySection";
+import ProfileActivityBlock from "@/components/profile/ProfileActivityBlock";
+import ProfileRecentPosts from "@/components/profile/ProfileRecentPosts";
 import ContributionHeatmap, { type HeatmapDay } from "@/components/profile/ContributionHeatmap";
-import { attachSignedMedia } from "@/lib/media";
-import { fetchQuotedReposts, toQuotedRepost } from "@/lib/feed-quotes";
-import { fetchPlainReposts } from "@/lib/feed-reposts";
-import { fetchViewerMineState } from "@/lib/feed-engagement";
-import { mergeFeedTimeline } from "@/lib/feed-timeline";
 import UserBadges from "@/components/profile/UserBadges";
 import AvatarBase from "@/components/ui/Avatar";
+import { HeatmapSkeleton, PortfolioSectionsFallback, ProfilePostsSkeleton } from "@/components/ui/Skeleton";
 import { isPro } from "@/lib/pro";
 import { PROFILE_THEMES, isProfileTheme, themeCssVars } from "@/lib/themes";
 import { pickPrimaryEducation } from "@/lib/education-options";
 import { createAnonPortfolioClient, hasPortfolioAuthCookie, portfolioReadClient, type PortfolioClient } from "@/lib/portfolio/client";
 import { getOwnerGithubConnection, getOwnerGithubDays, loadPublicPortfolioBundle } from "@/lib/portfolio/public";
 import { listOwnerProjects } from "@/lib/portfolio/owner";
-import { heatmapBreakdown } from "@/lib/portfolio/activity";
 import { metadataDescription, profileIntro, publicSectionVisible, robotsForProjection } from "@/lib/portfolio/projection";
 import { effectiveSectionOrder, eligiblePublicView } from "@/lib/portfolio/metrics";
 import { PORTFOLIO_SECTIONS } from "@/lib/portfolio/validation";
@@ -148,12 +141,8 @@ function PortfolioBody({
   experience,
   education,
   logos,
-  samehere,
-  github,
-  connection,
-  streak,
+  activity,
   posts,
-  samehereKnown = true,
   currentPro,
   intro,
 }: {
@@ -166,12 +155,8 @@ function PortfolioBody({
   experience: PublicPortfolioExperience[];
   education: Array<PublicPortfolioEducation & { school_domain?: string | null }>;
   logos: Map<string, string | null>;
-  samehere: { day: string; points: number; breakdown: Record<string, number> }[];
-  github: GithubContributionDay[];
-  connection: GithubConnectionPublic | null;
-  streak: { current_streak: number; longest_streak: number; today_earned?: boolean } | null;
+  activity: ReactNode;
   posts: ReactNode;
-  samehereKnown?: boolean;
   currentPro: boolean;
   intro: { bio: string | null; goals: string | null; open_to: string[] };
 }) {
@@ -206,17 +191,7 @@ function PortfolioBody({
           );
         }
         if (section === "activity" && show("activity")) {
-          return (
-            <ActivitySection
-              key="activity"
-              samehere={samehere}
-              github={github}
-              connection={connection}
-              streak={streak}
-              isOwner={isOwner && !previewPublic}
-              samehereKnown={samehereKnown}
-            />
-          );
+          return <div key="activity">{activity}</div>;
         }
         if (section === "experience" && show("experience")) {
           return <ExperienceList key="experience" items={experience} logos={logos} />;
@@ -255,17 +230,28 @@ async function PublicHeatmapFallback({
   );
 }
 
-async function PublicProfileView({ username }: { username: string }) {
-  const client = createAnonPortfolioClient();
-  const [{ data: profileRows }, bundle] = await Promise.all([
-    client.rpc("get_public_profile", { p_username: username }),
-    loadPublicPortfolioBundle(client, username),
-  ]);
-  const profile = profileRows?.[0] ?? null;
-  if (!profile) notFound();
-
-  const { data: countRows } = await client.rpc("get_public_profile_counts", { p_profile_id: profile.id });
-  const counts = countRows?.[0] ?? { posts: 0, followers: 0, following: 0 };
+async function PublicPortfolioBelow({
+  username,
+  profile,
+  client,
+  bundlePromise,
+}: {
+  username: string;
+  profile: {
+    id: string;
+    username: string;
+    display_name: string | null;
+    bio: string | null;
+    goals: string | null;
+    open_to: string[] | null;
+    is_private: boolean;
+    is_pro: boolean;
+    heatmap_visibility: string | null;
+  };
+  client: PortfolioClient;
+  bundlePromise: ReturnType<typeof loadPublicPortfolioBundle>;
+}) {
+  const bundle = await bundlePromise;
   const projection = bundle.ok ? bundle.data.projection : null;
   const intro = profileIntro(
     {
@@ -280,11 +266,6 @@ async function PublicProfileView({ username }: { username: string }) {
     projection,
     "public"
   );
-  const displayName = profile.display_name ?? profile.username;
-  const metaParts = [profile.school, profile.major].filter(Boolean);
-  const metaLine = metaParts.length <= 1 ? metaParts[0] ?? null : `${metaParts[0]} · ${metaParts.slice(1).join(", ")}`;
-  const bannerUrl = profile.banner_url;
-  const accentColor = profile.accent_color;
   const trackView = eligiblePublicView({
     isOwner: false,
     previewPublic: false,
@@ -295,13 +276,84 @@ async function PublicProfileView({ username }: { username: string }) {
       projection && PORTFOLIO_SECTIONS.some((section) => publicSectionVisible(projection, section))
     ),
   });
+  const posts = (
+    <section className="mt-6">
+      <h2 className="eyebrow mb-3">Posts</h2>
+      <p className="flex flex-wrap items-center gap-2 text-sm text-[var(--ink-muted)]">
+        Sign in to see their posts
+        <Link href="/login" className="btn-ghost !rounded-full !px-3 !py-1 text-xs">
+          Sign in
+        </Link>
+        <Link href="/signup" className="btn-primary !rounded-full !px-3 !py-1 text-xs">
+          Sign up
+        </Link>
+      </p>
+    </section>
+  );
+
+  return (
+    <>
+      {trackView && <TrackPortfolioView username={username} />}
+      {!bundle.ok && bundle.unavailable ? (
+        <>
+          {profile.heatmap_visibility === "public" && (
+            <Suspense fallback={<HeatmapSkeleton />}>
+              <PublicHeatmapFallback client={client} profileId={profile.id} />
+            </Suspense>
+          )}
+          {posts}
+        </>
+      ) : (
+        <PortfolioBody
+          projection={projection}
+          unavailable={!bundle.ok && Boolean(bundle.unavailable)}
+          isOwner={false}
+          previewPublic
+          ownerProjects={[]}
+          publicProjects={bundle.ok ? bundle.data.sections.projects : []}
+          experience={bundle.ok ? bundle.data.sections.experience : []}
+          education={bundle.ok ? bundle.data.sections.education : []}
+          logos={new Map()}
+          activity={
+            <ActivitySection
+              samehere={bundle.ok ? bundle.data.samehere : []}
+              github={bundle.ok ? bundle.data.github : []}
+              connection={null}
+              streak={null}
+              isOwner={false}
+              samehereKnown={bundle.ok ? bundle.data.samehereKnown : false}
+            />
+          }
+          currentPro={profile.is_pro}
+          intro={intro}
+          posts={posts}
+        />
+      )}
+    </>
+  );
+}
+
+async function PublicProfileView({ username }: { username: string }) {
+  const client = createAnonPortfolioClient();
+  const { data: profileRows } = await client.rpc("get_public_profile", { p_username: username });
+  const profile = profileRows?.[0] ?? null;
+  if (!profile) notFound();
+
+  const countsPromise = client.rpc("get_public_profile_counts", { p_profile_id: profile.id });
+  const bundlePromise = loadPublicPortfolioBundle(client, username);
+  const { data: countRows } = await countsPromise;
+  const counts = countRows?.[0] ?? { posts: 0, followers: 0, following: 0 };
+  const displayName = profile.display_name ?? profile.username;
+  const metaParts = [profile.school, profile.major].filter(Boolean);
+  const metaLine = metaParts.length <= 1 ? metaParts[0] ?? null : `${metaParts[0]} · ${metaParts.slice(1).join(", ")}`;
+  const bannerUrl = profile.banner_url;
+  const accentColor = profile.accent_color;
 
   return (
     <main
       className="page-enter mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8"
       style={accentColor ? ({ "--profile-accent": accentColor } as CSSProperties) : undefined}
     >
-      {trackView && <TrackPortfolioView username={profile.username} />}
       <section className="card-raised portfolio-enter-header overflow-hidden">
         <PortfolioBanner username={profile.username} src={bannerUrl} accent={accentColor} />
         <div className="px-5 pb-5 sm:px-6 sm:pb-6">
@@ -337,53 +389,10 @@ async function PublicProfileView({ username }: { username: string }) {
         <div className="card mt-3 px-6 py-8 text-center">
           <p className="font-medium text-[var(--ink)]">This account is private</p>
         </div>
-      ) : !bundle.ok && bundle.unavailable ? (
-        <>
-          {profile.heatmap_visibility === "public" && (
-            <PublicHeatmapFallback client={client} profileId={profile.id} />
-          )}
-          <section className="mt-6">
-            <h2 className="eyebrow mb-3">Posts</h2>
-            <p className="flex flex-wrap items-center gap-2 text-sm text-[var(--ink-muted)]">
-              Sign in to see their posts
-              <Link href="/login" className="btn-ghost !rounded-full !px-3 !py-1 text-xs">Sign in</Link>
-              <Link href="/signup" className="btn-primary !rounded-full !px-3 !py-1 text-xs">Sign up</Link>
-            </p>
-          </section>
-        </>
       ) : (
-        <PortfolioBody
-          projection={projection}
-          unavailable={!bundle.ok && Boolean(bundle.unavailable)}
-          isOwner={false}
-          previewPublic
-          ownerProjects={[]}
-          publicProjects={bundle.ok ? bundle.data.sections.projects : []}
-          experience={bundle.ok ? bundle.data.sections.experience : []}
-          education={bundle.ok ? bundle.data.sections.education : []}
-          logos={new Map()}
-          samehere={bundle.ok ? bundle.data.samehere : []}
-          github={bundle.ok ? bundle.data.github : []}
-          connection={null}
-          streak={null}
-          samehereKnown={bundle.ok ? bundle.data.samehereKnown : false}
-          currentPro={profile.is_pro}
-          intro={intro}
-          posts={
-            <section className="mt-6">
-              <h2 className="eyebrow mb-3">Posts</h2>
-              <p className="flex flex-wrap items-center gap-2 text-sm text-[var(--ink-muted)]">
-                Sign in to see their posts
-                <Link href="/login" className="btn-ghost !rounded-full !px-3 !py-1 text-xs">
-                  Sign in
-                </Link>
-                <Link href="/signup" className="btn-primary !rounded-full !px-3 !py-1 text-xs">
-                  Sign up
-                </Link>
-              </p>
-            </section>
-          }
-        />
+        <Suspense fallback={<PortfolioSectionsFallback />}>
+          <PublicPortfolioBelow username={username} profile={profile} client={client} bundlePromise={bundlePromise} />
+        </Suspense>
       )}
     </main>
   );
@@ -416,24 +425,19 @@ export default async function ProfilePage({
     schoolRes,
     countRes,
     relRes,
-    postsRes,
-    quotesRes,
-    repostsRes,
     blockedIdsRes,
     myBlockRes,
     bundle,
     ownerProjects,
     ownerGithub,
     ownerGithubDays,
+    ownerExpEdu,
   ] = await Promise.all([
     supabase.from("profile_school").select("school").eq("profile_id", profile.id).maybeSingle(),
     supabase.rpc("get_profile_counts", { p_profile_id: profile.id }),
     user && !isOwner
       ? supabase.from("follows").select("status").eq("follower_id", user.id).eq("following_id", profile.id).maybeSingle()
       : Promise.resolve({ data: null as { status: string } | null }),
-    supabase.from("posts").select(POST_SELECT).eq("user_id", profile.id).order("created_at", { ascending: false }).limit(20).returns<PostRow[]>(),
-    fetchQuotedReposts(supabase, { userIds: [profile.id], limit: 20 }),
-    fetchPlainReposts(supabase, { userIds: [profile.id], limit: 20 }),
     user && !isOwner ? supabase.rpc("get_blocked_ids") : Promise.resolve({ data: [] as string[] }),
     user && !isOwner
       ? supabase.from("blocks").select("id").eq("blocker_id", user.id).eq("blocked_id", profile.id).maybeSingle()
@@ -442,30 +446,6 @@ export default async function ProfilePage({
     isOwner ? listOwnerProjects(supabase, user.id) : Promise.resolve({ ok: true as const, data: [] }),
     isOwner ? getOwnerGithubConnection(readClient, user.id) : Promise.resolve({ ok: true as const, data: null }),
     isOwner ? getOwnerGithubDays(readClient, user.id) : Promise.resolve({ ok: true as const, data: [] }),
-  ]);
-
-  const viewerId = user.id;
-  const school = schoolRes.data?.school ?? null;
-  const counts = countRes.data?.[0] ?? { posts: 0, followers: 0, following: 0 };
-  const isAcceptedFollower = relRes.data?.status === "accepted";
-  const postRows = postsRes.data ?? [];
-  const allForSigning = [...postRows, ...quotesRes.map((q) => q.post), ...repostsRes.map((r) => r.post)];
-  const canReadHeatmap = isOwner || isAcceptedFollower || profile.heatmap_visibility === "public";
-  const [signedPosts, mine, heatmapRes, streakRes, ownerExpEdu] = await Promise.all([
-    allForSigning.length ? attachSignedMedia(supabase, allForSigning) : Promise.resolve([]),
-    fetchViewerMineState(
-      supabase,
-      viewerId,
-      [...new Set(allForSigning.map((p) => p.id))],
-      quotesRes.map((q) => q.id),
-    ),
-    canReadHeatmap
-      ? supabase.rpc("get_heatmap", { p_profile_id: profile.id })
-      : Promise.resolve({
-          data: [] as { day: string; points: number; breakdown?: Record<string, number> }[],
-          error: null,
-        }),
-    supabase.rpc("get_streak", { p_profile_id: profile.id }),
     isOwner && !previewPublic
       ? Promise.all([
           supabase
@@ -481,24 +461,17 @@ export default async function ProfilePage({
         ])
       : Promise.resolve(null),
   ]);
-  const signedById = new Map(signedPosts.map((p) => [p.id, p]));
-  const engagedById = new Map(withEngagement([...signedById.values()], mine).map((p) => [p.id, p]));
-  const posts = postRows.map((r) => engagedById.get(r.id)!);
-  const quotes = quotesRes.map((r) => toQuotedRepost(r, engagedById.get(r.post.id)!, mine));
-  const reposts = repostsRes.map((r) => ({
-    id: r.id,
-    created_at: r.created_at,
-    reposter_id: r.user_id,
-    reposter: r.reposter,
-    original: engagedById.get(r.post.id)!,
-  }));
+
+  const viewerId = user.id;
+  const school = schoolRes.data?.school ?? null;
+  const counts = countRes.data?.[0] ?? { posts: 0, followers: 0, following: 0 };
+  const isAcceptedFollower = relRes.data?.status === "accepted";
 
   const isBlocked = !!(blockedIdsRes.data ?? []).includes(profile.id);
   const amIBlocking = !!myBlockRes.data;
   const followState: FollowState =
     relRes.data?.status === "accepted" ? "following" : relRes.data?.status === "pending" ? "pending" : "none";
   const contentHidden = (profile.is_private && !isOwner && !isAcceptedFollower) || isBlocked;
-  const timeline = contentHidden ? [] : mergeFeedTimeline(posts, quotes, reposts).slice(0, 20);
   const portfolioUnavailable = !bundle.ok && Boolean(bundle.unavailable);
   const projection = bundle.ok ? bundle.data.projection : null;
   const usePublicSections = !isOwner || previewPublic;
@@ -590,22 +563,11 @@ export default async function ProfilePage({
     isOwner && !previewPublic ? "owner" : "public"
   );
 
+  const canReadHeatmap = isOwner || isAcceptedFollower || profile.heatmap_visibility === "public";
   const publicSamehere = bundle.ok ? bundle.data.samehere : [];
   const publicSamehereKnown = bundle.ok ? bundle.data.samehereKnown : false;
-  const ownerHeatmapKnown = !heatmapRes.error;
-  const samehere = previewPublic
-    ? publicSamehere
-    : canReadHeatmap
-      ? (heatmapRes.data ?? []).map((d) => ({
-          day: d.day,
-          points: d.points,
-          breakdown: heatmapBreakdown("breakdown" in d ? d.breakdown : null),
-        }))
-      : publicSamehere;
-  const samehereKnown = previewPublic ? publicSamehereKnown : canReadHeatmap ? ownerHeatmapKnown : publicSamehereKnown;
   const github = usePublicSections && bundle.ok ? bundle.data.github : ownerGithubDays.ok ? ownerGithubDays.data : [];
   const connection = isOwner && !previewPublic && ownerGithub.ok ? ownerGithub.data : null;
-  const streak = streakRes.error ? null : (streakRes.data?.[0] ?? null);
 
   const showPosts = isOwner
     ? !previewPublic || (projection?.publish_posts ?? false) || (profile.is_private && isAcceptedFollower)
@@ -613,35 +575,32 @@ export default async function ProfilePage({
       ? isAcceptedFollower && !isBlocked
       : !isBlocked && (portfolioUnavailable || (projection?.publish_posts ?? false) || !bundle.ok);
 
-  const postsSection = (
-    <section>
-      <h2 className="eyebrow mb-3">Posts</h2>
-      {isBlocked ? (
-        <div className="card px-6 py-12 text-center">
-          <p className="font-medium text-[var(--ink)]">Posts unavailable</p>
-          <p className="mt-1.5 text-sm text-[var(--ink-muted)]">
-            You and @{profile.username} cannot see each other&apos;s posts.
-          </p>
-        </div>
-      ) : contentHidden ? (
-        <div className="card px-6 py-12 text-center">
-          <p className="font-medium text-[var(--ink)]">This account is private</p>
-          <p className="mt-1.5 text-sm text-[var(--ink-muted)]">Follow @{profile.username} to see their posts.</p>
-        </div>
-      ) : timeline.length === 0 ? (
-        <div className="card px-6 py-12 text-center">
-          <p className="font-medium text-[var(--ink)]">No posts yet</p>
-          <p className="mt-1.5 text-sm text-[var(--ink-muted)]">
-            {isOwner ? "Share something to fill your feed." : `@${profile.username} has not posted yet.`}
-          </p>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-3">
-          <FeedTimeline items={timeline} viewerId={viewerId} />
-        </div>
-      )}
-    </section>
+  const activitySection = (
+    <Suspense fallback={<HeatmapSkeleton />}>
+      <ProfileActivityBlock
+        profileId={profile.id}
+        canReadHeatmap={canReadHeatmap}
+        previewPublic={previewPublic && isOwner}
+        publicSamehere={publicSamehere}
+        publicSamehereKnown={publicSamehereKnown}
+        github={github}
+        connection={connection}
+        isOwner={isOwner && !previewPublic}
+      />
+    </Suspense>
   );
+  const postsSection = showPosts ? (
+    <Suspense fallback={<ProfilePostsSkeleton />}>
+      <ProfileRecentPosts
+        profileId={profile.id}
+        username={profile.username}
+        viewerId={viewerId}
+        isOwner={isOwner}
+        isBlocked={isBlocked}
+        contentHidden={contentHidden}
+      />
+    </Suspense>
+  ) : null;
 
   return (
     <main
@@ -723,22 +682,26 @@ export default async function ProfilePage({
             )}
             {canReadHeatmap && (
               <div className="mt-4">
-                <ProfileActivitySection profileId={profile.id} isOwner={isOwner} />
+                <Suspense fallback={<HeatmapSkeleton />}>
+                  <ProfileActivitySection profileId={profile.id} isOwner={isOwner} />
+                </Suspense>
               </div>
             )}
             <ExperienceList items={experience} logos={logoByName} />
             <EducationList items={education} />
-            {showPosts && postsSection}
+            {postsSection}
           </>
         )}
         {portfolioUnavailable && !isOwner && (
           <>
             {!contentHidden && canReadHeatmap && (
               <div className="mt-4">
-                <ProfileActivitySection profileId={profile.id} isOwner={false} />
+                <Suspense fallback={<HeatmapSkeleton />}>
+                  <ProfileActivitySection profileId={profile.id} isOwner={false} />
+                </Suspense>
               </div>
             )}
-            {showPosts && postsSection}
+            {postsSection}
           </>
         )}
         {!portfolioUnavailable && (
@@ -752,14 +715,10 @@ export default async function ProfilePage({
             experience={experience}
             education={education}
             logos={logoByName}
-            samehere={samehere}
-            github={github}
-            connection={connection}
-            streak={streak}
-            samehereKnown={samehereKnown}
+            activity={activitySection}
             currentPro={isOwner ? pro : Boolean(profile.is_pro)}
             intro={intro}
-            posts={showPosts ? postsSection : null}
+            posts={postsSection}
           />
         )}
 

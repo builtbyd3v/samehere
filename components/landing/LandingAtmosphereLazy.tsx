@@ -17,6 +17,19 @@ function canCreateWebGL(): boolean {
   }
 }
 
+function saveDataOn(): boolean {
+  try {
+    const conn = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
+    return Boolean(conn?.saveData);
+  } catch {
+    return false;
+  }
+}
+
+function canLoadAtmosphere(): boolean {
+  return canCreateWebGL() && !saveDataOn();
+}
+
 function subscribeWebGL() {
   return () => {};
 }
@@ -36,9 +49,9 @@ class AtmosphereBoundary extends Component<{ children: ReactNode }, { failed: bo
 
 export default function LandingAtmosphereLazy() {
   const reduceMotion = usePrefersReducedMotion();
-  const hasWebGL = useSyncExternalStore(subscribeWebGL, canCreateWebGL, () => false);
+  const canLoad = useSyncExternalStore(subscribeWebGL, canLoadAtmosphere, () => false);
 
-  if (reduceMotion || !hasWebGL) return null;
+  if (reduceMotion || !canLoad) return null;
   return (
     <AtmosphereBoundary>
       <LandingAtmosphere />

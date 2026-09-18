@@ -24,6 +24,7 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
           NEXT_PUBLIC_SITE_URL: https://www.samehere.dev
           STRIPE_SECRET_KEY: sk_test_placeholder
+      - run: node scripts/check-route-budgets.mjs
 
   rls:
     runs-on: ubuntu-latest

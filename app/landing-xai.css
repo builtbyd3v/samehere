@@ -992,8 +992,10 @@ main.landing-xai {
   opacity: 0.15;
 }
 
-.landing-loading-state[data-active="true"] .landing-loading-pixel {
-  animation: pixel-on 650ms ease-in-out infinite;
+@media (prefers-reduced-motion: no-preference) {
+  .landing-loading-state[data-active="true"] .landing-loading-pixel {
+    animation: pixel-on 650ms ease-in-out infinite;
+  }
 }
 
 .landing-loading-label {
@@ -1127,8 +1129,10 @@ main.landing-xai {
   inset: 0;
 }
 
-.landing-analysis-ring-svg[data-active="true"] {
-  animation: spin 1.1s linear infinite;
+@media (prefers-reduced-motion: no-preference) {
+  .landing-analysis-ring-svg[data-active="true"] {
+    animation: spin 1.1s linear infinite;
+  }
 }
 
 .landing-analysis-ring-label {
@@ -1885,6 +1889,7 @@ main.landing-xai {
   }
 }
 
+/* Per-utility gating only — do not restore the old `* { animation-duration: 0.01ms }` nuke. */
 @media (prefers-reduced-motion: reduce) {
   .landing-hero-word,
   .landing-hero-announcement,

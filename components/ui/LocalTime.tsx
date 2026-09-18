@@ -1,5 +1,3 @@
-"use client";
-
 import { formatNotificationTime } from "@/lib/notifications";
 import { formatMessageTime } from "@/lib/messages";
 import { timeAgo } from "@/lib/time";
