@@ -45,64 +45,9 @@ create index if not exists posts_looking_for_team_created_at_idx
 grant update (team_event_name, team_event_date, team_event_mode)
   on public.posts to authenticated;
 
--- Same 3-arg search_posts shape. Event name is searchable; return columns
--- unchanged so /search does not need a coordinated RPC bump.
-create or replace function public.search_posts(
-  p_query text,
-  p_limit int default 20,
-  p_offset int default 0
-)
-returns table (
-  id uuid,
-  user_id uuid,
-  content text,
-  context_label text,
-  created_at timestamptz
-)
-language plpgsql
-stable
-security definer
-set search_path = ''
-as $$
-declare
-  v_tokens text[] := public.search_tokens(p_query);
-  v_limit int := least(20, greatest(1, coalesce(p_limit, 20)));
-  v_offset int := greatest(0, coalesce(p_offset, 0));
-begin
-  if auth.uid() is null then
-    return;
-  end if;
-  if cardinality(v_tokens) = 0 then
-    return;
-  end if;
-
-  return query
-  with visible as (
-    select
-      po.id,
-      po.user_id,
-      po.content,
-      po.context_label,
-      po.created_at,
-      public.search_term_hits(
-        concat_ws(' ', po.content, po.context_label, po.team_event_name),
-        v_tokens
-      ) as term_hits
-    from public.posts po
-    join public.profiles a on a.id = po.user_id
-    where po.hidden = false
-      and a.is_private = false
-      and a.is_suspended = false
-      and a.id not in (select public.get_blocked_ids())
-  )
-  select v.id, v.user_id, v.content, v.context_label, v.created_at
-  from visible v
-  where v.term_hits > 0
-  order by v.term_hits desc, v.created_at desc, v.id desc
-  limit v_limit
-  offset v_offset;
-end;
-$$;
-
-revoke all on function public.search_posts(text, int, int) from public, anon, authenticated;
-grant execute on function public.search_posts(text, int, int) to authenticated;
+-- search_posts is intentionally not touched here. Bet 1 (20260918011000_bet1_discovery_rpcs)
+-- replaces the 3-arg RPC with search_posts(text, int, int, text); re-creating the 3-arg
+-- shape after that leaves two overloads and every 3-arg call fails with
+-- "function public.search_posts(text, integer, integer) is not unique".
+-- 20260918031000_search_posts_looking_for_team_label owns the single 4-arg RPC
+-- (looking_for_team allowlist + team_event_name in the search text).
