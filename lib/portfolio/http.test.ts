@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { SITE_URL } from "@/lib/site";
 import { profileSharePath, profileShareUrl } from "./share";
 import { robotsForProjection } from "./projection";
 import { parseProjectWrite, parsePublishFlags } from "./owner";
@@ -6,7 +7,7 @@ import { parseProjectWrite, parsePublishFlags } from "./owner";
 describe("owner/public API contracts", () => {
   it("canonical share link is /profile/[username]", () => {
     expect(profileSharePath("ada")).toBe("/profile/ada");
-    expect(profileShareUrl("ada")).toContain("/profile/ada");
+    expect(profileShareUrl("ada")).toBe(`${SITE_URL}/profile/ada`);
   });
 
   it("rejects publish-shaped writes without a personal role", () => {
