@@ -431,6 +431,7 @@ export default async function ProfilePage({
     ownerProjects,
     ownerGithub,
     ownerGithubDays,
+    ownerExpEdu,
   ] = await Promise.all([
     supabase.from("profile_school").select("school").eq("profile_id", profile.id).maybeSingle(),
     supabase.rpc("get_profile_counts", { p_profile_id: profile.id }),
@@ -445,6 +446,20 @@ export default async function ProfilePage({
     isOwner ? listOwnerProjects(supabase, user.id) : Promise.resolve({ ok: true as const, data: [] }),
     isOwner ? getOwnerGithubConnection(readClient, user.id) : Promise.resolve({ ok: true as const, data: null }),
     isOwner ? getOwnerGithubDays(readClient, user.id) : Promise.resolve({ ok: true as const, data: [] }),
+    isOwner && !previewPublic
+      ? Promise.all([
+          supabase
+            .from("experiences")
+            .select("id, kind, org, role, term, note, start_date, end_date, is_current")
+            .eq("user_id", profile.id)
+            .order("created_at", { ascending: false }),
+          supabase
+            .from("education")
+            .select("id, school, degree, field, class_year, start_date, end_date, school_domain, is_current")
+            .eq("user_id", profile.id)
+            .order("start_date", { ascending: false, nullsFirst: false }),
+        ])
+      : Promise.resolve(null),
   ]);
 
   const viewerId = user.id;
@@ -466,19 +481,8 @@ export default async function ProfilePage({
   if (usePublicSections && bundle.ok) {
     experience = bundle.data.sections.experience;
     education = bundle.data.sections.education;
-  } else if (isOwner && !previewPublic) {
-    const [expRes, eduRes] = await Promise.all([
-      supabase
-        .from("experiences")
-        .select("id, kind, org, role, term, note, start_date, end_date, is_current")
-        .eq("user_id", profile.id)
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("education")
-        .select("id, school, degree, field, class_year, start_date, end_date, school_domain, is_current")
-        .eq("user_id", profile.id)
-        .order("start_date", { ascending: false, nullsFirst: false }),
-    ]);
+  } else if (ownerExpEdu) {
+    const [expRes, eduRes] = ownerExpEdu;
     experience = (expRes.data ?? []).map((row) => ({
       id: row.id,
       kind: row.kind,
