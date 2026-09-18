@@ -316,7 +316,7 @@ reset role;
 select tests.as_anon();
 do $$
 begin
-  if has_function_privilege('anon', 'public.search_people(text,integer,integer)', 'execute')
+  if has_function_privilege('anon', 'public.search_people(text,integer,integer,text,text,text,text)', 'execute')
      or has_function_privilege('anon', 'public.search_projects(text,integer,integer)', 'execute')
      or has_function_privilege('anon', 'public.search_posts(text,integer,integer,text)', 'execute')
   then
