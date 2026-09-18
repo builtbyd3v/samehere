@@ -10,15 +10,17 @@ import {
   nextSearchOffset,
   postsSearchHref,
 } from "@/lib/search";
+import { parseDiscoveryFilters } from "@/lib/discovery";
 
 export default async function SearchPostsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; offset?: string }>;
+  searchParams: Promise<{ q?: string; offset?: string; label?: string }>;
 }) {
   const params = await searchParams;
   const q = (params.q ?? "").trim();
   const offset = clampSearchOffset(params.offset);
+  const label = parseDiscoveryFilters(params).label;
 
   const supabase = await createClient();
   const {
@@ -26,7 +28,8 @@ export default async function SearchPostsPage({
   } = await supabase.auth.getUser();
   const viewerId = user?.id ?? null;
 
-  const posts = q && tokensFor(q).length ? await searchPosts(supabase, q, SEARCH_PAGE, offset) : [];
+  const posts =
+    (q && tokensFor(q).length) || label ? await searchPosts(supabase, q, SEARCH_PAGE, offset, label) : [];
   const items = posts.map((post) => ({ kind: "post" as const, created_at: post.created_at, post }));
   const nextOffset = nextSearchOffset(offset);
   const hasMore = posts.length === SEARCH_PAGE && nextOffset != null;
@@ -34,11 +37,11 @@ export default async function SearchPostsPage({
 
   return (
     <main className="page-enter mx-auto max-w-2xl px-4 py-8">
-      <Link href={q ? `/search?q=${encodeURIComponent(q)}` : "/search"} className="text-sm text-[var(--ink-muted)] transition hover:text-[var(--ink)]">
+      <Link href={q ? `/search?q=${encodeURIComponent(q)}${label ? `&label=${label}` : ""}` : label ? `/search?label=${label}` : "/search"} className="text-sm text-[var(--ink-muted)] transition hover:text-[var(--ink)]">
         ← All results
       </Link>
       <h1 className="mt-2 mb-4 text-lg font-semibold text-[var(--ink)]">
-        Posts matching &ldquo;{q}&rdquo;
+        {q ? <>Posts matching &ldquo;{q}&rdquo;</> : "Labeled posts"}
       </h1>
       {items.length > 0 ? (
         <div className="flex flex-col gap-3">
@@ -46,7 +49,7 @@ export default async function SearchPostsPage({
           <div className="mt-1 flex flex-col gap-2">
             {hasMore && nextOffset != null && (
               <Link
-                href={postsSearchHref(q, nextOffset)}
+                href={postsSearchHref(q, nextOffset, label)}
                 className="block rounded-md border border-[var(--border)] py-2 text-center text-sm font-medium text-[var(--ink-muted)]"
               >
                 Next page
@@ -54,7 +57,7 @@ export default async function SearchPostsPage({
             )}
             {offset > 0 && (
               <Link
-                href={postsSearchHref(q, prevOffset)}
+                href={postsSearchHref(q, prevOffset, label)}
                 className="block text-center text-sm text-[var(--ink-muted)] underline hover:text-[var(--ink)]"
               >
                 Previous
@@ -65,7 +68,7 @@ export default async function SearchPostsPage({
       ) : offset > 0 ? (
         <div>
           <p className="text-sm text-[var(--ink-muted)]">No more posts for this query.</p>
-          <Link href={postsSearchHref(q, prevOffset)} className="mt-3 inline-block text-sm text-[var(--ink-muted)] underline hover:text-[var(--ink)]">
+          <Link href={postsSearchHref(q, prevOffset, label)} className="mt-3 inline-block text-sm text-[var(--ink-muted)] underline hover:text-[var(--ink)]">
             Previous
           </Link>
         </div>

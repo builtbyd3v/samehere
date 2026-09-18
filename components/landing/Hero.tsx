@@ -63,7 +63,7 @@ export default function Hero() {
       <LandingAtmosphereLazy />
       <div className="landing-hero-copy">
         <p className="landing-hero-announcement landing-announce">
-          For students, building together
+          Online, transfer, commuter, or the only CS major you know
         </p>
 
         <h1>

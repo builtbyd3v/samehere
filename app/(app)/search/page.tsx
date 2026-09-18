@@ -4,6 +4,7 @@ import { FeedSearchResults } from "@/components/feed/FeedSearch";
 import FeedTimeline from "@/components/feed/FeedTimeline";
 import EmptyState from "@/components/ui/EmptyState";
 import SearchBar from "@/components/search/SearchBar";
+import SearchFilters from "@/components/search/SearchFilters";
 import {
   SEARCH_PAGE,
   tokensFor,
@@ -14,39 +15,64 @@ import {
   searchHref,
   nextSearchOffset,
 } from "@/lib/search";
+import { hasDiscoveryFilters, hasPeopleFilters, parseDiscoveryFilters, postsDiscoveryHref } from "@/lib/discovery";
 
 const POSTS_PREVIEW = 3;
 
 export default async function SearchPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; peoplePage?: string; projectPage?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    peoplePage?: string;
+    projectPage?: string;
+    tag?: string;
+    year?: string;
+    major?: string;
+    mode?: string;
+    label?: string;
+  }>;
 }) {
   const params = await searchParams;
   const q = (params.q ?? "").trim();
+  const filters = parseDiscoveryFilters(params);
   const peoplePage = parseSearchPage(params.peoplePage);
   const peopleOffset = searchPageOffset(peoplePage);
   const projectPage = parseSearchPage(params.projectPage);
   const projectOffset = searchPageOffset(projectPage);
+  const hasQuery = Boolean(q && tokensFor(q).length);
+  const browsing = !hasQuery && hasDiscoveryFilters(filters);
 
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   const viewerId = user?.id ?? null;
+  const { data: viewer } = user
+    ? await supabase.from("profiles").select("major").eq("id", user.id).maybeSingle()
+    : { data: null };
 
-  if (!q || !tokensFor(q).length) {
+  const keep = {
+    tag: filters.tag,
+    year: filters.year,
+    major: filters.major,
+    mode: filters.mode,
+    label: filters.label,
+  };
+
+  if (!hasQuery && !browsing) {
     return (
       <main className="page-enter mx-auto max-w-2xl px-4 py-8">
-        <SearchBar />
-        <EmptyState title="Search people, projects, and posts" />
+        <SearchBar keep={keep} />
+        <SearchFilters q="" filters={filters} viewerMajor={viewer?.major} />
+        <EmptyState title="Search people, projects, and posts" description="Or pick a filter to browse people at your stage." />
       </main>
     );
   }
 
   const [posts, projects] = await Promise.all([
-    searchPosts(supabase, q, POSTS_PREVIEW + 1),
-    searchProjects(supabase, q, SEARCH_PAGE, projectOffset),
+    hasQuery || filters.label ? searchPosts(supabase, q, POSTS_PREVIEW + 1, 0, filters.label) : Promise.resolve([]),
+    hasQuery ? searchProjects(supabase, q, SEARCH_PAGE, projectOffset) : Promise.resolve([]),
   ]);
 
   const hasMorePosts = posts.length > POSTS_PREVIEW;
@@ -54,20 +80,22 @@ export default async function SearchPage({
   const postItems = posts
     .slice(0, POSTS_PREVIEW)
     .map((post) => ({ kind: "post" as const, created_at: post.created_at, post }));
-  const showProjects = projects.length > 0 || projectPage > 1;
-
-  const peopleBlock = (
-    <FeedSearchResults q={q} page={peoplePage} offset={peopleOffset} projectPage={projectPage} />
-  );
+  const showProjects = hasQuery && (projects.length > 0 || projectPage > 1);
+  const showPeople = hasQuery || hasPeopleFilters(filters);
 
   return (
     <main className="page-enter mx-auto max-w-2xl px-4 py-8">
-      <SearchBar initialQuery={q} />
+      <SearchBar initialQuery={q} keep={keep} />
+      <SearchFilters q={q} filters={filters} viewerMajor={viewer?.major} />
 
-      <section className="mt-6">
-        <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">People</h2>
-        {peopleBlock}
-      </section>
+      {showPeople && (
+        <section className="mt-6">
+          <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">
+            {browsing && hasPeopleFilters(filters) ? "Browse people at your stage" : "People"}
+          </h2>
+          <FeedSearchResults q={q} page={peoplePage} offset={peopleOffset} projectPage={projectPage} filters={filters} />
+        </section>
+      )}
 
       {showProjects && (
         <section className="mt-6">
@@ -90,12 +118,12 @@ export default async function SearchPage({
           {(projectPage > 1 || hasMoreProjects) && (
             <div className="mt-3 flex items-center gap-3 text-sm">
               {projectPage > 1 && (
-                <Link href={searchHref({ q, peoplePage, projectPage: projectPage - 1 })} className="text-[var(--ink-muted)] underline hover:text-[var(--ink)]">
+                <Link href={searchHref({ q, peoplePage, projectPage: projectPage - 1, ...keep })} className="text-[var(--ink-muted)] underline hover:text-[var(--ink)]">
                   Previous
                 </Link>
               )}
               {hasMoreProjects && (
-                <Link href={searchHref({ q, peoplePage, projectPage: projectPage + 1 })} className="text-[var(--ink-muted)] underline hover:text-[var(--ink)]">
+                <Link href={searchHref({ q, peoplePage, projectPage: projectPage + 1, ...keep })} className="text-[var(--ink-muted)] underline hover:text-[var(--ink)]">
                   Next
                 </Link>
               )}
@@ -112,7 +140,7 @@ export default async function SearchPage({
           </div>
           {hasMorePosts && (
             <Link
-              href={`/search/posts?q=${encodeURIComponent(q)}`}
+              href={postsDiscoveryHref(q, filters)}
               className="mt-3 block rounded-md border border-[var(--border)] py-2 text-center text-sm font-medium text-[var(--ink-muted)] transition hover:border-[var(--border-strong)] hover:text-[var(--ink)]"
             >
               Show more posts
