@@ -42,9 +42,8 @@ export default function Pricing() {
             <p className="landing-plan-description">
               Posting, messaging, and a written portfolio stay available without a subscription.
             </p>
-            <p className="landing-plan-price">
-              $0<span>forever</span>
-            </p>
+            <p className="landing-plan-price">$0</p>
+            <p className="landing-plan-note">forever</p>
             <FeatureList items={FREE_FEATURES} />
             <div className="landing-plan-action">
               <Link href="/signup" className={`${signupCta} w-full justify-center`}>
@@ -61,9 +60,8 @@ export default function Pricing() {
             <p className="landing-plan-description">
               Customize your portfolio, see what gets attention, and turn more repositories into projects.
             </p>
-            <p className="landing-plan-price">
-              $4.99<span>/month · $12.99/semester</span>
-            </p>
+            <p className="landing-plan-price">$4.99</p>
+            <p className="landing-plan-note">/month · $12.99/semester</p>
             <FeatureList items={PRO_FEATURES} />
             <div className="landing-plan-action">
               <Link href="/pro" className={`${ghostCta} w-full justify-center`}>
