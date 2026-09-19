@@ -584,6 +584,13 @@ summary {
   background: var(--surface-raised);
   box-shadow: var(--elev-raised);
 }
+.card-hover,
+.card-hover-raise {
+  transition:
+    transform var(--dur-short) var(--ease-out),
+    border-color var(--dur-short) var(--ease-out),
+    box-shadow var(--dur-short) var(--ease-out);
+}
 @media (prefers-reduced-motion: no-preference) {
   .card-raised.card-hover:hover,
   .card-hover-raise:hover {
@@ -648,6 +655,16 @@ summary {
 }
 
 } /* @layer components */
+
+.shell-mobile-mark {
+  position: absolute;
+  top: 0;
+  left: calc(50% - 1rem);
+  width: 2rem;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--blue);
+}
 
 .auth-shell {
   min-height: 100dvh;
@@ -972,6 +989,18 @@ summary {
   .feed-enter {
     animation: feed-enter var(--dur-med) var(--ease-out) both;
     animation-delay: calc(var(--stagger-i, 0) * var(--stagger));
+  }
+
+  .empty-enter {
+    animation: page-enter var(--dur-med) var(--ease-out) both;
+  }
+
+  .shell-aside-enter {
+    animation: page-enter var(--dur-med) var(--ease-out) both;
+  }
+
+  .profile-stat-enter {
+    animation: page-enter var(--dur-med) var(--ease-out) 640ms both;
   }
 
   .label-glyph-draw[data-label="stuck"] .label-glyph-stroke,

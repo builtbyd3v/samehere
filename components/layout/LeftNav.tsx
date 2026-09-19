@@ -1,5 +1,6 @@
 "use client";
 
+import { motion, useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -25,6 +26,7 @@ export default function LeftNav({
   notifUnread?: number;
 }) {
   const pathname = usePathname();
+  const reduceMotion = useReducedMotion();
 
   const primary = [
     {
@@ -80,12 +82,18 @@ export default function LeftNav({
         aria-current={active ? "page" : undefined}
         className={`relative flex items-center gap-3.5 rounded-md px-3 py-2.5 text-[15px] font-medium transition-colors duration-[var(--dur-micro)] ease-out hover:bg-[var(--featured-surface)] ${active ? "bg-[var(--accent-blue-soft)] font-semibold text-[var(--blue)]" : "text-[var(--ink)]"}`}
       >
-        {active && (
-          <span
-            className="absolute top-1.5 bottom-1.5 left-0 w-0.5 rounded-full bg-[var(--blue)]"
-            aria-hidden
-          />
-        )}
+        {active ? (
+          reduceMotion ? (
+            <span className="absolute top-1.5 bottom-1.5 left-0 w-0.5 rounded-full bg-[var(--blue)]" aria-hidden />
+          ) : (
+            <motion.span
+              layoutId="shell-nav-active"
+              className="absolute top-1.5 bottom-1.5 left-0 w-0.5 rounded-full bg-[var(--blue)]"
+              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+              aria-hidden
+            />
+          )
+        ) : null}
         <span className={`grid h-6 w-6 shrink-0 place-items-center transition-colors duration-[var(--dur-micro)] ${active ? "text-[var(--blue)]" : "text-[var(--ink-muted)]"}`}>
           {item.icon}
         </span>

@@ -37,8 +37,8 @@ export default function FeedTabs({
           {tab === "latest" && (
             <m.span
               layoutId="feed-tab-thumb"
-              className="absolute inset-0 rounded-full bg-[var(--blue-glow)]"
-              transition={reduceMotion ? { duration: 0 } : { duration: 0.22, ease: [0.65, 0, 0.35, 1] }}
+              className="absolute inset-0 rounded-full bg-[var(--featured-surface)] shadow-[inset_0_0_0_1px_var(--border)]"
+              transition={reduceMotion ? { duration: 0 } : { duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
               aria-hidden
             />
           )}
@@ -59,8 +59,8 @@ export default function FeedTabs({
           {tab === "following" && (
             <m.span
               layoutId="feed-tab-thumb"
-              className="absolute inset-0 rounded-full bg-[var(--blue-glow)]"
-              transition={reduceMotion ? { duration: 0 } : { duration: 0.22, ease: [0.65, 0, 0.35, 1] }}
+              className="absolute inset-0 rounded-full bg-[var(--featured-surface)] shadow-[inset_0_0_0_1px_var(--border)]"
+              transition={reduceMotion ? { duration: 0 } : { duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
               aria-hidden
             />
           )}

@@ -400,7 +400,7 @@ async function PublicProfileView({ username }: { username: string }) {
             </div>
             <p className="mt-0.5 text-[15px] text-[var(--ink-muted)]">@{profile.username}</p>
             {metaLine && <p className="mt-2 text-sm text-[var(--ink-muted)]">{metaLine}</p>}
-            <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1">
+            <div className="profile-stat-enter mt-4 flex flex-wrap gap-x-6 gap-y-1">
               <Stat value={Number(counts.posts)} label="posts" accent={Boolean(accentColor)} />
               <Stat value={Number(counts.followers)} label="followers" accent={Boolean(accentColor)} href={`/profile/${profile.username}/followers`} />
               <Stat value={Number(counts.following)} label="following" accent={Boolean(accentColor)} href={`/profile/${profile.username}/following`} />
@@ -690,7 +690,7 @@ export default async function ProfilePage({
               </div>
               <p className="mt-0.5 text-[15px] text-[var(--ink-muted)]">@{profile.username}</p>
               {metaLine && <p className="mt-2 text-sm text-[var(--ink-muted)]">{metaLine}</p>}
-              <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1">
+              <div className="profile-stat-enter mt-4 flex flex-wrap gap-x-6 gap-y-1">
                 <Stat value={Number(counts.posts)} label="posts" accent={!!theme} />
                 <Stat value={Number(counts.followers)} label="followers" accent={!!theme} href={`/profile/${profile.username}/followers`} />
                 <Stat value={Number(counts.following)} label="following" accent={!!theme} href={`/profile/${profile.username}/following`} />
