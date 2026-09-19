@@ -1610,7 +1610,7 @@ main.landing-xai {
 
 .landing-plan-price > span {
   display: block;
-  margin-top: 0.5rem;
+  margin-top: 1.25rem;
   color: var(--ink-muted);
   font-size: 0.8125rem;
   font-weight: 400;
