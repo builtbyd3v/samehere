@@ -93,11 +93,13 @@ export async function loadMorePosts(
 // anything. Junk labels stop pagination instead of scanning the firehose.
 export async function loadMoreLabeledPosts(
   labelRaw: string,
+  openRaw: boolean,
   cursor: string,
 ): Promise<{ items: FeedTimelineItem[]; nextCursor: string | null }> {
   const label = parseContextLabel(labelRaw);
   const decoded = decodeCursor(cursor);
   if (!label || !decoded) return { items: [], nextCursor: null };
+  const openOnly = label === "stuck" && openRaw === true;
 
   const supabase = await createClient();
   const {
@@ -106,6 +108,7 @@ export async function loadMoreLabeledPosts(
   const posts = await fetchLabeledPosts(supabase, {
     viewerId: user?.id ?? null,
     label,
+    openOnly,
     cursor: decoded,
     limit: PAGE,
   });
