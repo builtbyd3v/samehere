@@ -77,6 +77,16 @@ describe("updateSession missing-user owner APIs", () => {
     expect(page.headers.get("location")).toMatch(/\/signup$/);
   });
 
+  it("lets logged-out visitors reach the portfolio card PNG, but not deeper paths", async () => {
+    const card = await updateSession(request("/profile/ada/card?format=story"));
+    expect(card.status).not.toBe(307);
+    expect(card.status).not.toBe(401);
+
+    const deeper = await updateSession(request("/profile/ada/card/extra"));
+    expect(deeper.status).toBe(307);
+    expect(deeper.headers.get("location")).toMatch(/\/signup$/);
+  });
+
   it("does not skip the suspension gate for an authenticated owner API", async () => {
     getUser.mockResolvedValue({ data: { user: { id: "owner-1" } } });
     rpc.mockResolvedValue({ data: true });
