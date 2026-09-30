@@ -11,12 +11,22 @@ import LocalTime from "@/components/ui/LocalTime";
 import type { PostMedia } from "@/lib/media";
 import type { ViewerMineState } from "@/lib/feed-engagement";
 import type { ContextLabel, TeamEventMode } from "@/types/portfolio";
-import ContextLabelBadge from "@/components/ui/ContextLabelBadge";
+import { CircleAlert, CircleCheck } from "lucide-react";
+import { Button } from "@/components/ui/Button";
 import { formatTeamEventLine, parseTeamEventMode } from "@/lib/team-event";
 import { feedPath, stuckReplyPath } from "@/lib/feed-label";
+import { CONTEXT_LABEL_COPY, CONTEXT_LABEL_DOT } from "@/lib/context-label";
+import { authorMetaLine, splitQuestion } from "@/lib/feed-view";
 
 export const POST_SELECT =
-  "id, content, created_at, user_id, media, hidden, context_label, team_event_name, team_event_date, team_event_mode, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, is_private, is_pro, is_founder, is_campus_founder, verified_student, is_bot, profile_school(school)), reactions(count), reposts(count), comments(count)";
+  "id, content, created_at, user_id, media, hidden, context_label, team_event_name, team_event_date, team_event_mode, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, is_private, is_pro, is_founder, is_campus_founder, verified_student, is_bot, stage, profile_school(school)), reactions(count), reposts(count), comments(count)";
+
+// Same columns with the author embed as an inner join, so `.eq("author.<col>", v)`
+// filters posts instead of nulling the embed (used by the Your stage tab).
+export const POST_SELECT_AUTHOR_INNER = POST_SELECT.replace(
+  "author:profiles!posts_user_id_fkey(",
+  "author:profiles!posts_user_id_fkey!inner(",
+);
 
 export const PAGE = 20;
 
@@ -30,6 +40,7 @@ type Author = {
   is_campus_founder: boolean;
   verified_student: boolean;
   is_bot: boolean;
+  stage: string | null;
   profile_school: { school: string | null } | null;
 } | null;
 
@@ -101,81 +112,82 @@ export function withEngagement(rows: PostRow[], mine: ViewerMineState): FeedPost
 function Avatar({
   author,
   name,
-  size = "md",
+  embedded,
 }: {
   author: NonNullable<FeedPost["author"]>;
   name: string;
-  size?: "sm" | "md" | "lg";
+  embedded: boolean;
 }) {
-  const dim = size === "lg" ? "h-11 w-11" : size === "sm" ? "h-8 w-8" : "h-10 w-10";
   const inner = (
     <AvatarBase
       src={author.avatar_url}
       seed={author.username}
       name={name}
-      className={`${dim} rounded-full border border-[var(--border)] text-sm`}
+      className={`${embedded ? "h-8 w-8" : "size-[34px] lg:size-9"} rounded-full text-xs`}
       pro={author.is_pro}
     />
   );
 
-  if (size === "sm") return <div className="shrink-0">{inner}</div>;
+  if (embedded) return <div className="shrink-0">{inner}</div>;
 
   return (
-    <ProfileHoverLink href={`/profile/${author.username}`} username={author.username} className="shrink-0 transition hover:opacity-85">
+    <ProfileHoverLink href={`/profile/${author.username}`} username={author.username} className="shrink-0 hover:opacity-85">
       {inner}
     </ProfileHoverLink>
   );
 }
 
-function TeamEventMeta({
-  name,
-  date,
-  mode,
-  username,
-  viewerId,
-  authorId,
+function PostBody({ content, linked, postId }: { content: string; linked: boolean; postId: string }) {
+  const inner = (
+    <p className="whitespace-pre-line break-words text-[15px] leading-[1.55] text-[var(--ink-2)] lg:leading-[1.6]">
+      <MentionText>{content}</MentionText>
+    </p>
+  );
+  if (linked) {
+    return (
+      <PostBodyLink postId={postId} className="block cursor-pointer">
+        {inner}
+      </PostBodyLink>
+    );
+  }
+  return inner;
+}
+
+function StuckQuestion({
+  content,
+  postId,
+  linked,
+  solved = false,
 }: {
-  name: string | null;
-  date: string | null;
-  mode: TeamEventMode | null;
-  username: string | null;
-  viewerId: string | null;
-  authorId: string;
+  content: string;
+  postId: string;
+  linked: boolean;
+  solved?: boolean;
 }) {
-  const line = formatTeamEventLine({
-    team_event_name: name,
-    team_event_date: date,
-    team_event_mode: mode,
-  });
-  const canMessage = Boolean(viewerId && username && viewerId !== authorId);
-
-  if (!line && !canMessage) return null;
-
-  return (
-    <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-      {line ? <p className="text-[13px] text-[var(--ink-muted)]">{line}</p> : null}
-      {canMessage ? (
-        <Link
-          href={`/messages?to=${encodeURIComponent(username!)}`}
-          className="text-[13px] font-medium text-[var(--ink-muted)] transition hover:text-[var(--ink)]"
-        >
-          Message
-        </Link>
+  const { question, detail } = splitQuestion(content);
+  const block = (
+    <div className="flex flex-col gap-1.5 rounded-xl border border-[var(--amber)]/22 bg-[var(--amber)]/5 p-3 lg:gap-2 lg:rounded-[14px] lg:bg-transparent lg:bg-linear-to-b lg:from-[var(--amber)]/6 lg:to-[var(--amber)]/[0.015] lg:p-4">
+      <span className={`flex items-center gap-2 text-xs ${solved ? "text-[var(--green)]" : "text-[var(--amber)]"}`}>
+        {solved ? <CircleCheck size={14} strokeWidth={2} aria-hidden /> : <CircleAlert size={14} strokeWidth={2} aria-hidden />}
+        {solved ? "Stuck · solved" : "Stuck · open"}
+      </span>
+      <p className="break-words text-[15px] font-medium leading-[1.4] text-[var(--ink)] lg:text-base lg:leading-[1.45]">
+        <MentionText>{question}</MentionText>
+      </p>
+      {detail ? (
+        <p className="whitespace-pre-line break-words text-sm leading-[1.55] text-[var(--muted)]">
+          <MentionText>{detail}</MentionText>
+        </p>
       ) : null}
     </div>
   );
-}
-
-function PostBody({ content, linked, postId }: { content: string; linked: boolean; postId: string }) {
-  const inner = (
-    <span className={`max-w-[65ch] whitespace-pre-line break-words text-[16.5px] leading-[1.5] text-[var(--ink)] ${linked ? "" : "block"}`}>
-      <MentionText>{content}</MentionText>
-    </span>
+  return linked ? (
+    <PostBodyLink postId={postId} className="block cursor-pointer">
+      {block}
+    </PostBodyLink>
+  ) : (
+    block
   );
-  if (linked) {
-    return <PostBodyLink postId={postId}>{inner}</PostBodyLink>;
-  }
-  return <div className="mt-2.5">{inner}</div>;
 }
 
 export default function PostCard({
@@ -191,117 +203,126 @@ export default function PostCard({
 }) {
   const a = post.author;
   const name = a?.display_name ?? a?.username ?? "Unknown";
-  const school = a?.profile_school?.school ?? null;
   const embedded = variant === "embedded";
   const detail = variant === "detail";
   const linked = !embedded && !detail;
+  const label = post.context_label;
+  const meta = authorMetaLine(a);
+  const teamLine =
+    label === "looking_for_team" && !embedded
+      ? formatTeamEventLine({
+          team_event_name: post.team_event_name,
+          team_event_date: post.team_event_date,
+          team_event_mode: post.team_event_mode,
+        })
+      : null;
+
+  const cta =
+    embedded ? null : label === "stuck" && !detail ? (
+      <Button variant="outline" size="sm" href={stuckReplyPath(post.id)}>
+        Answer
+      </Button>
+    ) : label === "looking_for_team" && viewerId && a?.username && viewerId !== post.user_id ? (
+      <Button variant="outline" size="sm" href={`/messages?to=${encodeURIComponent(a.username)}`}>
+        I&apos;m in
+      </Button>
+    ) : null;
 
   const shell = embedded
-    ? "rounded-lg border border-[var(--border)] bg-[var(--canvas)] p-3"
-    : `card-raised p-4 sm:p-5${detail ? "" : " card-hover-raise"}`;
+    ? "flex gap-3 rounded-xl border border-[var(--hairline)] bg-[var(--surface-1)] p-3"
+    : `flex gap-3 border-b border-[var(--hairline)] py-4 transition-colors duration-[180ms] lg:gap-3.5 lg:py-[22px]${detail ? "" : " hover:bg-white/[0.015]"}`;
 
   const body = (
     <article className={shell}>
-      <div className={`flex gap-3 ${embedded ? "" : "sm:gap-4"}`}>
-        {a ? <Avatar author={a} name={name} size={embedded ? "sm" : "md"} /> : null}
+      {a ? <Avatar author={a} name={name} embedded={embedded} /> : null}
 
-        <div className="min-w-0 flex-1">
-          {!embedded && (
-            <div className="flex items-center gap-2">
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                  {a ? (
-                    <ProfileHoverLink
-                      href={`/profile/${a.username}`}
-                      username={a.username}
-                      className="font-semibold text-[var(--ink)] hover:underline"
-                    >
-                      {name}
-                    </ProfileHoverLink>
-                  ) : (
-                    <span className="font-semibold">{name}</span>
-                  )}
-                  {a && <UserBadges isPro={a.is_pro} isFounder={a.is_founder} isCampusFounder={a.is_campus_founder} isVerifiedStudent={a.verified_student} isBot={a.is_bot} />}
-                </div>
-                {post.hidden && (
-                  <span className="mt-0.5 inline-flex rounded-full bg-[var(--danger)]/[0.06] px-2 py-0.5 text-xs font-medium text-[var(--danger)]">
-                    Hidden
-                  </span>
-                )}
-                <p className="mt-0.5 text-[12.5px] text-[var(--ink-faint)]">
-                  {a && <span>@{a.username}</span>}
-                  {school && <span>{a ? ", " : ""}{school}</span>}
-                  {(a || school) && <span className="mx-1 text-[var(--ink-faint)]">·</span>}
-                  {linked ? (
-                    <Link href={`/post/${post.id}`} className="hover:text-[var(--ink-muted)] hover:underline">
-                      <LocalTime iso={post.created_at} variant="ago" />
-                    </Link>
-                  ) : (
-                    <LocalTime iso={post.created_at} variant="ago" />
-                  )}
-                </p>
-              </div>
-
-              {post.context_label ? (
-                <Link href={feedPath({ label: post.context_label })} className="ml-auto shrink-0">
-                  <ContextLabelBadge label={post.context_label} />
-                </Link>
-              ) : null}
-
-              {a && !embedded && (
-                <PostMenu postId={post.id} authorId={post.user_id} authorUsername={a.username} viewerId={viewerId} />
-              )}
-            </div>
-          )}
-
-          {embedded && a && (
-            <p className="mb-2 text-[13px] text-[var(--ink-muted)]">
+      <div className={`flex min-w-0 flex-1 flex-col ${embedded ? "gap-1.5" : "gap-2 lg:gap-2.5"}`}>
+        {embedded ? (
+          a ? (
+            <p className="text-[13px] text-[var(--muted)]">
               <span className="font-medium text-[var(--ink)]">{name}</span>
               <span className="mx-1">@{a.username}</span>
             </p>
-          )}
+          ) : null
+        ) : (
+          <div className="flex min-w-0 items-center gap-2">
+            {a ? (
+              // Wrapper is the flex item: ProfileHoverLink's own inline span cannot shrink.
+              <span className="min-w-0 truncate">
+                <ProfileHoverLink
+                  href={`/profile/${a.username}`}
+                  username={a.username}
+                  className="text-[15px] font-semibold text-[var(--ink)] hover:underline"
+                >
+                  {name}
+                </ProfileHoverLink>
+              </span>
+            ) : (
+              <span className="min-w-0 truncate text-[15px] font-semibold">{name}</span>
+            )}
+            {a && (
+              <UserBadges
+                isPro={a.is_pro}
+                isFounder={a.is_founder}
+                isCampusFounder={a.is_campus_founder}
+                isVerifiedStudent={a.verified_student}
+                isBot={a.is_bot}
+              />
+            )}
+            {meta ? <span className="hidden min-w-0 truncate text-sm text-[var(--faint)] sm:inline">{meta}</span> : null}
+            {post.hidden && (
+              <span className="inline-flex shrink-0 rounded-full bg-[var(--danger)]/[0.06] px-2 py-0.5 text-xs font-medium text-[var(--danger)]">
+                Hidden
+              </span>
+            )}
+            <div className="ml-auto flex shrink-0 items-center gap-3">
+              {label && label !== "stuck" ? (
+                <Link
+                  href={feedPath({ label })}
+                  className="inline-flex items-center gap-1.5 text-xs text-[var(--muted)] hover:text-[var(--ink)]"
+                >
+                  <span aria-hidden className={`size-1.5 rounded-full ${CONTEXT_LABEL_DOT[label]}`} />
+                  {CONTEXT_LABEL_COPY[label]}
+                </Link>
+              ) : null}
+              {linked ? (
+                <Link href={`/post/${post.id}`} className="text-[13px] text-[var(--faint)] hover:text-[var(--muted)]">
+                  <LocalTime iso={post.created_at} variant="ago" />
+                </Link>
+              ) : (
+                <LocalTime iso={post.created_at} variant="ago" className="text-[13px] text-[var(--faint)]" />
+              )}
+              {a && <PostMenu postId={post.id} authorId={post.user_id} authorUsername={a.username} viewerId={viewerId} />}
+            </div>
+          </div>
+        )}
 
+        {label === "stuck" && !embedded ? (
+          <StuckQuestion content={post.content} postId={post.id} linked={linked} />
+        ) : (
           <PostBody content={post.content} linked={linked} postId={post.id} />
-          {post.context_label === "looking_for_team" && !embedded ? (
-            <TeamEventMeta
-              name={post.team_event_name}
-              date={post.team_event_date}
-              mode={post.team_event_mode}
-              username={a?.username ?? null}
-              viewerId={viewerId}
-              authorId={post.user_id}
-            />
-          ) : null}
-          {post.context_label === "stuck" && !embedded && !detail && (
-            <p className="mt-2">
-              <Link
-                href={stuckReplyPath(post.id)}
-                aria-label="Reply: same here"
-                className="text-[13px] font-medium text-[var(--ink-muted)] transition hover:text-[var(--ink)]"
-              >
-                Same here
-              </Link>
-            </p>
-          )}
-        </div>
+        )}
+        {teamLine ? <p className="text-[13px] text-[var(--muted)]">{teamLine}</p> : null}
+
+        {post.media?.length ? <PostMediaGrid media={post.media} /> : null}
+
+        {!embedded && (
+          <ReactionRow
+            postId={post.id}
+            viewerId={viewerId}
+            authorPrivate={!!a?.is_private}
+            samehere={post.samehere_count}
+            repost={post.repost_count}
+            commentCount={post.comment_count}
+            mineSamehere={post.mine_samehere}
+            mineRepost={post.mine_repost}
+            mineBookmark={post.mine_bookmark}
+            hideComments={detail}
+            answers={label === "stuck"}
+            cta={cta}
+          />
+        )}
       </div>
-
-      {post.media?.length ? <PostMediaGrid media={post.media} compact={embedded} /> : null}
-
-      {!embedded && (
-        <ReactionRow
-          postId={post.id}
-          viewerId={viewerId}
-          authorPrivate={!!a?.is_private}
-          samehere={post.samehere_count}
-          repost={post.repost_count}
-          commentCount={post.comment_count}
-          mineSamehere={post.mine_samehere}
-          mineRepost={post.mine_repost}
-          mineBookmark={post.mine_bookmark}
-          hideComments={detail}
-        />
-      )}
     </article>
   );
 

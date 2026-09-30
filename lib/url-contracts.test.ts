@@ -17,6 +17,14 @@ describe("URL query contracts", () => {
     }
   });
 
+  it("locks /feed?tab=stage and /feed?tab=following", () => {
+    for (const tab of ["stage", "following"] as const) {
+      expect(feedPath({ tab })).toBe(`/feed?tab=${tab}`);
+      expect(parseFeedView({ tab })).toEqual({ tab, label: null });
+    }
+    expect(parseFeedView({})).toEqual({ tab: "latest", label: null });
+  });
+
   it("locks /search empty-query browse + mode/tag/label/stage/focus chips", () => {
     expect(discoveryHref({})).toBe("/search");
     expect(discoveryHref({ filters: parseDiscoveryFilters({ mode: "online" }) })).toBe("/search?mode=online");

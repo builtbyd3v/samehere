@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import posthog from "posthog-js";
 import { getBrowserClient } from "@/lib/supabase/client";
+import { buttonClass } from "@/components/ui/Button";
 
 export type FollowState = "none" | "pending" | "following";
 
@@ -15,7 +16,7 @@ export default function FollowButton({
 }: {
   targetId: string;
   initial: FollowState;
-  variant?: "default" | "pill";
+  variant?: "default" | "pill" | "outline";
   className?: string;
 }) {
   const [supabase] = useState(getBrowserClient);
@@ -48,7 +49,8 @@ export default function FollowButton({
     }
   }
 
-  const shape = variant === "pill" ? "rounded-full px-4 py-2" : "rounded-md px-3 py-1.5";
+  const shape =
+    variant === "outline" ? "h-7 rounded-full px-3 text-xs" : variant === "pill" ? "rounded-full px-4 py-2" : "rounded-md px-3 py-1.5";
 
   if (state === "none") {
     return (
@@ -56,7 +58,7 @@ export default function FollowButton({
         type="button"
         onClick={follow}
         disabled={busy}
-        className={`btn-primary transition ${shape} ${className}`}
+        className={`${variant === "outline" ? buttonClass("outline", "sm") : `btn-primary transition ${shape}`} ${className}`}
       >
         {busy ? "Following…" : "Follow"}
       </button>

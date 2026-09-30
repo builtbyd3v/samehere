@@ -2,74 +2,96 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import { motion, useReducedMotion } from "motion/react";
-import AvatarImage from "@/components/ui/AvatarImage";
-import { IconCompose } from "@/components/icons";
+import posthog from "posthog-js";
+import { Plus, X } from "lucide-react";
+import AvatarBase from "@/components/ui/Avatar";
+import { Button } from "@/components/ui/Button";
+import { COMPOSER_LABELS, COMPOSER_LABEL_COPY, CONTEXT_LABEL_DOT, type ContextLabel } from "@/lib/context-label";
 
 const PostComposer = dynamic(() => import("@/components/feed/PostComposer"), {
   loading: () => (
-    <div
-      aria-hidden
-      className="h-32 animate-pulse rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)]"
-    />
+    <div aria-hidden className="h-32 animate-pulse rounded-2xl border border-[var(--hairline)] bg-[var(--surface-1)]" />
   ),
 });
 
 type ComposerToggleProps = {
   isPro: boolean;
   avatarUrl: string | null;
+  username: string;
   isSuspended: boolean;
 };
 
-export default function ComposerToggle({ isPro, avatarUrl, isSuspended }: ComposerToggleProps) {
-  const [open, setOpen] = useState(false);
-  const reduceMotion = useReducedMotion();
+export default function ComposerToggle({ isPro, avatarUrl, username, isSuspended }: ComposerToggleProps) {
+  const [open, setOpen] = useState<null | { label: ContextLabel | null }>(null);
+
+  function openWith(label: ContextLabel | null) {
+    setOpen({ label });
+    if (label) posthog.capture("composer_shortcut_used", { label });
+  }
 
   if (isSuspended) return null;
 
   if (open) {
     return (
-      <motion.div
-        layout={!reduceMotion}
-        className="overflow-hidden"
-        transition={reduceMotion ? { duration: 0 } : { duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-      >
+      <div className="border-b border-[var(--hairline)] py-4">
         <div className="mb-2 flex items-center justify-between px-1">
-          <span className="text-sm font-medium text-[var(--ink-muted)]">New post</span>
+          <span className="text-sm font-medium text-[var(--muted)]">New post</span>
           <button
             type="button"
-            onClick={() => setOpen(false)}
+            onClick={() => setOpen(null)}
             aria-label="Close composer"
-            className="btn-tap grid h-7 w-7 place-items-center rounded-full text-[var(--ink-muted)] transition hover:bg-[var(--featured-surface)] hover:text-[var(--ink)]"
+            className="grid size-7 place-items-center rounded-full text-[var(--muted)] hover:bg-white/[0.05] hover:text-[var(--ink)] active:scale-[0.96]"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <path d="M18 6 6 18M6 6l12 12" />
-            </svg>
+            <X size={16} strokeWidth={2} aria-hidden />
           </button>
         </div>
-        <PostComposer isPro={isPro} autoFocus />
-      </motion.div>
+        <PostComposer isPro={isPro} autoFocus initialLabel={open.label} />
+      </div>
     );
   }
 
   return (
-    <motion.button
-      type="button"
-      layout={!reduceMotion}
-      onClick={() => setOpen(true)}
-      aria-label="New post"
-      transition={reduceMotion ? { duration: 0 } : { duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-      className="card-raised card-hover-raise flex h-[68px] w-full items-center gap-3 p-4 text-left sm:p-5"
-    >
-      {avatarUrl ? (
-        <AvatarImage src={avatarUrl} alt="" className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] object-cover" />
-      ) : (
-        <div className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] bg-[var(--featured-surface)]" aria-hidden />
-      )}
-      <span className="flex-1 text-[16px] text-[var(--ink-faint)]">Share what you&apos;re building…</span>
-      <span className="shrink-0 text-[var(--ink-muted)]" aria-hidden>
-        <IconCompose />
-      </span>
-    </motion.button>
+    <>
+      <div className="hidden gap-3.5 border-b border-[var(--hairline)] py-5 lg:flex">
+        <AvatarBase src={avatarUrl} seed={username || "you"} name={username} className="size-9 shrink-0 rounded-full text-[13px]" pro={isPro} />
+        <div className="flex min-w-0 flex-1 flex-col gap-3.5">
+          <button
+            type="button"
+            onClick={() => openWith(null)}
+            className="w-full pt-[7px] text-left text-base text-[var(--faint)] hover:text-[var(--muted)]"
+          >
+            Share what you are building, learning, or stuck on
+          </button>
+          <div className="flex items-center justify-between">
+            <div className="flex gap-1.5">
+              {COMPOSER_LABELS.map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => openWith(key)}
+                  aria-label={`New ${COMPOSER_LABEL_COPY[key]} post`}
+                  className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-[var(--hairline-strong)] px-2.5 text-xs text-[var(--muted)] hover:text-[var(--ink)] active:scale-[0.96]"
+                >
+                  <span aria-hidden className={`size-1.5 rounded-full ${CONTEXT_LABEL_DOT[key]}`} />
+                  {COMPOSER_LABEL_COPY[key]}
+                </button>
+              ))}
+            </div>
+            <Button variant="secondary" size="sm" onClick={() => openWith(null)}>
+              Post
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        aria-label="New post"
+        onClick={() => openWith(null)}
+        className="fixed bottom-[calc(76px+env(safe-area-inset-bottom))] right-4 z-40 grid size-[52px] place-items-center rounded-full bg-[var(--ink)] text-[var(--bg)] shadow-[0_12px_28px_-8px_rgba(0,0,0,0.7)] active:scale-[0.94] motion-reduce:active:scale-100 lg:hidden"
+      >
+        <Plus size={20} strokeWidth={2} aria-hidden />
+      </button>
+    </>
   );
 }
