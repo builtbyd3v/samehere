@@ -58,3 +58,23 @@ describe("IdentityPanel table", () => {
     expect(!html.includes("<dl") || /<dl class="hidden xl:flex/.test(html)).toBe(true);
   });
 });
+
+describe("IdentityPanel helped line", () => {
+  it("renders nothing at 0", () => {
+    expect(render({ helped: 0 })).not.toContain("Helped");
+  });
+
+  it("uses the singular for one student", () => {
+    const html = render({ helped: 1 });
+    expect(html).toContain("Helped");
+    expect(html).toContain(">1<");
+    expect(html).toContain("student<");
+    expect(html).not.toContain("students");
+  });
+
+  it("uses the plural otherwise", () => {
+    const html = render({ helped: 12 });
+    expect(html).toContain(">12<");
+    expect(html).toContain("students<");
+  });
+});
