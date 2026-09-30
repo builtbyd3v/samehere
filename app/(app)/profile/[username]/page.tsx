@@ -272,12 +272,12 @@ async function PublicPortfolioBelow({
         Posts
       </SectionLabel>
       <p className="flex flex-wrap items-center gap-2 text-sm text-[var(--muted)]">
-        Sign in to see their posts
+        Log in to see their posts
         <Button href="/login" variant="ghost" size="sm">
-          Sign in
+          Log in
         </Button>
         <Button href="/signup" variant="primary" size="sm">
-          Sign up
+          Join free
         </Button>
       </p>
     </section>

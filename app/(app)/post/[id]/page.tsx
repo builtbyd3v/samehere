@@ -9,6 +9,7 @@ import CommentThread from "@/components/feed/CommentThread";
 import StuckResolveButton from "@/components/feed/StuckResolveButton";
 import UserBadges from "@/components/profile/UserBadges";
 import AvatarBase from "@/components/ui/Avatar";
+import { Button } from "@/components/ui/Button";
 import MentionText from "@/components/ui/MentionText";
 import ProfileHoverLink from "@/components/profile/ProfileHoverLink";
 import LocalTime from "@/components/ui/LocalTime";
@@ -162,15 +163,15 @@ async function PublicPostView({ id }: { id: string }) {
         </div>
       </article>
 
-      <div className="card mt-6 px-6 py-10 text-center">
-        <p className="font-medium text-[var(--ink)]">Sign in to reply</p>
+      <div className="mt-6 rounded-[20px] border border-[var(--border)] px-6 py-10 text-center">
+        <p className="font-medium text-[var(--ink)]">Log in to reply</p>
         <div className="mt-4 flex justify-center gap-2">
-          <Link href="/login" className="btn-ghost !rounded-full !px-4 !py-1.5 text-sm">
-            Sign in
-          </Link>
-          <Link href="/signup" className="btn-primary !rounded-full !px-4 !py-1.5 text-sm">
-            Sign up
-          </Link>
+          <Button href="/login" variant="ghost" size="md">
+            Log in
+          </Button>
+          <Button href="/signup" variant="primary" size="md">
+            Join free
+          </Button>
         </div>
       </div>
     </main>

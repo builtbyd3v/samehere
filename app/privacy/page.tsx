@@ -1,6 +1,6 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 import PublicHeader from "@/components/brand/PublicHeader";
+import { Button } from "@/components/ui/Button";
 
 export const dynamic = "force-static";
 
@@ -12,13 +12,13 @@ const UPDATED = "July 6, 2026";
 
 export default function PrivacyPage() {
   return (
-    <main className="min-h-[100dvh] bg-[var(--canvas)] text-[var(--ink)]">
+    <main className="min-h-dvh bg-[var(--bg)] text-[var(--ink)]">
       <PublicHeader />
       <div className="mx-auto max-w-2xl px-5 py-16">
-      <h1 className="text-[2.25rem] font-medium leading-[1.05] tracking-[-0.03em]">Privacy Policy</h1>
-      <p className="mt-3 text-sm text-[var(--ink-muted)]">Last updated: {UPDATED}</p>
+      <h1 className="text-title font-semibold">Privacy Policy</h1>
+      <p className="mt-3 text-sm text-[var(--muted)]">Last updated: {UPDATED}</p>
 
-      <div className="mt-8 space-y-8 text-body leading-relaxed text-[var(--ink-muted)]">
+      <div className="mt-8 space-y-8 text-body text-[var(--muted)]">
         <p>
           This Privacy Policy explains how samehere, operated by Devgiri Goswami (&ldquo;we&rdquo;,
           &ldquo;us&rdquo;), collects, uses, and shares information when you use the Service. By using
@@ -26,7 +26,7 @@ export default function PrivacyPage() {
         </p>
 
         <section>
-          <h2 className="text-lg font-semibold text-[var(--ink)]">1. Information we collect</h2>
+          <h2 className="text-section font-semibold text-[var(--ink)]">1. Information we collect</h2>
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li>
               <strong className="text-[var(--ink)]">Account &amp; profile:</strong> your email address,
@@ -55,7 +55,7 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[var(--ink)]">2. How we use information</h2>
+          <h2 className="text-section font-semibold text-[var(--ink)]">2. How we use information</h2>
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li>operate core features: profiles, feed, follows, messaging, heatmap, and search;</li>
             <li>verify optional student status (confirming a valid <code>.edu</code> email) for the verified student badge;</li>
@@ -67,7 +67,7 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[var(--ink)]">3. What others can see</h2>
+          <h2 className="text-section font-semibold text-[var(--ink)]">3. What others can see</h2>
           <p className="mt-2">
             Your profile and posts are visible to other signed-in students by default. Logged-out visitors
             can view a public profile or an individual post opened by direct link, which powers link
@@ -80,7 +80,7 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[var(--ink)]">4. Sharing &amp; service providers</h2>
+          <h2 className="text-section font-semibold text-[var(--ink)]">4. Sharing &amp; service providers</h2>
           <p className="mt-2">
             We do not sell your personal information. We share data with vendors who process it on our behalf
             to run the Service:
@@ -108,7 +108,7 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[var(--ink)]">5. AI processing</h2>
+          <h2 className="text-section font-semibold text-[var(--ink)]">5. AI processing</h2>
           <p className="mt-2">
             When you use an AI feature, the relevant inputs (such as your own profile fields or a draft you are
             writing) are sent to our AI provider to generate a response. We do not send another user&rsquo;s
@@ -117,7 +117,7 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[var(--ink)]">6. Data retention &amp; deletion</h2>
+          <h2 className="text-section font-semibold text-[var(--ink)]">6. Data retention &amp; deletion</h2>
           <p className="mt-2">
             We keep your information while your account is active. You can delete your account at any time from
             Settings, which removes your profile and associated Content. Some records may persist briefly in
@@ -126,7 +126,7 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[var(--ink)]">7. Your rights</h2>
+          <h2 className="text-section font-semibold text-[var(--ink)]">7. Your rights</h2>
           <p className="mt-2">
             Depending on where you live, you may have rights to access, correct, export, or delete your
             personal information. You can exercise most of these directly in the app (edit profile, delete
@@ -135,7 +135,7 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[var(--ink)]">8. Security</h2>
+          <h2 className="text-section font-semibold text-[var(--ink)]">8. Security</h2>
           <p className="mt-2">
             We use industry-standard measures including encrypted connections, row-level access controls, and
             server-side authorization. No system is perfectly secure, so we cannot guarantee absolute security.
@@ -143,7 +143,7 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[var(--ink)]">9. Changes &amp; contact</h2>
+          <h2 className="text-section font-semibold text-[var(--ink)]">9. Changes &amp; contact</h2>
           <p className="mt-2">
             We may update this Policy from time to time and will revise the &ldquo;Last updated&rdquo; date
             above. For privacy questions or requests, contact{" "}
@@ -155,12 +155,9 @@ export default function PrivacyPage() {
         </section>
       </div>
 
-      <Link
-        href="/"
-        className="btn-ghost mt-12 inline-flex"
-      >
+      <Button href="/" variant="secondary" className="mt-12">
         Back to home
-      </Link>
+      </Button>
       </div>
     </main>
   );

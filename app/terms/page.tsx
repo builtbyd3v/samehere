@@ -1,6 +1,6 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 import PublicHeader from "@/components/brand/PublicHeader";
+import { Button } from "@/components/ui/Button";
 
 export const dynamic = "force-static";
 
@@ -12,13 +12,13 @@ const UPDATED = "July 6, 2026";
 
 export default function TermsPage() {
   return (
-    <main className="min-h-[100dvh] bg-[var(--canvas)] text-[var(--ink)]">
+    <main className="min-h-dvh bg-[var(--bg)] text-[var(--ink)]">
       <PublicHeader />
       <div className="mx-auto max-w-2xl px-5 py-16">
-      <h1 className="text-[2.25rem] font-medium leading-[1.05] tracking-[-0.03em]">Terms of Service</h1>
-      <p className="mt-3 text-sm text-[var(--ink-muted)]">Last updated: {UPDATED}</p>
+      <h1 className="text-title font-semibold">Terms of Service</h1>
+      <p className="mt-3 text-sm text-[var(--muted)]">Last updated: {UPDATED}</p>
 
-      <div className="mt-8 space-y-8 text-body leading-relaxed text-[var(--ink-muted)]">
+      <div className="mt-8 space-y-8 text-body text-[var(--muted)]">
         <p>
           These Terms of Service (&ldquo;Terms&rdquo;) govern your access to and use of samehere (the
           &ldquo;Service&rdquo;), operated by Devgiri Goswami (&ldquo;we&rdquo;, &ldquo;us&rdquo;). By
@@ -27,7 +27,7 @@ export default function TermsPage() {
         </p>
 
         <section>
-          <h2 className="text-lg font-semibold text-[var(--ink)]">1. Eligibility</h2>
+          <h2 className="text-section font-semibold text-[var(--ink)]">1. Eligibility</h2>
           <p className="mt-2">
             samehere is open to everyone and built for students. To create an account you must be at least 18
             years old. If you verify a school-issued email address ending in <code>.edu</code>, at signup or
@@ -38,7 +38,7 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[var(--ink)]">2. Your account</h2>
+          <h2 className="text-section font-semibold text-[var(--ink)]">2. Your account</h2>
           <p className="mt-2">
             You are responsible for the activity on your account and for keeping your password secure. Choose a
             username that is available and not misleading; reserved and impersonating usernames are not allowed.
@@ -47,7 +47,7 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[var(--ink)]">3. Your content</h2>
+          <h2 className="text-section font-semibold text-[var(--ink)]">3. Your content</h2>
           <p className="mt-2">
             You retain ownership of the posts, comments, messages, media, and profile information you submit
             (&ldquo;Content&rdquo;). You grant us a non-exclusive, worldwide, royalty-free license to host,
@@ -57,7 +57,7 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[var(--ink)]">4. Acceptable use</h2>
+          <h2 className="text-section font-semibold text-[var(--ink)]">4. Acceptable use</h2>
           <p className="mt-2">You agree not to:</p>
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li>post unlawful, harassing, hateful, or infringing content;</li>
@@ -73,7 +73,7 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[var(--ink)]">5. AI features</h2>
+          <h2 className="text-section font-semibold text-[var(--ink)]">5. AI features</h2>
           <p className="mt-2">
             Some features generate text using third-party AI models (for example, connection suggestions,
             writing prompts, and message drafts). AI output may be inaccurate and is provided as-is. We do not
@@ -83,7 +83,7 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[var(--ink)]">6. samehere Pro &amp; billing</h2>
+          <h2 className="text-section font-semibold text-[var(--ink)]">6. samehere Pro &amp; billing</h2>
           <p className="mt-2">
             samehere Pro is an optional paid subscription. Current pricing is $4.99 per month or $12.99 per
             semester, billed in advance through our payment processor, Stripe. Subscriptions renew
@@ -95,7 +95,7 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[var(--ink)]">7. Termination</h2>
+          <h2 className="text-section font-semibold text-[var(--ink)]">7. Termination</h2>
           <p className="mt-2">
             You may delete your account at any time from Settings, which removes your profile and associated
             Content. We may suspend or terminate your access for violations of these Terms. Sections that by
@@ -105,7 +105,7 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[var(--ink)]">8. Disclaimers</h2>
+          <h2 className="text-section font-semibold text-[var(--ink)]">8. Disclaimers</h2>
           <p className="mt-2">
             The Service is provided &ldquo;as is&rdquo; and &ldquo;as available&rdquo; without warranties of
             any kind, whether express or implied, including fitness for a particular purpose and
@@ -114,7 +114,7 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[var(--ink)]">9. Limitation of liability</h2>
+          <h2 className="text-section font-semibold text-[var(--ink)]">9. Limitation of liability</h2>
           <p className="mt-2">
             To the maximum extent permitted by law, we will not be liable for any indirect, incidental,
             special, consequential, or punitive damages, or for lost profits or data, arising from your use of
@@ -124,7 +124,7 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[var(--ink)]">10. Changes to these Terms</h2>
+          <h2 className="text-section font-semibold text-[var(--ink)]">10. Changes to these Terms</h2>
           <p className="mt-2">
             We may update these Terms from time to time. If we make material changes, we will update the
             &ldquo;Last updated&rdquo; date and, where appropriate, notify you. Continued use after changes
@@ -133,7 +133,7 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-[var(--ink)]">11. Governing law &amp; contact</h2>
+          <h2 className="text-section font-semibold text-[var(--ink)]">11. Governing law &amp; contact</h2>
           <p className="mt-2">
             These Terms are governed by the laws of the State of Florida, United States, without regard to conflict-of-laws rules.
             Questions about these Terms can be sent to{" "}
@@ -145,12 +145,9 @@ export default function TermsPage() {
         </section>
       </div>
 
-      <Link
-        href="/"
-        className="btn-ghost mt-12 inline-flex"
-      >
+      <Button href="/" variant="secondary" className="mt-12">
         Back to home
-      </Link>
+      </Button>
       </div>
     </main>
   );

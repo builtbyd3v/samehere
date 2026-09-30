@@ -20,7 +20,7 @@ const SERVER_LEAVES = [
   "components/landing/Hero.tsx",
   "components/landing/Features.tsx",
   "components/landing/FinaleCta.tsx",
-  "components/landing/LandingNav.tsx",
+  "components/brand/PublicHeader.tsx",
   "components/landing/LandingFooter.tsx",
   "components/landing/LandingPage.tsx",
   "components/landing/LandingExamples.tsx",
