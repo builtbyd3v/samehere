@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+/* Fonts come from next/font in app/layout.tsx (variables set on <body>).
+   `inline` makes each utility read the variable where it is used. */
+@theme inline {
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-serif: var(--font-instrument-serif), ui-serif, Georgia, serif;
+}
+
 /* x.ai-style tokens. Dark is the default canvas; .light is the coherent inverse.
    Landing scopes a darker card/border set via .landing-xai. */
 html {
@@ -20,7 +28,7 @@ body {
   --surface-card: #161616;
   --border: rgba(255, 255, 255, 0.08);
   --border-strong: rgba(255, 255, 255, 0.22);
-  --ink: #f5f5f5;
+  --ink: #f4f4f5;
   --ink-muted: #a1a5ab;
   --ink-faint: rgba(245, 245, 245, 0.68);
   --featured-surface: rgba(255, 255, 255, 0.05);
@@ -55,6 +63,32 @@ body {
   --label-building: #4f9fe8;
   --label-learning: #5fce8f;
   --label-team: #e07a5f;
+
+  /* Midnight editorial tokens (DESIGN.md). Legacy names above keep their
+     values so pages not yet redesigned look the same. */
+  --bg: #08090a;
+  --surface-1: #0c0d0f;
+  --surface-2: #0d0f11;
+  --surface-3: #0f1012;
+  --surface-4: #17191c;
+  --hairline: rgba(255, 255, 255, 0.06);
+  --hairline-strong: rgba(255, 255, 255, 0.12);
+  --ink-2: #e4e5e7;
+  --ink-3: #c4c7cc;
+  --muted: #9a9ea6;
+  --faint: #787c84;
+  --accent-2: #9ecbf5;
+  --accent-ink: #cfe6ff;
+  --accent-soft: rgba(79, 159, 232, 0.16);
+  --amber: var(--label-stuck);
+  --green: var(--label-learning);
+  --coral: var(--label-team);
+  --stage-learning: var(--green);
+  --stage-building: var(--accent);
+  --stage-internship-search: var(--amber);
+  --stage-interning: var(--accent-2);
+  --stage-job-search: var(--coral);
+  --stage-working: var(--ink-3);
 }
 
 .dark {
@@ -66,7 +100,7 @@ body {
   --surface-card: #161616;
   --border: rgba(255, 255, 255, 0.08);
   --border-strong: rgba(255, 255, 255, 0.22);
-  --ink: #f5f5f5;
+  --ink: #f4f4f5;
   --ink-muted: #a1a5ab;
   --ink-faint: rgba(245, 245, 245, 0.68);
   --featured-surface: rgba(255, 255, 255, 0.05);
@@ -121,6 +155,21 @@ body {
   --label-building: #0075de;
   --label-learning: #5fce8f;
   --label-team: #c45c42;
+  /* New tokens, light values (best effort; the redesign is dark first). */
+  --bg: #f4f4f5;
+  --surface-1: #ffffff;
+  --surface-2: #ffffff;
+  --surface-3: #ffffff;
+  --surface-4: #f4f4f5;
+  --hairline: rgba(10, 10, 10, 0.06);
+  --hairline-strong: rgba(10, 10, 10, 0.12);
+  --ink-2: #27272a;
+  --ink-3: #3f3f46;
+  --muted: #52525b;
+  --faint: #71717a;
+  --accent-2: #005bb3;
+  --accent-ink: #005bb3;
+  --accent-soft: rgba(0, 117, 222, 0.10);
 }
 
 @media (prefers-color-scheme: light) {
@@ -156,6 +205,21 @@ body {
     --label-building: #0075de;
     --label-learning: #5fce8f;
     --label-team: #c45c42;
+    /* New tokens, light values (best effort; the redesign is dark first). */
+    --bg: #f4f4f5;
+    --surface-1: #ffffff;
+    --surface-2: #ffffff;
+    --surface-3: #ffffff;
+    --surface-4: #f4f4f5;
+    --hairline: rgba(10, 10, 10, 0.06);
+    --hairline-strong: rgba(10, 10, 10, 0.12);
+    --ink-2: #27272a;
+    --ink-3: #3f3f46;
+    --muted: #52525b;
+    --faint: #71717a;
+    --accent-2: #005bb3;
+    --accent-ink: #005bb3;
+    --accent-soft: rgba(0, 117, 222, 0.10);
   }
 }
 
@@ -209,7 +273,7 @@ summary {
   }
 }
 
-/* Figtree only. Display face was unused on live surfaces. */
+/* Type: Geist (font-sans), Geist Mono (font-mono), Instrument Serif italic (font-serif). See DESIGN.md. */
 
 /* Tactile "paper" depth — warm-tinted soft shadow (never pure black) so cards
    sit on the cream like paper on a desk. Wow-surfaces only; calm surfaces keep
@@ -1042,6 +1106,36 @@ summary {
   .portfolio-stack > *:nth-child(4) { --i: 3; }
   .portfolio-stack > *:nth-child(5) { --i: 4; }
   .portfolio-stack > *:nth-child(6) { --i: 5; }
+}
+
+/* ---------------------------------------------------------------------
+ * Redesign primitives (components/ui, DESIGN.md). In @layer components so
+ * Tailwind utilities on the same element (e.g. an animation-delay) win.
+ * ------------------------------------------------------------------- */
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(12px); filter: blur(6px); }
+  to   { opacity: 1; transform: none; filter: none; }
+}
+
+@layer components {
+  /* <StageDot>: color per stage id (ids are lib/stage.ts STAGES). */
+  .stage-dot { background-color: var(--faint); }
+  .stage-dot[data-stage="learning"] { background-color: var(--stage-learning); }
+  .stage-dot[data-stage="building"] { background-color: var(--stage-building); }
+  .stage-dot[data-stage="internship_search"] { background-color: var(--stage-internship-search); }
+  .stage-dot[data-stage="interning"] { background-color: var(--stage-interning); }
+  .stage-dot[data-stage="job_search"] { background-color: var(--stage-job-search); }
+  .stage-dot[data-stage="working"] { background-color: var(--stage-working); }
+
+  /* <GrainOverlay>: same noise as .surface-grain. */
+  .grain {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* <Reveal>: once, on mount. Nothing runs under reduced motion. */
+  @media (prefers-reduced-motion: no-preference) {
+    .rise-in { animation: rise-in 640ms var(--ease-out) both; }
+  }
 }
 
 

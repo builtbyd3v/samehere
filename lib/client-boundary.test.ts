@@ -6,6 +6,13 @@ import { describe, expect, it } from "vitest";
 const SERVER_LEAVES = [
   "components/ui/LocalTime.tsx",
   "components/ui/MentionText.tsx",
+  "components/ui/Button.tsx",
+  "components/ui/Chip.tsx",
+  "components/ui/MonoLabel.tsx",
+  "components/ui/HairlineCard.tsx",
+  "components/ui/Backdrop.tsx",
+  "components/ui/Reveal.tsx",
+  "components/ui/UnderlineTabs.tsx",
   "components/auth/AuthShell.tsx",
   "components/profile/ProfileHoverLink.tsx",
   "components/feed/QuotedRepostCard.tsx",

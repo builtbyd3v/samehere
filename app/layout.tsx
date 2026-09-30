@@ -1,17 +1,24 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import { Figtree } from "next/font/google";
+import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { SITE_OG_DESCRIPTION, SITE_OG_TITLE } from "@/lib/og/copy";
 
-// display:swap + adjustFontFallback keep text visible while Figtree loads;
-const figtree = Figtree({
+// Variable fonts, one file per family. display:swap plus next/font's default
+// adjustFontFallback keep text visible while they load. Instrument Serif is
+// only the italic accent phrase in a few headlines, so it is not preloaded
+// on every route. OG images load their own TTFs (lib/og/fonts.ts).
+const geist = Geist({ subsets: ["latin"], variable: "--font-geist", display: "swap" });
+const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono", display: "swap" });
+const instrumentSerif = Instrument_Serif({
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: "400",
+  style: "italic",
+  variable: "--font-instrument-serif",
   display: "swap",
-  adjustFontFallback: true,
+  preload: false,
 });
 
 const TITLE = SITE_OG_TITLE;
@@ -58,7 +65,7 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
       </head>
-      <body className={`${figtree.className} min-h-full bg-[var(--canvas)] text-[var(--ink)] antialiased`}>
+      <body className={`${geist.variable} ${geistMono.variable} ${instrumentSerif.variable} min-h-full bg-[var(--canvas)] font-sans text-[var(--ink)] antialiased`}>
         <ThemeProvider>
           {children}
         </ThemeProvider>
