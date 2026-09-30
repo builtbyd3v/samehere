@@ -1,23 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { createElement } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
-import FeedTabs from "@/components/feed/FeedTabs";
+import { FEED_TABS } from "@/lib/feed-label";
 
 const root = process.cwd();
 
 describe("stretch empty / a11y polish", () => {
-  it("both feed tabs stay in the Tab order (no roving tabindex without arrow keys)", () => {
-    for (const tab of ["latest", "following"] as const) {
-      const html = renderToStaticMarkup(createElement(FeedTabs, { tab }));
-      const tabs = html.match(/<a\b[^>]*role="tab"[^>]*>/g) ?? [];
-      expect(tabs).toHaveLength(2);
-      for (const anchor of tabs) expect(anchor).not.toMatch(/tabindex=/i);
-      expect(html).toMatch(/id="feed-tab-latest"[^>]*aria-controls="feed-panel"/);
-      expect(html).toMatch(/id="feed-tab-following"[^>]*aria-controls="feed-panel"/);
-      expect(html).toMatch(/href="\/feed\?tab=following"/);
-    }
+  it("feed tabs are plain links in Tab order", () => {
+    expect(FEED_TABS.map((t) => t.href)).toEqual(["/feed", "/feed?tab=stage", "/feed?tab=following", "/feed?label=stuck"]);
+    const page = readFileSync(join(root, "app/(app)/feed/page.tsx"), "utf8");
+    expect(page).toMatch(/UnderlineTabs/);
+    expect(page).not.toMatch(/tabIndex/);
   });
 
   it("keeps portfolio share and brand intro intact", () => {

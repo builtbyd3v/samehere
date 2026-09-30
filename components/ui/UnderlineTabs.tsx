@@ -1,8 +1,9 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 export type UnderlineTab = {
   href: string;
-  label: string;
+  label: ReactNode;
   count?: number;
   countTone?: "amber" | "muted";
 };

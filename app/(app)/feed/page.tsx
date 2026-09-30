@@ -1,12 +1,13 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { getViewer, getViewerProfile, getViewerProfileCounts } from "@/lib/viewer";
 import { POST_SELECT, PAGE, withEngagement, type PostRow } from "@/components/feed/PostCard";
-import FeedTabs from "@/components/feed/FeedTabs";
-import FeedLabelChips from "@/components/feed/FeedLabelChips";
 import FeedTimeline from "@/components/feed/FeedTimeline";
 import FeedLoadMore from "@/components/feed/FeedLoadMore";
 import FollowingSeed from "@/components/feed/FollowingSeed";
 import EmptyState from "@/components/ui/EmptyState";
+import { UnderlineTabs } from "@/components/ui/UnderlineTabs";
+import SearchBar from "@/components/search/SearchBar";
 import FollowRequests, { type FollowRequest } from "@/components/profile/FollowRequests";
 import { CTA, feed } from "@/lib/copy-voice";
 import { attachSignedMedia } from "@/lib/media";
@@ -17,26 +18,28 @@ import { fetchViewerMineState } from "@/lib/feed-engagement";
 import { encodeCursor } from "@/lib/feed-cursor";
 import { isPro } from "@/lib/pro";
 import { CONTEXT_LABEL_COPY, type ContextLabel } from "@/lib/context-label";
-import { LABELED_SEED_LIMIT, parseFeedView, shouldSeedFollowing, type FeedTab } from "@/lib/feed-label";
+import {
+  FEED_TABS,
+  LABELED_SEED_LIMIT,
+  activeFeedTab,
+  feedPath,
+  parseFeedView,
+  shouldSeedFollowing,
+  type FeedTabKey,
+} from "@/lib/feed-label";
 import { fetchLabeledPosts } from "@/lib/feed-labeled";
+import { STAGE_LABELS, parseStage } from "@/lib/stage";
 import RightRail, { RightRailFallback } from "./RightRail";
 import ComposerToggle from "./ComposerToggle";
-import LeftRail, { LeftRailFallback } from "./LeftRail";
 import OnboardingChecklist from "@/components/feed/OnboardingChecklist";
 import NewPostsPill from "./NewPostsPill";
-import { loadMoreLabeledPosts } from "./actions";
+import { loadMoreLabeledPosts, loadMoreStagePosts } from "./actions";
 import { Skeleton, PostCardSkeleton } from "@/components/ui/Skeleton";
 
-// Desktop feed redesign, now the live /feed. The app shell (app/(app)/layout.tsx)
-// supplies the persistent left nav; this page is a two-column layout — the
-// Latest/Following timeline centered, with a right rail stacking profile+heatmap
-// (LeftRail) above suggested/invite (RightRail). The
-// composer is collapsed behind a trigger; `data-feed-page` lets the shell drop
-// its right spacer so this page's own rail balances the left nav.
-//
-// Known gaps vs the previous feed (see README follow-ups): the weekly recap card
-// was folded into the profile heatmap. People-search is NOT on the feed; it
-// lives at /search now.
+// The live /feed. The app shell (app/(app)/layout.tsx) supplies the left nav;
+// this page is a 620px post column (underline tabs, composer line, flat post
+// rows) plus a 320px right rail from xl. `data-feed-page` lets the shell drop
+// its content max-width and padding so the columns reach the hairlines.
 export default async function FeedPage({
   searchParams,
 }: {
@@ -47,16 +50,19 @@ export default async function FeedPage({
   const viewerId = user?.id ?? null;
 
   return (
-    <main data-feed-page className="page-enter grid grid-cols-1 justify-center gap-7 py-6 lg:py-8 xl:grid-cols-[minmax(0,600px)_340px]">
-      <div className="min-w-0">
-        <Suspense fallback={<FeedHeaderFallback tab={tab} label={label} />}>
-          <FeedHeader tab={tab} label={label} userId={user?.id ?? null} />
+    <main data-feed-page className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="mx-auto w-full min-w-0 max-w-[620px] pb-8">
+        <FeedTabRow active={activeFeedTab({ tab, label })} />
+        <Suspense fallback={<ComposerFallback />}>
+          <FeedHeader userId={user?.id ?? null} />
         </Suspense>
-
+        {label && label !== "stuck" ? <LabelFilterRow label={label} /> : null}
         <Suspense fallback={<FeedTimelineFallback />}>
-          <div id="feed-panel" role="tabpanel" aria-labelledby={tab === "following" ? "feed-tab-following" : "feed-tab-latest"}>
+          <div id="feed-panel">
             {tab === "following" ? (
               <FollowingTab userId={user?.id ?? null} viewerId={viewerId} />
+            ) : tab === "stage" ? (
+              <StageTab viewerId={viewerId} />
             ) : label ? (
               <LabeledTab viewerId={viewerId} label={label} />
             ) : (
@@ -66,12 +72,9 @@ export default async function FeedPage({
         </Suspense>
       </div>
 
-      {/* Right rail — wide desktop only; the feed reads full-width below xl. */}
-      <aside className="hidden xl:block">
-        <div className="sticky top-20 flex flex-col gap-4">
-          <Suspense fallback={<LeftRailFallback />}>
-            <LeftRail />
-          </Suspense>
+      <aside className="hidden border-l border-[var(--hairline)] xl:block">
+        <div className="sticky top-0 flex max-h-dvh flex-col gap-7 overflow-y-auto px-6 py-5">
+          <SearchBar variant="rail" />
           <Suspense fallback={<RightRailFallback />}>
             <RightRail />
           </Suspense>
@@ -81,27 +84,30 @@ export default async function FeedPage({
   );
 }
 
-function FeedFilters({ tab, label }: { tab: FeedTab; label: ContextLabel | null }) {
+function FeedTabRow({ active }: { active: FeedTabKey | null }) {
+  const tabs = FEED_TABS.map((t) => ({
+    href: t.href,
+    label: t.short ? (
+      <>
+        <span className="lg:hidden">{t.short}</span>
+        <span className="hidden lg:inline">{t.label}</span>
+      </>
+    ) : (
+      t.label
+    ),
+  }));
+  const activeHref = FEED_TABS.find((t) => t.key === active)?.href ?? "";
   return (
-    <div className="mt-3 flex flex-col gap-2 min-[400px]:flex-row min-[400px]:items-center min-[400px]:justify-between">
-      <FeedTabs tab={tab} />
-      <FeedLabelChips active={label} />
+    <div className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-30 -mx-4 border-b border-[var(--hairline)] bg-[var(--bg)]/85 px-4 backdrop-blur-md sm:-mx-6 sm:px-6 lg:top-0 lg:mx-0 lg:px-0">
+      <h1 className="sr-only">Feed</h1>
+      <UnderlineTabs tabs={tabs} activeHref={activeHref} label="Feed" />
     </div>
   );
 }
 
-// Composer trigger + tabs + onboarding checklist. Suspense-wrapped so its own
-// profile/counts fetch runs independently of (not before) the timeline
-// below — same reasoning as LeftRail/RightRail's own boundaries.
-async function FeedHeader({
-  tab,
-  label,
-  userId,
-}: {
-  tab: FeedTab;
-  label: ContextLabel | null;
-  userId: string | null;
-}) {
+// Composer line + onboarding checklist. Suspense-wrapped so its own
+// profile/counts fetch runs independently of (not before) the timeline below.
+async function FeedHeader({ userId }: { userId: string | null }) {
   const composerProfile = userId ? await getViewerProfile() : null;
   const composerPro = isPro(composerProfile ?? { is_pro: false, pro_until: null });
 
@@ -119,11 +125,12 @@ async function FeedHeader({
 
   return (
     <>
-      <div className="sticky top-14 z-30 mb-4 -mt-2 border-b border-[var(--border)] bg-[var(--canvas)]/95 pt-2 pb-3 backdrop-blur">
-        <h1 className="sr-only">Feed</h1>
-        <ComposerToggle isPro={composerPro} avatarUrl={composerProfile?.avatar_url ?? null} isSuspended={isSuspended} />
-        <FeedFilters tab={tab} label={label} />
-      </div>
+      <ComposerToggle
+        isPro={composerPro}
+        avatarUrl={composerProfile?.avatar_url ?? null}
+        username={composerProfile?.username ?? ""}
+        isSuspended={isSuspended}
+      />
       {userId && (
         <OnboardingChecklist
           avatarUrl={composerProfile?.avatar_url ?? null}
@@ -137,23 +144,77 @@ async function FeedHeader({
   );
 }
 
-function FeedHeaderFallback({ tab, label }: { tab: FeedTab; label: ContextLabel | null }) {
+function ComposerFallback() {
   return (
-    <div className="sticky top-14 z-30 mb-4 -mt-2 border-b border-[var(--border)] bg-[var(--canvas)]/95 pt-2 pb-3 backdrop-blur">
-      <h1 className="sr-only">Feed</h1>
-      <Skeleton className="h-[68px] w-full rounded-2xl" />
-      <FeedFilters tab={tab} label={label} />
+    <div className="hidden border-b border-[var(--hairline)] py-5 lg:block">
+      <Skeleton className="h-[74px] w-full rounded-xl" />
+    </div>
+  );
+}
+
+function LabelFilterRow({ label }: { label: ContextLabel }) {
+  return (
+    <div className="flex items-center justify-between border-b border-[var(--hairline)] py-3 text-sm text-[var(--muted)]">
+      <span>Showing {CONTEXT_LABEL_COPY[label]} posts</span>
+      <Link href={feedPath()} className="text-[var(--ink)] hover:underline">
+        Clear
+      </Link>
     </div>
   );
 }
 
 function FeedTimelineFallback() {
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col">
       <PostCardSkeleton />
       <PostCardSkeleton />
       <PostCardSkeleton />
     </div>
+  );
+}
+
+// Your stage = posts from public authors at the viewer's stage, recency.
+// Posts only, same shape as LabeledTab. The stage comes from the viewer's row.
+// ponytail: no "N new posts" pill here (countNewerPosts counts all authors);
+// add a stage filter to it if users ask.
+async function StageTab({ viewerId }: { viewerId: string | null }) {
+  const profile = await getViewerProfile();
+  const stage = parseStage(profile?.stage);
+  if (!stage) {
+    return (
+      <EmptyState
+        title="Pick your stage to see this feed"
+        description="Tell us where you're at, like learning the basics or hunting internships, and this tab shows posts from people at the same stage."
+        action={{ label: "Set your stage", href: "/profile/edit" }}
+      />
+    );
+  }
+  const { supabase } = await getViewer();
+  const posts = await fetchLabeledPosts(supabase, { viewerId, authorStage: stage, limit: PAGE });
+  if (posts.length === 0) {
+    return (
+      <EmptyState
+        title="Quiet at your stage"
+        description={`No posts yet from people at your stage (${STAGE_LABELS[stage]}). Be the first.`}
+        action={{ label: CTA.seeLatest, href: "/feed" }}
+      />
+    );
+  }
+  const items = posts.map((post) => ({ kind: "post" as const, created_at: post.created_at, post }));
+  const last = items[items.length - 1];
+  const lastCursor = encodeCursor(last.created_at, itemId(last));
+  return (
+    <section className="flex flex-col">
+      <FeedTimeline items={items} viewerId={viewerId} />
+      <FeedLoadMore
+        key={`stage:${lastCursor}`}
+        auto
+        cursor={lastCursor}
+        hasMore={items.length === PAGE}
+        viewerId={viewerId}
+        action={loadMoreStagePosts}
+      />
+    </section>
   );
 }
 
@@ -221,7 +282,7 @@ async function LatestTab({ viewerId }: { viewerId: string | null }) {
   const last = timeline[timeline.length - 1];
   const lastCursor = encodeCursor(last.created_at, itemId(last));
   return (
-    <section className="flex flex-col gap-3">
+    <section className="flex flex-col">
       <NewPostsPill since={timeline[0].created_at} />
       <FeedTimeline items={timeline} viewerId={viewerId} />
       {/* key by the last cursor so a router.refresh() (new-posts pill) remounts
@@ -251,7 +312,7 @@ async function LabeledTab({ viewerId, label }: { viewerId: string | null; label:
   const last = items[items.length - 1];
   const lastCursor = encodeCursor(last.created_at, itemId(last));
   return (
-    <section className="flex flex-col gap-3">
+    <section className="flex flex-col">
       <NewPostsPill since={items[0].created_at} label={label} />
       <FeedTimeline items={items} viewerId={viewerId} />
       <FeedLoadMore
@@ -346,7 +407,7 @@ async function FollowingTab({ userId, viewerId }: { userId: string | null; viewe
     : [];
 
   return (
-    <section className="flex flex-col gap-3">
+    <section className="flex flex-col">
       {visibleRequests.length > 0 && <FollowRequests requests={visibleRequests} />}
       {timeline.length > 0 ? (
         <FeedTimeline items={timeline} viewerId={viewerId} />
