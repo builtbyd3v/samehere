@@ -109,7 +109,9 @@ export default function HeroPreview({ example, postCreatedAt }: { example: Landi
             <ExamplePanels e={example ?? EXAMPLE_PORTFOLIO} action={example !== null} />
           </div>
         </HairlineCard>
-        <div className={`landing-loop absolute left-[calc(100%-72px)] top-[120px] z-20 hidden w-[340px] rotate-[5deg] motion-safe:animate-[landing-float-alt_8s_ease-in-out_infinite] xl:block`}>
+        {/* 390px: the example post's author line and reaction row fit untruncated. Low and 130px in, it covers only the
+            empty lower right of the frame and stays inside a 1280 viewport. */}
+        <div className={`landing-loop absolute left-[calc(100%-130px)] top-[360px] z-20 hidden w-[390px] rotate-[5deg] motion-safe:animate-[landing-float-alt_8s_ease-in-out_infinite] xl:block`}>
           <ExamplePost post={post} />
         </div>
       </div>
