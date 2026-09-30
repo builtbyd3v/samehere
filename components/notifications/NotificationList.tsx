@@ -35,7 +35,7 @@ function TypeBadge({ type }: { type: NotificationRow["type"] }) {
       </span>
     );
   }
-  if (type === "referral_joined") {
+  if (type === "referral_joined" || type === "referral_reward") {
     return (
       <span className="grid h-[18px] w-[18px] place-items-center rounded-full border border-[var(--surface-card)] bg-[var(--blue)] text-[var(--canvas)]">
         <IconUserPlus />

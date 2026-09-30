@@ -54,3 +54,13 @@ export function parseRef(raw: unknown): string | null {
 
 /** Short-lived cookie that carries ?ref through an OAuth round trip (plan 016 Step 6). */
 export const REF_COOKIE = "sh_ref";
+
+export type RewardProgressRow = { ready: number; rewards: number };
+
+/** One quiet line for /referrals. Null (render nothing) when the RPC failed or returned no row. */
+export function referralRewardLine(row: RewardProgressRow | null | undefined): string | null {
+  if (!row) return null;
+  const ready = Math.min(row.ready, 3);
+  const earned = row.rewards > 0 ? ` Months earned so far: ${row.rewards}.` : "";
+  return `${ready} of 3 invited friends have set their stage.${earned}`;
+}
