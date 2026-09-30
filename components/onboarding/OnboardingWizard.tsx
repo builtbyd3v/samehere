@@ -11,13 +11,21 @@ import {
   type EducationState,
 } from "@/app/(app)/profile/edit/actions";
 import { createPost, type ComposerState } from "@/app/(app)/feed/actions";
-import { saveOnboardingBasics, finishOnboarding, savePortfolioConsent } from "@/app/(app)/onboarding/actions";
+import {
+  saveOnboardingBasics,
+  saveOnboardingStage,
+  finishOnboarding,
+  savePortfolioConsent,
+} from "@/app/(app)/onboarding/actions";
 import AvatarBase from "@/components/ui/Avatar";
 import SchoolAutocomplete from "@/components/profile/SchoolAutocomplete";
 import DateRangePicker from "@/components/profile/DateRangePicker";
 import Select from "@/components/ui/Select";
 import { DEGREE_OPTIONS } from "@/lib/education-options";
 import type { OnboardingStep } from "@/lib/onboarding";
+import { FOCUS_AREAS, FOCUS_LABELS, MAX_FOCUS_AREAS, STAGES, STAGE_LABELS, type FocusArea, type Stage } from "@/lib/stage";
+import { OPEN_TO_TAGS } from "@/lib/portfolio/validation";
+import { OPEN_TO_LABELS } from "@/lib/portfolio/labels";
 
 export type OnboardingProfile = {
   username: string;
@@ -39,9 +47,12 @@ const DEGREE_SELECT_OPTIONS = [...DEGREE_OPTIONS];
 
 const label = "block text-sm font-medium text-[var(--ink)]";
 const field = "input-base mt-1.5";
+const pill = "cursor-pointer rounded-full border px-3 py-1.5 text-sm focus-within:ring-2 focus-within:ring-[var(--ink)]";
+const pillOn = "border-[var(--ink)] text-[var(--ink)]";
+const pillOff = "border-[var(--border)] text-[var(--ink-muted)]";
 
 export default function OnboardingWizard({ profile }: { profile: OnboardingProfile }) {
-  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5 | 6>(1);
   const [stepsDone, setStepsDone] = useState<OnboardingStep[]>([]);
   const markDone = (s: OnboardingStep) => setStepsDone((prev) => (prev.includes(s) ? prev : [...prev, s]));
   const reduce = useReducedMotion();
@@ -59,6 +70,29 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
     avatarAction(fd);
   }
 
+  const [stage, setStage] = useState<Stage | "">("");
+  const [focus, setFocus] = useState<FocusArea[]>([]);
+  const [stagePending, startStage] = useTransition();
+  const [stageFormError, setStageFormError] = useState<string | undefined>();
+
+  function toggleFocus(area: FocusArea) {
+    setFocus((cur) =>
+      cur.includes(area) ? cur.filter((a) => a !== area) : cur.length >= MAX_FOCUS_AREAS ? cur : [...cur, area],
+    );
+  }
+
+  function onSubmitStage(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!stage) return;
+    const fd = new FormData(e.currentTarget);
+    setStageFormError(undefined);
+    startStage(async () => {
+      const result = await saveOnboardingStage({}, fd);
+      if (result.error) setStageFormError(result.error);
+      else setStep(2);
+    });
+  }
+
   const [basicsPending, startBasics] = useTransition();
   const [basicsError, setBasicsError] = useState<string | undefined>();
 
@@ -71,7 +105,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
       if (result.error) setBasicsError(result.error);
       else {
         markDone("basics");
-        setStep(2);
+        setStep(3);
       }
     });
   }
@@ -99,7 +133,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
       if (result.error) setPostError(result.error);
       else {
         markDone("post");
-        setStep(3);
+        setStep(4);
       }
     });
   }
@@ -116,7 +150,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
       if (result.error) setEduError(result.error);
       else {
         markDone("education");
-        setStep(4);
+        setStep(5);
       }
     });
   }
@@ -133,7 +167,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
       if (result.error) setExpError(result.error);
       else {
         markDone("experience");
-        setStep(5);
+        setStep(6);
       }
     });
   }
@@ -157,11 +191,11 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
       <div className="mb-6 flex items-center justify-between">
         <div className="flex-1">
           <h1 className="text-2xl font-semibold tracking-[-0.02em]">Set up your profile</h1>
-          <p className="mt-1 text-sm text-[var(--ink-muted)]">Optional · step {step} of 5</p>
+          <p className="mt-1 text-sm text-[var(--ink-muted)]">Optional · step {step} of 6</p>
           <div className="mt-2 h-1 w-40 overflow-hidden rounded-full bg-[var(--featured-surface)]">
             <div
               className="h-full rounded-full bg-[var(--blue)] transition-[width] duration-[400ms] ease-out"
-              style={{ width: `${(step / 5) * 100}%` }}
+              style={{ width: `${(step / 6) * 100}%` }}
             />
           </div>
         </div>
@@ -185,6 +219,72 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
           transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
         >
         {step === 1 && (
+          <form onSubmit={onSubmitStage}>
+            <h2 className="mb-1 text-lg font-semibold">Where are you at?</h2>
+            <p className="mb-4 text-sm text-[var(--ink-muted)]">So we can show you people at the same stage.</p>
+            {stageFormError && <p role="alert" className="mb-3 text-sm text-[var(--danger)]">{stageFormError}</p>}
+            <fieldset>
+              <legend className={label}>Stage</legend>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {STAGES.map((s) => (
+                  <label key={s} className={`${pill} ${stage === s ? pillOn : pillOff}`}>
+                    <input
+                      type="radio"
+                      name="stage"
+                      value={s}
+                      checked={stage === s}
+                      onChange={() => setStage(s)}
+                      className="sr-only"
+                    />
+                    {STAGE_LABELS[s]}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+            <fieldset className="mt-5">
+              <legend className={label}>Focus (up to 3)</legend>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {FOCUS_AREAS.map((a) => (
+                  <label key={a} className={`${pill} has-[:disabled]:opacity-50 ${focus.includes(a) ? pillOn : pillOff}`}>
+                    <input
+                      type="checkbox"
+                      name="focus_areas"
+                      value={a}
+                      checked={focus.includes(a)}
+                      onChange={() => toggleFocus(a)}
+                      disabled={!focus.includes(a) && focus.length >= MAX_FOCUS_AREAS}
+                      className="sr-only"
+                    />
+                    {FOCUS_LABELS[a]}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+            <fieldset className="mt-5">
+              <legend className={label}>Open to</legend>
+              <ul className="mt-2 flex flex-col gap-2">
+                {OPEN_TO_TAGS.map((tag) => (
+                  <li key={tag}>
+                    <label className="flex items-center gap-2.5 text-sm text-[var(--ink)]">
+                      <input type="checkbox" name="open_to" value={tag} className="h-4 w-4 accent-[var(--ink)]" />
+                      {OPEN_TO_LABELS[tag]}
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            </fieldset>
+            <div className="mt-6 flex items-center justify-between">
+              <button type="button" onClick={() => setStep(2)} className="text-sm text-[var(--ink-muted)] underline">
+                Skip for now
+              </button>
+              <button type="submit" disabled={stagePending || !stage} className="btn-primary !py-2.5">
+                {stagePending ? "Saving…" : "Continue"}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {step === 2 && (
           <form onSubmit={onSubmitBasics}>
             {basicsError && (
               <p role="alert" className="mb-5 rounded-md border border-[var(--border-strong)] bg-[var(--featured-surface)] px-3 py-2 text-sm text-[var(--ink)]">
@@ -223,7 +323,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
             </div>
 
             <div className="mt-6 flex items-center justify-between">
-              <button type="button" onClick={() => setStep(2)} className="text-sm text-[var(--ink-muted)] underline">
+              <button type="button" onClick={() => setStep(3)} className="text-sm text-[var(--ink-muted)] underline">
                 Skip for now
               </button>
               <button type="submit" disabled={basicsPending} className="btn-primary !py-2.5">
@@ -233,7 +333,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
           </form>
         )}
 
-        {step === 2 && (
+        {step === 3 && (
           <form onSubmit={onSubmitPost}>
             <h2 className="mb-1 text-lg font-semibold">Post something real</h2>
             <p className="mb-4 text-sm text-[var(--ink-muted)]">Optional. What are you building or figuring out?</p>
@@ -247,7 +347,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
               className="input-base w-full resize-y p-3 text-[15px] leading-[1.55]"
             />
             <div className="mt-6 flex items-center justify-between">
-              <button type="button" onClick={() => setStep(3)} disabled={postPending} className="text-sm text-[var(--ink-muted)] underline disabled:opacity-50">
+              <button type="button" onClick={() => setStep(4)} disabled={postPending} className="text-sm text-[var(--ink-muted)] underline disabled:opacity-50">
                 Skip
               </button>
               <button type="submit" disabled={postPending || postContent.trim().length === 0} className="btn-primary !py-2.5">
@@ -257,7 +357,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
           </form>
         )}
 
-        {step === 3 && (
+        {step === 4 && (
           <form onSubmit={onSubmitEducation}>
             <h2 className="mb-1 text-lg font-semibold">Add your education</h2>
             <p className="mb-4 text-sm text-[var(--ink-muted)]">Where do you study? Optional.</p>
@@ -288,7 +388,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
               <DateRangePicker currentYear={currentYear} />
             </div>
             <div className="mt-6 flex items-center justify-between">
-              <button type="button" onClick={() => setStep(4)} disabled={eduPending} className="text-sm text-[var(--ink-muted)] underline disabled:opacity-50">
+              <button type="button" onClick={() => setStep(5)} disabled={eduPending} className="text-sm text-[var(--ink-muted)] underline disabled:opacity-50">
                 Skip
               </button>
               <button type="submit" disabled={eduPending} className="btn-primary !py-2.5">
@@ -298,7 +398,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
           </form>
         )}
 
-        {step === 4 && (
+        {step === 5 && (
           <form onSubmit={onSubmitExperience}>
             <h2 className="mb-1 text-lg font-semibold">Add an experience</h2>
             <p className="mb-4 text-sm text-[var(--ink-muted)]">Interned somewhere? Led a club? Optional.</p>
@@ -329,7 +429,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
               </div>
             </div>
             <div className="mt-6 flex items-center justify-between">
-              <button type="button" onClick={() => setStep(5)} disabled={expPending || finishing} className="text-sm text-[var(--ink-muted)] underline disabled:opacity-50">
+              <button type="button" onClick={() => setStep(6)} disabled={expPending || finishing} className="text-sm text-[var(--ink-muted)] underline disabled:opacity-50">
                 Skip
               </button>
               <button type="submit" disabled={expPending || finishing} className="btn-primary !py-2.5">
@@ -339,7 +439,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
           </form>
         )}
 
-        {step === 5 && (
+        {step === 6 && (
           <form onSubmit={onSubmitPublish}>
             <h2 className="mb-1 text-lg font-semibold">Make your portfolio public</h2>
             <p className="mb-4 text-sm text-[var(--ink-muted)]">
