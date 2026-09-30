@@ -16,7 +16,7 @@ export default async function ReferralsPage() {
 
   return (
     <main className="page-enter mx-auto max-w-xl px-5 py-10">
-      <h1 className="mb-1 text-2xl font-semibold tracking-[-0.02em] text-[var(--ink)]">Invite friends</h1>
+      <h1 className="mb-1 text-title font-semibold text-[var(--ink)]">Invite friends</h1>
       <p className="mb-6 text-sm text-[var(--ink-muted)]">
         Share your link. A referral is qualified after that person is active on samehere. 50 qualified unlocks the
         Social Butterfly badge. 100 qualified unlocks a free semester of Pro.

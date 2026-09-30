@@ -4,15 +4,20 @@ import { useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { Check, Share2 } from "lucide-react";
 import posthog from "posthog-js";
+import { Button, type ButtonShape } from "@/components/ui/Button";
 import { ICON_SPRING } from "@/lib/motion/spring";
 import { profileShareUrl } from "@/lib/portfolio/share";
 
 export default function SharePortfolioButton({
   username,
   displayName,
+  shape = "pill",
+  fullWidth = false,
 }: {
   username: string;
   displayName: string;
+  shape?: ButtonShape;
+  fullWidth?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
   const reduceMotion = useReducedMotion();
@@ -39,10 +44,12 @@ export default function SharePortfolioButton({
   }
 
   return (
-    <button
-      type="button"
+    <Button
+      variant="secondary"
+      size="md"
+      shape={shape}
       onClick={share}
-      className={`btn-ghost inline-flex items-center gap-1.5 !rounded-full !px-4 !py-1.5 text-sm${copied ? " share-copied" : ""}`}
+      className={`${fullWidth ? "w-full" : ""}${copied ? " share-copied" : ""}`.trim()}
     >
       <motion.span
         key={copied ? "copied" : "share"}
@@ -54,6 +61,6 @@ export default function SharePortfolioButton({
         {copied ? <Check strokeWidth={1.5} className="h-4 w-4" /> : <Share2 strokeWidth={1.5} className="h-4 w-4" />}
       </motion.span>
       {copied ? "Copied" : "Share"}
-    </button>
+    </Button>
   );
 }

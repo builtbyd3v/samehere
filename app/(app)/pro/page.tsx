@@ -83,10 +83,10 @@ export default async function ProPage({
     <main className="page-enter mx-auto max-w-2xl px-5 py-10">
       <div className="mb-6 flex items-center gap-2">
         <IconBolt className="h-5 w-5 text-[var(--blue)]" />
-        <h1 className="text-2xl font-semibold tracking-[-0.02em] text-[var(--ink)]">Pro</h1>
+        <h1 className="text-title font-semibold text-[var(--ink)]">Pro</h1>
       </div>
 
-      <p className="mb-6 text-[15px] leading-relaxed text-[var(--ink-muted)]">
+      <p className="mb-6 text-body leading-relaxed text-[var(--ink-muted)]">
         Customize your portfolio and see what gets attention. Social posting, projects, and DMs stay free.
       </p>
 
@@ -94,7 +94,7 @@ export default async function ProPage({
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="card p-6">
           <p className="text-sm font-medium text-[var(--ink)]">Monthly</p>
-          <p className="mt-2 text-[36px] font-semibold leading-none tracking-[-0.03em] text-[var(--ink)]">
+          <p className="mt-2 text-display font-semibold leading-none tracking-[-0.03em] text-[var(--ink)]">
             $4.99<span className="text-lg font-normal text-[var(--ink-muted)]">/mo</span>
           </p>
           <p className="mt-1 text-sm text-[var(--ink-muted)]">Billed monthly.</p>
@@ -104,7 +104,7 @@ export default async function ProPage({
             Best value
           </span>
           <p className="text-sm font-medium text-[var(--ink)]">Semester</p>
-          <p className="mt-2 text-[36px] font-semibold leading-none tracking-[-0.03em] text-[var(--ink)]">
+          <p className="mt-2 text-display font-semibold leading-none tracking-[-0.03em] text-[var(--ink)]">
             $12.99<span className="text-lg font-normal text-[var(--ink-muted)]">/semester</span>
           </p>
           <p className="mt-1 text-sm text-[var(--ink-muted)]">
@@ -185,8 +185,8 @@ export default async function ProPage({
         ).map((g, i) => (
           <div key={g.title} className={i > 0 ? "border-t border-[var(--border)] p-6" : "p-6"}>
             <div className="flex items-baseline justify-between gap-3">
-              <h2 className="text-[15px] font-semibold text-[var(--ink)]">{g.title}</h2>
-              <p className="text-[13px] text-[var(--ink-muted)]">{g.subtitle}</p>
+              <h2 className="text-body font-semibold text-[var(--ink)]">{g.title}</h2>
+              <p className="text-small text-[var(--ink-muted)]">{g.subtitle}</p>
             </div>
             <ul className="mt-3.5 grid gap-2.5 sm:grid-cols-2">
               {g.features.map((f) => (
@@ -203,7 +203,7 @@ export default async function ProPage({
       {/* Coming soon — hidden when nothing is queued */}
       {COMING_SOON_TO_PRO.length > 0 && (
         <div className="mt-4 card p-6">
-          <h2 className="text-[15px] font-semibold text-[var(--ink)]">Coming soon to Pro</h2>
+          <h2 className="text-body font-semibold text-[var(--ink)]">Coming soon to Pro</h2>
           <ul className="mt-3 flex flex-wrap gap-2">
             {COMING_SOON_TO_PRO.map((f) => (
               <li key={f} className="rounded-full border border-[var(--border)] bg-[var(--canvas)] px-3 py-1 text-sm text-[var(--ink-muted)]">

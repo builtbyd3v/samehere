@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { ImageDown, TriangleAlert } from "lucide-react";
 import posthog from "posthog-js";
+import { Button } from "@/components/ui/Button";
 import Menu from "@/components/ui/Menu";
 import { ICON_SPRING } from "@/lib/motion/spring";
 import { menuItemClass } from "@/lib/ui/menu-styles";
@@ -11,9 +12,9 @@ import { CARD_FORMATS, CARD_SIZES, cardFilename, cardPath, type CardFormat } fro
 
 const LABEL: Record<CardFormat, string> = { landscape: "Landscape", square: "Square", story: "Story" };
 
-type ExportPortfolioButtonProps = { username: string };
+type ExportPortfolioButtonProps = { username: string; fullWidth?: boolean };
 
-export default function ExportPortfolioButton({ username }: ExportPortfolioButtonProps) {
+export default function ExportPortfolioButton({ username, fullWidth = false }: ExportPortfolioButtonProps) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -55,16 +56,19 @@ export default function ExportPortfolioButton({ username }: ExportPortfolioButto
   return (
     <Menu
       customTrigger
+      fullWidth={fullWidth}
       open={open}
       onOpenChange={setOpen}
       align="end"
       trigger={
-        <button
-          type="button"
+        <Button
+          variant="secondary"
+          size="md"
+          shape="rounded"
           disabled={busy}
           onClick={() => setOpen(!open)}
           aria-label="Export portfolio image"
-          className="btn-ghost inline-flex items-center gap-1.5 !rounded-full !px-4 !py-1.5 text-sm disabled:opacity-60"
+          className={fullWidth ? "w-full" : ""}
         >
           <motion.span
             key={failed ? "failed" : "export"}
@@ -80,7 +84,7 @@ export default function ExportPortfolioButton({ username }: ExportPortfolioButto
             )}
           </motion.span>
           {busy ? "Exporting" : failed ? "Try again" : "Export"}
-        </button>
+        </Button>
       }
     >
       {CARD_FORMATS.map((f) => (

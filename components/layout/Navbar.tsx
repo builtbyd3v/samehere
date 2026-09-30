@@ -2,10 +2,10 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { Bell } from "lucide-react";
 import AppBrand from "@/components/brand/AppBrand";
+import PublicHeader from "@/components/brand/PublicHeader";
 import NavMenu from "./NavMenu";
 import type { ShellUser } from "./LeftNav";
 import { getUnreadCounts } from "@/lib/unread";
-import { signupCtaSm, ghostCtaSm } from "@/components/landing/cta";
 
 function NotifBell({ unread }: { unread: boolean }) {
   return (
@@ -43,21 +43,5 @@ export default function Navbar({ user }: { user: ShellUser }) {
     );
   }
 
-  return (
-    <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--canvas)]/85 backdrop-blur-md">
-      <nav className="app-nav brand-header-bar">
-        <div className="flex items-center gap-2">
-          <AppBrand href="/" />
-        </div>
-        <div className="flex items-center gap-2 text-sm">
-          <Link href="/login" prefetch className={ghostCtaSm}>
-            Sign in
-          </Link>
-          <Link href="/signup" prefetch className={signupCtaSm}>
-            Sign up
-          </Link>
-        </div>
-      </nav>
-    </header>
-  );
+  return <PublicHeader />;
 }

@@ -2,6 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import posthog from "posthog-js";
+import { Button } from "@/components/ui/Button";
 import { createClient } from "@/lib/supabase/client";
 
 function GoogleMark() {
@@ -45,19 +46,19 @@ export default function OAuthButtons({ variant }: { variant?: "signup" | "login"
 
   return (
     <div className="mb-4 flex flex-col gap-2.5">
-      <button type="button" onClick={() => start("google")} className="btn-surface w-full py-2 text-[15px] sm:py-2.5">
+      <Button variant="secondary" size="lg" className="w-full" onClick={() => start("google")}>
         <GoogleMark />
         <span>Continue with Google</span>
-      </button>
-      <button type="button" onClick={() => start("github")} className="btn-surface w-full py-2 text-[15px] sm:py-2.5">
+      </Button>
+      <Button variant="secondary" size="lg" className="w-full" onClick={() => start("github")}>
         <GitHubMark />
         <span>Continue with GitHub</span>
-      </button>
+      </Button>
     </div>
   );
 }
 
-// "or" divider between OAuth and the email form — shared so both forms match.
+// "or" divider between OAuth and the email form, shared so both forms match.
 export function OAuthDivider() {
   return (
     <div className="mb-4 flex items-center gap-3 text-xs text-[var(--ink-muted)]">

@@ -4,6 +4,7 @@ import Avatar from "@/components/ui/Avatar";
 import { Chip, StageChip } from "@/components/ui/Chip";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import UserBadges from "@/components/profile/UserBadges";
+import { activeBadges } from "@/lib/badges";
 import { FOCUS_AREAS, FOCUS_LABELS, STAGE_LABELS, parseStage } from "@/lib/stage";
 import OpenToTags from "./OpenToTags";
 import ResumeLinks from "./ResumeLinks";
@@ -30,7 +31,7 @@ type IdentityPanelProps = {
 
 function Row({ label, className = "", children }: { label: string; className?: string; children: ReactNode }) {
   return (
-    <div className={`flex items-baseline justify-between gap-4 text-[13px] ${className}`.trim()}>
+    <div className={`flex items-baseline justify-between gap-4 text-small ${className}`.trim()}>
       <SectionLabel as="dt" className="shrink-0">
         {label}
       </SectionLabel>
@@ -39,9 +40,12 @@ function Row({ label, className = "", children }: { label: string; className?: s
   );
 }
 
-function Count({ n }: { n: number }) {
-  // Pro accent colors the numbers, same as the old Stat.
-  return <span className="text-[color:var(--profile-accent,currentColor)]">{n.toLocaleString()}</span>;
+function Count({ n, one, many }: { n: number; one: string; many: string }) {
+  return (
+    <>
+      <span className="text-[var(--ink)]">{n.toLocaleString()}</span> {n === 1 ? one : many}
+    </>
+  );
 }
 
 /** Left column of the portfolio: who, where, how to reach them. */
@@ -69,7 +73,8 @@ export default function IdentityPanel({
   const areas = FOCUS_AREAS.filter((a) => focusAreas.includes(a));
   const hasOpenTo = openTo.length > 0;
   // Stage and focus rows are desktop only (chips replace them below xl).
-  const hasPhoneRows = Boolean(schoolLine || hasOpenTo);
+  const badgeText = activeBadges(badges).map((b) => b.label).join(" · ");
+  const hasPhoneRows = Boolean(schoolLine || hasOpenTo || badgeText);
   const hasTable = hasPhoneRows || Boolean(s || areas.length > 0);
 
   return (
@@ -87,12 +92,12 @@ export default function IdentityPanel({
 
       <div className="flex flex-col gap-1.5 xl:gap-2">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <Name className="text-balance text-[32px] font-semibold leading-[1.02] tracking-[-0.035em] xl:text-[44px] xl:leading-none xl:tracking-[-0.04em]">
+          <Name className="text-balance text-display font-semibold">
             {displayName}
           </Name>
           <UserBadges {...badges} />
         </div>
-        <p className="text-[13px] text-[var(--faint)]">@{username}</p>
+        <p className="text-small text-[var(--faint)]">@{username}</p>
         {headline && <p className="text-pretty text-base leading-[1.4] text-[var(--ink-3)] xl:text-lg">{headline}</p>}
         {tagline && <p className="text-sm text-[var(--muted)]">{tagline}</p>}
       </div>
@@ -123,6 +128,7 @@ export default function IdentityPanel({
             </Row>
           )}
           {schoolLine && <Row label="School">{schoolLine}</Row>}
+          {badgeText && <Row label="Badges">{badgeText}</Row>}
           {hasOpenTo && (
             <Row label="Open to">
               <OpenToTags tags={openTo} username={username} linkToDm={inviteDm} className="text-right" />
@@ -136,16 +142,16 @@ export default function IdentityPanel({
       {links && <ResumeLinks {...links} />}
 
       {counts && (
-        <p className="text-[13px] tabular-nums text-[var(--faint)]">
+        <p className="text-small tabular-nums text-[var(--faint)]">
           <Link href={`/profile/${username}/followers`} className="hover:text-[var(--ink)]">
-            <Count n={counts.followers} /> followers
+            <Count n={counts.followers} one="follower" many="followers" />
           </Link>
           {" · "}
           <Link href={`/profile/${username}/following`} className="hover:text-[var(--ink)]">
-            <Count n={counts.following} /> following
+            <Count n={counts.following} one="following" many="following" />
           </Link>
           {" · "}
-          <Count n={counts.posts} /> posts
+          <Count n={counts.posts} one="post" many="posts" />
         </p>
       )}
     </div>

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { PortfolioProject, PublicPortfolioProjection } from "@/types/portfolio";
 import {
   assertNoDraftLeak,
+  hasPublishedSection,
   metadataDescription,
   orderedSections,
   ownerPreviewProjects,
@@ -165,5 +166,25 @@ describe("publicIntro + draft leak", () => {
       stage: null,
       focus_areas: [],
     });
+  });
+});
+
+describe("hasPublishedSection", () => {
+  it("is true only when a visitor can see a section", () => {
+    expect(hasPublishedSection(null)).toBe(false);
+    expect(hasPublishedSection(published)).toBe(true);
+    expect(
+      hasPublishedSection({
+        ...published,
+        publish_intro: false,
+        publish_projects: false,
+        publish_activity: false,
+        publish_experience: false,
+        publish_education: false,
+        publish_posts: false,
+        activity_visible: false,
+      })
+    ).toBe(false);
+    expect(hasPublishedSection({ ...published, is_private: true })).toBe(false);
   });
 });

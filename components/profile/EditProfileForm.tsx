@@ -81,7 +81,7 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
   return (
     <main className="mx-auto max-w-xl px-5 py-10">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-[-0.02em]">Edit profile</h1>
+        <h1 className="text-title font-semibold">Edit profile</h1>
         <Link href={`/profile/${initial.username}`} className="text-sm text-[var(--ink-muted)] underline">
           Cancel
         </Link>

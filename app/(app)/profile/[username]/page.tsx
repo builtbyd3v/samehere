@@ -29,9 +29,8 @@ import {
   schoolMajorLine,
 } from "@/lib/portfolio/profile-page-data";
 import { profileShareTitle } from "@/lib/og/copy";
-import { metadataDescription, publicSectionVisible, robotsForProjection } from "@/lib/portfolio/projection";
+import { hasPublishedSection, metadataDescription, publicSectionVisible, robotsForProjection } from "@/lib/portfolio/projection";
 import { eligiblePublicView } from "@/lib/portfolio/metrics";
-import { PORTFOLIO_SECTIONS } from "@/lib/portfolio/validation";
 import TrackPortfolioView from "@/components/portfolio/TrackPortfolioView";
 import { OwnerAnalyticsSection, PortfolioAnalyticsFallback } from "@/components/portfolio/PortfolioAnalytics";
 import SharePortfolioButton from "@/components/portfolio/SharePortfolioButton";
@@ -262,9 +261,7 @@ async function PublicPortfolioBelow({
     isPrivate: profile.is_private,
     isBlocked: false,
     isSuspended: false,
-    hasRenderedPublicContent: Boolean(
-      projection && PORTFOLIO_SECTIONS.some((section) => publicSectionVisible(projection, section))
-    ),
+    hasRenderedPublicContent: hasPublishedSection(projection),
   });
   const posts = (
     <section>
@@ -272,12 +269,12 @@ async function PublicPortfolioBelow({
         Posts
       </SectionLabel>
       <p className="flex flex-wrap items-center gap-2 text-sm text-[var(--muted)]">
-        Sign in to see their posts
+        Log in to see their posts
         <Button href="/login" variant="ghost" size="sm">
-          Sign in
+          Log in
         </Button>
         <Button href="/signup" variant="primary" size="sm">
-          Sign up
+          Join free
         </Button>
       </p>
     </section>
@@ -326,7 +323,26 @@ async function PublicPortfolioBelow({
 }
 
 /** The two-column frame shared by both views. */
-function ProfileGrid({ panel, notice, children }: { panel: ReactNode; notice?: ReactNode; children: ReactNode }) {
+function ProfileGrid({
+  panel,
+  notice,
+  single,
+  children,
+}: {
+  panel: ReactNode;
+  notice?: ReactNode;
+  single?: boolean;
+  children: ReactNode;
+}) {
+  if (single) {
+    return (
+      <div data-profile-grid className="mx-auto flex w-full max-w-[440px] flex-col gap-6">
+        <Reveal delay={0}>{panel}</Reveal>
+        {notice}
+        {children}
+      </div>
+    );
+  }
   return (
     <div
       data-profile-grid
@@ -345,6 +361,24 @@ function ProfileGrid({ panel, notice, children }: { panel: ReactNode; notice?: R
   );
 }
 
+function NothingPublished({ owner, username, isPrivate }: { owner: boolean; username: string; isPrivate: boolean }) {
+  if (owner) {
+    return (
+      <p className="text-small text-[var(--muted)]">
+        Nothing published yet. Visitors only see this header.{" "}
+        <Link href="/profile/edit#publication" className="text-[var(--ink)] underline underline-offset-2">
+          Choose what to publish
+        </Link>
+      </p>
+    );
+  }
+  return (
+    <p className="text-small text-[var(--muted)]">
+      {isPrivate ? "This account is private." : `@${username} has not published their portfolio yet.`}
+    </p>
+  );
+}
+
 async function PublicProfileView({ username }: { username: string }) {
   const client = createAnonPortfolioClient();
   const data = await loadPublicProfilePage(client, username);
@@ -353,6 +387,7 @@ async function PublicProfileView({ username }: { username: string }) {
   // ponytail: the logged-out header now waits for the portfolio bundle (it already runs in parallel with counts); if logged-out TTFB regresses, stream the table rows behind their own Suspense.
   const bundle = await bundlePromise;
   const intro = publicProfileIntro(profile, bundle.ok ? bundle.data.projection : null);
+  const nothingPublished = !profile.is_private && bundle.ok && !hasPublishedSection(bundle.data.projection);
 
   return (
     <main
@@ -388,11 +423,14 @@ async function PublicProfileView({ username }: { username: string }) {
             actions={<SharePortfolioButton username={profile.username} displayName={displayName} />}
           />
         }
+        single={nothingPublished}
       >
         {profile.is_private ? (
           <div className="rounded-2xl border border-[var(--hairline)] px-6 py-8 text-center">
             <p className="font-medium text-[var(--ink)]">This account is private</p>
           </div>
+        ) : nothingPublished ? (
+          <NothingPublished owner={false} username={profile.username} isPrivate={false} />
         ) : (
           <Suspense fallback={<PortfolioSectionsFallback />}>
             <PublicPortfolioBelow
@@ -489,27 +527,39 @@ export default async function ProfilePage({
     </Suspense>
   ) : null;
 
-  const actions = isOwner ? (
-    <>
-      <Button href="/profile/edit" variant="primary" size="md" shape="rounded" className="flex-1">
+  const ownerActions = (
+    <div className="grid w-full grid-cols-2 gap-2">
+      <Button href="/profile/edit" variant="primary" size="md" shape="rounded" className="col-span-2">
         Edit profile
       </Button>
       <Button href="/profile/projects/new" variant="secondary" size="md" shape="rounded">
         Add project
       </Button>
-      <Button
-        href={previewPublic ? `/profile/${profile.username}` : `/profile/${profile.username}?preview=public`}
-        variant="ghost"
-        size="md"
-        shape="rounded"
-      >
-        {previewPublic ? "Owner view" : "Public preview"}
+      <Button href={`/profile/${profile.username}?preview=public`} variant="secondary" size="md" shape="rounded">
+        Public preview
       </Button>
+      <SharePortfolioButton username={profile.username} displayName={displayName} shape="rounded" fullWidth />
+      {/* plan 007: owner-only export */}
+      <ExportPortfolioButton username={profile.username} fullWidth />
+    </div>
+  );
+  // Public preview shows what a signed-in visitor sees. Follow and Message are inert here.
+  const previewActions = (
+    <>
+      <div className="flex w-full items-center gap-2">
+        <Button variant="primary" size="md" className="flex-1" disabled>
+          Follow
+        </Button>
+        <Button variant="secondary" size="md" className="flex-1" disabled>
+          Message
+        </Button>
+      </div>
       <SharePortfolioButton username={profile.username} displayName={displayName} />
-      {/* plan 007: ExportPortfolioButton renders here, after Share, owner only */}
-      <ExportPortfolioButton username={profile.username} />
     </>
-  ) : (
+  );
+  const nothingPublished =
+    !portfolioUnavailable && (!isOwner || previewPublic) && !postsSection && !hasPublishedSection(projection);
+  const actions = isOwner ? (previewPublic ? previewActions : ownerActions) : (
     <>
       <div className="w-full">
         <ProfileActions
@@ -533,16 +583,6 @@ export default async function ProfilePage({
     >
       <ProfileBackdrop bannerUrl={bannerUrl} accent={Boolean(theme)} />
       <div className="theme-zone">
-        {isOwner && !previewPublic && (
-          <Suspense fallback={<PortfolioAnalyticsFallback />}>
-            <OwnerAnalyticsSection
-              client={supabase}
-              ownerId={profile.id}
-              currentPro={pro}
-              titles={new Map((ownerProjects.ok ? ownerProjects.data : []).map((project) => [project.id, project.title]))}
-            />
-          </Suspense>
-        )}
         {!isOwner &&
           eligiblePublicView({
             isOwner: false,
@@ -550,10 +590,16 @@ export default async function ProfilePage({
             isPrivate: contentHidden,
             isBlocked,
             isSuspended: false,
-            hasRenderedPublicContent: Boolean(
-              projection && PORTFOLIO_SECTIONS.some((section) => publicSectionVisible(projection, section))
-            ),
+            hasRenderedPublicContent: hasPublishedSection(projection),
           }) && <TrackPortfolioView username={profile.username} />}
+        {isOwner && previewPublic && (
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--border)] px-4 py-3">
+            <p className="text-small text-[var(--muted)]">You are previewing your portfolio as a visitor sees it.</p>
+            <Button href={`/profile/${profile.username}`} variant="secondary" size="sm" shape="rounded">
+              Back to owner view
+            </Button>
+          </div>
+        )}
         <ProfileGrid
           panel={
             <IdentityPanel
@@ -580,21 +626,22 @@ export default async function ProfilePage({
               actions={actions}
             />
           }
+          single={nothingPublished}
           notice={
             isOwner &&
             !previewPublic &&
             projection &&
             !projection.is_private &&
-            !PORTFOLIO_SECTIONS.some((section) => publicSectionVisible(projection, section)) && (
-              <p className="mt-4 text-sm text-[var(--muted)]">
-                Your shared link shows almost nothing.{" "}
-                <Link href="/profile/edit#publication" className="text-[var(--ink)] underline underline-offset-2">
-                  Publish your portfolio
-                </Link>
-              </p>
+            !hasPublishedSection(projection) && (
+              <div className="mt-4">
+                <NothingPublished owner username={profile.username} isPrivate={false} />
+              </div>
             )
           }
         >
+          {nothingPublished && (
+            <NothingPublished owner={isOwner} username={profile.username} isPrivate={contentHidden} />
+          )}
           {portfolioUnavailable && isOwner && (
             <div className={COLUMN}>
               <UnavailableNotice />
@@ -624,7 +671,7 @@ export default async function ProfilePage({
               {postsSection}
             </div>
           )}
-          {!portfolioUnavailable && (
+          {!portfolioUnavailable && !nothingPublished && (
             <PortfolioBody
               projection={projection}
               unavailable={false}
@@ -640,6 +687,16 @@ export default async function ProfilePage({
               intro={intro}
               posts={postsSection}
             />
+          )}
+          {isOwner && !previewPublic && (
+            <Suspense fallback={pro ? <PortfolioAnalyticsFallback /> : null}>
+              <OwnerAnalyticsSection
+                client={supabase}
+                ownerId={profile.id}
+                currentPro={pro}
+                titles={new Map((ownerProjects.ok ? ownerProjects.data : []).map((project) => [project.id, project.title]))}
+              />
+            </Suspense>
           )}
         </ProfileGrid>
 

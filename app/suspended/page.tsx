@@ -13,9 +13,9 @@ export default function SuspendedPage() {
   return (
     <main className="page-enter mx-auto max-w-2xl px-5 py-20">
       <div className="card p-10 text-center">
-        <p className="text-lg font-semibold tracking-[-0.02em] text-[var(--ink)]">
+        <h1 className="text-title font-semibold text-[var(--ink)]">
           Your account is suspended
-        </p>
+        </h1>
         <p className="mt-1.5 text-sm text-[var(--ink-muted)]">
           We suspended this account for violating our{" "}
           <a href="/terms" className="text-[var(--ink)] underline underline-offset-4">

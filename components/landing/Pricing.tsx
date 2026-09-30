@@ -1,6 +1,5 @@
-import Link from "next/link";
 import { Check } from "lucide-react";
-import { ghostCta, signupCta } from "./cta";
+import { Button } from "@/components/ui/Button";
 
 const FREE_FEATURES = [
   "Feed, comments, SameHere reactions, and DMs",
@@ -17,60 +16,67 @@ const PRO_FEATURES = [
   "Pro badge on your profile",
 ] as const;
 
-function FeatureList({ items }: { items: readonly string[] }) {
-  return (
-    <ul className="landing-pricing-features">
-      {items.map((item) => (
-        <li key={item}>
-          <Check size={16} strokeWidth={1.75} aria-hidden />
-          <span>{item}</span>
-        </li>
-      ))}
-    </ul>
-  );
-}
+type Plan = {
+  name: string;
+  title: string;
+  description: string;
+  price: string;
+  note: string;
+  features: readonly string[];
+  cta: { href: string; label: string; variant: "primary" | "secondary" };
+};
+
+const PLANS: readonly Plan[] = [
+  {
+    name: "Free",
+    title: "Share work and find peers",
+    description: "Posting, messaging, and a written portfolio stay available without a subscription.",
+    price: "$0",
+    note: "forever",
+    features: FREE_FEATURES,
+    cta: { href: "/signup", label: "Join free", variant: "primary" },
+  },
+  {
+    name: "Pro (optional)",
+    title: "More room to present your work",
+    description: "Customize your portfolio, see what gets attention, and turn more repositories into projects.",
+    price: "$4.99",
+    note: "per month, or $12.99 per semester",
+    features: PRO_FEATURES,
+    cta: { href: "/pro", label: "View Pro", variant: "secondary" },
+  },
+];
 
 export default function Pricing() {
   return (
-    <div className="landing-xai">
-      <section id="pricing" className="landing-pricing reveal-view">
-        <h2 className="landing-pricing-title">Share your work. Make your portfolio your own.</h2>
-        <div className="landing-pricing-band">
-          <article className="landing-pricing-col">
-            <p className="landing-plan-kicker">Free</p>
-            <h3>Share work and find peers</h3>
-            <p className="landing-plan-description">
-              Posting, messaging, and a written portfolio stay available without a subscription.
-            </p>
-            <p className="landing-plan-price">$0</p>
-            <p className="landing-plan-note">forever</p>
-            <FeatureList items={FREE_FEATURES} />
-            <div className="landing-plan-action">
-              <Link href="/signup" className={`${signupCta} w-full justify-center`}>
-                Join free
-              </Link>
+    <section id="pricing" aria-labelledby="pricing-title" className="mx-auto w-full max-w-[1040px] px-4 py-14 md:px-8 md:py-20">
+      <h1 id="pricing-title" className="text-balance text-center text-title font-semibold text-[var(--ink)]">
+        Share your work. Make your portfolio your own.
+      </h1>
+      <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-2">
+        {PLANS.map((plan) => (
+          <article key={plan.name} className="flex min-w-0 flex-col rounded-[20px] border border-[var(--border)] bg-[var(--surface-3)] p-6 md:p-8">
+            <p className="text-small font-medium text-[var(--muted)]">{plan.name}</p>
+            <h2 className="mt-2 text-balance text-section font-semibold text-[var(--ink)]">{plan.title}</h2>
+            <p className="mt-2 text-pretty text-body text-[var(--muted)]">{plan.description}</p>
+            <p className="mt-6 text-display font-semibold tabular-nums text-[var(--ink)]">{plan.price}</p>
+            <p className="mt-1 text-small text-[var(--muted)]">{plan.note}</p>
+            <ul className="mt-6 flex flex-col gap-3 text-body text-[var(--ink-2)]">
+              {plan.features.map((item) => (
+                <li key={item} className="flex items-start gap-3">
+                  <Check size={16} strokeWidth={1.75} aria-hidden className="mt-1 shrink-0 text-[var(--muted)]" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-auto pt-8">
+              <Button href={plan.cta.href} variant={plan.cta.variant} size="lg" className="w-full">
+                {plan.cta.label}
+              </Button>
             </div>
           </article>
-          <article className="landing-pricing-col is-pro">
-            <p className="landing-plan-kicker">
-              Pro
-              <span className="landing-plan-badge">Optional</span>
-            </p>
-            <h3>More room to present your work</h3>
-            <p className="landing-plan-description">
-              Customize your portfolio, see what gets attention, and turn more repositories into projects.
-            </p>
-            <p className="landing-plan-price">$4.99</p>
-            <p className="landing-plan-note">/month · $12.99/semester</p>
-            <FeatureList items={PRO_FEATURES} />
-            <div className="landing-plan-action">
-              <Link href="/pro" className={`${ghostCta} w-full justify-center`}>
-                View Pro
-              </Link>
-            </div>
-          </article>
-        </div>
-      </section>
-    </div>
+        ))}
+      </div>
+    </section>
   );
 }

@@ -6,8 +6,27 @@
   --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
 }
 
+/* Type scale (DESIGN.md "Type scale"). Weight stays explicit (font-semibold) on headings. */
+@theme {
+  --text-display: clamp(2rem, 1.25rem + 2vw, 2.75rem); /* 32px phone to 44px desktop: portfolio name, auth headline, prices */
+  --text-display--line-height: 1.02;
+  --text-display--letter-spacing: -0.04em;
+  --text-title: 1.5rem; /* 24px: every page h1 in the app, legal pages, errors */
+  --text-title--line-height: 1.2;
+  --text-title--letter-spacing: -0.02em;
+  --text-section: 1.125rem; /* 18px: section h2, card titles, empty-state titles */
+  --text-section--line-height: 1.35;
+  --text-section--letter-spacing: -0.01em;
+  --text-body: 0.9375rem; /* 15px: body copy, inputs, post text in lists */
+  --text-body--line-height: 1.55;
+  --text-small: 0.8125rem; /* 13px: supporting text, table values, counts */
+  --text-small--line-height: 1.45;
+  --text-meta: 0.75rem; /* 12px: timestamps, metadata, tiny labels */
+  --text-meta--line-height: 1.35;
+}
+
 /* x.ai-style tokens. Dark is the default canvas; .light is the coherent inverse.
-   Landing scopes a darker card/border set via .landing-xai. */
+   The landing forces dark with class="dark" on its <main>. */
 html {
   scrollbar-gutter: stable;
   overflow-x: clip;
@@ -670,13 +689,9 @@ summary {
   padding: 1.5rem 1.25rem 3rem;
 }
 
-.auth-split .auth-copy h2,
-.auth-focus .auth-copy h2 {
+.auth-split .auth-copy h1,
+.auth-focus .auth-copy h1 {
   max-width: 16ch;
-  font-size: clamp(2rem, 4vw, 3.25rem);
-  font-weight: 500;
-  line-height: 1.05;
-  letter-spacing: -0.03em;
 }
 
 .auth-sub {
@@ -745,7 +760,7 @@ summary {
     text-align: center;
   }
 
-  .auth-focus .auth-copy h2 {
+  .auth-focus .auth-copy h1 {
     max-width: 18ch;
     margin-inline: auto;
   }
@@ -795,7 +810,6 @@ summary {
 }
 
 .auth-card-panel {
-  border-radius: 0.75rem;
   padding: 1rem;
 }
 

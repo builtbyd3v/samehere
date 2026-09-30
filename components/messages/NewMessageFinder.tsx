@@ -70,7 +70,7 @@ export default function NewMessageFinder() {
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search students"
           maxLength={TEXT_LIMITS.dmUserSearch}
-          className="min-w-0 flex-1 bg-transparent text-[15px] text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
+          className="min-w-0 flex-1 bg-transparent text-body text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
         />
         <button type="button" onClick={close} className="shrink-0 text-sm text-[var(--ink-muted)] hover:text-[var(--ink)]">
           Cancel

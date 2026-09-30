@@ -41,7 +41,7 @@ export default async function SearchPostsPage({
       <Link href={q ? `/search?q=${encodeURIComponent(q)}${label ? `&label=${label}` : ""}` : label ? `/search?label=${label}` : "/search"} className="text-sm text-[var(--ink-muted)] transition hover:text-[var(--ink)]">
         ← All results
       </Link>
-      <h1 className="mt-2 mb-4 text-lg font-semibold text-[var(--ink)]">
+      <h1 className="mt-2 mb-4 text-title font-semibold text-[var(--ink)]">
         {q ? <>Posts matching &ldquo;{q}&rdquo;</> : "Labeled posts"}
       </h1>
       {items.length > 0 ? (

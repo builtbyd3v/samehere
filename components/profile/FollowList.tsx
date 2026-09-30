@@ -69,7 +69,7 @@ export default async function FollowList({
         <Link href={tabBase} className="text-sm text-[var(--ink-muted)] hover:underline">
           &larr; {displayName} (@{target.username})
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold tracking-[-0.025em]">{displayName}</h1>
+        <h1 className="mt-2 text-title font-semibold">{displayName}</h1>
       </header>
 
       <div

@@ -9,6 +9,7 @@ import CommentThread from "@/components/feed/CommentThread";
 import StuckResolveButton from "@/components/feed/StuckResolveButton";
 import UserBadges from "@/components/profile/UserBadges";
 import AvatarBase from "@/components/ui/Avatar";
+import { Button } from "@/components/ui/Button";
 import MentionText from "@/components/ui/MentionText";
 import ProfileHoverLink from "@/components/profile/ProfileHoverLink";
 import LocalTime from "@/components/ui/LocalTime";
@@ -140,19 +141,19 @@ async function PublicPostView({ id }: { id: string }) {
               </ProfileHoverLink>
               <UserBadges isPro={post.author_is_pro} isFounder={post.author_is_founder} isCampusFounder={post.author_is_campus_founder} isVerifiedStudent={post.author_verified_student} isBot={post.author_is_bot} />
             </div>
-            <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">
+            <p className="mt-0.5 text-small text-[var(--ink-muted)]">
               <span>@{post.author_username}</span>
               <span className="mx-1 text-[var(--ink-faint)]">·</span>
               <LocalTime iso={post.created_at} variant="ago" />
             </p>
-            <p className="mt-3 max-w-[65ch] whitespace-pre-line break-words text-[16px] leading-[1.55] text-[var(--ink)]">
+            <p className="mt-3 max-w-[65ch] whitespace-pre-line break-words text-base leading-[1.55] text-[var(--ink)]">
               <MentionText>{post.content}</MentionText>
             </p>
           </div>
         </div>
 
         {/* Read-only counts — anon can't react. No buttons, no handlers. */}
-        <div className="mt-4 flex items-center gap-4 border-t border-[var(--border)] pt-3 text-[13px] text-[var(--ink-muted)]">
+        <div className="mt-4 flex items-center gap-4 border-t border-[var(--border)] pt-3 text-small text-[var(--ink-muted)]">
           <span className="inline-flex items-center gap-1.5">
             <IconSame /> {post.samehere_count}
           </span>
@@ -162,15 +163,15 @@ async function PublicPostView({ id }: { id: string }) {
         </div>
       </article>
 
-      <div className="card mt-6 px-6 py-10 text-center">
-        <p className="font-medium text-[var(--ink)]">Sign in to reply</p>
+      <div className="mt-6 rounded-[20px] border border-[var(--border)] px-6 py-10 text-center">
+        <p className="font-medium text-[var(--ink)]">Log in to reply</p>
         <div className="mt-4 flex justify-center gap-2">
-          <Link href="/login" className="btn-ghost !rounded-full !px-4 !py-1.5 text-sm">
-            Sign in
-          </Link>
-          <Link href="/signup" className="btn-primary !rounded-full !px-4 !py-1.5 text-sm">
-            Sign up
-          </Link>
+          <Button href="/login" variant="ghost" size="md">
+            Log in
+          </Button>
+          <Button href="/signup" variant="primary" size="md">
+            Join free
+          </Button>
         </div>
       </div>
     </main>

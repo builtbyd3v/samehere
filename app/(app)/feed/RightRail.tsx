@@ -34,7 +34,7 @@ export default async function RightRail() {
         <section className="flex flex-col gap-1">
           <div className="mb-2 flex items-baseline justify-between">
             <h2 className="text-sm font-semibold text-[var(--ink)]">{sameStage ? "At your stage" : "People to meet"}</h2>
-            <Link href={seeAll} className="text-[13px] text-[var(--muted)] hover:text-[var(--ink)]">
+            <Link href={seeAll} className="text-small text-[var(--muted)] hover:text-[var(--ink)]">
               See all
             </Link>
           </div>

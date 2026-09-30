@@ -93,7 +93,7 @@ export default async function EditProfilePage() {
           <button
             type="submit"
             form="edit-profile-form"
-            className="btn-primary w-full !py-2.5 text-[15px]"
+            className="btn-primary w-full !py-2.5 text-body"
           >
             Save profile
           </button>

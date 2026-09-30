@@ -191,7 +191,7 @@ export default function DmChat({
               e.preventDefault();
               formRef.current?.requestSubmit();
             }}
-            className="max-h-32 min-h-[24px] flex-1 resize-none bg-transparent py-1 text-[15px] leading-relaxed text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
+            className="max-h-32 min-h-[24px] flex-1 resize-none bg-transparent py-1 text-body leading-relaxed text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
           />
           <button
             type="submit"

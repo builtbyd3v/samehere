@@ -38,7 +38,7 @@ export default function SearchBar({
       <form
         onSubmit={submit}
         role="search"
-        className="flex h-[38px] items-center gap-2.5 rounded-[10px] border border-[var(--hairline)] bg-[var(--surface-3)] px-3 text-[13px] focus-within:border-[var(--hairline-strong)]"
+        className="flex h-[38px] items-center gap-2.5 rounded-[10px] border border-[var(--hairline)] bg-[var(--surface-3)] px-3 text-small focus-within:border-[var(--hairline-strong)]"
       >
         <button type="submit" disabled={empty} aria-label="Search" className="shrink-0 text-[var(--faint)] hover:text-[var(--ink)] disabled:opacity-100">
           <Search size={15} strokeWidth={1.7} aria-hidden />
@@ -65,7 +65,7 @@ export default function SearchBar({
         maxLength={TEXT_LIMITS.searchQuery}
         placeholder="Search people, projects, posts"
         aria-label="Search people, projects, and posts"
-        className="input-base w-full px-3 py-2 text-[15px]"
+        className="input-base w-full px-3 py-2 text-body"
       />
       <button type="submit" disabled={empty && kept.length === 0} className="btn-primary shrink-0 disabled:opacity-40">
         Search

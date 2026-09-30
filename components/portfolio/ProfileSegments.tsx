@@ -25,7 +25,7 @@ export default function ProfileSegments({ tabs, children }: ProfileSegmentsProps
               type="button"
               aria-pressed={tab === t}
               onClick={() => setTab(t)}
-              className={`h-11 flex-1 rounded-[9px] text-[13px] active:scale-[0.96] motion-reduce:active:scale-100 ${
+              className={`h-11 flex-1 rounded-[9px] text-small active:scale-[0.96] motion-reduce:active:scale-100 ${
                 tab === t ? "bg-[var(--surface-4)] font-medium text-[var(--ink)]" : "text-[var(--muted)]"
               }`}
             >

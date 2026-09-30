@@ -65,7 +65,7 @@ export default function LeftNav({
               {item.label}
             </span>
             {badge > 0 ? (
-              <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-[var(--accent)] px-1.5 text-[11px] font-semibold leading-none tabular-nums text-[var(--on-accent)]">
+              <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-[var(--accent)] px-1.5 text-meta font-semibold leading-none tabular-nums text-[var(--on-accent)]">
                 {badge > 99 ? "99+" : badge}
               </span>
             ) : null}

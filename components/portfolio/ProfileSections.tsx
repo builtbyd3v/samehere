@@ -29,12 +29,12 @@ export function IntroSection({
     <section className="flex flex-col gap-4">
       <SectionLabel as="h2">About</SectionLabel>
       {bio && (
-        <p className="max-w-[60ch] whitespace-pre-line break-words text-pretty text-lg leading-[1.45] tracking-[-0.01em] text-[var(--ink-2)] md:text-[22px]">
+        <p className="max-w-[60ch] whitespace-pre-line break-words text-pretty text-lg leading-[1.45] tracking-[-0.01em] text-[var(--ink-2)] md:text-title">
           {bio}
         </p>
       )}
       {goals && (
-        <p className="max-w-[60ch] whitespace-pre-line break-words text-pretty text-[15px] leading-[1.6] text-[var(--muted)]">
+        <p className="max-w-[60ch] whitespace-pre-line break-words text-pretty text-body leading-[1.6] text-[var(--muted)]">
           {goals}
         </p>
       )}
@@ -107,7 +107,7 @@ export function ResumeTimeline({
             key={row.key}
             className="grid gap-1 border-t border-[var(--hairline)] py-4 md:grid-cols-[140px_minmax(0,1fr)] md:gap-6"
           >
-            <span className="text-[13px] tabular-nums text-[var(--muted)]">{row.when}</span>
+            <span className="text-small tabular-nums text-[var(--muted)]">{row.when}</span>
             <div className="flex min-w-0 gap-3">
               <CompanyLogo name={row.logo.name} logoUrl={row.logo.url} size="sm" />
               <div className="min-w-0">
@@ -136,7 +136,7 @@ export function PublicProjectList({ projects }: { projects: PublicPortfolioProje
     <section className="flex flex-col gap-4">
       <div className="flex items-baseline justify-between">
         <SectionLabel as="h2">Shipped</SectionLabel>
-        <span className="text-[13px] tabular-nums text-[var(--faint)]">
+        <span className="text-small tabular-nums text-[var(--faint)]">
           {n} {n === 1 ? "project" : "projects"}
         </span>
       </div>

@@ -41,7 +41,7 @@ export default function ProjectCard({
         <div aria-hidden className={`h-[110px] border-b border-[var(--hairline)] md:h-[150px] ${projectCoverClass(project.id)}`} />
         <div className="flex flex-1 flex-col gap-2 p-3.5 md:p-[18px]">
           <div className="flex items-baseline justify-between gap-3">
-            <h3 className="min-w-0 text-balance text-base font-semibold tracking-[-0.01em] text-[var(--ink)] md:text-[17px]">
+            <h3 className="min-w-0 text-balance text-base font-semibold tracking-[-0.01em] text-[var(--ink)] md:text-section">
               {title}
             </h3>
             <div className="flex shrink-0 items-center gap-2">
@@ -58,7 +58,7 @@ export default function ProjectCard({
               )}
             </div>
           </div>
-          {summary && <p className="text-pretty text-[13px] leading-[1.5] text-[var(--muted)] md:text-sm">{summary}</p>}
+          {summary && <p className="text-pretty text-small leading-[1.5] text-[var(--muted)] md:text-sm">{summary}</p>}
           {role && <p className="text-xs text-[var(--ink-3)]">{role}</p>}
           {technologies.length > 0 && (
             <ul aria-label="Technologies" className="mt-1 flex flex-wrap gap-[5px]">
@@ -71,7 +71,7 @@ export default function ProjectCard({
           )}
           {(description || features.length > 0) && (
             <details className="mt-1">
-              <summary className="inline-flex min-h-11 cursor-pointer list-none items-center text-[13px] text-[var(--muted)] hover:text-[var(--ink)] md:min-h-0 [&::-webkit-details-marker]:hidden">
+              <summary className="inline-flex min-h-11 cursor-pointer list-none items-center text-small text-[var(--muted)] hover:text-[var(--ink)] md:min-h-0 [&::-webkit-details-marker]:hidden">
                 More
               </summary>
               {description && (
