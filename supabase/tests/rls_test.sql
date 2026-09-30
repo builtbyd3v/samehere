@@ -3429,6 +3429,182 @@ exception when others then
 end $$;
 reset role;
 
+-- ============ DIGEST018: plan 018 (weekly digest privacy) ============
+-- Fresh users. Stage 'job_search' and focus 'hardware' are used by no other
+-- fixture, so the only candidates list_weekly_digest can pick are these.
+set local role postgres;
+do $$
+declare
+  v_rcpt       uuid := gen_random_uuid();
+  v_peer       uuid := gen_random_uuid();
+  v_priv       uuid := gen_random_uuid();
+  v_blk        uuid := gen_random_uuid();
+  v_fol        uuid := gen_random_uuid();
+  v_bot        uuid := gen_random_uuid();
+  v_asker      uuid := gen_random_uuid();
+  v_privasker  uuid := gen_random_uuid();
+  v_optout     uuid := gen_random_uuid();
+  v_open uuid;
+  v_solved uuid;
+begin
+  insert into auth.users (
+    instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+    raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+    confirmation_token, recovery_token, email_change_token_new, email_change
+  )
+  select '00000000-0000-0000-0000-000000000000', v.id, 'authenticated', 'authenticated',
+         'rls-dg-' || v.name || '@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+         jsonb_build_object('username', 'rls_dg_' || v.name), now(), now(), '', '', '', ''
+    from (values
+      (v_rcpt, 'rcpt'), (v_peer, 'peer'), (v_priv, 'priv'), (v_blk, 'blk'), (v_fol, 'fol'),
+      (v_bot, 'bot'), (v_asker, 'asker'), (v_privasker, 'privasker'), (v_optout, 'optout')
+    ) as v(id, name);
+
+  update public.profiles
+     set stage = 'job_search', focus_areas = '{hardware}',
+         is_pro = true, pro_source = 'one_time', pro_until = now() + interval '30 days'
+   where id = v_rcpt;
+  insert into public.portfolio_daily_metrics (owner_id, project_id, metric_date, view_count)
+  values (v_rcpt, null, current_date, 5);
+
+  update public.profiles set stage = 'job_search' where id in (v_peer, v_blk, v_fol);
+  update public.profiles set stage = 'job_search', is_private = true where id = v_priv;
+  update public.profiles set stage = 'job_search', is_bot = true where id = v_bot;
+  insert into public.blocks (blocker_id, blocked_id) values (v_blk, v_rcpt);
+  insert into public.follows (follower_id, following_id, status) values (v_rcpt, v_fol, 'accepted');
+
+  update public.profiles set focus_areas = '{hardware}' where id = v_asker;
+  update public.profiles set focus_areas = '{hardware}', is_private = true where id = v_privasker;
+  update public.profiles set email_digest_opt_out = true where id = v_optout;
+
+  insert into public.posts (user_id, content, context_label)
+  values (v_asker, 'rls digest open', 'stuck') returning id into v_open;
+  insert into public.posts (user_id, content, context_label)
+  values (v_asker, 'rls digest solved', 'stuck') returning id into v_solved;
+  update public.posts set resolved_at = now() where id = v_solved;
+  insert into public.posts (user_id, content, context_label)
+  values (v_privasker, 'rls digest private', 'stuck');
+
+  insert into tests_fixture (key, id) values
+    ('dg_rcpt', v_rcpt), ('dg_peer', v_peer), ('dg_priv', v_priv), ('dg_blk', v_blk),
+    ('dg_fol', v_fol), ('dg_bot', v_bot), ('dg_asker', v_asker), ('dg_privasker', v_privasker),
+    ('dg_optout', v_optout), ('dg_open_post', v_open);
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare
+  v_rcpt uuid := (select id from tests_fixture where key = 'dg_rcpt');
+  v_names text[];
+begin
+  select coalesce(array_agg(e->>'username' order by e->>'username'), '{}') into v_names
+    from public.list_weekly_digest() d, jsonb_array_elements(d.people) e
+   where d.user_id = v_rcpt;
+  if v_names is distinct from array['rls_dg_peer'] then
+    raise exception 'DIGEST018_people_filtered REGRESSION: people were %, expected {rls_dg_peer}', v_names;
+  end if;
+  insert into tests_results values ('DIGEST018_people_filtered', true, 'ok');
+exception when others then
+  insert into tests_results values ('DIGEST018_people_filtered', false, sqlerrm);
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare
+  v_rcpt uuid := (select id from tests_fixture where key = 'dg_rcpt');
+  v_open uuid := (select id from tests_fixture where key = 'dg_open_post');
+  v_q jsonb;
+begin
+  select questions into v_q from public.list_weekly_digest() where user_id = v_rcpt;
+  if jsonb_array_length(v_q) <> 1 or (v_q->0->>'id')::uuid <> v_open then
+    raise exception 'DIGEST018_questions_filtered REGRESSION: questions were %, expected only the open post', v_q;
+  end if;
+  insert into tests_results values ('DIGEST018_questions_filtered', true, 'ok');
+exception when others then
+  insert into tests_results values ('DIGEST018_questions_filtered', false, sqlerrm);
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare
+  v_rcpt uuid := (select id from tests_fixture where key = 'dg_rcpt');
+  v_peer uuid := (select id from tests_fixture where key = 'dg_peer');
+  v_rcpt_views int;
+  v_peer_views int;
+begin
+  select views_7d into v_rcpt_views from public.list_weekly_digest() where user_id = v_rcpt;
+  select views_7d into v_peer_views from public.list_weekly_digest() where user_id = v_peer;
+  if v_rcpt_views is distinct from 5 or v_peer_views is not null then
+    raise exception 'DIGEST018_views_pro_only REGRESSION: Pro views %, free views % (expected 5 and null)', v_rcpt_views, v_peer_views;
+  end if;
+  insert into tests_results values ('DIGEST018_views_pro_only', true, 'ok');
+exception when others then
+  insert into tests_results values ('DIGEST018_views_pro_only', false, sqlerrm);
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare
+  v_optout uuid := (select id from tests_fixture where key = 'dg_optout');
+begin
+  if exists (select 1 from public.list_weekly_digest() where user_id = v_optout) then
+    raise exception 'DIGEST018_opt_out_excluded REGRESSION: opted-out user got a digest row';
+  end if;
+  insert into tests_results values ('DIGEST018_opt_out_excluded', true, 'ok');
+exception when others then
+  insert into tests_results values ('DIGEST018_opt_out_excluded', false, sqlerrm);
+end $$;
+reset role;
+
+-- Two blocks (authenticated, then anon) sharing one result row: the first only
+-- records a failure; the second records PASS unless a failure is already there.
+select tests.as_user(id) from tests_fixture where key = 'dg_peer';
+do $$
+declare
+  v_state text;
+  v_raised boolean;
+begin
+  begin
+    perform public.list_weekly_digest();
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state <> '42501' then
+    raise exception 'DIGEST018_rpc_client_denied REGRESSION: authenticated list_weekly_digest did not fail with 42501 (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+exception when others then
+  insert into tests_results values ('DIGEST018_rpc_client_denied', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_anon();
+do $$
+declare
+  v_state text;
+  v_raised boolean;
+begin
+  begin
+    perform public.list_weekly_digest();
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state <> '42501' then
+    raise exception 'DIGEST018_rpc_client_denied REGRESSION: anon list_weekly_digest did not fail with 42501 (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+  insert into tests_results values ('DIGEST018_rpc_client_denied', true, 'ok') on conflict (finding) do nothing;
+exception when others then
+  insert into tests_results values ('DIGEST018_rpc_client_denied', false, sqlerrm) on conflict (finding) do nothing;
+end $$;
+reset role;
+
 -- ============ report ============
 -- Print the PASS/FAIL table FIRST so the operator sees exactly which assertions
 -- failed, then raise so psql exits non-zero and the harness actually gates.
@@ -3446,7 +3622,7 @@ declare v_failed int;
 begin
   select count(*) into v_failed from tests_results where not passed;
   if v_failed > 0 then
-    raise exception '% assertion(s) failed, see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view_denied, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, CLUBS_V2_1, CLUBS_V2_2, CLUBS_V2_3, CLUBS_V2_7a, CLUBS_V2_4, CLUBS_V2_7b, CLUBS_V2_5_officer_denied, CLUBS_V2_5_owner_allowed, CLUBS_V2_6_outsider, CLUBS_V2_6_pending, CLUBS_V2_8, CLUBS_V2_9, H1_suggested_profiles, CLUBS_V2_12_outsider, CLUBS_V2_12_anon, SIGNUP_RL_anon_execute, SIGNUP_RL_no_table_access_anon, SIGNUP_RL_no_table_access_authenticated, EXPERIENCES_owner_insert, EXPERIENCES_owner_select, EXPERIENCES_owner_update, EXPERIENCES_b_select_a, EXPERIENCES_b_update_denied, EXPERIENCES_b_delete_denied, EXPERIENCES_anon_select_denied, EXPERIENCES_owner_delete, EXPERIENCES_cap, JOB_LISTINGS_authenticated_select, JOB_LISTINGS_authenticated_insert_denied, JOB_LISTINGS_anon_select_denied, JOB_FIT_owner_insert_select, JOB_FIT_b_select_a_denied, JOB_PITCHES_owner_insert_select, JOB_PITCHES_b_select_a_denied, JOB_SAVES_owner_insert_select, JOB_SAVES_b_select_a_denied, JOB_SAVES_b_delete_a_denied, JOB_SAVES_owner_delete, JOB_SAVES_anon_select_denied, REFERRAL_JOINED_owner_select, REFERRAL_JOINED_b_select_denied, P001_guard_sub_event_frozen, P001_guard_is_bot_frozen, P001_suggested_private_masked, P001_suggested_limit_clamped, P001_suggested_suspended_hidden, P001_group_add_requires_member_follow, P001_group_readd_after_leave_denied, P001_post_hidden_by_suspension_frozen, RESUME_FIELDS_private_nulled, RESUME_FIELDS_anon_public_read, P004_stage_check, P004_owner_can_set_stage, P004_search_people_private, P004_suggested_private, P004_public_profile_stage, STUCK_HELP_matched, STUCK_HELP_private_skipped, STUCK_HELP_blocked_skipped, STUCK_HELP_rate_limited, STUCK_HELP_count_author, STUCK_HELP_count_non_author, STUCK_direct_update_ignored, STUCK_resolve_non_author_denied, STUCK_resolve_foreign_comment_rejected, STUCK_resolve_author_ok, STUCK_accepted_comment_delete_sets_null, STUCK_reopen_author, STUCK_rpc_anon_denied, P023_owner_sets_onboarded_at, REF016_confirm_username_fallback, REF016_invite_code_username, REF016_set_code_rejects_username, REF016_claim_self_denied, REF016_claim_fresh_once, REF016_claim_old_denied, REF016_claim_anon_denied.', v_failed;
+    raise exception '% assertion(s) failed, see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view_denied, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, CLUBS_V2_1, CLUBS_V2_2, CLUBS_V2_3, CLUBS_V2_7a, CLUBS_V2_4, CLUBS_V2_7b, CLUBS_V2_5_officer_denied, CLUBS_V2_5_owner_allowed, CLUBS_V2_6_outsider, CLUBS_V2_6_pending, CLUBS_V2_8, CLUBS_V2_9, H1_suggested_profiles, CLUBS_V2_12_outsider, CLUBS_V2_12_anon, SIGNUP_RL_anon_execute, SIGNUP_RL_no_table_access_anon, SIGNUP_RL_no_table_access_authenticated, EXPERIENCES_owner_insert, EXPERIENCES_owner_select, EXPERIENCES_owner_update, EXPERIENCES_b_select_a, EXPERIENCES_b_update_denied, EXPERIENCES_b_delete_denied, EXPERIENCES_anon_select_denied, EXPERIENCES_owner_delete, EXPERIENCES_cap, JOB_LISTINGS_authenticated_select, JOB_LISTINGS_authenticated_insert_denied, JOB_LISTINGS_anon_select_denied, JOB_FIT_owner_insert_select, JOB_FIT_b_select_a_denied, JOB_PITCHES_owner_insert_select, JOB_PITCHES_b_select_a_denied, JOB_SAVES_owner_insert_select, JOB_SAVES_b_select_a_denied, JOB_SAVES_b_delete_a_denied, JOB_SAVES_owner_delete, JOB_SAVES_anon_select_denied, REFERRAL_JOINED_owner_select, REFERRAL_JOINED_b_select_denied, P001_guard_sub_event_frozen, P001_guard_is_bot_frozen, P001_suggested_private_masked, P001_suggested_limit_clamped, P001_suggested_suspended_hidden, P001_group_add_requires_member_follow, P001_group_readd_after_leave_denied, P001_post_hidden_by_suspension_frozen, RESUME_FIELDS_private_nulled, RESUME_FIELDS_anon_public_read, P004_stage_check, P004_owner_can_set_stage, P004_search_people_private, P004_suggested_private, P004_public_profile_stage, STUCK_HELP_matched, STUCK_HELP_private_skipped, STUCK_HELP_blocked_skipped, STUCK_HELP_rate_limited, STUCK_HELP_count_author, STUCK_HELP_count_non_author, STUCK_direct_update_ignored, STUCK_resolve_non_author_denied, STUCK_resolve_foreign_comment_rejected, STUCK_resolve_author_ok, STUCK_accepted_comment_delete_sets_null, STUCK_reopen_author, STUCK_rpc_anon_denied, P023_owner_sets_onboarded_at, REF016_confirm_username_fallback, REF016_invite_code_username, REF016_set_code_rejects_username, REF016_claim_self_denied, REF016_claim_fresh_once, REF016_claim_old_denied, REF016_claim_anon_denied, DIGEST018_people_filtered, DIGEST018_questions_filtered, DIGEST018_views_pro_only, DIGEST018_opt_out_excluded, DIGEST018_rpc_client_denied.', v_failed;
 
   end if;
 end $$;
