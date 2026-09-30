@@ -16,7 +16,14 @@ import { formatTeamEventLine, parseTeamEventMode } from "@/lib/team-event";
 import { feedPath, stuckReplyPath } from "@/lib/feed-label";
 
 export const POST_SELECT =
-  "id, content, created_at, user_id, media, hidden, context_label, team_event_name, team_event_date, team_event_mode, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, is_private, is_pro, is_founder, is_campus_founder, verified_student, is_bot, profile_school(school)), reactions(count), reposts(count), comments(count)";
+  "id, content, created_at, user_id, media, hidden, context_label, team_event_name, team_event_date, team_event_mode, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, is_private, is_pro, is_founder, is_campus_founder, verified_student, is_bot, stage, profile_school(school)), reactions(count), reposts(count), comments(count)";
+
+// Same columns with the author embed as an inner join, so `.eq("author.<col>", v)`
+// filters posts instead of nulling the embed (used by the Your stage tab).
+export const POST_SELECT_AUTHOR_INNER = POST_SELECT.replace(
+  "author:profiles!posts_user_id_fkey(",
+  "author:profiles!posts_user_id_fkey!inner(",
+);
 
 export const PAGE = 20;
 
@@ -30,6 +37,7 @@ type Author = {
   is_campus_founder: boolean;
   verified_student: boolean;
   is_bot: boolean;
+  stage: string | null;
   profile_school: { school: string | null } | null;
 } | null;
 

@@ -14,6 +14,7 @@ import { TEXT_LIMITS, textLimitError } from "@/lib/utils/validation";
 import { contextLabelError, parseContextLabel } from "@/lib/context-label";
 import { fetchLabeledPosts } from "@/lib/feed-labeled";
 import { parseTeamEventFields, teamEventError } from "@/lib/team-event";
+import { parseStage } from "@/lib/stage";
 
 export type ComposerState = { error?: string; ok?: boolean };
 
@@ -108,6 +109,27 @@ export async function loadMoreLabeledPosts(
     cursor: decoded,
     limit: PAGE,
   });
+  const items = posts.map((post) => ({ kind: "post" as const, created_at: post.created_at, post }));
+  const last = items[items.length - 1];
+  return { items, nextCursor: last ? encodeCursor(last.created_at, itemId(last)) : null };
+}
+
+// Next page for the Your stage tab. The stage is read from the viewer's own
+// row, never taken from the client.
+export async function loadMoreStagePosts(
+  cursor: string,
+): Promise<{ items: FeedTimelineItem[]; nextCursor: string | null }> {
+  const decoded = decodeCursor(cursor);
+  if (!decoded) return { items: [], nextCursor: null };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { items: [], nextCursor: null };
+  const { data: me } = await supabase.from("profiles").select("stage").eq("id", user.id).maybeSingle();
+  const stage = parseStage(me?.stage);
+  if (!stage) return { items: [], nextCursor: null };
+  const posts = await fetchLabeledPosts(supabase, { viewerId: user.id, authorStage: stage, cursor: decoded, limit: PAGE });
   const items = posts.map((post) => ({ kind: "post" as const, created_at: post.created_at, post }));
   const last = items[items.length - 1];
   return { items, nextCursor: last ? encodeCursor(last.created_at, itemId(last)) : null };
