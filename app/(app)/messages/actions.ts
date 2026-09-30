@@ -37,10 +37,10 @@ export type MessageUserResult = {
   is_pro: boolean;
 };
 
-// Candidates for the "New group" picker: accounts the viewer follows
-// (accepted), minus anyone blocked either direction. Followed-only is a UI
-// choice, not an RLS/RPC requirement -- create_group_conversation itself only
-// hard-rejects a blocked creator<->member pair (see plan 025 NOTES).
+// Candidates for the "New group" picker: accounts that follow the viewer
+// (accepted), minus anyone blocked either direction. Mirrors the RPC rule:
+// create_group_conversation and add_group_member only accept members who
+// follow the caller.
 export async function listFollowedForGroup(): Promise<MessageUserResult[]> {
   const supabase = await createClient();
   const {
@@ -52,14 +52,14 @@ export async function listFollowedForGroup(): Promise<MessageUserResult[]> {
     supabase.rpc("get_blocked_ids"),
     supabase
       .from("follows")
-      .select("following:profiles!follows_following_id_fkey(id, username, display_name, avatar_url, is_pro)")
-      .eq("follower_id", user.id)
+      .select("follower:profiles!follows_follower_id_fkey(id, username, display_name, avatar_url, is_pro)")
+      .eq("following_id", user.id)
       .eq("status", "accepted"),
   ]);
 
   const blockedSet = new Set((blocked ?? []) as string[]);
   return (rows ?? [])
-    .map((r) => (Array.isArray(r.following) ? r.following[0] : r.following))
+    .map((r) => (Array.isArray(r.follower) ? r.follower[0] : r.follower))
     .filter((p): p is MessageUserResult => !!p && !blockedSet.has(p.id));
 }
 
