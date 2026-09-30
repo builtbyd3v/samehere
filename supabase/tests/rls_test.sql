@@ -3260,6 +3260,175 @@ exception when others then
 end $$;
 reset role;
 
+-- ============ REF016: plan 016 (referral attribution by username + OAuth claim) ============
+-- Fresh users. v_owner's code differs from its username so only the username
+-- fallback can credit it; v_new is unconfirmed with ref_code = owner's username.
+set local role postgres;
+do $$
+declare
+  v_owner uuid := gen_random_uuid();
+  v_squat uuid := gen_random_uuid();
+  v_new   uuid := gen_random_uuid();
+  v_oauth uuid := gen_random_uuid();
+  v_old   uuid := gen_random_uuid();
+begin
+  insert into auth.users (
+    instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+    raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+    confirmation_token, recovery_token, email_change_token_new, email_change
+  ) values
+    ('00000000-0000-0000-0000-000000000000', v_owner, 'authenticated', 'authenticated',
+     'rls-ref-owner@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_ref_owner'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_squat, 'authenticated', 'authenticated',
+     'rls-ref-squat@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_ref_squat'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_new, 'authenticated', 'authenticated',
+     'rls-ref-new@school.edu', '', null, '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_ref_new', 'ref_code', 'rls_ref_owner'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_oauth, 'authenticated', 'authenticated',
+     'rls-ref-oauth@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_ref_oauth'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_old, 'authenticated', 'authenticated',
+     'rls-ref-old@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_ref_old'), now() - interval '2 days', now(), '', '', '', '');
+
+  update public.profiles set referral_code = 'rls_ref_custom' where id = v_owner;
+
+  insert into tests_fixture (key, id) values
+    ('ref_owner', v_owner), ('ref_squat', v_squat), ('ref_new', v_new),
+    ('ref_oauth', v_oauth), ('ref_old', v_old);
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare
+  v_owner uuid := (select id from tests_fixture where key = 'ref_owner');
+  v_new   uuid := (select id from tests_fixture where key = 'ref_new');
+  v_referrer uuid;
+  v_notes int;
+begin
+  update auth.users set email_confirmed_at = now() where id = v_new;
+  select referrer_id into v_referrer from public.referrals where referred_id = v_new;
+  select count(*) into v_notes from public.notifications
+   where user_id = v_owner and actor_id = v_new and type = 'referral_joined';
+  if v_referrer is distinct from v_owner or v_notes <> 1 then
+    raise exception 'REF016_confirm_username_fallback REGRESSION: referrer=%, expected=%, notifications=%', v_referrer, v_owner, v_notes;
+  end if;
+  insert into tests_results values ('REF016_confirm_username_fallback', true, 'ok');
+exception when others then
+  insert into tests_results values ('REF016_confirm_username_fallback', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_anon();
+do $$
+begin
+  if not public.check_invite_code('rls_ref_owner') or public.check_invite_code('rls_nobody_here') then
+    raise exception 'REF016_invite_code_username REGRESSION: username not accepted or unknown code accepted';
+  end if;
+  insert into tests_results values ('REF016_invite_code_username', true, 'ok');
+exception when others then
+  insert into tests_results values ('REF016_invite_code_username', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'ref_squat';
+do $$
+declare
+  v_raised boolean;
+  v_msg text;
+begin
+  begin
+    perform public.set_referral_code('rls_ref_owner');
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_msg := sqlerrm;
+  end;
+  if not v_raised or position('code_taken' in v_msg) = 0 then
+    raise exception 'REF016_set_code_rejects_username REGRESSION: another user''s username accepted as a code (raised=%, msg=%)', v_raised, v_msg;
+  end if;
+  insert into tests_results values ('REF016_set_code_rejects_username', true, 'ok');
+exception when others then
+  insert into tests_results values ('REF016_set_code_rejects_username', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'ref_oauth';
+do $$
+begin
+  if public.claim_signup_referral('rls_ref_oauth') then
+    raise exception 'REF016_claim_self_denied REGRESSION: self-referral claim returned true';
+  end if;
+  insert into tests_results values ('REF016_claim_self_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('REF016_claim_self_denied', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'ref_oauth';
+do $$
+declare
+  v_oauth uuid := (select id from tests_fixture where key = 'ref_oauth');
+  v_owner uuid := (select id from tests_fixture where key = 'ref_owner');
+  v_first boolean;
+  v_second boolean;
+  v_rows int;
+  v_referrer uuid;
+begin
+  v_first := public.claim_signup_referral('rls_ref_custom');
+  v_second := public.claim_signup_referral('rls_ref_custom');
+  select count(*) into v_rows from public.referrals where referred_id = v_oauth;
+  select referrer_id into v_referrer from public.referrals where referred_id = v_oauth;
+  if not v_first or v_second or v_rows <> 1 or v_referrer is distinct from v_owner then
+    raise exception 'REF016_claim_fresh_once REGRESSION: first=%, second=%, rows=%, referrer=%', v_first, v_second, v_rows, v_referrer;
+  end if;
+  insert into tests_results values ('REF016_claim_fresh_once', true, 'ok');
+exception when others then
+  insert into tests_results values ('REF016_claim_fresh_once', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'ref_old';
+do $$
+declare
+  v_old uuid := (select id from tests_fixture where key = 'ref_old');
+  v_claimed boolean;
+begin
+  v_claimed := public.claim_signup_referral('rls_ref_custom');
+  if v_claimed or exists (select 1 from public.referrals where referred_id = v_old) then
+    raise exception 'REF016_claim_old_denied REGRESSION: a 2-day-old account claimed a referral (returned=%)', v_claimed;
+  end if;
+  insert into tests_results values ('REF016_claim_old_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('REF016_claim_old_denied', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_anon();
+do $$
+declare
+  v_state text;
+  v_raised boolean;
+begin
+  begin
+    perform public.claim_signup_referral('rls_ref_custom');
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state <> '42501' then
+    raise exception 'REF016_claim_anon_denied REGRESSION: anon claim_signup_referral did not fail with 42501 (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+  insert into tests_results values ('REF016_claim_anon_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('REF016_claim_anon_denied', false, sqlerrm);
+end $$;
+reset role;
+
 -- ============ report ============
 -- Print the PASS/FAIL table FIRST so the operator sees exactly which assertions
 -- failed, then raise so psql exits non-zero and the harness actually gates.
@@ -3277,7 +3446,7 @@ declare v_failed int;
 begin
   select count(*) into v_failed from tests_results where not passed;
   if v_failed > 0 then
-    raise exception '% assertion(s) failed, see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view_denied, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, CLUBS_V2_1, CLUBS_V2_2, CLUBS_V2_3, CLUBS_V2_7a, CLUBS_V2_4, CLUBS_V2_7b, CLUBS_V2_5_officer_denied, CLUBS_V2_5_owner_allowed, CLUBS_V2_6_outsider, CLUBS_V2_6_pending, CLUBS_V2_8, CLUBS_V2_9, H1_suggested_profiles, CLUBS_V2_12_outsider, CLUBS_V2_12_anon, SIGNUP_RL_anon_execute, SIGNUP_RL_no_table_access_anon, SIGNUP_RL_no_table_access_authenticated, EXPERIENCES_owner_insert, EXPERIENCES_owner_select, EXPERIENCES_owner_update, EXPERIENCES_b_select_a, EXPERIENCES_b_update_denied, EXPERIENCES_b_delete_denied, EXPERIENCES_anon_select_denied, EXPERIENCES_owner_delete, EXPERIENCES_cap, JOB_LISTINGS_authenticated_select, JOB_LISTINGS_authenticated_insert_denied, JOB_LISTINGS_anon_select_denied, JOB_FIT_owner_insert_select, JOB_FIT_b_select_a_denied, JOB_PITCHES_owner_insert_select, JOB_PITCHES_b_select_a_denied, JOB_SAVES_owner_insert_select, JOB_SAVES_b_select_a_denied, JOB_SAVES_b_delete_a_denied, JOB_SAVES_owner_delete, JOB_SAVES_anon_select_denied, REFERRAL_JOINED_owner_select, REFERRAL_JOINED_b_select_denied, P001_guard_sub_event_frozen, P001_guard_is_bot_frozen, P001_suggested_private_masked, P001_suggested_limit_clamped, P001_suggested_suspended_hidden, P001_group_add_requires_member_follow, P001_group_readd_after_leave_denied, P001_post_hidden_by_suspension_frozen, RESUME_FIELDS_private_nulled, RESUME_FIELDS_anon_public_read, P004_stage_check, P004_owner_can_set_stage, P004_search_people_private, P004_suggested_private, P004_public_profile_stage, STUCK_HELP_matched, STUCK_HELP_private_skipped, STUCK_HELP_blocked_skipped, STUCK_HELP_rate_limited, STUCK_HELP_count_author, STUCK_HELP_count_non_author, STUCK_direct_update_ignored, STUCK_resolve_non_author_denied, STUCK_resolve_foreign_comment_rejected, STUCK_resolve_author_ok, STUCK_accepted_comment_delete_sets_null, STUCK_reopen_author, STUCK_rpc_anon_denied, P023_owner_sets_onboarded_at.', v_failed;
+    raise exception '% assertion(s) failed, see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view_denied, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, CLUBS_V2_1, CLUBS_V2_2, CLUBS_V2_3, CLUBS_V2_7a, CLUBS_V2_4, CLUBS_V2_7b, CLUBS_V2_5_officer_denied, CLUBS_V2_5_owner_allowed, CLUBS_V2_6_outsider, CLUBS_V2_6_pending, CLUBS_V2_8, CLUBS_V2_9, H1_suggested_profiles, CLUBS_V2_12_outsider, CLUBS_V2_12_anon, SIGNUP_RL_anon_execute, SIGNUP_RL_no_table_access_anon, SIGNUP_RL_no_table_access_authenticated, EXPERIENCES_owner_insert, EXPERIENCES_owner_select, EXPERIENCES_owner_update, EXPERIENCES_b_select_a, EXPERIENCES_b_update_denied, EXPERIENCES_b_delete_denied, EXPERIENCES_anon_select_denied, EXPERIENCES_owner_delete, EXPERIENCES_cap, JOB_LISTINGS_authenticated_select, JOB_LISTINGS_authenticated_insert_denied, JOB_LISTINGS_anon_select_denied, JOB_FIT_owner_insert_select, JOB_FIT_b_select_a_denied, JOB_PITCHES_owner_insert_select, JOB_PITCHES_b_select_a_denied, JOB_SAVES_owner_insert_select, JOB_SAVES_b_select_a_denied, JOB_SAVES_b_delete_a_denied, JOB_SAVES_owner_delete, JOB_SAVES_anon_select_denied, REFERRAL_JOINED_owner_select, REFERRAL_JOINED_b_select_denied, P001_guard_sub_event_frozen, P001_guard_is_bot_frozen, P001_suggested_private_masked, P001_suggested_limit_clamped, P001_suggested_suspended_hidden, P001_group_add_requires_member_follow, P001_group_readd_after_leave_denied, P001_post_hidden_by_suspension_frozen, RESUME_FIELDS_private_nulled, RESUME_FIELDS_anon_public_read, P004_stage_check, P004_owner_can_set_stage, P004_search_people_private, P004_suggested_private, P004_public_profile_stage, STUCK_HELP_matched, STUCK_HELP_private_skipped, STUCK_HELP_blocked_skipped, STUCK_HELP_rate_limited, STUCK_HELP_count_author, STUCK_HELP_count_non_author, STUCK_direct_update_ignored, STUCK_resolve_non_author_denied, STUCK_resolve_foreign_comment_rejected, STUCK_resolve_author_ok, STUCK_accepted_comment_delete_sets_null, STUCK_reopen_author, STUCK_rpc_anon_denied, P023_owner_sets_onboarded_at, REF016_confirm_username_fallback, REF016_invite_code_username, REF016_set_code_rejects_username, REF016_claim_self_denied, REF016_claim_fresh_once, REF016_claim_old_denied, REF016_claim_anon_denied.', v_failed;
 
   end if;
 end $$;

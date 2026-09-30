@@ -44,3 +44,13 @@ export function referralStatsFromRpc(
     isCampusFounder: row.is_campus_founder,
   };
 }
+
+/** Referral codes and usernames share one shape. Anything else is dropped, never an error. */
+export function parseRef(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const v = raw.trim().toLowerCase();
+  return /^[a-z0-9_]{3,20}$/.test(v) ? v : null;
+}
+
+/** Short-lived cookie that carries ?ref through an OAuth round trip (plan 016 Step 6). */
+export const REF_COOKIE = "sh_ref";

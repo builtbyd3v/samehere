@@ -21,7 +21,7 @@ export default function SharePortfolioButton({
 }) {
   const [copied, setCopied] = useState(false);
   const reduceMotion = useReducedMotion();
-  const url = profileShareUrl(username);
+  const url = profileShareUrl(username, username);
 
   async function share() {
     if (typeof navigator !== "undefined" && typeof navigator.share === "function") {

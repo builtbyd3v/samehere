@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { copyText, referralStatsFromRpc } from "./referrals";
+import { copyText, parseRef, referralStatsFromRpc } from "./referrals";
 
 describe("copyText", () => {
   it("waits for the clipboard and reports failure", async () => {
@@ -36,5 +36,14 @@ describe("referralStatsFromRpc", () => {
       pendingCount: 3,
       isCampusFounder: false,
     });
+  });
+});
+
+describe("parseRef", () => {
+  it("normalizes a valid ref and drops anything else", () => {
+    expect(parseRef("Ada_1 ")).toBe("ada_1");
+    for (const bad of ["", "ab", "x".repeat(21), "a/b", "ada?x=1", null, ["ada"]]) {
+      expect(parseRef(bad)).toBeNull();
+    }
   });
 });
