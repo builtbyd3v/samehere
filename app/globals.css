@@ -4,6 +4,7 @@
    `inline` makes each utility read the variable where it is used. */
 @theme inline {
   --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 /* Type scale (DESIGN.md "Type scale"). Weight stays explicit (font-semibold) on headings. */
@@ -337,7 +338,7 @@ summary {
   }
 }
 
-/* Type: Geist only (font-sans). See DESIGN.md. */
+/* Type: Geist (font-sans) and Geist Mono labels (font-mono). See DESIGN.md. */
 
 /* Tactile "paper" depth — warm-tinted soft shadow (never pure black) so cards
    sit on the cream like paper on a desk. Wow-surfaces only; calm surfaces keep

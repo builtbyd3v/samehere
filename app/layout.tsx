@@ -1,13 +1,14 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { SITE_OG_DESCRIPTION, SITE_OG_TITLE } from "@/lib/og/copy";
 
-// One variable font for the whole UI. display:swap plus next/font's default adjustFontFallback keep text visible while it loads. OG images load their own TTFs (lib/og/fonts.ts).
+// Geist for text, Geist Mono for small uppercase labels. display:swap plus next/font's default adjustFontFallback keep text visible while they load. OG images load their own TTFs (lib/og/fonts.ts).
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist", display: "swap" });
+const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono", display: "swap" });
 
 const TITLE = SITE_OG_TITLE;
 const DESCRIPTION = SITE_OG_DESCRIPTION;
@@ -53,7 +54,7 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
       </head>
-      <body className={`${geist.variable} min-h-full bg-[var(--bg)] font-sans text-[var(--ink)] antialiased`}>
+      <body className={`${geist.variable} ${geistMono.variable} min-h-full bg-[var(--bg)] font-sans text-[var(--ink)] antialiased`}>
         <ThemeProvider>
           {children}
         </ThemeProvider>
