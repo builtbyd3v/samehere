@@ -98,7 +98,7 @@ export async function generateMetadata({
 
 function ProfileBackdrop({ bannerUrl, accent }: { bannerUrl: string | null; accent: boolean }) {
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[300px] overflow-hidden mask-b-from-40% mask-l-from-85% xl:h-[420px]">
+    <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[300px] overflow-hidden mask-b-from-10% mask-x-from-70% xl:h-[420px]">
       {bannerUrl ? (
         <PortfolioBanner src={bannerUrl} />
       ) : accent ? (
