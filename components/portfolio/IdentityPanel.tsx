@@ -30,7 +30,7 @@ type IdentityPanelProps = {
 
 function Row({ label, className = "", children }: { label: string; className?: string; children: ReactNode }) {
   return (
-    <div className={`flex items-baseline justify-between gap-4 text-[13px] ${className}`.trim()}>
+    <div className={`flex items-baseline justify-between gap-4 text-small ${className}`.trim()}>
       <SectionLabel as="dt" className="shrink-0">
         {label}
       </SectionLabel>
@@ -87,12 +87,12 @@ export default function IdentityPanel({
 
       <div className="flex flex-col gap-1.5 xl:gap-2">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <Name className="text-balance text-[32px] font-semibold leading-[1.02] tracking-[-0.035em] xl:text-[44px] xl:leading-none xl:tracking-[-0.04em]">
+          <Name className="text-balance text-display font-semibold">
             {displayName}
           </Name>
           <UserBadges {...badges} />
         </div>
-        <p className="text-[13px] text-[var(--faint)]">@{username}</p>
+        <p className="text-small text-[var(--faint)]">@{username}</p>
         {headline && <p className="text-pretty text-base leading-[1.4] text-[var(--ink-3)] xl:text-lg">{headline}</p>}
         {tagline && <p className="text-sm text-[var(--muted)]">{tagline}</p>}
       </div>
@@ -136,7 +136,7 @@ export default function IdentityPanel({
       {links && <ResumeLinks {...links} />}
 
       {counts && (
-        <p className="text-[13px] tabular-nums text-[var(--faint)]">
+        <p className="text-small tabular-nums text-[var(--faint)]">
           <Link href={`/profile/${username}/followers`} className="hover:text-[var(--ink)]">
             <Count n={counts.followers} /> followers
           </Link>

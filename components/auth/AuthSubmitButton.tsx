@@ -9,7 +9,7 @@ export default function AuthSubmitButton({ pending, pendingLabel, children }: Pr
     <button
       type="submit"
       disabled={pending}
-      className="btn-primary w-full py-2 text-[15px] sm:py-2.5"
+      className="btn-primary w-full py-2 text-body sm:py-2.5"
     >
       {pending ? (
         <svg

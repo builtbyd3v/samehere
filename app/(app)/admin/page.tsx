@@ -31,7 +31,7 @@ export default async function AdminPage() {
 
   return (
     <main className="page-enter mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8">
-      <h1 className="mb-1 text-2xl font-semibold tracking-[-0.02em] text-[var(--ink)]">Moderation</h1>
+      <h1 className="mb-1 text-title font-semibold text-[var(--ink)]">Moderation</h1>
       <p className="mb-5 text-sm text-[var(--ink-muted)]">{rows.length} open report{rows.length === 1 ? "" : "s"}</p>
 
       {rows.length === 0 ? (

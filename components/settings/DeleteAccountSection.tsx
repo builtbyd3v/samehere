@@ -55,7 +55,7 @@ export default function DeleteAccountSection({ username }: { username: string })
         value={typed}
         onChange={(e) => setTyped(e.target.value)}
         autoComplete="off"
-        className="mt-1.5 mb-4 w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[15px] text-[var(--ink)] outline-none transition placeholder:text-[var(--ink-faint)] focus:border-[var(--danger)] focus:ring-2 focus:ring-[var(--danger)]/40"
+        className="mt-1.5 mb-4 w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-body text-[var(--ink)] outline-none transition placeholder:text-[var(--ink-faint)] focus:border-[var(--danger)] focus:ring-2 focus:ring-[var(--danger)]/40"
       />
 
       <button

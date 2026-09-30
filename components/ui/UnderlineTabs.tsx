@@ -29,7 +29,7 @@ export function UnderlineTabs({
             key={tab.href}
             href={tab.href}
             aria-current={active ? "page" : undefined}
-            className={`flex h-11 shrink-0 items-center whitespace-nowrap text-[15px] md:h-16 ${
+            className={`flex h-11 shrink-0 items-center whitespace-nowrap text-body md:h-16 ${
               active
                 ? "font-medium text-[var(--ink)] shadow-[inset_0_-1.5px_0_var(--ink)]"
                 : "text-[var(--muted)] hover:text-[var(--ink)]"

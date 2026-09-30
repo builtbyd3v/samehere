@@ -74,7 +74,7 @@ export default function NavMenu({ user, variant }: { user: ShellUser; variant: "
         align="start"
         label="Account menu"
         triggerClassName="grid size-11 place-items-center rounded-full active:scale-[0.94]"
-        trigger={<AvatarBase src={avatarUrl} seed={username} name={name} className="size-[30px] rounded-full text-[11px]" pro={isPro} />}
+        trigger={<AvatarBase src={avatarUrl} seed={username} name={name} className="size-[30px] rounded-full text-meta" pro={isPro} />}
       >
         <MenuItems isAdmin={isAdmin} />
       </Menu>
@@ -91,8 +91,8 @@ export default function NavMenu({ user, variant }: { user: ShellUser; variant: "
       triggerClassName="flex w-full items-center gap-2.5 rounded-xl p-2.5 text-left hover:bg-[var(--fill-2)] active:scale-[0.98]"
       trigger={
         <>
-          <AvatarBase src={avatarUrl} seed={username} name={name} className="size-8 shrink-0 rounded-full text-[13px]" pro={isPro} />
-          <span className="flex min-w-0 flex-col text-[13px] leading-[1.3]">
+          <AvatarBase src={avatarUrl} seed={username} name={name} className="size-8 shrink-0 rounded-full text-small" pro={isPro} />
+          <span className="flex min-w-0 flex-col text-small leading-[1.3]">
             <span className="truncate font-medium text-[var(--ink)]">{name}</span>
             {stage ? (
               <span className="flex items-center gap-1.5 truncate text-[var(--muted)]">

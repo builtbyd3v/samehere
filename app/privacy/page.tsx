@@ -18,7 +18,7 @@ export default function PrivacyPage() {
       <h1 className="text-[2.25rem] font-medium leading-[1.05] tracking-[-0.03em]">Privacy Policy</h1>
       <p className="mt-3 text-sm text-[var(--ink-muted)]">Last updated: {UPDATED}</p>
 
-      <div className="mt-8 space-y-8 text-[15px] leading-relaxed text-[var(--ink-muted)]">
+      <div className="mt-8 space-y-8 text-body leading-relaxed text-[var(--ink-muted)]">
         <p>
           This Privacy Policy explains how samehere, operated by Devgiri Goswami (&ldquo;we&rdquo;,
           &ldquo;us&rdquo;), collects, uses, and shares information when you use the Service. By using

@@ -68,7 +68,7 @@ export default function MessageThread({
               )}
               <div className="flex items-end gap-1">
                 <div
-                  className={`whitespace-pre-wrap break-words px-3.5 py-2.5 text-[15px] leading-relaxed ${
+                  className={`whitespace-pre-wrap break-words px-3.5 py-2.5 text-body leading-relaxed ${
                     mine
                       ? "rounded-2xl rounded-br-md bg-[var(--ink)] text-[var(--canvas)]"
                       : "rounded-2xl rounded-bl-md border border-[var(--border)] bg-[var(--surface-post)] text-[var(--ink)]"
@@ -87,7 +87,7 @@ export default function MessageThread({
                   </div>
                 )}
               </div>
-              <MessageTime iso={m.created_at} className="mt-1 px-1 text-[11px] text-[var(--ink-faint)]" />
+              <MessageTime iso={m.created_at} className="mt-1 px-1 text-meta text-[var(--ink-faint)]" />
             </div>
           </div>
         );
@@ -131,7 +131,7 @@ export function MessageThreadHeader({
           className="h-9 w-9 rounded-full border border-[var(--border)] text-sm"
         />
         <div className="min-w-0">
-          <p className="truncate text-[15px] font-semibold text-[var(--ink)]">{displayName}</p>
+          <p className="truncate text-body font-semibold text-[var(--ink)]">{displayName}</p>
           <p className="truncate text-xs text-[var(--ink-muted)]">@{username}</p>
         </div>
       </Link>
@@ -170,7 +170,7 @@ export function GroupThreadHeader({
           className="h-9 w-9 shrink-0 rounded-full border border-[var(--border)] text-sm"
         />
         <div className="min-w-0">
-          <p className="truncate text-[15px] font-semibold text-[var(--ink)]">{title}</p>
+          <p className="truncate text-body font-semibold text-[var(--ink)]">{title}</p>
           <p className="truncate text-xs text-[var(--ink-muted)]">{subtitle}</p>
         </div>
       </div>

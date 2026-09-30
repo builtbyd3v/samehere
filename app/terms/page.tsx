@@ -18,7 +18,7 @@ export default function TermsPage() {
       <h1 className="text-[2.25rem] font-medium leading-[1.05] tracking-[-0.03em]">Terms of Service</h1>
       <p className="mt-3 text-sm text-[var(--ink-muted)]">Last updated: {UPDATED}</p>
 
-      <div className="mt-8 space-y-8 text-[15px] leading-relaxed text-[var(--ink-muted)]">
+      <div className="mt-8 space-y-8 text-body leading-relaxed text-[var(--ink-muted)]">
         <p>
           These Terms of Service (&ldquo;Terms&rdquo;) govern your access to and use of samehere (the
           &ldquo;Service&rdquo;), operated by Devgiri Goswami (&ldquo;we&rdquo;, &ldquo;us&rdquo;). By

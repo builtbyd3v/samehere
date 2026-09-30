@@ -63,7 +63,7 @@ export default function MessageInboxList({
                 <GroupAvatarStack members={t.members} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-3">
-                    <p className={`truncate text-[15px] ${unread ? "font-semibold text-[var(--ink)]" : "font-medium text-[var(--ink)]"}`}>
+                    <p className={`truncate text-body ${unread ? "font-semibold text-[var(--ink)]" : "font-medium text-[var(--ink)]"}`}>
                       {t.title}
                     </p>
                     <MessageTime iso={t.last_message_at} className="shrink-0 text-xs text-[var(--ink-faint)]" />
@@ -91,7 +91,7 @@ export default function MessageInboxList({
               <Avatar url={t.peer_avatar_url} seed={t.peer_username} name={name} isPro={t.peer_is_pro} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline justify-between gap-3">
-                  <p className={`truncate text-[15px] ${unread ? "font-semibold text-[var(--ink)]" : "font-medium text-[var(--ink)]"}`}>
+                  <p className={`truncate text-body ${unread ? "font-semibold text-[var(--ink)]" : "font-medium text-[var(--ink)]"}`}>
                     {name}
                   </p>
                   <MessageTime iso={t.last_message_at} className="shrink-0 text-xs text-[var(--ink-faint)]" />

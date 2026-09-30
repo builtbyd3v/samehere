@@ -20,7 +20,7 @@ export default async function NotificationsPage() {
   return (
     <main className="page-enter mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8">
       <NotificationsMarkRead />
-      <h1 className="mb-5 text-2xl font-semibold tracking-[-0.02em] text-[var(--ink)]">Notifications</h1>
+      <h1 className="mb-5 text-title font-semibold text-[var(--ink)]">Notifications</h1>
 
       {error ? (
         <div className="card px-6 py-14 text-center">

@@ -53,7 +53,7 @@ export default function ProjectEditor({
   return (
     <main className="mx-auto max-w-xl px-5 py-10">
       <div className="mb-6 flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold tracking-[-0.02em]">{isNew ? "New project" : "Edit project"}</h1>
+        <h1 className="text-title font-semibold">{isNew ? "New project" : "Edit project"}</h1>
         <Link href={`/profile/${username}`} className="text-sm text-[var(--ink-muted)] underline">
           Back to profile
         </Link>

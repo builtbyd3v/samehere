@@ -113,7 +113,7 @@ export default function NotificationList({ items }: { items: NotificationRow[] }
             >
               <Avatar url={n.actor_avatar_url} seed={n.actor_username} name={actorName} type={n.type} isPro={n.actor_is_pro} />
               <div className="min-w-0 flex-1">
-                <p className={`text-[15px] leading-snug text-[var(--ink)] ${!n.read ? "font-medium" : ""}`}>
+                <p className={`text-body leading-snug text-[var(--ink)] ${!n.read ? "font-medium" : ""}`}>
                   {notificationLabel(n.type, actorName, n.reaction_type)}
                 </p>
                 <LocalTime iso={n.created_at} variant="notification" className="mt-0.5 block text-xs text-[var(--ink-faint)]" />

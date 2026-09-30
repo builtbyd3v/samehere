@@ -140,19 +140,19 @@ async function PublicPostView({ id }: { id: string }) {
               </ProfileHoverLink>
               <UserBadges isPro={post.author_is_pro} isFounder={post.author_is_founder} isCampusFounder={post.author_is_campus_founder} isVerifiedStudent={post.author_verified_student} isBot={post.author_is_bot} />
             </div>
-            <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">
+            <p className="mt-0.5 text-small text-[var(--ink-muted)]">
               <span>@{post.author_username}</span>
               <span className="mx-1 text-[var(--ink-faint)]">·</span>
               <LocalTime iso={post.created_at} variant="ago" />
             </p>
-            <p className="mt-3 max-w-[65ch] whitespace-pre-line break-words text-[16px] leading-[1.55] text-[var(--ink)]">
+            <p className="mt-3 max-w-[65ch] whitespace-pre-line break-words text-base leading-[1.55] text-[var(--ink)]">
               <MentionText>{post.content}</MentionText>
             </p>
           </div>
         </div>
 
         {/* Read-only counts — anon can't react. No buttons, no handlers. */}
-        <div className="mt-4 flex items-center gap-4 border-t border-[var(--border)] pt-3 text-[13px] text-[var(--ink-muted)]">
+        <div className="mt-4 flex items-center gap-4 border-t border-[var(--border)] pt-3 text-small text-[var(--ink-muted)]">
           <span className="inline-flex items-center gap-1.5">
             <IconSame /> {post.samehere_count}
           </span>

@@ -65,14 +65,14 @@ export default function QuotedRepostCard({
                   {name}
                 </ProfileHoverLink>
                 <UserBadges isPro={r.is_pro} isFounder={r.is_founder} isCampusFounder={r.is_campus_founder} isVerifiedStudent={r.verified_student} />
-                <span className="text-[13px] text-[var(--ink-muted)]">@{r.username}</span>
-                <span className="text-[13px] text-[var(--ink-faint)]">·</span>
+                <span className="text-small text-[var(--ink-muted)]">@{r.username}</span>
+                <span className="text-small text-[var(--ink-faint)]">·</span>
                 {linked ? (
-                  <Link href={`/quote/${item.id}`} className="text-[13px] text-[var(--ink-faint)] hover:text-[var(--ink)] hover:underline">
+                  <Link href={`/quote/${item.id}`} className="text-small text-[var(--ink-faint)] hover:text-[var(--ink)] hover:underline">
                     <LocalTime iso={item.created_at} variant="ago" />
                   </Link>
                 ) : (
-                  <LocalTime iso={item.created_at} variant="ago" className="text-[13px] text-[var(--ink-faint)]" />
+                  <LocalTime iso={item.created_at} variant="ago" className="text-small text-[var(--ink-faint)]" />
                 )}
               </div>
             </div>
@@ -88,12 +88,12 @@ export default function QuotedRepostCard({
 
           {linked ? (
             <QuoteBodyLink quoteId={item.id}>
-              <p className="max-w-[65ch] whitespace-pre-line break-words text-[16px] leading-[1.55]">
+              <p className="max-w-[65ch] whitespace-pre-line break-words text-base leading-[1.55]">
                 <MentionText>{item.quote_text}</MentionText>
               </p>
             </QuoteBodyLink>
           ) : (
-            <p className="mt-2 max-w-[65ch] whitespace-pre-line break-words text-[16px] leading-[1.55]">
+            <p className="mt-2 max-w-[65ch] whitespace-pre-line break-words text-base leading-[1.55]">
               <MentionText>{item.quote_text}</MentionText>
             </p>
           )}

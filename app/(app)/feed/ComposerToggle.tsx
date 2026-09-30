@@ -53,7 +53,7 @@ export default function ComposerToggle({ isPro, avatarUrl, username, isSuspended
   return (
     <>
       <div className="hidden gap-3.5 border-b border-[var(--hairline)] py-5 lg:flex">
-        <AvatarBase src={avatarUrl} seed={username || "you"} name={username} className="size-9 shrink-0 rounded-full text-[13px]" pro={isPro} />
+        <AvatarBase src={avatarUrl} seed={username || "you"} name={username} className="size-9 shrink-0 rounded-full text-small" pro={isPro} />
         <div className="flex min-w-0 flex-1 flex-col gap-3.5">
           <button
             type="button"

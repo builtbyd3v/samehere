@@ -102,7 +102,7 @@ export default async function SavedPage() {
 
   return (
     <main className="mx-auto max-w-2xl px-5 py-8">
-      <h1 className="mb-5 text-2xl font-semibold tracking-[-0.02em]">Saved</h1>
+      <h1 className="mb-5 text-title font-semibold">Saved</h1>
 
       <section>
         {items.length === 0 ? (

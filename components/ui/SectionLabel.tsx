@@ -16,7 +16,7 @@ export function SectionLabel({
 }) {
   return (
     <Tag
-      className={`font-medium tabular-nums text-[var(--muted)] ${size === "xs" ? "text-xs" : "text-[13px]"} ${className}`.trim()}
+      className={`font-medium tabular-nums text-[var(--muted)] ${size === "xs" ? "text-xs" : "text-small"} ${className}`.trim()}
     >
       {children}
     </Tag>

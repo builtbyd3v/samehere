@@ -97,7 +97,7 @@ export default function NewGroupButton() {
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Group name"
           maxLength={TEXT_LIMITS.groupTitle}
-          className="min-w-0 flex-1 bg-transparent text-[15px] text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
+          className="min-w-0 flex-1 bg-transparent text-body text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
         />
         <button type="button" onClick={close} className="shrink-0 text-sm text-[var(--ink-muted)] hover:text-[var(--ink)]">
           Cancel

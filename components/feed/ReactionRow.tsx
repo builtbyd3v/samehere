@@ -109,7 +109,7 @@ export default function ReactionRow(props: Props) {
   }
 
   return (
-    <div className="-ml-2 flex flex-wrap items-center gap-1 text-[13px] text-[var(--muted)]">
+    <div className="-ml-2 flex flex-wrap items-center gap-1 text-small text-[var(--muted)]">
       <ActionButton
         onClick={() => toggleReaction("samehere")}
         disabled={!viewerId}

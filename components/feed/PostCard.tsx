@@ -145,7 +145,7 @@ function Avatar({
 
 function PostBody({ content, linked, postId }: { content: string; linked: boolean; postId: string }) {
   const inner = (
-    <p className="whitespace-pre-line break-words text-[15px] leading-[1.55] text-[var(--ink-2)] lg:leading-[1.6]">
+    <p className="whitespace-pre-line break-words text-body leading-[1.55] text-[var(--ink-2)] lg:leading-[1.6]">
       <MentionText>{content}</MentionText>
     </p>
   );
@@ -177,7 +177,7 @@ function StuckQuestion({
         {solved ? <CircleCheck size={14} strokeWidth={2} aria-hidden /> : <CircleAlert size={14} strokeWidth={2} aria-hidden />}
         {solved ? "Stuck · solved" : "Stuck · open"}
       </span>
-      <p className="break-words text-[15px] font-medium leading-[1.4] text-[var(--ink)] lg:text-base lg:leading-[1.45]">
+      <p className="break-words text-body font-medium leading-[1.4] text-[var(--ink)] lg:text-base lg:leading-[1.45]">
         <MentionText>{question}</MentionText>
       </p>
       {detail ? (
@@ -245,7 +245,7 @@ export default function PostCard({
       <div className={`flex min-w-0 flex-1 flex-col ${embedded ? "gap-1.5" : "gap-2 lg:gap-2.5"}`}>
         {embedded ? (
           a ? (
-            <p className="text-[13px] text-[var(--muted)]">
+            <p className="text-small text-[var(--muted)]">
               <span className="font-medium text-[var(--ink)]">{name}</span>
               <span className="mx-1">@{a.username}</span>
             </p>
@@ -258,13 +258,13 @@ export default function PostCard({
                 <ProfileHoverLink
                   href={`/profile/${a.username}`}
                   username={a.username}
-                  className="text-[15px] font-semibold text-[var(--ink)] hover:underline"
+                  className="text-body font-semibold text-[var(--ink)] hover:underline"
                 >
                   {name}
                 </ProfileHoverLink>
               </span>
             ) : (
-              <span className="min-w-0 truncate text-[15px] font-semibold">{name}</span>
+              <span className="min-w-0 truncate text-body font-semibold">{name}</span>
             )}
             {a && (
               <UserBadges
@@ -292,11 +292,11 @@ export default function PostCard({
                 </Link>
               ) : null}
               {linked ? (
-                <Link href={`/post/${post.id}`} className="text-[13px] text-[var(--faint)] hover:text-[var(--muted)]">
+                <Link href={`/post/${post.id}`} className="text-small text-[var(--faint)] hover:text-[var(--muted)]">
                   <LocalTime iso={post.created_at} variant="ago" />
                 </Link>
               ) : (
-                <LocalTime iso={post.created_at} variant="ago" className="text-[13px] text-[var(--faint)]" />
+                <LocalTime iso={post.created_at} variant="ago" className="text-small text-[var(--faint)]" />
               )}
               {a && <PostMenu postId={post.id} authorId={post.user_id} authorUsername={a.username} viewerId={viewerId} />}
             </div>
@@ -308,7 +308,7 @@ export default function PostCard({
         ) : (
           <PostBody content={post.content} linked={linked} postId={post.id} />
         )}
-        {teamLine ? <p className="text-[13px] text-[var(--muted)]">{teamLine}</p> : null}
+        {teamLine ? <p className="text-small text-[var(--muted)]">{teamLine}</p> : null}
 
         {post.media?.length ? <PostMediaGrid media={post.media} /> : null}
 

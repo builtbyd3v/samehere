@@ -101,7 +101,7 @@ export default function CommentThread({
                     {!c.pending && <DeleteCommentButton commentId={c.id} canDelete={viewerId === c.user_id} />}
                   </div>
                 </div>
-                <p className="mt-0.5 whitespace-pre-line break-words text-[15px] leading-[1.55]">
+                <p className="mt-0.5 whitespace-pre-line break-words text-body leading-[1.55]">
                   <MentionText>{c.content}</MentionText>
                 </p>
               </div>

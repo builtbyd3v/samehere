@@ -116,7 +116,7 @@ export default function CommentComposer({ postId, viewerId, viewer, onOptimistic
               ? `Add a comment… Type @ to mention (${shortcutLabel} to post)`
               : "Add a comment… Type @ to mention"
         }
-        className="w-full resize-y bg-transparent text-[15px] leading-relaxed text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
+        className="w-full resize-y bg-transparent text-body leading-relaxed text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)]"
       />
 
       {state.error && (
