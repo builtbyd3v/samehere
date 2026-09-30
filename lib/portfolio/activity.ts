@@ -189,13 +189,13 @@ export function activityHeadline(
   if (!githubSnapshotKnown(githubState)) {
     return {
       value: cells.filter((cell) => cell.sameherePoints > 0).length,
-      label: "Samehere active days — GitHub activity isn’t available yet",
+      label: "Samehere active days (GitHub activity isn’t available yet)",
     };
   }
   if (!samehereKnown) {
     return {
       value: cells.filter((cell) => cell.githubCount > 0).length,
-      label: "GitHub active days — Samehere activity isn’t available right now",
+      label: "GitHub active days (Samehere activity isn’t available right now)",
     };
   }
   return {

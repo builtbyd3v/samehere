@@ -139,7 +139,7 @@ describe("mergeActivityDays", () => {
     });
     expect(activityHeadline("all", emptyCells, { kind: "forthcoming" })).toEqual({
       value: 0,
-      label: "Samehere active days — GitHub activity isn’t available yet",
+      label: "Samehere active days (GitHub activity isn’t available yet)",
     });
   });
 
