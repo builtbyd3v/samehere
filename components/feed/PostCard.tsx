@@ -236,7 +236,7 @@ export default function PostCard({
 
   const shell = embedded
     ? "flex gap-3 rounded-xl border border-[var(--hairline)] bg-[var(--surface-1)] p-3"
-    : `flex gap-3 border-b border-[var(--hairline)] py-4 transition-colors duration-[180ms] lg:gap-3.5 lg:py-[22px]${detail ? "" : " hover:bg-white/[0.015]"}`;
+    : `flex gap-3 border-b border-[var(--hairline)] py-4 transition-colors duration-[180ms] lg:gap-3.5 lg:py-[22px]${detail ? "" : " hover:bg-[var(--fill-1)]"}`;
 
   const body = (
     <article className={shell}>

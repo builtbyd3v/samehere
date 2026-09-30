@@ -23,7 +23,7 @@ function navActive(pathname: string, href: string, label: string) {
 }
 
 const ITEM = "flex h-9 items-center justify-between rounded-[9px] px-2.5 text-sm";
-const ITEM_OFF = "text-[var(--muted)] hover:bg-white/[0.04] hover:text-[var(--ink)]";
+const ITEM_OFF = "text-[var(--muted)] hover:bg-[var(--fill-2)] hover:text-[var(--ink)]";
 const ICON = { size: 17, strokeWidth: 1.6, "aria-hidden": true } as const;
 
 export default function LeftNav({
@@ -58,14 +58,16 @@ export default function LeftNav({
             href={item.href}
             prefetch={item.prefetch}
             aria-current={active ? "page" : undefined}
-            className={`${ITEM} ${active ? "bg-white/[0.05] text-[var(--ink)]" : ITEM_OFF}`}
+            className={`${ITEM} ${active ? "bg-[var(--fill-3)] text-[var(--ink)]" : ITEM_OFF}`}
           >
             <span className="flex items-center gap-[11px]">
               {item.icon}
               {item.label}
             </span>
             {badge > 0 ? (
-              <span className="text-xs tabular-nums text-[var(--muted)]">{badge > 99 ? "99+" : badge}</span>
+              <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-[var(--accent)] px-1.5 text-[11px] font-semibold leading-none tabular-nums text-[var(--on-accent)]">
+                {badge > 99 ? "99+" : badge}
+              </span>
             ) : null}
           </Link>
         );

@@ -17,9 +17,9 @@ const BASE =
 
 const VARIANT: Record<ButtonVariant, string> = {
   primary: "bg-[var(--ink)] font-semibold text-[var(--bg)] hover:bg-[var(--ink-2)]",
-  secondary: "border border-[var(--hairline-strong)] bg-white/[0.04] text-[var(--ink)] hover:bg-white/[0.07]",
-  ghost: "text-[var(--muted)] hover:bg-white/5 hover:text-[var(--ink)]",
-  outline: "border border-[var(--hairline-strong)] text-[var(--ink)] hover:border-white/25",
+  secondary: "border border-[var(--hairline-strong)] bg-[var(--fill-2)] text-[var(--ink)] hover:bg-[var(--fill-3)]",
+  ghost: "text-[var(--muted)] hover:bg-[var(--fill-2)] hover:text-[var(--ink)]",
+  outline: "border border-[var(--hairline-strong)] text-[var(--ink)] hover:border-[var(--border-strong)]",
 };
 
 // sm and md keep a 44px hit area with an invisible ::before (DESIGN.md, touch targets).

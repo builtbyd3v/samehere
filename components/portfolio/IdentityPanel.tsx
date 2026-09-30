@@ -110,7 +110,7 @@ export default function IdentityPanel({
 
       {hasTable && (
         <dl
-          className={`${hasPhoneRows ? "flex" : "hidden xl:flex"} flex-col gap-2.5 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-4`}
+          className={`${hasPhoneRows ? "flex" : "hidden xl:flex"} flex-col gap-2.5 rounded-2xl border border-[var(--border)] bg-[var(--fill-1)] p-4`}
         >
           {s && (
             <Row label="Stage" className="hidden xl:flex">

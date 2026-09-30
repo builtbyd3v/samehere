@@ -53,7 +53,7 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
       </head>
-      <body className={`${geist.variable} min-h-full bg-[var(--canvas)] font-sans text-[var(--ink)] antialiased`}>
+      <body className={`${geist.variable} min-h-full bg-[var(--bg)] font-sans text-[var(--ink)] antialiased`}>
         <ThemeProvider>
           {children}
         </ThemeProvider>

@@ -12,7 +12,7 @@ export default function MobileNav({ username, dmUnread = 0 }: { username: string
   const items = [
     { label: "Home", href: "/feed", icon: <House {...ICON} /> },
     { label: "Search", href: "/search", icon: <Search {...ICON} /> },
-    { label: "Messages", href: "/messages", icon: <MessageCircle {...ICON} />, dot: dmUnread > 0 },
+    { label: "Messages", href: "/messages", icon: <MessageCircle {...ICON} />, badge: dmUnread },
     { label: "Saved", href: "/saved", icon: <Bookmark {...ICON} /> },
     { label: "Profile", href: username ? `/profile/${username}` : "#", icon: <User {...ICON} /> },
   ].map((item) => ({
@@ -37,8 +37,9 @@ export default function MobileNav({ username, dmUnread = 0 }: { username: string
         >
           {item.icon}
           {item.label}
-          {item.dot ? (
-            <span className="absolute right-[calc(50%-15px)] top-2.5 size-2 rounded-full bg-[var(--accent)]">
+          {item.badge ? (
+            <span className="absolute left-[calc(50%+4px)] top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-[var(--accent)] px-1 text-[10px] font-semibold leading-none tabular-nums text-[var(--on-accent)]">
+              <span aria-hidden>{item.badge > 99 ? "99+" : item.badge}</span>
               <span className="sr-only">, unread</span>
             </span>
           ) : null}
