@@ -385,7 +385,7 @@ async function PublicProfileView({ username, landingRef }: { username: string; l
   const client = createAnonPortfolioClient();
   const data = await loadPublicProfilePage(client, username);
   if (!data) notFound();
-  const { profile, counts, bundlePromise, displayName, schoolLine, bannerUrl, accentColor } = data;
+  const { profile, counts, helped, bundlePromise, displayName, schoolLine, bannerUrl, accentColor } = data;
   // ponytail: the logged-out header now waits for the portfolio bundle (it already runs in parallel with counts); if logged-out TTFB regresses, stream the table rows behind their own Suspense.
   const bundle = await bundlePromise;
   const intro = publicProfileIntro(profile, bundle.ok ? bundle.data.projection : null);
@@ -423,6 +423,7 @@ async function PublicProfileView({ username, landingRef }: { username: string; l
             inviteDm
             links={{ github: profile.github_url, linkedin: profile.linkedin_url, website: profile.website_url }}
             counts={{ posts: Number(counts.posts), followers: Number(counts.followers), following: Number(counts.following) }}
+            helped={helped}
             actions={<SharePortfolioButton username={profile.username} displayName={displayName} />}
           />
         }
@@ -486,6 +487,7 @@ export default async function ProfilePage({
   const readClient = await portfolioReadClient(true);
   const {
     counts,
+    helped,
     isBlocked,
     amIBlocking,
     followState,
@@ -637,6 +639,7 @@ export default async function ProfilePage({
               inviteDm={!isOwner || previewPublic}
               links={resume ? { github: resume.github, linkedin: resume.linkedin, website: resume.website } : null}
               counts={{ posts: Number(counts.posts), followers: Number(counts.followers), following: Number(counts.following) }}
+              helped={helped}
               actions={actions}
             />
           }

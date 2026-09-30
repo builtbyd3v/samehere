@@ -11,6 +11,7 @@ import { resolveInstitutionDomain } from "@/lib/resolve-domain";
 import { isPortfolioSchemaMissing } from "@/lib/portfolio/errors";
 import { parseOpenTo, parseResumeFields, parseStudyMode, type ResumeFields } from "@/lib/portfolio/owner";
 import { parseFocusAreas, parseStage, stageError } from "@/lib/stage";
+import { rememberStageMoment } from "@/lib/stage-moment";
 
 // DEGREE_VALUES infers as a narrow string-literal union array (mapped from an
 // `as const` options list), which Array.includes can't check against a plain
@@ -104,6 +105,8 @@ export async function updateProfile(_prev: EditState, formData: FormData): Promi
   } else if (first.error) {
     return { error: "Could not save your profile. Try again." };
   }
+  // Only when the stage write itself succeeded (the schema-missing retry above drops stage).
+  if (!first.error && hasStageFields) await rememberStageMoment(proRow?.stage ?? null, stage);
 
   // 1 pt for a profile update is awarded by the profiles_award_contribution
   // AFTER UPDATE trigger (fires only when a meaningful content field changed;

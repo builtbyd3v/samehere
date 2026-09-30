@@ -3605,6 +3605,98 @@ exception when others then
 end $$;
 reset role;
 
+-- ============ HELPED: plan 019 (helped_students_count) ============
+-- helper answers: a1 twice (counts once), a2 once, a3 on a hidden post (never),
+-- own post (never). susp has one accepted answer, then is suspended (0).
+set local role postgres;
+do $$
+declare
+  v_helper uuid := gen_random_uuid();
+  v_a1     uuid := gen_random_uuid();
+  v_a2     uuid := gen_random_uuid();
+  v_a3     uuid := gen_random_uuid();
+  v_susp   uuid := gen_random_uuid();
+  v_author uuid;
+  v_answer uuid;
+  v_hidden boolean;
+  v_p uuid;
+  v_c uuid;
+begin
+  insert into auth.users (
+    instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+    raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+    confirmation_token, recovery_token, email_change_token_new, email_change
+  ) values
+    ('00000000-0000-0000-0000-000000000000', v_helper, 'authenticated', 'authenticated',
+     'rls-helped-helper@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_helped_helper'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_a1, 'authenticated', 'authenticated',
+     'rls-helped-a1@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_helped_a1'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_a2, 'authenticated', 'authenticated',
+     'rls-helped-a2@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_helped_a2'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_a3, 'authenticated', 'authenticated',
+     'rls-helped-a3@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_helped_a3'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_susp, 'authenticated', 'authenticated',
+     'rls-helped-susp@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_helped_susp'), now(), now(), '', '', '', '');
+
+  -- (author, answerer, hidden)
+  for v_author, v_answer, v_hidden in
+    select * from (values
+      (v_a1, v_helper, false),
+      (v_a1, v_helper, false),
+      (v_a2, v_helper, false),
+      (v_a3, v_helper, true),
+      (v_helper, v_helper, false),
+      (v_a1, v_susp, false)
+    ) as t(author, answer, hidden)
+  loop
+    insert into public.posts (user_id, content, context_label, hidden)
+    values (v_author, 'stuck for helped test', 'stuck', v_hidden) returning id into v_p;
+    insert into public.comments (post_id, user_id, content)
+    values (v_p, v_answer, 'try this') returning id into v_c;
+    update public.posts set resolved_at = now(), resolved_comment_id = v_c where id = v_p;
+  end loop;
+
+  update public.profiles set is_suspended = true where id = v_susp;
+
+  insert into tests_fixture (key, id) values ('helped_helper', v_helper), ('helped_susp', v_susp);
+end $$;
+reset role;
+
+select tests.as_anon();
+do $$
+declare
+  v_n int;
+begin
+  v_n := public.helped_students_count((select id from tests_fixture where key = 'helped_helper'));
+  if v_n <> 2 then
+    raise exception 'HELPED_count_distinct_authors REGRESSION: got %, expected 2 (a1 once, a2; not hidden a3, not self)', v_n;
+  end if;
+  insert into tests_results values ('HELPED_count_distinct_authors', true, 'ok');
+exception when others then
+  insert into tests_results values ('HELPED_count_distinct_authors', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_anon();
+do $$
+declare
+  v_n int;
+begin
+  v_n := public.helped_students_count((select id from tests_fixture where key = 'helped_susp'));
+  if v_n <> 0 then
+    raise exception 'HELPED_suspended_helper_zero REGRESSION: suspended helper got %, expected 0', v_n;
+  end if;
+  insert into tests_results values ('HELPED_suspended_helper_zero', true, 'ok');
+exception when others then
+  insert into tests_results values ('HELPED_suspended_helper_zero', false, sqlerrm);
+end $$;
+reset role;
+
 -- ============ report ============
 -- Print the PASS/FAIL table FIRST so the operator sees exactly which assertions
 -- failed, then raise so psql exits non-zero and the harness actually gates.
@@ -3622,7 +3714,7 @@ declare v_failed int;
 begin
   select count(*) into v_failed from tests_results where not passed;
   if v_failed > 0 then
-    raise exception '% assertion(s) failed, see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view_denied, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, CLUBS_V2_1, CLUBS_V2_2, CLUBS_V2_3, CLUBS_V2_7a, CLUBS_V2_4, CLUBS_V2_7b, CLUBS_V2_5_officer_denied, CLUBS_V2_5_owner_allowed, CLUBS_V2_6_outsider, CLUBS_V2_6_pending, CLUBS_V2_8, CLUBS_V2_9, H1_suggested_profiles, CLUBS_V2_12_outsider, CLUBS_V2_12_anon, SIGNUP_RL_anon_execute, SIGNUP_RL_no_table_access_anon, SIGNUP_RL_no_table_access_authenticated, EXPERIENCES_owner_insert, EXPERIENCES_owner_select, EXPERIENCES_owner_update, EXPERIENCES_b_select_a, EXPERIENCES_b_update_denied, EXPERIENCES_b_delete_denied, EXPERIENCES_anon_select_denied, EXPERIENCES_owner_delete, EXPERIENCES_cap, JOB_LISTINGS_authenticated_select, JOB_LISTINGS_authenticated_insert_denied, JOB_LISTINGS_anon_select_denied, JOB_FIT_owner_insert_select, JOB_FIT_b_select_a_denied, JOB_PITCHES_owner_insert_select, JOB_PITCHES_b_select_a_denied, JOB_SAVES_owner_insert_select, JOB_SAVES_b_select_a_denied, JOB_SAVES_b_delete_a_denied, JOB_SAVES_owner_delete, JOB_SAVES_anon_select_denied, REFERRAL_JOINED_owner_select, REFERRAL_JOINED_b_select_denied, P001_guard_sub_event_frozen, P001_guard_is_bot_frozen, P001_suggested_private_masked, P001_suggested_limit_clamped, P001_suggested_suspended_hidden, P001_group_add_requires_member_follow, P001_group_readd_after_leave_denied, P001_post_hidden_by_suspension_frozen, RESUME_FIELDS_private_nulled, RESUME_FIELDS_anon_public_read, P004_stage_check, P004_owner_can_set_stage, P004_search_people_private, P004_suggested_private, P004_public_profile_stage, STUCK_HELP_matched, STUCK_HELP_private_skipped, STUCK_HELP_blocked_skipped, STUCK_HELP_rate_limited, STUCK_HELP_count_author, STUCK_HELP_count_non_author, STUCK_direct_update_ignored, STUCK_resolve_non_author_denied, STUCK_resolve_foreign_comment_rejected, STUCK_resolve_author_ok, STUCK_accepted_comment_delete_sets_null, STUCK_reopen_author, STUCK_rpc_anon_denied, P023_owner_sets_onboarded_at, REF016_confirm_username_fallback, REF016_invite_code_username, REF016_set_code_rejects_username, REF016_claim_self_denied, REF016_claim_fresh_once, REF016_claim_old_denied, REF016_claim_anon_denied, DIGEST018_people_filtered, DIGEST018_questions_filtered, DIGEST018_views_pro_only, DIGEST018_opt_out_excluded, DIGEST018_rpc_client_denied.', v_failed;
+    raise exception '% assertion(s) failed, see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view_denied, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, CLUBS_V2_1, CLUBS_V2_2, CLUBS_V2_3, CLUBS_V2_7a, CLUBS_V2_4, CLUBS_V2_7b, CLUBS_V2_5_officer_denied, CLUBS_V2_5_owner_allowed, CLUBS_V2_6_outsider, CLUBS_V2_6_pending, CLUBS_V2_8, CLUBS_V2_9, H1_suggested_profiles, CLUBS_V2_12_outsider, CLUBS_V2_12_anon, SIGNUP_RL_anon_execute, SIGNUP_RL_no_table_access_anon, SIGNUP_RL_no_table_access_authenticated, EXPERIENCES_owner_insert, EXPERIENCES_owner_select, EXPERIENCES_owner_update, EXPERIENCES_b_select_a, EXPERIENCES_b_update_denied, EXPERIENCES_b_delete_denied, EXPERIENCES_anon_select_denied, EXPERIENCES_owner_delete, EXPERIENCES_cap, JOB_LISTINGS_authenticated_select, JOB_LISTINGS_authenticated_insert_denied, JOB_LISTINGS_anon_select_denied, JOB_FIT_owner_insert_select, JOB_FIT_b_select_a_denied, JOB_PITCHES_owner_insert_select, JOB_PITCHES_b_select_a_denied, JOB_SAVES_owner_insert_select, JOB_SAVES_b_select_a_denied, JOB_SAVES_b_delete_a_denied, JOB_SAVES_owner_delete, JOB_SAVES_anon_select_denied, REFERRAL_JOINED_owner_select, REFERRAL_JOINED_b_select_denied, P001_guard_sub_event_frozen, P001_guard_is_bot_frozen, P001_suggested_private_masked, P001_suggested_limit_clamped, P001_suggested_suspended_hidden, P001_group_add_requires_member_follow, P001_group_readd_after_leave_denied, P001_post_hidden_by_suspension_frozen, RESUME_FIELDS_private_nulled, RESUME_FIELDS_anon_public_read, P004_stage_check, P004_owner_can_set_stage, P004_search_people_private, P004_suggested_private, P004_public_profile_stage, STUCK_HELP_matched, STUCK_HELP_private_skipped, STUCK_HELP_blocked_skipped, STUCK_HELP_rate_limited, STUCK_HELP_count_author, STUCK_HELP_count_non_author, STUCK_direct_update_ignored, STUCK_resolve_non_author_denied, STUCK_resolve_foreign_comment_rejected, STUCK_resolve_author_ok, STUCK_accepted_comment_delete_sets_null, STUCK_reopen_author, STUCK_rpc_anon_denied, P023_owner_sets_onboarded_at, REF016_confirm_username_fallback, REF016_invite_code_username, REF016_set_code_rejects_username, REF016_claim_self_denied, REF016_claim_fresh_once, REF016_claim_old_denied, REF016_claim_anon_denied, DIGEST018_people_filtered, DIGEST018_questions_filtered, DIGEST018_views_pro_only, DIGEST018_opt_out_excluded, DIGEST018_rpc_client_denied, HELPED_count_distinct_authors, HELPED_suspended_helper_zero.', v_failed;
 
   end if;
 end $$;

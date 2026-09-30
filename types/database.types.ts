@@ -2565,6 +2565,7 @@ export type Database = {
       rl_check_signup: { Args: { p_ip_hash: string }; Returns: boolean }
       set_referral_code: { Args: { p_code: string }; Returns: string }
       stuck_help_count: { Args: { p_post_id: string }; Returns: number }
+      helped_students_count: { Args: { p_profile_id: string }; Returns: number }
       sweep_unconfirmed_signups: { Args: never; Returns: number }
       acquire_repository_analysis_lease: {
         Args: { p_analysis_id: string; p_ttl_seconds?: number; p_worker_id: string }
