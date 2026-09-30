@@ -29,9 +29,8 @@ import {
   schoolMajorLine,
 } from "@/lib/portfolio/profile-page-data";
 import { profileShareTitle } from "@/lib/og/copy";
-import { metadataDescription, publicSectionVisible, robotsForProjection } from "@/lib/portfolio/projection";
+import { hasPublishedSection, metadataDescription, publicSectionVisible, robotsForProjection } from "@/lib/portfolio/projection";
 import { eligiblePublicView } from "@/lib/portfolio/metrics";
-import { PORTFOLIO_SECTIONS } from "@/lib/portfolio/validation";
 import TrackPortfolioView from "@/components/portfolio/TrackPortfolioView";
 import { OwnerAnalyticsSection, PortfolioAnalyticsFallback } from "@/components/portfolio/PortfolioAnalytics";
 import SharePortfolioButton from "@/components/portfolio/SharePortfolioButton";
@@ -262,9 +261,7 @@ async function PublicPortfolioBelow({
     isPrivate: profile.is_private,
     isBlocked: false,
     isSuspended: false,
-    hasRenderedPublicContent: Boolean(
-      projection && PORTFOLIO_SECTIONS.some((section) => publicSectionVisible(projection, section))
-    ),
+    hasRenderedPublicContent: hasPublishedSection(projection),
   });
   const posts = (
     <section>
@@ -326,7 +323,26 @@ async function PublicPortfolioBelow({
 }
 
 /** The two-column frame shared by both views. */
-function ProfileGrid({ panel, notice, children }: { panel: ReactNode; notice?: ReactNode; children: ReactNode }) {
+function ProfileGrid({
+  panel,
+  notice,
+  single,
+  children,
+}: {
+  panel: ReactNode;
+  notice?: ReactNode;
+  single?: boolean;
+  children: ReactNode;
+}) {
+  if (single) {
+    return (
+      <div data-profile-grid className="mx-auto flex w-full max-w-[440px] flex-col gap-6">
+        <Reveal delay={0}>{panel}</Reveal>
+        {notice}
+        {children}
+      </div>
+    );
+  }
   return (
     <div
       data-profile-grid
@@ -345,6 +361,24 @@ function ProfileGrid({ panel, notice, children }: { panel: ReactNode; notice?: R
   );
 }
 
+function NothingPublished({ owner, username, isPrivate }: { owner: boolean; username: string; isPrivate: boolean }) {
+  if (owner) {
+    return (
+      <p className="text-small text-[var(--muted)]">
+        Nothing published yet. Visitors only see this header.{" "}
+        <Link href="/profile/edit#publication" className="text-[var(--ink)] underline underline-offset-2">
+          Choose what to publish
+        </Link>
+      </p>
+    );
+  }
+  return (
+    <p className="text-small text-[var(--muted)]">
+      {isPrivate ? "This account is private." : `@${username} has not published their portfolio yet.`}
+    </p>
+  );
+}
+
 async function PublicProfileView({ username }: { username: string }) {
   const client = createAnonPortfolioClient();
   const data = await loadPublicProfilePage(client, username);
@@ -353,6 +387,7 @@ async function PublicProfileView({ username }: { username: string }) {
   // ponytail: the logged-out header now waits for the portfolio bundle (it already runs in parallel with counts); if logged-out TTFB regresses, stream the table rows behind their own Suspense.
   const bundle = await bundlePromise;
   const intro = publicProfileIntro(profile, bundle.ok ? bundle.data.projection : null);
+  const nothingPublished = !profile.is_private && bundle.ok && !hasPublishedSection(bundle.data.projection);
 
   return (
     <main
@@ -388,11 +423,14 @@ async function PublicProfileView({ username }: { username: string }) {
             actions={<SharePortfolioButton username={profile.username} displayName={displayName} />}
           />
         }
+        single={nothingPublished}
       >
         {profile.is_private ? (
           <div className="rounded-2xl border border-[var(--hairline)] px-6 py-8 text-center">
             <p className="font-medium text-[var(--ink)]">This account is private</p>
           </div>
+        ) : nothingPublished ? (
+          <NothingPublished owner={false} username={profile.username} isPrivate={false} />
         ) : (
           <Suspense fallback={<PortfolioSectionsFallback />}>
             <PublicPortfolioBelow
@@ -519,6 +557,8 @@ export default async function ProfilePage({
       <SharePortfolioButton username={profile.username} displayName={displayName} />
     </>
   );
+  const nothingPublished =
+    !portfolioUnavailable && (!isOwner || previewPublic) && !postsSection && !hasPublishedSection(projection);
   const actions = isOwner ? (previewPublic ? previewActions : ownerActions) : (
     <>
       <div className="w-full">
@@ -550,9 +590,7 @@ export default async function ProfilePage({
             isPrivate: contentHidden,
             isBlocked,
             isSuspended: false,
-            hasRenderedPublicContent: Boolean(
-              projection && PORTFOLIO_SECTIONS.some((section) => publicSectionVisible(projection, section))
-            ),
+            hasRenderedPublicContent: hasPublishedSection(projection),
           }) && <TrackPortfolioView username={profile.username} />}
         {isOwner && previewPublic && (
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--border)] px-4 py-3">
@@ -588,21 +626,22 @@ export default async function ProfilePage({
               actions={actions}
             />
           }
+          single={nothingPublished}
           notice={
             isOwner &&
             !previewPublic &&
             projection &&
             !projection.is_private &&
-            !PORTFOLIO_SECTIONS.some((section) => publicSectionVisible(projection, section)) && (
-              <p className="mt-4 text-sm text-[var(--muted)]">
-                Your shared link shows almost nothing.{" "}
-                <Link href="/profile/edit#publication" className="text-[var(--ink)] underline underline-offset-2">
-                  Publish your portfolio
-                </Link>
-              </p>
+            !hasPublishedSection(projection) && (
+              <div className="mt-4">
+                <NothingPublished owner username={profile.username} isPrivate={false} />
+              </div>
             )
           }
         >
+          {nothingPublished && (
+            <NothingPublished owner={isOwner} username={profile.username} isPrivate={contentHidden} />
+          )}
           {portfolioUnavailable && isOwner && (
             <div className={COLUMN}>
               <UnavailableNotice />
@@ -632,7 +671,7 @@ export default async function ProfilePage({
               {postsSection}
             </div>
           )}
-          {!portfolioUnavailable && (
+          {!portfolioUnavailable && !nothingPublished && (
             <PortfolioBody
               projection={projection}
               unavailable={false}

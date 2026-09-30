@@ -55,6 +55,11 @@ export function publicSectionVisible(
   }
 }
 
+/** True when a visitor can see at least one portfolio section. */
+export function hasPublishedSection(projection: PublicPortfolioProjection | null): boolean {
+  return Boolean(projection && PORTFOLIO_SECTIONS.some((section) => publicSectionVisible(projection, section)));
+}
+
 export function orderedSections(order: readonly string[]): PortfolioSection[] {
   if (sectionOrderError(order)) return [...PORTFOLIO_SECTIONS];
   return order as PortfolioSection[];
