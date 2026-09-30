@@ -16,4 +16,18 @@ describe("authSuccessDest", () => {
     expect(authSuccessDest("//evil.test")).toBe("/feed");
     expect(authSuccessDest("https://evil.test")).toBe("/feed");
   });
+
+  it("rejects backslash and control-character escapes", () => {
+    expect(authSuccessDest("/\\evil.test")).toBe("/feed");
+    expect(authSuccessDest("/\t/evil.test")).toBe("/feed");
+    expect(authSuccessDest("/\n/evil.test")).toBe("/feed");
+  });
+
+  it("keeps encoded backslash as a same-origin path", () => {
+    expect(authSuccessDest("/%5Cevil.test")).toBe("/%5Cevil.test");
+  });
+
+  it("preserves query and hash", () => {
+    expect(authSuccessDest("/profile/edit?x=1#y")).toBe("/profile/edit?x=1#y");
+  });
 });
