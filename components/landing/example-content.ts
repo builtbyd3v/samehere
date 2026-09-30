@@ -1,53 +1,6 @@
-import type { FeedPost } from "@/components/feed/PostCard";
 import type { LandingExample } from "@/lib/landing/examples";
 
 // Illustrative content for the landing. Honesty rule: never a realistic person or a real account.
-// "example-student" breaks the username rule (^[a-z0-9_]{3,20}$), so it can never be a real user.
-
-/** ponytail: a non-null viewer id makes ReactionRow render enabled with the on-state; the card is inert, so nothing can call Supabase. */
-export const EXAMPLE_VIEWER_ID = "example-viewer";
-
-/** Outside the component so the React purity lint accepts the clock read; LandingPage is a server render. */
-export function twoHoursAgo(): string {
-  return new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
-}
-
-export function examplePost(createdAt: string): FeedPost {
-  return {
-    id: "example",
-    content: "Supabase RLS blocks my insert but the policy looks right. What am I missing?",
-    created_at: createdAt,
-    user_id: "example-author",
-    media: [],
-    hidden: false,
-    context_label: "stuck",
-    team_event_name: null,
-    team_event_date: null,
-    team_event_mode: null,
-    resolved_at: null,
-    resolved_comment_id: null,
-    author: {
-      username: "example-student",
-      display_name: "Example student",
-      avatar_url: null,
-      is_private: false,
-      is_pro: false,
-      is_founder: false,
-      is_campus_founder: false,
-      verified_student: false,
-      is_bot: false,
-      stage: "building",
-      profile_school: null,
-    },
-    // Only the viewer's own SameHere; no invented crowd.
-    samehere_count: 1,
-    repost_count: 0,
-    comment_count: 0,
-    mine_samehere: true,
-    mine_repost: false,
-    mine_bookmark: false,
-  };
-}
 
 /** Shown only when no real account qualifies (all private, unpublished, or the fetch failed). Labeled "Example portfolio". */
 export const EXAMPLE_PORTFOLIO: LandingExample = {
@@ -76,5 +29,8 @@ export const EXAMPLE_PORTFOLIO: LandingExample = {
     sort_order: 0,
   },
 };
+
+// ponytail: the hero example is StuckQuestion alone; the real PostCard pushed / to 317.4 kB gzip (cap for it was 285).
+export const EXAMPLE_STUCK_OPEN = "Supabase RLS blocks my insert but the policy looks right. What am I missing?";
 
 export const EXAMPLE_STUCK_SOLVED = "Why does my useEffect run twice?\nOnly in development. The production build runs it once.";
