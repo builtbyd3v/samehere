@@ -1,6 +1,6 @@
 export type NotificationRow = {
   id: string;
-  type: "follow" | "follow_request" | "comment" | "reaction" | "mention" | "referral_joined";
+  type: "follow" | "follow_request" | "comment" | "reaction" | "mention" | "referral_joined" | "stuck_help";
   post_id: string | null;
   // Set when the notification's source is a quote repost (its commentary, or a
   // comment on it). Those live at /quote/[id], not on the root post.
@@ -51,11 +51,13 @@ export function notificationLabel(
       return `${actorName} mentioned you`;
     case "referral_joined":
       return `${actorName} joined from your invite`;
+    case "stuck_help":
+      return `${actorName} is stuck on something in your focus area`;
   }
 }
 
 export function notificationHref(row: NotificationRow): string {
-  const contentType = row.type === "comment" || row.type === "reaction" || row.type === "mention";
+  const contentType = row.type === "comment" || row.type === "reaction" || row.type === "mention" || row.type === "stuck_help";
   // A quote repost's own page shows the commentary the user was mentioned in;
   // the root post does not. Prefer it when the row names one.
   if (contentType && row.repost_id) return `/quote/${row.repost_id}`;
