@@ -121,6 +121,32 @@ body {
   --label-building: #4f9fe8;
   --label-learning: #5fce8f;
   --label-team: #e07a5f;
+
+  /* Midnight tokens again, so `class="dark"` forces Midnight inside a light page
+     (the landing). Keep in sync with :root above. */
+  --bg: #08090a;
+  --surface-1: #0c0d0f;
+  --surface-2: #0d0f11;
+  --surface-3: #0f1012;
+  --surface-4: #17191c;
+  --hairline: rgba(255, 255, 255, 0.06);
+  --hairline-strong: rgba(255, 255, 255, 0.12);
+  --ink-2: #e4e5e7;
+  --ink-3: #c4c7cc;
+  --muted: #9a9ea6;
+  --faint: #787c84;
+  --accent-2: #9ecbf5;
+  --accent-ink: #cfe6ff;
+  --accent-soft: rgba(79, 159, 232, 0.16);
+  --amber: var(--label-stuck);
+  --green: var(--label-learning);
+  --coral: var(--label-team);
+  --stage-learning: var(--green);
+  --stage-building: var(--accent);
+  --stage-internship-search: var(--amber);
+  --stage-interning: var(--accent-2);
+  --stage-job-search: var(--coral);
+  --stage-working: var(--ink-3);
 }
 
 .light {
