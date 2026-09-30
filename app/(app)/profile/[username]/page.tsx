@@ -98,7 +98,7 @@ export async function generateMetadata({
 
 function ProfileBackdrop({ bannerUrl, accent }: { bannerUrl: string | null; accent: boolean }) {
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[300px] overflow-hidden xl:h-[420px]">
+    <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[300px] overflow-hidden mask-b-from-40% mask-l-from-85% xl:h-[420px]">
       {bannerUrl ? (
         <PortfolioBanner src={bannerUrl} />
       ) : accent ? (
@@ -335,7 +335,7 @@ function ProfileGrid({ panel, notice, children }: { panel: ReactNode; notice?: R
   return (
     <div
       data-profile-grid
-      className="flex flex-col gap-8 xl:grid xl:grid-cols-[300px_minmax(0,1fr)] xl:gap-12 min-[1440px]:grid-cols-[340px_minmax(0,1fr)] min-[1440px]:gap-[72px]"
+      className="flex flex-col gap-8 xl:grid xl:grid-cols-[300px_minmax(0,1fr)] xl:gap-12 min-[90rem]:grid-cols-[340px_minmax(0,1fr)] min-[90rem]:gap-[72px]"
     >
       {/* ponytail: the panel is sticky only on viewports at least 880px tall, so the counts are never cut off on short laptops. */}
       <aside className="xl:self-start xl:[@media(min-height:880px)]:sticky xl:[@media(min-height:880px)]:top-24">
