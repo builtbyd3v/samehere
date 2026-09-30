@@ -1495,6 +1495,8 @@ export type Database = {
           onboarded_at: string | null
           open_to: string[]
           study_mode: string | null
+          stage: string | null
+          focus_areas: string[]
           headline: string | null
           github_url: string | null
           linkedin_url: string | null
@@ -1535,6 +1537,8 @@ export type Database = {
           onboarded_at?: string | null
           open_to?: string[]
           study_mode?: string | null
+          stage?: string | null
+          focus_areas?: string[]
           headline?: string | null
           github_url?: string | null
           linkedin_url?: string | null
@@ -1575,6 +1579,8 @@ export type Database = {
           onboarded_at?: string | null
           open_to?: string[]
           study_mode?: string | null
+          stage?: string | null
+          focus_areas?: string[]
           headline?: string | null
           github_url?: string | null
           linkedin_url?: string | null
@@ -2304,6 +2310,7 @@ export type Database = {
           banner_url: string
           bio: string
           display_name: string
+          focus_areas: string[] | null
           goals: string
           heatmap_visibility: string
           id: string
@@ -2315,6 +2322,7 @@ export type Database = {
           major: string
           open_to: string[] | null
           school: string
+          stage: string | null
           study_mode: string | null
           headline: string | null
           github_url: string | null
@@ -2406,6 +2414,7 @@ export type Database = {
           is_pro: boolean
           major: string
           school: string
+          stage: string | null
           username: string
           verified_student: boolean
           year: string
@@ -2765,23 +2774,27 @@ export type Database = {
       }
       search_people: {
         Args: {
+          p_focus?: string
           p_limit?: number
           p_major?: string
           p_offset?: number
           p_open_to?: string
           p_query?: string
+          p_stage?: string
           p_study_mode?: string
           p_year?: string
         }
         Returns: {
           avatar_url: string | null
           display_name: string | null
+          focus_areas: string[] | null
           id: string
           is_campus_founder: boolean
           is_founder: boolean
           is_pro: boolean
           major: string | null
           open_to: string[] | null
+          stage: string | null
           study_mode: string | null
           username: string
           verified_student: boolean
