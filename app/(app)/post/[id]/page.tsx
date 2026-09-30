@@ -155,10 +155,10 @@ async function PublicPostView({ id }: { id: string }) {
         {/* Read-only counts — anon can't react. No buttons, no handlers. */}
         <div className="mt-4 flex items-center gap-4 border-t border-[var(--border)] pt-3 text-small text-[var(--ink-muted)]">
           <span className="inline-flex items-center gap-1.5">
-            <IconSame /> {post.samehere_count}
+            <IconSame /> <span className="sr-only">Same here:</span> {post.samehere_count}
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <IconRepost /> {post.repost_count}
+            <IconRepost /> <span className="sr-only">Reposts:</span> {post.repost_count}
           </span>
         </div>
       </article>

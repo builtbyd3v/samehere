@@ -28,7 +28,9 @@ type Props = {
 // Transitions come from the global `a, button` rule in app/globals.css.
 // 44px hit area on phones, 30px rows from lg (artboard).
 const action =
-  "inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-lg px-2 hover:bg-[var(--fill-2)] hover:text-[var(--ink)] active:scale-[0.96] disabled:opacity-40 disabled:active:scale-100 lg:h-[30px] lg:min-h-0 lg:min-w-0";
+  "inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-lg px-2 hover:bg-[var(--fill-2)] active:scale-[0.96] disabled:opacity-40 disabled:active:scale-100 lg:h-[30px] lg:min-h-0 lg:min-w-0";
+// Off actions brighten on hover; on-states keep their color (plan 026).
+const off = "hover:text-[var(--ink)]";
 
 const ICON = { size: 15, strokeWidth: 1.7, "aria-hidden": true } as const;
 
@@ -114,16 +116,15 @@ export default function ReactionRow(props: Props) {
         onClick={() => toggleReaction("samehere")}
         disabled={!viewerId}
         aria-pressed={s.mineSamehere}
-        aria-label={s.mineSamehere ? "SameHere added" : "SameHere"}
-        className={`${action}${s.mineSamehere ? " text-[var(--ink)]" : ""}`}
+        aria-label={s.samehere > 0 ? `Same here, ${s.samehere}` : "Same here"}
+        className={`${action} ${s.mineSamehere ? "text-[var(--accent-2)]" : off}`}
       >
-        <IconSame on={s.mineSamehere} className="size-[15px]" />
-        <span className="hidden sm:inline">Same here</span>
+        <IconSame on={s.mineSamehere} className={`size-[15px]${s.mineSamehere ? " text-[var(--accent)]" : ""}`} />
         {s.samehere > 0 && <span className="tabular-nums">{s.samehere}</span>}
       </ActionButton>
 
       {!hideComments && (
-        <Link href={commentsHref} aria-label={answers ? `${commentCount} answers` : "Comments"} className={action}>
+        <Link href={commentsHref} aria-label={answers ? `${commentCount} answers` : "Comments"} className={`${action} ${off}`}>
           <MessageCircle {...ICON} />
           {answers ? (
             <>
@@ -144,7 +145,7 @@ export default function ReactionRow(props: Props) {
           authorPrivate ? "Reposting is off for private accounts" : repostState.mine ? "Reposted" : "Repost"
         }
         title={authorPrivate ? "Private posts can't be reposted" : undefined}
-        className={`${action}${repostState.mine ? " text-[var(--green)]" : ""}`}
+        className={`${action} ${repostState.mine ? "text-[var(--green)]" : off}`}
       >
         <Repeat2 {...ICON} />
         {repostState.count > 0 && <span className="tabular-nums">{repostState.count}</span>}
@@ -158,7 +159,7 @@ export default function ReactionRow(props: Props) {
         disabled={!viewerId}
         aria-pressed={s.mineBookmark}
         aria-label={s.mineBookmark ? "Bookmarked" : "Bookmark"}
-        className={`${action}${s.mineBookmark ? " text-[var(--accent)]" : ""}`}
+        className={`${action} ${s.mineBookmark ? "text-[var(--accent)]" : off}`}
       >
         <Bookmark {...ICON} fill={s.mineBookmark ? "currentColor" : "none"} />
       </ActionButton>
