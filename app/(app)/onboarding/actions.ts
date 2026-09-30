@@ -3,6 +3,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { updateProfile, type EditState } from "@/app/(app)/profile/edit/actions";
+import { parseStepsDone } from "@/lib/onboarding";
+import { getPostHogServerClient } from "@/lib/posthog-server";
 
 function isRedirectSignal(err: unknown): boolean {
   return (
@@ -23,7 +25,7 @@ export async function saveOnboardingBasics(prev: EditState, formData: FormData):
   }
 }
 
-export async function finishOnboarding(): Promise<void> {
+export async function finishOnboarding(stepsDoneRaw: unknown = []): Promise<void> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -31,5 +33,10 @@ export async function finishOnboarding(): Promise<void> {
   if (!user) redirect("/login");
 
   await supabase.from("profiles").update({ onboarded_at: new Date().toISOString() }).eq("id", user.id);
+  getPostHogServerClient()?.capture({
+    distinctId: user.id,
+    event: "onboarding_completed",
+    properties: { steps_done: parseStepsDone(stepsDoneRaw) },
+  });
   redirect("/feed");
 }
