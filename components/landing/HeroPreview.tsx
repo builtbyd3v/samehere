@@ -52,7 +52,7 @@ export default function HeroPreview() {
         <div className="my-1.5 h-px bg-[var(--hairline)]" />
         <p className="text-sm font-semibold">{PROJECTS[0].name}</p>
         <p className="-mt-2 text-[13px] text-[var(--muted)]">{PROJECTS[0].blurb}</p>
-        <MonoLabel>{URL_TEXT}</MonoLabel>
+        <MonoLabel className="break-all">{URL_TEXT}</MonoLabel>
       </HairlineCard>
 
       {/* Tablet: browser card alone. Desktop (xl): story card, browser card, Stuck card. */}
@@ -65,7 +65,7 @@ export default function HeroPreview() {
             <p className="text-sm text-[var(--ink-3)]">{HEADLINE}</p>
             <Chips />
             <div className="grow" />
-            <MonoLabel>{URL_TEXT}</MonoLabel>
+            <MonoLabel className="break-all">{URL_TEXT}</MonoLabel>
           </HairlineCard>
         </div>
 

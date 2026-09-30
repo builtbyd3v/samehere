@@ -15,7 +15,7 @@ export default function StageMarquee() {
       <MonoLabel as="h2" size="sm" className="sr-only md:not-sr-only md:mb-5 md:text-center">
         Every stage of a CS journey
       </MonoLabel>
-      <div className="flex w-max animate-[landing-marquee_30s_linear_infinite] hover:[animation-play-state:paused] group-has-[:checked]:[animation-play-state:paused] md:animate-[landing-marquee_40s_linear_infinite] motion-reduce:w-full motion-reduce:animate-none">
+      <div className="flex w-max animate-[landing-marquee_30s_linear_infinite] hover:[animation-play-state:paused] group-has-[:checked]:[animation-play-state:paused] md:animate-[landing-marquee_40s_linear_infinite] motion-reduce:w-full motion-reduce:animate-none md:motion-reduce:animate-none">
         {COPIES.map((copy) => (
           <ul
             key={copy}

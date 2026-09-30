@@ -13,8 +13,8 @@ export default function FinaleCta() {
         radius={32}
         innerClassName="relative flex flex-col items-center gap-[18px] px-[22px] py-12 text-center md:gap-6 md:px-16 md:py-24"
       >
-        {/* The deep pool is centered at 22% of its box; this box puts that point at the panel's top center. */}
-        <LightPool tone="deep" className="left-[21%] top-0 h-full w-[133%]" />
+        {/* Centered on the panel's top edge, like the artboard's top-center glow. */}
+        <LightPool className="left-1/2 top-0 h-[160%] w-full -translate-x-1/2 -translate-y-1/2" />
         <h2
           id="finale-title"
           className="relative text-balance text-[34px] font-semibold leading-[1.02] tracking-[-0.04em] md:text-5xl lg:max-w-[820px] lg:text-[64px] lg:leading-none lg:tracking-[-0.045em]"
