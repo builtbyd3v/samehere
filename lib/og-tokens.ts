@@ -24,6 +24,9 @@ export const DARK = {
   "--ink-faint": "rgba(245, 245, 245, 0.68)",
   "--featured-surface": "rgba(255, 255, 255, 0.05)",
   "--blue": "#4f9fe8",
+  "--blue-2": "#7ec4ff",
+  "--accent-blue-soft": "rgba(0, 117, 222, 0.14)",
+  "--label-stuck": "#e0a83a",
   "--founder": "#ecc94b",
   "--campus-founder": "#5fce8f",
   "--hm0": "rgba(255, 255, 255, 0.07)",
@@ -47,3 +50,11 @@ export const BLUE = DARK["--blue"];
 export const GOLD = DARK["--founder"];
 export const GREEN = DARK["--campus-founder"]; // Social Butterfly
 export const HM = [DARK["--hm0"], DARK["--hm1"], DARK["--hm2"], DARK["--hm3"]] as const;
+export const BLUE_2 = DARK["--blue-2"];
+export const BLUE_SOFT = DARK["--accent-blue-soft"];
+export const AMBER = DARK["--label-stuck"];
+
+// Export card ("Midnight editorial") faint label shade. It has no `.dark` twin in
+// app/globals.css yet, so it lives outside DARK and the drift check does not see it.
+// ponytail: move it into DARK once the app palette carries it (the plan 013 redesign).
+export const FAINT_LABEL = "#6b6f76";

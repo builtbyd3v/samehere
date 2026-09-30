@@ -1,5 +1,22 @@
-import { BLUE, BORDER, CANVAS, CARD, GOLD, GREEN, HM, INK, INK_FAINT, INK_MUTED } from "@/lib/og-tokens";
+import {
+  AMBER,
+  BLUE,
+  BLUE_2,
+  BLUE_SOFT,
+  BORDER,
+  CANVAS,
+  CARD,
+  FAINT_LABEL,
+  FEATURED,
+  GOLD,
+  GREEN,
+  HM,
+  INK,
+  INK_FAINT,
+  INK_MUTED,
+} from "@/lib/og-tokens";
 import { OgWordmark, ogCanvasStyle } from "@/lib/og/mark";
+import { CARD_SIZES, type CardFormat } from "@/lib/portfolio/card-format";
 
 // Satori building blocks shared by the OG card (app/(app)/profile/[username]/opengraph-image.tsx)
 // and the PNG export card. A visual change here changes link previews too.
@@ -257,6 +274,198 @@ export function BrandFallback() {
       <OgWordmark size={72} />
       <div style={{ marginTop: 20, fontSize: 24, color: INK_MUTED }}>Portfolio for students.</div>
       <div style={{ marginTop: 10, fontSize: 18, color: INK_FAINT }}>samehere.dev</div>
+    </div>
+  );
+}
+
+// Export card ("Midnight editorial"): blue light pool on the canvas, hairline borders,
+// small uppercase labels. Stage chip is amber while hunting, blue otherwise.
+const HUNTING_STAGES = new Set(["Hunting internships", "Job hunting"]);
+
+export type ExportCardProps = {
+  format: CardFormat;
+  profile: OgProfile;
+  avatar: string | null;
+  headline: string | null;
+  stage: string | null; // display text, already labeled
+  focus: string[]; // display text, max 3
+  school: string | null;
+  skills: string[]; // max 5
+  projectTitles: string[]; // max 2
+  heat: HeatmapRow[]; // empty = no heatmap
+  urlText: string;
+};
+
+function Label({ text, big }: { text: string; big: boolean }) {
+  return (
+    <div style={{ display: "flex", fontSize: big ? 20 : 15, fontWeight: 600, letterSpacing: "0.1em", color: FAINT_LABEL }}>
+      {text.toUpperCase()}
+    </div>
+  );
+}
+
+function Chip({ text, big, tone }: { text: string; big: boolean; tone: "plain" | "amber" | "blue" }) {
+  const accent = tone === "amber" ? AMBER : tone === "blue" ? BLUE : null;
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        padding: "6px 14px",
+        borderRadius: 999,
+        fontSize: big ? 22 : 18,
+        fontWeight: accent ? 600 : 400,
+        color: tone === "amber" ? AMBER : tone === "blue" ? BLUE_2 : INK_MUTED,
+        background: tone === "amber" ? `${AMBER}1f` : tone === "blue" ? BLUE_SOFT : "transparent",
+        border: `1px solid ${accent ? "transparent" : BORDER}`,
+      }}
+    >
+      {accent && <div style={{ display: "flex", width: 8, height: 8, borderRadius: 999, background: accent }} />}
+      {text}
+    </div>
+  );
+}
+
+function SkillChips({ skills, big }: { skills: string[]; big: boolean }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <Label text="Skills" big={big} />
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        {skills.map((skill) => (
+          <div
+            key={skill}
+            style={{
+              display: "flex",
+              padding: big ? "6px 12px" : "4px 10px",
+              borderRadius: big ? 8 : 6,
+              fontSize: big ? 20 : 16,
+              color: INK_MUTED,
+              background: FEATURED,
+            }}
+          >
+            {skill}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ProjectList({ titles, big }: { titles: string[]; big: boolean }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <Label text="Projects" big={big} />
+      {titles.map((title) => (
+        <div
+          key={title}
+          style={{
+            display: "flex",
+            padding: big ? "18px 22px" : "12px 16px",
+            borderRadius: big ? 18 : 14,
+            fontSize: big ? 28 : 22,
+            fontWeight: 600,
+            color: INK,
+            background: FEATURED,
+            border: `1px solid ${BORDER}`,
+          }}
+        >
+          {title}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function PortfolioExportCard(props: ExportCardProps) {
+  const { format, profile, avatar, headline, stage, focus, school, skills, projectTitles, heat, urlText } = props;
+  const { width, height } = CARD_SIZES[format];
+  const big = format !== "landscape";
+  const name = profile.display_name ?? profile.username;
+  const padding = format === "landscape" ? "40px 56px 40px" : format === "square" ? "72px 72px 56px" : "120px 88px 88px";
+  // Top-left light pool: --hm2 at 50% alpha (hex alpha 80).
+  const pool = `radial-gradient(ellipse ${Math.round(width * 0.6)}px ${Math.round(height * 0.4)}px at 20% 10%, ${HM[2]}80, transparent 70%)`;
+
+  const identity = (
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      <Avatar src={avatar} letter={name.charAt(0).toUpperCase()} />
+      <div style={{ display: "flex", marginTop: 20 }}>
+        <NameRow name={name} profile={profile} />
+      </div>
+      {profile.is_private ? (
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <div style={{ marginTop: 4, fontSize: 24, color: INK_MUTED }}>{`@${profile.username}`}</div>
+          <div style={{ marginTop: 16, fontSize: 20, color: INK_FAINT }}>This account is private.</div>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          {headline && <div style={{ marginTop: 8, fontSize: big ? 32 : 26, color: INK_MUTED }}>{headline}</div>}
+          {(stage || focus.length > 0) && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 16 }}>
+              {stage && <Chip text={stage} big={big} tone={HUNTING_STAGES.has(stage) ? "amber" : "blue"} />}
+              {focus.map((f) => (
+                <Chip key={f} text={f} big={big} tone="plain" />
+              ))}
+            </div>
+          )}
+          {school && <div style={{ marginTop: 12, fontSize: big ? 24 : 20, color: FAINT_LABEL }}>{school}</div>}
+        </div>
+      )}
+    </div>
+  );
+
+  const details = profile.is_private
+    ? []
+    : [
+        skills.length > 0 && <SkillChips key="skills" skills={skills} big={big} />,
+        projectTitles.length > 0 && <ProjectList key="projects" titles={projectTitles} big={big} />,
+        heat.length > 0 && (
+          // Row wrapper so the heatmap keeps its own width instead of stretching the header row.
+          <div key="heat" style={{ display: "flex" }}>
+            <Heatmap weeks={buildWeeks(heat)} streak={currentStreak(heat)} />
+          </div>
+        ),
+      ].filter(Boolean);
+
+  return (
+    <div style={ogCanvasStyle({ backgroundImage: pool })}>
+      <div style={{ display: "flex", flexDirection: "column", flexGrow: 1, padding }}>
+        {format === "landscape" ? (
+          <div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", flexGrow: 1 }}>
+            <div style={{ display: "flex", width: 560 }}>{identity}</div>
+            {details.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 20, width: 500 }}>{details}</div>
+            )}
+          </div>
+        ) : (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              flexGrow: 1,
+              gap: format === "story" ? 40 : 28,
+              justifyContent: format === "story" ? "center" : "flex-start",
+            }}
+          >
+            {identity}
+            {details}
+          </div>
+        )}
+
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "space-between",
+            marginTop: 20,
+            paddingTop: 20,
+            borderTop: `1px solid ${BORDER}`,
+          }}
+        >
+          <OgWordmark size={big ? 32 : 24} />
+          <div style={{ fontSize: big ? 24 : 17, color: INK_MUTED }}>{urlText}</div>
+        </div>
+      </div>
     </div>
   );
 }
