@@ -426,6 +426,14 @@ summary {
   }
 }
 
+/* The portfolio's two-column layout needs more than the shell's 848px
+   content column from xl (1120px content + the 24px side padding). */
+@media (min-width: 1280px) {
+  #main:has([data-profile-page]) {
+    max-width: 1168px;
+  }
+}
+
 /* Component classes below sit in @layer components so a stacked Tailwind
    utility (e.g. `<Skeleton className="rounded-full">`) still wins the cascade. */
 @layer components {

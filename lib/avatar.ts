@@ -16,7 +16,7 @@ export const AVATAR_TINTS = [
 ] as const;
 
 // FNV-1a: stable across runs and platforms, unlike hashing via charCodeAt sums.
-function hashSeed(seed: string): number {
+export function hashSeed(seed: string): number {
   let h = 2166136261;
   for (let i = 0; i < seed.length; i++) {
     h ^= seed.charCodeAt(i);
