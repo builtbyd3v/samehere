@@ -40,7 +40,7 @@ export function HairlineCard({
 }) {
   return (
     <Tag
-      className={`block bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.02))] p-px ${OUTER[radius]} ${
+      className={`block bg-[linear-gradient(180deg,var(--edge-top),var(--fill-1))] p-px ${OUTER[radius]} ${
         lift
           ? "transition-transform duration-200 ease-[var(--ease-out)] hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
           : ""

@@ -28,7 +28,7 @@ type Props = {
 // Transitions come from the global `a, button` rule in app/globals.css.
 // 44px hit area on phones, 30px rows from lg (artboard).
 const action =
-  "inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-lg px-2 hover:bg-white/[0.05] hover:text-[var(--ink)] active:scale-[0.96] disabled:opacity-40 disabled:active:scale-100 lg:h-[30px] lg:min-h-0 lg:min-w-0";
+  "inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-lg px-2 hover:bg-[var(--fill-2)] hover:text-[var(--ink)] active:scale-[0.96] disabled:opacity-40 disabled:active:scale-100 lg:h-[30px] lg:min-h-0 lg:min-w-0";
 
 const ICON = { size: 15, strokeWidth: 1.7, "aria-hidden": true } as const;
 

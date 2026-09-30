@@ -64,7 +64,7 @@ export function FocusChip({ label, selected = false, className = "" }: { label: 
       className={`inline-flex h-11 shrink-0 items-center whitespace-nowrap rounded-full border px-3.5 text-sm font-medium sm:h-9 ${
         selected
           ? "border-[var(--ink)] bg-[var(--ink)] text-[var(--bg)]"
-          : "border-white/10 bg-white/[0.03] text-[var(--ink-3)]"
+          : "border-[var(--border)] bg-[var(--fill-1)] text-[var(--ink-3)]"
       } ${className}`.trim()}
     >
       {label}

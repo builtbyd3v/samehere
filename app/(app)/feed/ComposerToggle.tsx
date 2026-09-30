@@ -40,7 +40,7 @@ export default function ComposerToggle({ isPro, avatarUrl, username, isSuspended
             type="button"
             onClick={() => setOpen(null)}
             aria-label="Close composer"
-            className="grid size-7 place-items-center rounded-full text-[var(--muted)] hover:bg-white/[0.05] hover:text-[var(--ink)] active:scale-[0.96]"
+            className="grid size-7 place-items-center rounded-full text-[var(--muted)] hover:bg-[var(--fill-2)] hover:text-[var(--ink)] active:scale-[0.96]"
           >
             <X size={16} strokeWidth={2} aria-hidden />
           </button>

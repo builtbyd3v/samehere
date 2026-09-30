@@ -50,7 +50,7 @@ export default function QuotedRepostCard({
   return (
     <article
       className={`flex flex-col gap-2 border-b border-[var(--hairline)] py-4 transition-colors duration-[180ms] lg:py-[22px]${
-        detail ? "" : " hover:bg-white/[0.015]"
+        detail ? "" : " hover:bg-[var(--fill-1)]"
       }`}
     >
       <div className="flex gap-3">

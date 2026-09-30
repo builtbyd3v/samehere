@@ -25,7 +25,7 @@ export default function ResumeLinks(props: ResumeLinksProps) {
             href={href}
             target="_blank"
             rel="me noopener noreferrer"
-            className="flex h-11 items-center justify-between gap-4 border-b border-white/5 text-sm text-[var(--ink-3)] hover:text-[var(--ink)] md:h-9"
+            className="flex h-11 items-center justify-between gap-4 border-b border-[var(--hairline)] text-sm text-[var(--ink-3)] hover:text-[var(--ink)] md:h-9"
           >
             <span>{label}</span>
             <span className="min-w-0 truncate text-xs text-[var(--faint)]">{host}</span>

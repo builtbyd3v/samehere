@@ -88,7 +88,7 @@ export default function NavMenu({ user, variant }: { user: ShellUser; variant: "
       placement="top"
       fullWidth
       label="Account menu"
-      triggerClassName="flex w-full items-center gap-2.5 rounded-xl p-2.5 text-left hover:bg-white/[0.04] active:scale-[0.98]"
+      triggerClassName="flex w-full items-center gap-2.5 rounded-xl p-2.5 text-left hover:bg-[var(--fill-2)] active:scale-[0.98]"
       trigger={
         <>
           <AvatarBase src={avatarUrl} seed={username} name={name} className="size-8 shrink-0 rounded-full text-[13px]" pro={isPro} />

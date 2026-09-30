@@ -52,9 +52,9 @@ const TOTAL_STEPS = 6;
 const label = "block text-[13px] font-medium text-[var(--ink-3)]";
 const field = "input-base mt-1.5";
 const formClass = "mt-7 flex flex-col gap-8 md:mt-9 md:gap-9";
-const alertClass = "rounded-xl border border-[var(--hairline-strong)] bg-white/[0.03] px-3 py-2 text-sm text-[var(--ink)]";
+const alertClass = "rounded-xl border border-[var(--hairline-strong)] bg-[var(--fill-1)] px-3 py-2 text-sm text-[var(--ink)]";
 const choiceChip =
-  "inline-flex h-11 cursor-pointer select-none items-center rounded-full border border-white/10 bg-white/[0.03] px-3.5 text-sm font-medium text-[var(--ink-3)] transition-[background-color,border-color,color,transform] duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-95 has-[:checked]:border-[var(--ink)] has-[:checked]:bg-[var(--ink)] has-[:checked]:text-[var(--bg)] has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[var(--accent)] motion-reduce:transition-none motion-reduce:active:scale-100 md:h-9";
+  "inline-flex h-11 cursor-pointer select-none items-center rounded-full border border-[var(--border)] bg-[var(--fill-1)] px-3.5 text-sm font-medium text-[var(--ink-3)] transition-[background-color,border-color,color,transform] duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-95 has-[:checked]:border-[var(--ink)] has-[:checked]:bg-[var(--ink)] has-[:checked]:text-[var(--bg)] has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[var(--accent)] motion-reduce:transition-none motion-reduce:active:scale-100 md:h-9";
 const STAGE_HINTS: Record<Stage, string> = {
   learning: "Intro courses, first languages, first bugs.",
   building: "Side projects, hackathons, shipping things.",
@@ -298,7 +298,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
                 {STAGES.map((s) => (
                   <label
                     key={s}
-                    className="group flex min-h-14 cursor-pointer items-center gap-3 rounded-[14px] border border-[var(--border)] bg-[var(--surface-2)] px-3.5 transition-[transform,border-color,background-color] duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-white/15 active:scale-[0.98] has-[:checked]:border-[rgba(79,159,232,0.55)] has-[:checked]:bg-[rgba(79,159,232,0.08)] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[var(--accent)] motion-reduce:transition-none motion-reduce:active:scale-100 sm:grid sm:grid-cols-[1fr_auto] sm:content-start sm:items-start sm:gap-2 sm:rounded-[18px] sm:p-[18px] sm:active:scale-[0.97]"
+                    className="group flex min-h-14 cursor-pointer items-center gap-3 rounded-[14px] border border-[var(--border)] bg-[var(--surface-2)] px-3.5 transition-[transform,border-color,background-color] duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-[var(--hairline-strong)] active:scale-[0.98] has-[:checked]:border-[rgba(79,159,232,0.55)] has-[:checked]:bg-[rgba(79,159,232,0.08)] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[var(--accent)] motion-reduce:transition-none motion-reduce:active:scale-100 sm:grid sm:grid-cols-[1fr_auto] sm:content-start sm:items-start sm:gap-2 sm:rounded-[18px] sm:p-[18px] sm:active:scale-[0.97]"
                   >
                     <input
                       type="radio"
@@ -318,7 +318,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
                     </span>
                     <span
                       aria-hidden
-                      className="grid size-5 shrink-0 place-items-center rounded-full border-[1.5px] border-white/20 group-has-[:checked]:border-[var(--accent)] sm:col-start-2 sm:row-start-1 sm:size-[18px]"
+                      className="grid size-5 shrink-0 place-items-center rounded-full border-[1.5px] border-[var(--border-strong)] group-has-[:checked]:border-[var(--accent)] sm:col-start-2 sm:row-start-1 sm:size-[18px]"
                     >
                       <span className="size-2 rounded-full bg-[var(--accent)] opacity-0 group-has-[:checked]:opacity-100" />
                     </span>
