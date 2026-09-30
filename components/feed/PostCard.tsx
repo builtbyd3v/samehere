@@ -247,15 +247,18 @@ export default function PostCard({
         ) : (
           <div className="flex min-w-0 items-center gap-2">
             {a ? (
-              <ProfileHoverLink
-                href={`/profile/${a.username}`}
-                username={a.username}
-                className="truncate text-[15px] font-semibold text-[var(--ink)] hover:underline"
-              >
-                {name}
-              </ProfileHoverLink>
+              // Wrapper is the flex item: ProfileHoverLink's own inline span cannot shrink.
+              <span className="min-w-0 truncate">
+                <ProfileHoverLink
+                  href={`/profile/${a.username}`}
+                  username={a.username}
+                  className="text-[15px] font-semibold text-[var(--ink)] hover:underline"
+                >
+                  {name}
+                </ProfileHoverLink>
+              </span>
             ) : (
-              <span className="truncate text-[15px] font-semibold">{name}</span>
+              <span className="min-w-0 truncate text-[15px] font-semibold">{name}</span>
             )}
             {a && (
               <UserBadges
@@ -266,7 +269,7 @@ export default function PostCard({
                 isBot={a.is_bot}
               />
             )}
-            {meta ? <span className="hidden truncate text-sm text-[var(--faint)] sm:inline">{meta}</span> : null}
+            {meta ? <span className="hidden min-w-0 truncate text-sm text-[var(--faint)] sm:inline">{meta}</span> : null}
             {post.hidden && (
               <span className="inline-flex shrink-0 rounded-full bg-[var(--danger)]/[0.06] px-2 py-0.5 text-xs font-medium text-[var(--danger)]">
                 Hidden
