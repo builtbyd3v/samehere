@@ -447,13 +447,13 @@ summary {
   border-radius: 9999px;
   padding: 8px 16px;
   font-size: 0.9375rem;
-  font-weight: 500;
+  font-weight: 600;
   background: var(--ink);
-  color: var(--canvas);
+  color: var(--bg);
   box-shadow: none;
 }
 .btn-primary:hover:not(:disabled) {
-  filter: brightness(0.92);
+  background: var(--ink-2);
 }
 .btn-primary:active:not(:disabled) {
   opacity: 0.8;
@@ -474,12 +474,12 @@ summary {
   padding: 8px 16px;
   font-size: 0.9375rem;
   font-weight: 500;
-  background: transparent;
+  background: var(--fill-2);
   color: var(--ink);
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--hairline-strong);
 }
 .btn-ghost:hover:not(:disabled) {
-  background: var(--featured-surface);
+  background: var(--fill-3);
 }
 .btn-ghost:active:not(:disabled) {
   opacity: 0.8;
@@ -500,15 +500,12 @@ summary {
   padding: 8px 16px;
   font-size: 0.9375rem;
   font-weight: 500;
-  background: var(--surface-card);
+  background: var(--fill-2);
   color: var(--ink);
-  border: none;
+  border: 1px solid var(--hairline-strong);
 }
 .btn-surface:hover:not(:disabled) {
-  filter: brightness(0.97);
-}
-.dark .btn-surface:hover:not(:disabled) {
-  filter: brightness(1.15);
+  background: var(--fill-3);
 }
 .btn-surface:active:not(:disabled) {
   opacity: 0.8;
@@ -525,12 +522,12 @@ summary {
   align-items: center;
   justify-content: center;
   gap: 0.375rem;
-  border-radius: 6px;
+  border-radius: 9999px;
   padding: 8px 16px;
   font-size: 0.9375rem;
   font-weight: 500;
   background: var(--danger);
-  color: #fff;
+  color: var(--bg);
   border: none;
 }
 .btn-danger:hover:not(:disabled) {
@@ -573,13 +570,13 @@ summary {
 /* Cards ---------------------------------------------------------------- */
 
 .card {
-  border-radius: 0.75rem;
+  border-radius: 1rem;
   border: 1px solid var(--border);
   background: var(--surface-card);
   box-shadow: var(--elev-hairline);
 }
 .card-surface {
-  border-radius: 0.75rem;
+  border-radius: 1rem;
   border: 1px solid var(--border);
   background: var(--surface);
   box-shadow: var(--elev-hairline);
