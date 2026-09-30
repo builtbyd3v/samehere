@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { getViewer, getViewerProfile, getViewerProfileCounts } from "@/lib/viewer";
 import { shouldRedirectToOnboarding } from "@/lib/onboarding";
 import { POST_SELECT, PAGE, withEngagement, type PostRow } from "@/components/feed/PostCard";
@@ -32,7 +33,7 @@ import {
   type FeedTabKey,
 } from "@/lib/feed-label";
 import { fetchLabeledPosts } from "@/lib/feed-labeled";
-import { STAGE_LABELS, parseStage } from "@/lib/stage";
+import { STAGE_LABELS, STAGE_MOMENT_COOKIE, parseStage, parseStageMoment } from "@/lib/stage";
 import RightRail, { RightRailFallback } from "./RightRail";
 import ComposerToggle from "./ComposerToggle";
 import OnboardingChecklist from "@/components/feed/OnboardingChecklist";
@@ -130,6 +131,7 @@ async function FeedHeader({ userId }: { userId: string | null }) {
     counts = countsResult;
     isSuspended = suspendedResult.data ?? false;
   }
+  const stageMoment = userId ? parseStageMoment((await cookies()).get(STAGE_MOMENT_COOKIE)?.value) : null;
 
   return (
     <>
@@ -138,6 +140,7 @@ async function FeedHeader({ userId }: { userId: string | null }) {
         avatarUrl={composerProfile?.avatar_url ?? null}
         username={composerProfile?.username ?? ""}
         isSuspended={isSuspended}
+        stageMoment={stageMoment}
       />
       {userId && (
         <OnboardingChecklist
