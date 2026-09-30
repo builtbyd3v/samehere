@@ -10,7 +10,7 @@ import { COMPOSER_LABELS, COMPOSER_LABEL_COPY, CONTEXT_LABEL_DOT, type ContextLa
 
 const PostComposer = dynamic(() => import("@/components/feed/PostComposer"), {
   loading: () => (
-    <div aria-hidden className="h-32 animate-pulse rounded-2xl border border-[var(--hairline)] bg-[var(--surface-1)]" />
+    <div aria-hidden className="h-32 motion-safe:animate-pulse rounded-2xl border border-[var(--hairline)] bg-[var(--surface-1)]" />
   ),
 });
 

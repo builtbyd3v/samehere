@@ -85,7 +85,7 @@ export default async function RightRail() {
                   href={stuckReplyPath(post.id)}
                   className="group flex flex-col gap-1 border-t border-[var(--hairline)] py-3"
                 >
-                  <span className="line-clamp-2 text-sm leading-[1.4] text-[var(--ink)] group-hover:text-[var(--accent-ink)]">
+                  <span className="line-clamp-2 text-sm leading-[1.4] text-[var(--ink)] [overflow-wrap:anywhere] group-hover:text-[var(--accent-ink)]">
                     {splitQuestion(post.content).question}
                   </span>
                   <span className="text-xs text-[var(--muted)]">{sub}</span>

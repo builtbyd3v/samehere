@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import "./landing-xai.css";
 import LandingPage from "@/components/landing/LandingPage";
 import LandingAnalytics from "@/components/landing/LandingAnalytics";
-import { getFounderSpotsLeft } from "@/lib/founder";
 import { SITE_OG_DESCRIPTION, SITE_OG_TITLE } from "@/lib/og/copy";
 
 export const dynamic = "force-static";
@@ -24,12 +23,11 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function Home() {
-  const founderSpotsLeft = await getFounderSpotsLeft();
+export default function Home() {
   return (
     <>
       <LandingAnalytics />
-      <LandingPage founderSpotsLeft={founderSpotsLeft} />
+      <LandingPage />
     </>
   );
 }

@@ -73,6 +73,7 @@ const tabOf = (section: PortfolioSection): ProfileTab =>
 
 /** Stacked right-column sections outside the segmented body. */
 const COLUMN = "flex flex-col gap-10 md:gap-12 xl:gap-14";
+const PAGE_MAIN = "relative isolate mx-auto w-full max-w-2xl overflow-x-clip py-6 sm:py-8 xl:max-w-[1120px] xl:py-16";
 
 export async function generateMetadata({
   params,
@@ -362,7 +363,7 @@ async function PublicProfileView({ username }: { username: string }) {
   return (
     <main
       data-profile-page
-      className="relative isolate mx-auto w-full max-w-2xl overflow-x-clip py-6 sm:py-8 xl:max-w-[1120px] xl:py-16"
+      className={PAGE_MAIN}
       style={accentColor ? ({ "--profile-accent": accentColor } as CSSProperties) : undefined}
     >
       <ProfileBackdrop bannerUrl={bannerUrl} accent={Boolean(accentColor)} />
@@ -533,7 +534,7 @@ export default async function ProfilePage({
   return (
     <main
       data-profile-page
-      className={`relative isolate mx-auto w-full max-w-2xl overflow-x-clip py-6 sm:py-8 xl:max-w-[1120px] xl:py-16${theme ? " profile-themed" : ""}`}
+      className={`${PAGE_MAIN}${theme ? " profile-themed" : ""}`}
       style={themeVars}
     >
       <ProfileBackdrop bannerUrl={bannerUrl} accent={Boolean(theme)} />

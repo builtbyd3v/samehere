@@ -1,7 +1,7 @@
 import { FOCUS_AREAS, FOCUS_LABELS, STAGE_LABELS, parseStage } from "@/lib/stage";
 
 const stageChip = "rounded-full border border-[var(--border)] px-2.5 py-0.5 text-xs text-[var(--ink)]";
-const focusChip = "rounded-full border border-[var(--border)] px-2.5 py-0.5 text-xs text-[var(--ink-muted)]";
+const focusChip = "rounded-full border border-[var(--border)] px-2.5 py-0.5 text-xs text-[var(--muted)]";
 
 type StageChipsProps = { stage: string | null | undefined; focusAreas: readonly string[] | null | undefined };
 

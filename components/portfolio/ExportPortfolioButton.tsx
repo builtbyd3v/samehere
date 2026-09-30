@@ -86,7 +86,7 @@ export default function ExportPortfolioButton({ username }: ExportPortfolioButto
       {CARD_FORMATS.map((f) => (
         <button key={f} type="button" role="menuitem" className={menuItemClass} onClick={() => exportAs(f)}>
           {LABEL[f]}{" "}
-          <span className="text-[var(--ink-faint)]">{`${CARD_SIZES[f].width}x${CARD_SIZES[f].height}`}</span>
+          <span className="text-[var(--faint)]">{`${CARD_SIZES[f].width}x${CARD_SIZES[f].height}`}</span>
         </button>
       ))}
     </Menu>

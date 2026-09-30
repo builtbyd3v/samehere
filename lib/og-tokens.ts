@@ -33,6 +33,7 @@ export const DARK = {
   "--hm1": "#1e3a5f",
   "--hm2": "#2f6db0",
   "--hm3": "#4f9fe8",
+  "--faint": "#787c84",
 } as const;
 
 // Readable aliases. The card that draws a raised panel on the canvas uses
@@ -54,7 +55,5 @@ export const BLUE_2 = DARK["--blue-2"];
 export const BLUE_SOFT = DARK["--accent-blue-soft"];
 export const AMBER = DARK["--label-stuck"];
 
-// Export card ("Midnight editorial") faint label shade. It has no `.dark` twin in
-// app/globals.css yet, so it lives outside DARK and the drift check does not see it.
-// ponytail: move it into DARK once the app palette carries it (the plan 013 redesign).
-export const FAINT_LABEL = "#6b6f76";
+// Export card ("Midnight editorial") faint label shade.
+export const FAINT_LABEL = DARK["--faint"];
