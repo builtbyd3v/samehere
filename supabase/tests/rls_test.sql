@@ -2529,6 +2529,281 @@ exception when others then
 end $$;
 reset role;
 
+-- ============ P001: 20260930100000_harden_profile_guard_suggestions_groups.sql ============
+-- Setup, as postgres. Earlier blocks leave B suspended (M5) and A blocking B
+-- (H5_reverse); clear those plus every follow/block among A, B, C so A and C
+-- are eligible suggestions for B and the group checks start from no edges.
+-- Seed known values for B's frozen columns, and give private A non-null
+-- profile fields so the masking assertion is meaningful.
+set local role postgres;
+do $$
+declare
+  v_a uuid := (select id from tests_fixture where key = 'a');
+  v_b uuid := (select id from tests_fixture where key = 'b');
+  v_c uuid := (select id from tests_fixture where key = 'c');
+begin
+  update public.profiles set is_suspended = false where id = v_b;
+  delete from public.blocks
+   where blocker_id in (v_a, v_b, v_c) and blocked_id in (v_a, v_b, v_c);
+  delete from public.follows
+   where follower_id in (v_a, v_b, v_c) and following_id in (v_a, v_b, v_c);
+  update public.profiles
+     set last_subscription_event_at = '2026-01-01T00:00:00Z', is_bot = false
+   where id = v_b;
+  update public.profiles
+     set bio = 'private bio', goals = 'private goals', year = 'junior', major = 'private major'
+   where id = v_a;
+end $$;
+reset role;
+
+-- ============ P001_guard_sub_event_frozen / P001_guard_is_bot_frozen ============
+-- B writes its own billing high-water mark and bot flag through the owner
+-- UPDATE policy; guard_profile_privileged must silently keep the old values.
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+begin
+  update public.profiles set last_subscription_event_at = '2100-01-01T00:00:00Z'
+   where id = (select id from tests_fixture where key = 'b');
+  update public.profiles set is_bot = true
+   where id = (select id from tests_fixture where key = 'b');
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare v_ts timestamptz;
+begin
+  select last_subscription_event_at into v_ts from public.profiles
+   where id = (select id from tests_fixture where key = 'b');
+  if v_ts is distinct from '2026-01-01T00:00:00Z'::timestamptz then
+    raise exception 'P001_guard_sub_event_frozen REGRESSION: B set its own last_subscription_event_at to %; guard_profile_privileged must freeze it', v_ts;
+  end if;
+  insert into tests_results values ('P001_guard_sub_event_frozen', true, 'ok');
+exception when others then
+  insert into tests_results values ('P001_guard_sub_event_frozen', false, sqlerrm);
+end $$;
+
+do $$
+declare v_bot boolean;
+begin
+  select is_bot into v_bot from public.profiles
+   where id = (select id from tests_fixture where key = 'b');
+  if v_bot then
+    raise exception 'P001_guard_is_bot_frozen REGRESSION: B set its own is_bot = true; guard_profile_privileged must freeze it';
+  end if;
+  insert into tests_results values ('P001_guard_is_bot_frozen', true, 'ok');
+exception when others then
+  insert into tests_results values ('P001_guard_is_bot_frozen', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ P001_suggested_private_masked / P001_suggested_limit_clamped ============
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+declare r record;
+begin
+  select * into r from public.get_suggested_profiles(null, 50) s
+   where s.id = (select id from tests_fixture where key = 'a');
+  if not found then
+    raise exception 'P001_suggested_private_masked SETUP: private fixture A missing from B''s suggestions, so the masking check would be vacuous';
+  end if;
+  if r.bio is not null or r.goals is not null or r.year is not null or r.major is not null then
+    raise exception 'P001_suggested_private_masked REGRESSION: get_suggested_profiles returned private A''s bio/goals/year/major';
+  end if;
+  insert into tests_results values ('P001_suggested_private_masked', true, 'ok');
+exception when others then
+  insert into tests_results values ('P001_suggested_private_masked', false, sqlerrm);
+end $$;
+
+-- ponytail: the fixture set has fewer than 21 eligible profiles, so this only
+-- bites once the DB is larger; seed 21+ users here if it ever needs to.
+do $$
+declare v_n int;
+begin
+  select count(*) into v_n from public.get_suggested_profiles(null, 100000);
+  if v_n > 20 then
+    raise exception 'P001_suggested_limit_clamped REGRESSION: get_suggested_profiles(null, 100000) returned % rows; limit must clamp to 20', v_n;
+  end if;
+  insert into tests_results values ('P001_suggested_limit_clamped', true, 'ok');
+exception when others then
+  insert into tests_results values ('P001_suggested_limit_clamped', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ P001_suggested_suspended_hidden ============
+set local role postgres;
+update public.profiles set is_suspended = true where id = (select id from tests_fixture where key = 'c');
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+begin
+  if exists (
+    select 1 from public.get_suggested_profiles(null, 20) s
+    where s.id = (select id from tests_fixture where key = 'c')
+  ) then
+    raise exception 'P001_suggested_suspended_hidden REGRESSION: get_suggested_profiles returned suspended user C';
+  end if;
+  insert into tests_results values ('P001_suggested_suspended_hidden', true, 'ok');
+exception when others then
+  insert into tests_results values ('P001_suggested_suspended_hidden', false, sqlerrm);
+end $$;
+reset role;
+
+set local role postgres;
+update public.profiles set is_suspended = false where id = (select id from tests_fixture where key = 'c');
+reset role;
+
+-- ============ P001_group_add_requires_member_follow ============
+-- B follows public C (auto-accepted, no consent from C); C does not follow B.
+set local role postgres;
+insert into public.follows (follower_id, following_id, status)
+values (
+  (select id from tests_fixture where key = 'b'),
+  (select id from tests_fixture where key = 'c'),
+  'accepted'
+);
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+declare v_raised boolean := false;
+begin
+  begin
+    perform public.create_group_conversation('t', array[(select id from tests_fixture where key = 'c')]);
+  exception when others then
+    if sqlerrm not like '%can only add people who follow you%' then
+      raise exception 'P001_group_add_requires_member_follow WRONG REASON: %', sqlerrm;
+    end if;
+    v_raised := true;
+  end;
+  if not v_raised then
+    raise exception 'P001_group_add_requires_member_follow REGRESSION: B pulled C into a group though C does not follow B';
+  end if;
+  insert into tests_results values ('P001_group_add_requires_member_follow', true, 'ok');
+exception when others then
+  insert into tests_results values ('P001_group_add_requires_member_follow', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ P001_group_readd_after_leave_denied ============
+-- C follows B, so B may start a group with C; C then leaves, and B must not
+-- be able to pull C back in.
+set local role postgres;
+insert into public.follows (follower_id, following_id, status)
+values (
+  (select id from tests_fixture where key = 'c'),
+  (select id from tests_fixture where key = 'b'),
+  'accepted'
+);
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+begin
+  insert into tests_fixture (key, id)
+  values ('p001_group', public.create_group_conversation('p001', array[(select id from tests_fixture where key = 'c')]));
+end $$;
+reset role;
+
+set local role postgres;
+update public.conversation_members set left_at = now()
+ where conversation_id = (select id from tests_fixture where key = 'p001_group')
+   and user_id = (select id from tests_fixture where key = 'c');
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+declare v_raised boolean := false;
+begin
+  begin
+    perform public.add_group_member(
+      (select id from tests_fixture where key = 'p001_group'),
+      (select id from tests_fixture where key = 'c')
+    );
+  exception when others then
+    if sqlerrm not like '%they left this group%' then
+      raise exception 'P001_group_readd_after_leave_denied WRONG REASON: %', sqlerrm;
+    end if;
+    v_raised := true;
+  end;
+  if not v_raised then
+    raise exception 'P001_group_readd_after_leave_denied REGRESSION: B re-added C after C left the group';
+  end if;
+  insert into tests_results values ('P001_group_readd_after_leave_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('P001_group_readd_after_leave_denied', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ P001_post_hidden_by_suspension_frozen ============
+-- An author must not be able to mark their own admin-hidden post as
+-- suspension collateral (which admin_unsuspend_user would then restore).
+set local role postgres;
+update public.posts set hidden = true, hidden_by_suspension = false
+ where id = (select id from tests_fixture where key = 'post_b');
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+begin
+  update public.posts set hidden_by_suspension = true
+   where id = (select id from tests_fixture where key = 'post_b');
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare v_flag boolean;
+begin
+  select hidden_by_suspension into v_flag from public.posts
+   where id = (select id from tests_fixture where key = 'post_b');
+  if v_flag then
+    raise exception 'P001_post_hidden_by_suspension_frozen REGRESSION: author B set hidden_by_suspension on its own admin-hidden post';
+  end if;
+  insert into tests_results values ('P001_post_hidden_by_suspension_frozen', true, 'ok');
+exception when others then
+  insert into tests_results values ('P001_post_hidden_by_suspension_frozen', false, sqlerrm);
+end $$;
+update public.posts set hidden = false where id = (select id from tests_fixture where key = 'post_b');
+reset role;
+
+-- ============ RESUME_FIELDS: headline + links follow get_public_profile privacy ============
+update public.profiles
+   set headline = 'Private headline', github_url = 'https://github.com/rls-a',
+       linkedin_url = 'https://www.linkedin.com/in/rls-a', website_url = 'https://a.example.com'
+ where id = (select id from tests_fixture where key = 'a');
+update public.profiles
+   set headline = 'Public headline', github_url = 'https://github.com/rls-c'
+ where id = (select id from tests_fixture where key = 'c');
+
+select tests.as_anon();
+do $$
+declare r record;
+begin
+  select * into r from public.get_public_profile('rls_test_a');
+  if r.headline is not null or r.github_url is not null
+     or r.linkedin_url is not null or r.website_url is not null then
+    raise exception 'RESUME_FIELDS_private_nulled REGRESSION: private account headline/links leaked to anon (headline=%, github=%, linkedin=%, website=%)', r.headline, r.github_url, r.linkedin_url, r.website_url;
+  end if;
+  insert into tests_results values ('RESUME_FIELDS_private_nulled', true, 'ok');
+exception when others then
+  insert into tests_results values ('RESUME_FIELDS_private_nulled', false, sqlerrm);
+end $$;
+do $$
+declare r record;
+begin
+  select * into r from public.get_public_profile('rls_test_c');
+  if r.headline is distinct from 'Public headline'
+     or r.github_url is distinct from 'https://github.com/rls-c' then
+    raise exception 'RESUME_FIELDS_anon_public_read REGRESSION: anon could not read a public headline/link (headline=%, github=%)', r.headline, r.github_url;
+  end if;
+  insert into tests_results values ('RESUME_FIELDS_anon_public_read', true, 'ok');
+exception when others then
+  insert into tests_results values ('RESUME_FIELDS_anon_public_read', false, sqlerrm);
+end $$;
+reset role;
+
 -- ============ report ============
 -- Print the PASS/FAIL table FIRST so the operator sees exactly which assertions
 -- failed, then raise so psql exits non-zero and the harness actually gates.
@@ -2546,7 +2821,7 @@ declare v_failed int;
 begin
   select count(*) into v_failed from tests_results where not passed;
   if v_failed > 0 then
-    raise exception '% assertion(s) failed — see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view_denied, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, CLUBS_V2_1, CLUBS_V2_2, CLUBS_V2_3, CLUBS_V2_7a, CLUBS_V2_4, CLUBS_V2_7b, CLUBS_V2_5_officer_denied, CLUBS_V2_5_owner_allowed, CLUBS_V2_6_outsider, CLUBS_V2_6_pending, CLUBS_V2_8, CLUBS_V2_9, H1_suggested_profiles, CLUBS_V2_12_outsider, CLUBS_V2_12_anon, SIGNUP_RL_anon_execute, SIGNUP_RL_no_table_access_anon, SIGNUP_RL_no_table_access_authenticated, EXPERIENCES_owner_insert, EXPERIENCES_owner_select, EXPERIENCES_owner_update, EXPERIENCES_b_select_a, EXPERIENCES_b_update_denied, EXPERIENCES_b_delete_denied, EXPERIENCES_anon_select_denied, EXPERIENCES_owner_delete, EXPERIENCES_cap, JOB_LISTINGS_authenticated_select, JOB_LISTINGS_authenticated_insert_denied, JOB_LISTINGS_anon_select_denied, JOB_FIT_owner_insert_select, JOB_FIT_b_select_a_denied, JOB_PITCHES_owner_insert_select, JOB_PITCHES_b_select_a_denied, JOB_SAVES_owner_insert_select, JOB_SAVES_b_select_a_denied, JOB_SAVES_b_delete_a_denied, JOB_SAVES_owner_delete, JOB_SAVES_anon_select_denied, REFERRAL_JOINED_owner_select, REFERRAL_JOINED_b_select_denied.', v_failed;
+    raise exception '% assertion(s) failed — see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view_denied, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, CLUBS_V2_1, CLUBS_V2_2, CLUBS_V2_3, CLUBS_V2_7a, CLUBS_V2_4, CLUBS_V2_7b, CLUBS_V2_5_officer_denied, CLUBS_V2_5_owner_allowed, CLUBS_V2_6_outsider, CLUBS_V2_6_pending, CLUBS_V2_8, CLUBS_V2_9, H1_suggested_profiles, CLUBS_V2_12_outsider, CLUBS_V2_12_anon, SIGNUP_RL_anon_execute, SIGNUP_RL_no_table_access_anon, SIGNUP_RL_no_table_access_authenticated, EXPERIENCES_owner_insert, EXPERIENCES_owner_select, EXPERIENCES_owner_update, EXPERIENCES_b_select_a, EXPERIENCES_b_update_denied, EXPERIENCES_b_delete_denied, EXPERIENCES_anon_select_denied, EXPERIENCES_owner_delete, EXPERIENCES_cap, JOB_LISTINGS_authenticated_select, JOB_LISTINGS_authenticated_insert_denied, JOB_LISTINGS_anon_select_denied, JOB_FIT_owner_insert_select, JOB_FIT_b_select_a_denied, JOB_PITCHES_owner_insert_select, JOB_PITCHES_b_select_a_denied, JOB_SAVES_owner_insert_select, JOB_SAVES_b_select_a_denied, JOB_SAVES_b_delete_a_denied, JOB_SAVES_owner_delete, JOB_SAVES_anon_select_denied, REFERRAL_JOINED_owner_select, REFERRAL_JOINED_b_select_denied, P001_guard_sub_event_frozen, P001_guard_is_bot_frozen, P001_suggested_private_masked, P001_suggested_limit_clamped, P001_suggested_suspended_hidden, P001_group_add_requires_member_follow, P001_group_readd_after_leave_denied, P001_post_hidden_by_suspension_frozen, RESUME_FIELDS_private_nulled, RESUME_FIELDS_anon_public_read.', v_failed;
 
   end if;
 end $$;

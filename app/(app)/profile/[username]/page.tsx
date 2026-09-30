@@ -34,6 +34,7 @@ import TrackPortfolioView from "@/components/portfolio/TrackPortfolioView";
 import { OwnerAnalyticsSection, PortfolioAnalyticsFallback } from "@/components/portfolio/PortfolioAnalytics";
 import SharePortfolioButton from "@/components/portfolio/SharePortfolioButton";
 import PortfolioBanner from "@/components/portfolio/PortfolioBanner";
+import ResumeLinks from "@/components/portfolio/ResumeLinks";
 import UnavailableNotice from "@/components/portfolio/UnavailableNotice";
 import {
   ActivitySection,
@@ -44,7 +45,7 @@ import {
   PublicProjectList,
 } from "@/components/portfolio/ProfileSections";
 const PROFILE_SELECT =
-  "id, username, display_name, avatar_url, banner_url, year, major, bio, goals, open_to, study_mode, is_private, heatmap_visibility, is_pro, pro_until, is_founder, is_campus_founder, profile_theme, verified_student, is_bot";
+  "id, username, display_name, avatar_url, banner_url, year, major, bio, goals, open_to, study_mode, is_private, heatmap_visibility, is_pro, pro_until, is_founder, is_campus_founder, profile_theme, verified_student, is_bot, headline, github_url, linkedin_url, website_url";
 const PROFILE_SELECT_FALLBACK =
   "id, username, display_name, avatar_url, banner_url, year, major, bio, goals, is_private, heatmap_visibility, is_pro, pro_until, is_founder, is_campus_founder, profile_theme, verified_student, is_bot";
 
@@ -399,7 +400,9 @@ async function PublicProfileView({ username }: { username: string }) {
               <UserBadges isPro={profile.is_pro} isFounder={profile.is_founder} isCampusFounder={profile.is_campus_founder} isVerifiedStudent={profile.verified_student} isBot={profile.is_bot} />
             </div>
             <p className="mt-0.5 text-[15px] text-[var(--ink-muted)]">@{profile.username}</p>
+            {profile.headline && <p className="mt-2 text-[15px] text-[var(--ink)]">{profile.headline}</p>}
             {metaLine && <p className="mt-2 text-sm text-[var(--ink-muted)]">{metaLine}</p>}
+            <ResumeLinks github={profile.github_url} linkedin={profile.linkedin_url} website={profile.website_url} />
             <div className="profile-stat-enter mt-4 flex flex-wrap gap-x-6 gap-y-1">
               <Stat value={Number(counts.posts)} label="posts" accent={Boolean(accentColor)} />
               <Stat value={Number(counts.followers)} label="followers" accent={Boolean(accentColor)} href={`/profile/${profile.username}/followers`} />
@@ -496,6 +499,19 @@ export default async function ProfilePage({
   const followState: FollowState =
     relRes.data?.status === "accepted" ? "following" : relRes.data?.status === "pending" ? "pending" : "none";
   const contentHidden = (profile.is_private && !isOwner && !isAcceptedFollower) || isBlocked;
+  // Mirrors get_public_profile: hidden from viewers who cannot see content,
+  // and from the owner's public preview of a private account.
+  // The fallback select has no resume columns, so narrow each one.
+  const resumeText = (value: unknown) => (typeof value === "string" ? value : null);
+  const resume =
+    !contentHidden && !(isOwner && previewPublic && profile.is_private) && "headline" in profile
+      ? {
+          headline: resumeText(profile.headline),
+          github: "github_url" in profile ? resumeText(profile.github_url) : null,
+          linkedin: "linkedin_url" in profile ? resumeText(profile.linkedin_url) : null,
+          website: "website_url" in profile ? resumeText(profile.website_url) : null,
+        }
+      : null;
   const portfolioUnavailable = !bundle.ok && Boolean(bundle.unavailable);
   const projection = bundle.ok ? bundle.data.projection : null;
   const usePublicSections = !isOwner || previewPublic;
@@ -689,7 +705,9 @@ export default async function ProfilePage({
                 <UserBadges isPro={profile.is_pro} isFounder={profile.is_founder} isCampusFounder={profile.is_campus_founder} isVerifiedStudent={profile.verified_student} isBot={profile.is_bot} />
               </div>
               <p className="mt-0.5 text-[15px] text-[var(--ink-muted)]">@{profile.username}</p>
+              {resume?.headline && <p className="mt-2 text-[15px] text-[var(--ink)]">{resume.headline}</p>}
               {metaLine && <p className="mt-2 text-sm text-[var(--ink-muted)]">{metaLine}</p>}
+              {resume && <ResumeLinks github={resume.github} linkedin={resume.linkedin} website={resume.website} />}
               <div className="profile-stat-enter mt-4 flex flex-wrap gap-x-6 gap-y-1">
                 <Stat value={Number(counts.posts)} label="posts" accent={!!theme} />
                 <Stat value={Number(counts.followers)} label="followers" accent={!!theme} href={`/profile/${profile.username}/followers`} />
@@ -698,6 +716,19 @@ export default async function ProfilePage({
             </div>
           </div>
         </section>
+
+        {isOwner &&
+          !previewPublic &&
+          projection &&
+          !projection.is_private &&
+          !PORTFOLIO_SECTIONS.some((section) => publicSectionVisible(projection, section)) && (
+            <p className="mt-3 text-sm text-[var(--ink-muted)]">
+              Your shared link shows almost nothing.{" "}
+              <Link href="/profile/edit#publication" className="text-[var(--ink)] underline underline-offset-2">
+                Publish your portfolio
+              </Link>
+            </p>
+          )}
 
         {portfolioUnavailable && isOwner && (
           <>

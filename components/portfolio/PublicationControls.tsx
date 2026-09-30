@@ -50,7 +50,7 @@ export default function PublicationControls({
   }
 
   return (
-    <form action={action} className="card mt-6 p-5 sm:p-6">
+    <form id="publication" action={action} className="card mt-6 p-5 sm:p-6">
       <h2 className="text-sm font-semibold text-[var(--ink)]">Publication</h2>
       <p className="mt-1 text-sm text-[var(--ink-muted)]">
         Existing sections stay private until you turn them on. A private account still hides them from the public page.

@@ -14,6 +14,7 @@ import {
   STUDY_MODES,
   openToError,
   studyModeError,
+  httpUrlError,
   portfolioPublishConflict,
   projectWriteError,
   sectionOrderError,
@@ -368,6 +369,11 @@ export function parsePublishFlags(body: unknown): PortfolioResult<PortfolioPubli
   return { ok: true, data: { ...flags, section_order } };
 }
 
+/** Section names whose publish flag is on, in canonical order. allow_indexing is not a section. */
+export function publishedSections(flags: PortfolioPublishFlags): PortfolioSection[] {
+  return PORTFOLIO_SECTIONS.filter((section) => flags[`publish_${section}`]);
+}
+
 export function parseOpenTo(values: unknown): PortfolioResult<OpenToTag[]> {
   const tags = Array.isArray(values) ? values.map(String) : [];
   const error = openToError(tags);
@@ -381,6 +387,40 @@ export function parseStudyMode(value: unknown): PortfolioResult<StudyMode | null
   const error = studyModeError(raw);
   if (error) return fail(error, 400);
   return { ok: true, data: (STUDY_MODES as readonly string[]).includes(raw) ? (raw as StudyMode) : null };
+}
+
+export type ResumeFields = {
+  headline: string | null;
+  github_url: string | null;
+  linkedin_url: string | null;
+  website_url: string | null;
+};
+
+export const HEADLINE_MAX = 120;
+
+const RESUME_LINKS = [
+  { key: "github_url", label: "GitHub link", hosts: ["github.com"] },
+  { key: "linkedin_url", label: "LinkedIn link", hosts: ["linkedin.com", "www.linkedin.com"] },
+  { key: "website_url", label: "Website", hosts: null },
+] as const satisfies ReadonlyArray<{ key: keyof ResumeFields; label: string; hosts: readonly string[] | null }>;
+
+export function parseResumeFields(input: Record<keyof ResumeFields, unknown>): PortfolioResult<ResumeFields> {
+  const text = (value: unknown) => (typeof value === "string" ? value.trim() : "");
+  const headline = text(input.headline);
+  if (headline.length > HEADLINE_MAX) return fail(`Headline must be ${HEADLINE_MAX} characters or fewer.`, 400);
+  const out: ResumeFields = { headline: headline || null, github_url: null, linkedin_url: null, website_url: null };
+  for (const { key, label, hosts } of RESUME_LINKS) {
+    const value = text(input[key]);
+    if (!value) continue;
+    const error = httpUrlError(label, value);
+    if (error) return fail(error, 400);
+    const host = new URL(value).hostname.toLowerCase();
+    if (hosts && !(hosts as readonly string[]).includes(host)) {
+      return fail(`${label} must be a ${hosts[0]} URL.`, 400);
+    }
+    out[key] = value;
+  }
+  return { ok: true, data: out };
 }
 
 export { isPortfolioSchemaMissing, failUnavailable, portfolioPublishConflict };

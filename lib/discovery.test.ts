@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  activeFacets,
   discoveryHref,
   hasDiscoveryFilters,
   hasPeopleFilters,
@@ -71,5 +72,21 @@ describe("discoveryHref / empty-query browse + chips", () => {
     expect(discoveryHref({ q: "", filters: chips })).toBe("/search?mode=online&label=stuck");
     expect(discoveryHref({ q: "   ", filters: chips })).toBe("/search?mode=online&label=stuck");
     expect(discoveryHref({ q: "rust", filters: chips })).toBe("/search?q=rust&mode=online&label=stuck");
+  });
+});
+
+describe("activeFacets", () => {
+  it("is empty with no filters", () => {
+    expect(activeFacets(parseDiscoveryFilters({}))).toEqual([]);
+  });
+
+  it("names the set facets in order", () => {
+    expect(activeFacets(parseDiscoveryFilters({ tag: "study", label: "stuck" }))).toEqual(["tag", "label"]);
+  });
+
+  it("sends the major facet name, never its value", () => {
+    const facets = activeFacets(parseDiscoveryFilters({ major: "Computer Science" }));
+    expect(facets).toEqual(["major"]);
+    expect(facets).not.toContain("Computer Science");
   });
 });

@@ -31,6 +31,10 @@ export type EditInitial = {
   is_pro: boolean;
   pro_until: string | null;
   profile_theme: string | null;
+  headline: string | null;
+  github_url: string | null;
+  linkedin_url: string | null;
+  website_url: string | null;
 };
 
 const label = "block text-sm font-medium text-[var(--ink)]";
@@ -151,6 +155,13 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
           </div>
 
           <div>
+            <label htmlFor="headline" className={label}>Headline</label>
+            <input id="headline" name="headline" type="text" maxLength={120}
+              defaultValue={initial.headline ?? ""} placeholder="CS junior building developer tools" className={field} />
+            <p className={hint}>One line under your name on your portfolio.</p>
+          </div>
+
+          <div>
             <label htmlFor="bio" className={label}>Bio</label>
             <textarea id="bio" name="bio" rows={3} maxLength={500}
               defaultValue={initial.bio ?? ""} placeholder="A few lines about you." className={field} />
@@ -161,6 +172,25 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
             <textarea id="goals" name="goals" rows={2} maxLength={500}
               defaultValue={initial.goals ?? ""} placeholder="What are you working toward?" className={field} />
           </div>
+
+          <fieldset className="flex flex-col gap-3">
+            <legend className={label}>Links</legend>
+            <div>
+              <label htmlFor="github_url" className={label}>GitHub</label>
+              <input id="github_url" name="github_url" type="url" maxLength={2048}
+                defaultValue={initial.github_url ?? ""} placeholder="https://github.com/you" className={field} />
+            </div>
+            <div>
+              <label htmlFor="linkedin_url" className={label}>LinkedIn</label>
+              <input id="linkedin_url" name="linkedin_url" type="url" maxLength={2048}
+                defaultValue={initial.linkedin_url ?? ""} placeholder="https://www.linkedin.com/in/you" className={field} />
+            </div>
+            <div>
+              <label htmlFor="website_url" className={label}>Website</label>
+              <input id="website_url" name="website_url" type="url" maxLength={2048}
+                defaultValue={initial.website_url ?? ""} placeholder="https://yoursite.dev" className={field} />
+            </div>
+          </fieldset>
 
           <div>
             <label htmlFor="study_mode" className={label}>Study mode</label>

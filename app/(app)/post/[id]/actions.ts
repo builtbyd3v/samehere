@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getPostHogServerClient } from "@/lib/posthog-server";
 import { TEXT_LIMITS, textLimitError } from "@/lib/utils/validation";
 
 export type CommentState = { error?: string; ok?: boolean };
@@ -32,6 +33,21 @@ export async function createComment(_prev: CommentState, formData: FormData): Pr
 
   const { error } = await supabase.from("comments").insert({ post_id: postId, user_id: user.id, content });
   if (error) return { error: "Could not post your comment. Try again." };
+
+  // analytics only: never break the comment action
+  try {
+    const posthog = getPostHogServerClient();
+    if (posthog) {
+      const { data: post } = await supabase.from("posts").select("context_label").eq("id", postId).maybeSingle();
+      posthog.capture({
+        distinctId: user.id,
+        event: "comment_created",
+        properties: { on_label: post?.context_label ?? null },
+      });
+    }
+  } catch {
+    // ignore
+  }
 
   revalidatePath(`/post/${postId}`);
   return { ok: true };
