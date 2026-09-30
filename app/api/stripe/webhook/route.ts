@@ -18,6 +18,10 @@ function subscriptionPeriodEnd(subscription: Stripe.Subscription): string | null
   return new Date(item.current_period_end * 1000).toISOString();
 }
 
+function assertWrite(result: { error: { message?: string } | null }, what: string): void {
+  if (result.error) throw new Error(`${what}: ${result.error.message ?? "write failed"}`);
+}
+
 async function applySubscriptionState(
   customerId: string,
   eventCreated: number,
@@ -48,12 +52,13 @@ async function applySubscriptionState(
   // pro_source='subscription' row is deliberately skipped by expire_lapsed_pro, so
   // dropped = Pro forever (this is exactly the H3 shape M1 exists to prevent).
   const op = winsTie ? "lte" : "lt";
-  await admin
+  const res = await admin
     .from("profiles")
     .update({ ...fields, last_subscription_event_at: eventTs })
     .eq("stripe_customer_id", customerId)
     .eq("pro_source", "subscription")
     .or(`last_subscription_event_at.is.null,last_subscription_event_at.${op}."${eventTs}"`);
+  assertWrite(res, "apply subscription state");
 }
 
 export async function POST(req: Request) {
@@ -78,13 +83,12 @@ export async function POST(req: Request) {
   }
 
   // Idempotency (M1): claim the event id before any state change. A conflict means
-  // this exact event was already processed — return 200 (NOT 4xx, or Stripe retries
-  // it forever). The insert commits in its own statement, so if a handler below
-  // THROWS after this point the retry will hit the dedupe row and no-op — the event
-  // is effectively dropped. That is acceptable: Stripe alerts on failed (non-2xx)
-  // deliveries and any event is replayable from the dashboard, the post-dedupe work
-  // is one or two DB writes, and the alternative (claim the id only after success)
-  // reopens the concurrent double-processing race this table exists to close.
+  // this exact event was already processed, so return 200 (NOT 4xx, or Stripe retries
+  // it forever). Claiming before the work closes the concurrent double-processing
+  // race this table exists to close. If a handler below throws (including a failed
+  // profile write, see assertWrite), the catch releases the claim and returns 500,
+  // so Stripe's automatic retry re-runs the event. A failed release is logged; the
+  // event then stays claimed and must be replayed from the Stripe dashboard.
   const dedupe = createAdminClient();
   const { error: dedupeErr } = await dedupe
     .from("stripe_events")
@@ -146,10 +150,11 @@ export async function POST(req: Request) {
           // Derived from the event, so replays are idempotent.
           const proUntil = new Date(session.created * 1000);
           proUntil.setMonth(proUntil.getMonth() + SEMESTER_MONTHS);
-          await admin
+          const res = await admin
             .from("profiles")
             .update({ is_pro: true, pro_until: proUntil.toISOString(), pro_source: "one_time" })
             .eq("id", supabaseId);
+          assertWrite(res, "one-time grant");
 
           const posthog = getPostHogServerClient();
           posthog?.capture({
@@ -174,7 +179,7 @@ export async function POST(req: Request) {
         // regress this re-subscribed row. Applied unconditionally by id — checkout
         // is a paid grant that must always land; replay-safety comes from the
         // stripe_events dedupe table above, not from this guard.
-        await admin
+        const res = await admin
           .from("profiles")
           .update({
             stripe_customer_id: customerId,
@@ -184,6 +189,7 @@ export async function POST(req: Request) {
             last_subscription_event_at: new Date(event.created * 1000).toISOString(),
           })
           .eq("id", supabaseId);
+        assertWrite(res, "subscription checkout grant");
 
         const posthog = getPostHogServerClient();
         posthog?.capture({
@@ -230,6 +236,8 @@ export async function POST(req: Request) {
     }
   } catch (err) {
     console.error("stripe-webhook: handler error", { type: event.type, id: event.id }, err);
+    const { error: releaseErr } = await dedupe.from("stripe_events").delete().eq("id", event.id);
+    if (releaseErr) console.error("stripe-webhook: could not release event claim", { id: event.id }, releaseErr);
     const message = err instanceof Error ? err.message : "Webhook handler error";
     return NextResponse.json({ error: message }, { status: 500 });
   }

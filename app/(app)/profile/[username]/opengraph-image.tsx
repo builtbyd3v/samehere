@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
-import sharp from "sharp";
 import { BLUE, BORDER, CANVAS, GOLD, GREEN, HM, INK, INK_FAINT, INK_MUTED } from "@/lib/og-tokens";
+import { avatarDataUri } from "@/lib/og/avatar";
 import { loadOgFonts } from "@/lib/og/fonts";
 import { OgWordmark, ogCanvasStyle } from "@/lib/og/mark";
 import { portfolioBannerOg } from "@/lib/portfolio/banner";
@@ -97,19 +97,6 @@ function currentStreak(rows: HeatmapRow[]): number {
     cursor.setUTCDate(cursor.getUTCDate() - 1);
   }
   return streak;
-}
-
-async function avatarDataUri(url: string | null): Promise<string | null> {
-  if (!url) return null;
-  try {
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const buf = Buffer.from(await res.arrayBuffer());
-    const png = await sharp(buf).resize(224, 224, { fit: "cover" }).png().toBuffer();
-    return `data:image/png;base64,${png.toString("base64")}`;
-  } catch {
-    return null;
-  }
 }
 
 const fade = (hex: string) => `${hex}73`;
@@ -310,7 +297,7 @@ export default async function OgImage({ params }: { params: Promise<{ username: 
   const heatmapFallback =
     !projection.ok && projection.unavailable && profile.heatmap_visibility === "public" && !profile.is_private;
   const [avatar, countsRes, heatRes] = await Promise.all([
-    avatarDataUri(profile.avatar_url),
+    avatarDataUri(profile.avatar_url, 224),
     supabase.rpc("get_public_profile_counts", { p_profile_id: profile.id }),
     activityVisible || heatmapFallback
       ? supabase.rpc("get_public_heatmap", { p_profile_id: profile.id })

@@ -17,6 +17,7 @@ describe("localReturnPath", () => {
   it("rejects arbitrary return URLs", () => {
     expect(localReturnPath("https://evil.example/phish")).toBe("/profile/projects/new");
     expect(localReturnPath("//evil.example")).toBe("/profile/projects/new");
+    expect(localReturnPath("/\\evil.example")).toBe("/profile/projects/new");
     expect(localReturnPath("https://github.com")).toBe("/profile/projects/new");
     expect(localReturnPath(null)).toBe("/profile/projects/new");
   });
