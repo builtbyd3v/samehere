@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { PublicPortfolioEducation, PublicPortfolioExperience, PublicPortfolioProjection } from "@/types/portfolio";
+import { PORTFOLIO_SECTIONS } from "./validation";
 import {
+  RESUME_DISPLAY_ORDER,
   canCiteExpEdu,
+  displaySectionOrder,
   currentExpEduTagline,
   resolveShowPosts,
   resumeFields,
@@ -124,5 +127,19 @@ describe("resolveShowPosts", () => {
     expect(resolveShowPosts(base)).toBe(false);
     expect(resolveShowPosts({ ...base, isPrivate: true, isAcceptedFollower: true })).toBe(true);
     expect(resolveShowPosts({ ...base, projection: { ...projection, publish_posts: true }, isBlocked: true })).toBe(false);
+  });
+});
+
+describe("displaySectionOrder", () => {
+  const custom = ["posts", "intro", "projects", "activity", "experience", "education"];
+  it("shows non-Pro portfolios as a resume, whatever is saved", () => {
+    expect(displaySectionOrder(custom, false)).toEqual([...RESUME_DISPLAY_ORDER]);
+    expect(displaySectionOrder(null, false)).toEqual([...RESUME_DISPLAY_ORDER]);
+  });
+  it("keeps a valid Pro custom order", () => {
+    expect(displaySectionOrder(custom, true)).toEqual(custom);
+  });
+  it("falls back to the stored default for an invalid Pro order", () => {
+    expect(displaySectionOrder(["intro"], true)).toEqual([...PORTFOLIO_SECTIONS]);
   });
 });

@@ -1,5 +1,6 @@
 import type { createClient } from "@/lib/supabase/server";
 import type {
+  PortfolioSection,
   PublicPortfolioEducation,
   PublicPortfolioExperience,
   PublicPortfolioProjection,
@@ -11,9 +12,17 @@ import type { FollowState } from "@/components/profile/FollowButton";
 import type { PortfolioClient } from "./client";
 import { getOwnerGithubConnection, getOwnerGithubDays, loadPublicPortfolioBundle } from "./public";
 import { listOwnerProjects } from "./owner";
+import { effectiveSectionOrder } from "./metrics";
 import { profileIntro, publicSectionVisible } from "./projection";
 
-type ServerClient = Awaited<ReturnType<typeof createClient>>;
+export const RESUME_DISPLAY_ORDER = ["intro", "projects", "experience", "education", "activity", "posts"] as const satisfies readonly PortfolioSection[];
+
+/** Display order only. Non-Pro portfolios read as a resume; Pro custom orders still win. The stored order and the DB default never change. */
+export function displaySectionOrder(saved: readonly string[] | null | undefined, currentPro: boolean): PortfolioSection[] {
+  return currentPro ? effectiveSectionOrder(saved, true) : [...RESUME_DISPLAY_ORDER];
+}
+
+type ServerClient =Awaited<ReturnType<typeof createClient>>;
 type EducationRow = PublicPortfolioEducation & { school_domain?: string | null };
 
 const PROFILE_SELECT =
