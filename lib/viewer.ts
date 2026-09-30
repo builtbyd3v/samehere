@@ -18,8 +18,9 @@ export const getViewer = cache(async () => {
 // own profile row (verified against app/(app)/layout.tsx,
 // app/(app)/feed/page.tsx, app/(app)/feed/RightRail.tsx - this exact string
 // is RightRail.tsx's existing select, already a superset of the other two).
+// onboarded_at: the one-time onboarding redirect in app/(app)/feed/page.tsx.
 const VIEWER_PROFILE_SELECT =
-  "username, display_name, avatar_url, is_pro, verified_student, is_founder, is_campus_founder, profile_school(school), year, major, goals, bio, pro_until, profile_theme, stage";
+  "username, display_name, avatar_url, is_pro, verified_student, is_founder, is_campus_founder, profile_school(school), year, major, goals, bio, pro_until, profile_theme, stage, onboarded_at";
 
 export const getViewerProfile = cache(async () => {
   const { supabase, user } = await getViewer();

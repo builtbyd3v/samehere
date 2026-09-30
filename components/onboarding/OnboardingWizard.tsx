@@ -16,6 +16,7 @@ import {
   saveOnboardingStage,
   finishOnboarding,
   savePortfolioConsent,
+  startOnboarding,
 } from "@/app/(app)/onboarding/actions";
 import AvatarBase from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
@@ -25,10 +26,11 @@ import SchoolAutocomplete from "@/components/profile/SchoolAutocomplete";
 import DateRangePicker from "@/components/profile/DateRangePicker";
 import Select from "@/components/ui/Select";
 import { DEGREE_OPTIONS } from "@/lib/education-options";
-import type { OnboardingStep } from "@/lib/onboarding";
+import type { OnboardingPrefill, OnboardingSource, OnboardingStep } from "@/lib/onboarding";
 import { FOCUS_AREAS, FOCUS_LABELS, MAX_FOCUS_AREAS, STAGES, STAGE_LABELS, type FocusArea, type Stage } from "@/lib/stage";
 import { OPEN_TO_TAGS } from "@/lib/portfolio/validation";
 import { OPEN_TO_LABELS } from "@/lib/portfolio/labels";
+import type { OpenToTag } from "@/types/portfolio";
 
 export type OnboardingProfile = {
   username: string;
@@ -49,6 +51,7 @@ const KIND_OPTIONS = [
 const DEGREE_SELECT_OPTIONS = [...DEGREE_OPTIONS];
 
 const TOTAL_STEPS = 6;
+type Step = 1 | 2 | 3 | 4 | 5 | 6;
 const label = "block text-[13px] font-medium text-[var(--ink-3)]";
 const field = "input-base mt-1.5";
 const formClass = "mt-7 flex flex-col gap-8 md:mt-9 md:gap-9";
@@ -64,20 +67,18 @@ const STAGE_HINTS: Record<Stage, string> = {
   working: "Shipping at work, helping people behind you.",
 };
 
-type StepIntroProps = { step: number; title: string; accent: string; sub: ReactNode };
+type StepIntroProps = { step: number; title: string; accent: string; sub: ReactNode; focusOnMount: boolean };
 
-function StepIntro({ step, title, accent, sub }: StepIntroProps) {
+function StepIntro({ step, title, accent, sub, focusOnMount }: StepIntroProps) {
   const headingRef = useRef<HTMLHeadingElement>(null);
-  // StepIntro remounts on every step swap (AnimatePresence is keyed on step).
-  // Moving focus to the new heading lets screen readers announce the step.
-  // Step 1 is only ever the first render (there is no Back), so it never steals focus.
+  // StepIntro remounts on every step swap (AnimatePresence is keyed on step). After the first move (Next or Back), focus the new heading so screen readers announce the step.
   useEffect(() => {
-    if (step > 1) headingRef.current?.focus();
-  }, [step]);
+    if (focusOnMount) headingRef.current?.focus();
+  }, [focusOnMount]);
   return (
     <div className="flex flex-col gap-3">
       <SectionLabel as="p" size="sm">
-        Step {step} of {TOTAL_STEPS} · Optional
+        Step {step} of {TOTAL_STEPS}
       </SectionLabel>
       <h1
         ref={headingRef}
@@ -109,10 +110,31 @@ function StepFooter({ hint, children }: StepFooterProps) {
   );
 }
 
-export default function OnboardingWizard({ profile }: { profile: OnboardingProfile }) {
-  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5 | 6>(1);
+export default function OnboardingWizard({
+  profile,
+  prefill,
+  source,
+}: {
+  profile: OnboardingProfile;
+  prefill: OnboardingPrefill;
+  source: OnboardingSource;
+}) {
+  const [step, setStep] = useState<Step>(1);
+  // True after the first step change, so each new step's heading takes focus (including Back to step 1).
+  const [navigated, setNavigated] = useState(false);
+  function go(next: Step) {
+    setNavigated(true);
+    setStep(next);
+  }
   const [stepsDone, setStepsDone] = useState<OnboardingStep[]>([]);
   const markDone = (s: OnboardingStep) => setStepsDone((prev) => (prev.includes(s) ? prev : [...prev, s]));
+  const started = useRef(false);
+  // Sync with the server once per mount: marks the one-time redirect used and logs onboarding_started.
+  useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+    void startOnboarding(source);
+  }, [source]);
   const reduce = useReducedMotion();
   const currentYear = new Date().getFullYear();
 
@@ -128,8 +150,13 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
     avatarAction(fd);
   }
 
-  const [stage, setStage] = useState<Stage | "">("");
-  const [focus, setFocus] = useState<FocusArea[]>([]);
+  const [stage, setStage] = useState<Stage | "">(prefill.stage);
+  const [focus, setFocus] = useState<FocusArea[]>(prefill.focus);
+  const [openTo, setOpenTo] = useState<OpenToTag[]>(prefill.openTo);
+  const toggleOpenTo = (tag: OpenToTag) =>
+    setOpenTo((cur) => (cur.includes(tag) ? cur.filter((t) => t !== tag) : [...cur, tag]));
+  const [displayName, setDisplayName] = useState(profile.display_name ?? "");
+  const [bio, setBio] = useState(profile.bio ?? "");
   const [stagePending, startStage] = useTransition();
   const [stageFormError, setStageFormError] = useState<string | undefined>();
 
@@ -147,7 +174,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
     startStage(async () => {
       const result = await saveOnboardingStage({}, fd);
       if (result.error) setStageFormError(result.error);
-      else setStep(2);
+      else go(2);
     });
   }
 
@@ -163,7 +190,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
       if (result.error) setBasicsError(result.error);
       else {
         markDone("basics");
-        setStep(3);
+        go(3);
       }
     });
   }
@@ -190,8 +217,9 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
       const result: ComposerState = await createPost({}, fd);
       if (result.error) setPostError(result.error);
       else {
+        setPostContent("");
         markDone("post");
-        setStep(4);
+        go(4);
       }
     });
   }
@@ -208,7 +236,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
       if (result.error) setEduError(result.error);
       else {
         markDone("education");
-        setStep(5);
+        go(5);
       }
     });
   }
@@ -225,7 +253,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
       if (result.error) setExpError(result.error);
       else {
         markDone("experience");
-        setStep(6);
+        go(6);
       }
     });
   }
@@ -269,7 +297,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
           disabled={finishing}
           className="inline-flex min-h-11 items-center text-sm text-[var(--muted)] hover:text-[var(--ink)] disabled:opacity-50"
         >
-          Skip
+          Finish later
         </button>
       </header>
 
@@ -289,6 +317,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
             title="Where are you"
             accent="right now?"
             sub="We use this to show you people at the same stage. Change it any time."
+            focusOnMount={navigated}
           />
           <form onSubmit={onSubmitStage} className={formClass}>
             {stageFormError && <p role="alert" className={alertClass}>{stageFormError}</p>}
@@ -298,7 +327,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
                 {STAGES.map((s) => (
                   <label
                     key={s}
-                    className="group flex min-h-14 cursor-pointer items-center gap-3 rounded-[14px] border border-[var(--border)] bg-[var(--surface-2)] px-3.5 transition-[transform,border-color,background-color] duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-[var(--hairline-strong)] active:scale-[0.98] has-[:checked]:border-[rgba(79,159,232,0.55)] has-[:checked]:bg-[rgba(79,159,232,0.08)] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[var(--accent)] motion-reduce:transition-none motion-reduce:active:scale-100 sm:grid sm:grid-cols-[1fr_auto] sm:content-start sm:items-start sm:gap-2 sm:rounded-[18px] sm:p-[18px] sm:active:scale-[0.97]"
+                    className="group flex min-h-14 cursor-pointer items-center gap-3 max-sm:flex-wrap max-sm:gap-y-1 max-sm:py-3 rounded-[14px] border border-[var(--border)] bg-[var(--surface-2)] px-3.5 transition-[transform,border-color,background-color] duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-[var(--hairline-strong)] active:scale-[0.98] has-[:checked]:border-[rgba(79,159,232,0.55)] has-[:checked]:bg-[rgba(79,159,232,0.08)] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[var(--accent)] motion-reduce:transition-none motion-reduce:active:scale-100 sm:grid sm:grid-cols-[1fr_auto] sm:content-start sm:items-start sm:gap-2 sm:rounded-[18px] sm:p-[18px] sm:active:scale-[0.97]"
                   >
                     <input
                       type="radio"
@@ -313,7 +342,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
                     <span className="flex-1 text-base font-medium sm:col-span-2 sm:row-start-2 sm:text-[17px] sm:font-semibold sm:tracking-[-0.01em]">
                       {STAGE_LABELS[s]}
                     </span>
-                    <span id={`stage-hint-${s}`} className="hidden text-[13px] leading-[1.45] text-[var(--muted)] text-pretty sm:col-span-2 sm:row-start-3 sm:block">
+                    <span id={`stage-hint-${s}`} className="order-last basis-full pl-5 text-[13px] leading-[1.45] text-[var(--muted)] text-pretty sm:order-none sm:basis-auto sm:col-span-2 sm:row-start-3 sm:pl-0">
                       {STAGE_HINTS[s]}
                     </span>
                     <span
@@ -359,7 +388,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
               <div className="mt-3 flex flex-wrap gap-2">
                 {OPEN_TO_TAGS.map((tag) => (
                   <label key={tag} className={choiceChip}>
-                    <input type="checkbox" name="open_to" value={tag} className="sr-only" />
+                    <input type="checkbox" name="open_to" value={tag} checked={openTo.includes(tag)} onChange={() => toggleOpenTo(tag)} className="sr-only" />
                     {OPEN_TO_LABELS[tag]}
                   </label>
                 ))}
@@ -368,9 +397,6 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
             <StepFooter
               hint={stage ? `You will see students who are ${STAGE_LABELS[stage].toLowerCase()} first.` : "Pick one to continue."}
             >
-              <Button variant="ghost" size="lg" onClick={() => setStep(2)}>
-                Skip for now
-              </Button>
               <Button type="submit" variant="primary" size="lg" disabled={stagePending || !stage} className="max-md:flex-1">
                 {stagePending ? "Saving…" : "Continue"}
               </Button>
@@ -381,7 +407,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
 
         {step === 2 && (
           <>
-          <StepIntro step={2} title="Set up your" accent="profile" sub="A photo, your name, and one line about you." />
+          <StepIntro step={2} title="Set up your" accent="profile" sub="A photo, your name, and one line about you." focusOnMount={navigated} />
           <form onSubmit={onSubmitBasics} className={formClass}>
             <div className="flex max-w-xl flex-col gap-4">
               {basicsError && <p role="alert" className={alertClass}>{basicsError}</p>}
@@ -405,17 +431,20 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
               <div>
                 <label htmlFor="display_name" className={label}>Display name</label>
                 <input id="display_name" name="display_name" type="text" maxLength={50}
-                  defaultValue={profile.display_name ?? ""} placeholder="Your name" className={field} />
+                  value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Your name" className={field} />
               </div>
               <div>
                 <label htmlFor="bio" className={label}>One-line bio</label>
                 <input id="bio" name="bio" type="text" maxLength={150}
-                  defaultValue={profile.bio ?? ""} placeholder="What are you into?" className={field} />
+                  value={bio} onChange={(e) => setBio(e.target.value)} placeholder="What are you into?" className={field} />
               </div>
             </div>
             <StepFooter>
-              <Button variant="ghost" size="lg" onClick={() => setStep(3)}>
-                Skip for now
+              <Button variant="ghost" size="lg" onClick={() => go(1)} className="max-md:px-3">
+                Back
+              </Button>
+              <Button variant="ghost" size="lg" onClick={() => go(3)} className="max-md:px-3">
+                Skip
               </Button>
               <Button type="submit" variant="primary" size="lg" disabled={basicsPending} className="max-md:flex-1">
                 {basicsPending ? "Saving…" : "Continue"}
@@ -427,7 +456,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
 
         {step === 3 && (
           <>
-          <StepIntro step={3} title="Post something" accent="real" sub="Optional. What are you building or figuring out?" />
+          <StepIntro step={3} title="Post something" accent="real" sub="Optional. What are you building or figuring out?" focusOnMount={navigated} />
           <form onSubmit={onSubmitPost} className={formClass}>
             <div className="flex max-w-xl flex-col gap-4">
               {postError && <p role="alert" className={alertClass}>{postError}</p>}
@@ -441,7 +470,10 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
               />
             </div>
             <StepFooter>
-              <Button variant="ghost" size="lg" onClick={() => setStep(4)} disabled={postPending}>
+              <Button variant="ghost" size="lg" onClick={() => go(2)} disabled={postPending} className="max-md:px-3">
+                Back
+              </Button>
+              <Button variant="ghost" size="lg" onClick={() => go(4)} disabled={postPending} className="max-md:px-3">
                 Skip
               </Button>
               <Button type="submit" variant="primary" size="lg" disabled={postPending || postContent.trim().length === 0} className="max-md:flex-1">
@@ -454,7 +486,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
 
         {step === 4 && (
           <>
-          <StepIntro step={4} title="Add your" accent="education" sub="Where do you study? Optional." />
+          <StepIntro step={4} title="Add your" accent="education" sub="Where do you study? Optional." focusOnMount={navigated} />
           <form onSubmit={onSubmitEducation} className={formClass}>
             <div className="flex max-w-xl flex-col gap-4">
               {eduError && <p role="alert" className={alertClass}>{eduError}</p>}
@@ -483,7 +515,10 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
               <DateRangePicker currentYear={currentYear} />
             </div>
             <StepFooter>
-              <Button variant="ghost" size="lg" onClick={() => setStep(5)} disabled={eduPending}>
+              <Button variant="ghost" size="lg" onClick={() => go(3)} disabled={eduPending} className="max-md:px-3">
+                Back
+              </Button>
+              <Button variant="ghost" size="lg" onClick={() => go(5)} disabled={eduPending} className="max-md:px-3">
                 Skip
               </Button>
               <Button type="submit" variant="primary" size="lg" disabled={eduPending} className="max-md:flex-1">
@@ -496,7 +531,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
 
         {step === 5 && (
           <>
-          <StepIntro step={5} title="Add an" accent="experience" sub="Interned somewhere? Led a club? Optional." />
+          <StepIntro step={5} title="Add an" accent="experience" sub="Interned somewhere? Led a club? Optional." focusOnMount={navigated} />
           <form onSubmit={onSubmitExperience} className={formClass}>
             <div className="flex max-w-xl flex-col gap-4">
               {expError && <p role="alert" className={alertClass}>{expError}</p>}
@@ -525,7 +560,10 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
               </div>
             </div>
             <StepFooter>
-              <Button variant="ghost" size="lg" onClick={() => setStep(6)} disabled={expPending || finishing}>
+              <Button variant="ghost" size="lg" onClick={() => go(4)} disabled={expPending || finishing} className="max-md:px-3">
+                Back
+              </Button>
+              <Button variant="ghost" size="lg" onClick={() => go(6)} disabled={expPending || finishing} className="max-md:px-3">
                 Skip
               </Button>
               <Button type="submit" variant="primary" size="lg" disabled={expPending || finishing} className="max-md:flex-1">
@@ -543,21 +581,26 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
             title="Make your portfolio"
             accent="public"
             sub={
-              <>
-                Your link samehere.dev/profile/{profile.username} shows your intro, projects, experience, and education.
-                Activity and posts stay private. You can change this anytime in Edit profile.
-              </>
+              <>Your link samehere.dev/profile/{profile.username} will show your intro, projects, experience, and education. You can change this anytime in Edit profile.</>
             }
+            focusOnMount={navigated}
           />
           <form onSubmit={onSubmitPublish} className={formClass}>
             <div className="flex max-w-xl flex-col gap-4">
               {publishError && <p role="alert" className={alertClass}>{publishError}</p>}
               <label className="flex min-h-14 cursor-pointer items-center gap-3 rounded-2xl border border-[var(--hairline)] bg-[var(--surface-2)] px-4 text-[15px] text-[var(--ink)] has-[:checked]:border-[rgba(79,159,232,0.55)] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[var(--accent)]">
-                <input type="checkbox" name="publish_portfolio" defaultChecked className="size-4 accent-[var(--accent)]" />
+                <input type="checkbox" name="publish_portfolio" defaultChecked={prefill.publishChecked} className="size-4 accent-[var(--accent)]" />
                 Make my portfolio public
               </label>
+              <p className="text-[13px] leading-[1.5] text-[var(--muted)] text-pretty">
+                Posts are separate: they show in the feed, and anyone with a post&apos;s link can open it. To limit them to
+                followers you approve, make your account private in Settings. A private account also hides your portfolio.
+              </p>
             </div>
             <StepFooter>
+              <Button variant="ghost" size="lg" onClick={() => go(5)} disabled={publishPending || finishing} className="max-md:px-3">
+                Back
+              </Button>
               <Button type="submit" variant="primary" size="lg" disabled={publishPending || finishing} className="max-md:flex-1">
                 {publishPending || finishing ? "Saving…" : "Finish"}
               </Button>
