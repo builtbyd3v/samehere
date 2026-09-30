@@ -159,7 +159,7 @@ function PostBody({ content, linked, postId }: { content: string; linked: boolea
   return inner;
 }
 
-function StuckQuestion({
+export function StuckQuestion({
   content,
   postId,
   linked,
