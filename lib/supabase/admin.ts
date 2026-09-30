@@ -5,8 +5,8 @@ import type { Database } from "@/types/database.types";
 // write a value the caller can steer:
 //   1. Stripe webhook (app/api/stripe/webhook/route.ts) — is_pro/pro_until/
 //      stripe_customer_id, pinned against the session client by guard_profile_privileged.
-//   2. Cron digest (app/api/cron/unread-digest/route.ts) — read-only RPC call
-//      (list_unread_digest_recipients), no session exists (Vercel Cron caller).
+//   2. Cron digest (app/api/cron/weekly-digest/route.ts): read-only RPC call
+//      (list_weekly_digest), no session exists (Vercel Cron caller).
 //   3. Unsubscribe (app/api/email/unsubscribe/route.ts) — single hardcoded
 //      boolean write (email_digest_opt_out) to the row an HMAC-verified token
 //      names; no session exists (one-click link from an email).

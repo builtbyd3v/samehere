@@ -28,7 +28,7 @@ async function optOut(token: string): Promise<Response> {
     });
   }
 
-  return new Response("You're unsubscribed from the daily activity email.", {
+  return new Response("You're unsubscribed from the weekly samehere email.", {
     status: 200,
     headers: { "Content-Type": "text/plain" },
   });
