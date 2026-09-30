@@ -202,16 +202,20 @@ export async function createPost(_prev: ComposerState, formData: FormData): Prom
   if (eventErr) return { error: eventErr };
   const event = parseTeamEventFields(eventInput);
 
-  const { error } = await supabase.from("posts").insert({
-    user_id: user.id,
-    content,
-    media,
-    context_label,
-    team_event_name: event.team_event_name,
-    team_event_date: event.team_event_date,
-    team_event_mode: event.team_event_mode,
-  });
-  if (error) return { error: "Could not publish your post. Try again." };
+  const { data: inserted, error } = await supabase
+    .from("posts")
+    .insert({
+      user_id: user.id,
+      content,
+      media,
+      context_label,
+      team_event_name: event.team_event_name,
+      team_event_date: event.team_event_date,
+      team_event_mode: event.team_event_mode,
+    })
+    .select("id")
+    .single();
+  if (error || !inserted) return { error: "Could not publish your post. Try again." };
 
   const posthog = getPostHogServerClient();
   posthog?.capture({
@@ -225,6 +229,16 @@ export async function createPost(_prev: ComposerState, formData: FormData): Prom
       has_team_event: Boolean(event.team_event_name || event.team_event_date || event.team_event_mode),
     },
   });
+
+  // The posts_notify_stuck_helpers trigger already ran inside the insert.
+  if (context_label === "stuck" && posthog) {
+    try {
+      const { data: count } = await supabase.rpc("stuck_help_count", { p_post_id: inserted.id });
+      posthog.capture({ distinctId: user.id, event: "stuck_help_sent", properties: { count: count ?? 0 } });
+    } catch {
+      // analytics only
+    }
+  }
 
   // activated: fires once, on the user's first post ever. Wrapped defensively —
   // a failure here must never surface as a broken post action.
