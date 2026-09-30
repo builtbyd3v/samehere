@@ -20,7 +20,7 @@ export default async function RightRail() {
   const viewerStage = parseStage(viewer.stage);
   const [{ data: suggestedRows }, questionPosts] = await Promise.all([
     supabase.rpc("get_suggested_profiles", { p_limit: 3 }),
-    fetchLabeledPosts(supabase, { viewerId: user.id, label: "stuck", limit: 6, excludeUserIds: [user.id] }),
+    fetchLabeledPosts(supabase, { viewerId: user.id, label: "stuck", openOnly: true, limit: 6, excludeUserIds: [user.id] }),
   ]);
   const suggested = suggestedRows ?? [];
   // Honest heading: only claim "your stage" when the top suggestion really shares it.
