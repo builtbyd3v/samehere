@@ -57,3 +57,36 @@ export function parseFocusAreas(values: unknown): FocusParse {
   if (picked.size > MAX_FOCUS_AREAS) return { ok: false, error: `Pick up to ${MAX_FOCUS_AREAS} focus areas.` };
   return { ok: true, data: FOCUS_AREAS.filter((f) => picked.has(f)) };
 }
+
+/** A stage change worth a post: from a real previous stage to a different one. */
+export type StageMoment = { from: Stage; to: Stage };
+
+export const STAGE_MOMENT_COOKIE = "sh_stage_moment";
+
+/** Null for a first stage (null before), no change, or junk. */
+export function stageMomentFrom(prev: unknown, next: unknown): StageMoment | null {
+  const from = parseStage(prev);
+  const to = parseStage(next);
+  if (!from || !to || from === to) return null;
+  return { from, to };
+}
+
+export function encodeStageMoment(m: StageMoment): string {
+  return `${m.from}.${m.to}`;
+}
+
+/** Cookie values are client-controlled: validate every part. */
+export function parseStageMoment(raw: unknown): StageMoment | null {
+  if (typeof raw !== "string") return null;
+  const [from, to, extra] = raw.split(".");
+  if (extra !== undefined) return null;
+  return stageMomentFrom(from, to);
+}
+
+/** Prefilled composer draft. The student edits or discards it; nothing posts on its own. */
+export function stageMomentDraft(m: StageMoment): { content: string; label: "building" | null } {
+  return {
+    content: `Moved from ${STAGE_LABELS[m.from]} to ${STAGE_LABELS[m.to]}. `,
+    label: m.to === "building" ? "building" : null,
+  };
+}
