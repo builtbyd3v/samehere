@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { TEXT_LIMITS } from "@/lib/utils/validation";
+import { getPostHogServerClient } from "@/lib/posthog-server";
 
 export async function startDmWithUsername(username: string) {
   const supabase = await createClient();
@@ -80,6 +81,12 @@ export async function createGroupConversation(title: string, memberIds: string[]
   if (error || !conversationId) {
     return { error: error?.message ?? "Could not create group" };
   }
+
+  getPostHogServerClient()?.capture({
+    distinctId: user.id,
+    event: "group_created",
+    properties: { size: new Set([user.id, ...memberIds]).size },
+  });
 
   return { conversationId };
 }
