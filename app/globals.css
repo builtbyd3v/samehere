@@ -1108,4 +1108,34 @@ summary {
   .portfolio-stack > *:nth-child(6) { --i: 5; }
 }
 
+/* ---------------------------------------------------------------------
+ * Redesign primitives (components/ui, DESIGN.md). In @layer components so
+ * Tailwind utilities on the same element (e.g. an animation-delay) win.
+ * ------------------------------------------------------------------- */
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(12px); filter: blur(6px); }
+  to   { opacity: 1; transform: none; filter: none; }
+}
+
+@layer components {
+  /* <StageDot>: color per stage id (ids are lib/stage.ts STAGES). */
+  .stage-dot { background-color: var(--faint); }
+  .stage-dot[data-stage="learning"] { background-color: var(--stage-learning); }
+  .stage-dot[data-stage="building"] { background-color: var(--stage-building); }
+  .stage-dot[data-stage="internship_search"] { background-color: var(--stage-internship-search); }
+  .stage-dot[data-stage="interning"] { background-color: var(--stage-interning); }
+  .stage-dot[data-stage="job_search"] { background-color: var(--stage-job-search); }
+  .stage-dot[data-stage="working"] { background-color: var(--stage-working); }
+
+  /* <GrainOverlay>: same noise as .surface-grain. */
+  .grain {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* <Reveal>: once, on mount. Nothing runs under reduced motion. */
+  @media (prefers-reduced-motion: no-preference) {
+    .rise-in { animation: rise-in 640ms var(--ease-out) both; }
+  }
+}
+
 
