@@ -20,7 +20,7 @@ export default function OpenToTags({
   const visible = tags.filter((tag): tag is OpenToTag => TAGS.has(tag));
   if (visible.length === 0) return null;
   const href = linkToDm && username ? `/messages?to=${encodeURIComponent(username)}` : null;
-  const line = className ?? "mt-3 text-[12px] font-medium tracking-[0.01em] text-[var(--ink-muted)]";
+  const line = className ?? "mt-3 text-[12px] font-medium tracking-[0.01em] text-[var(--muted)]";
   if (!href) {
     return (
       <p className={line}>{visible.map((tag) => OPEN_TO_LABELS[tag]).join(" · ")}</p>
