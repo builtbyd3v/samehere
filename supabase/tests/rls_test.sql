@@ -2804,6 +2804,132 @@ exception when others then
 end $$;
 reset role;
 
+-- ============ P004: stage / focus_areas privacy and CHECKs ============
+set local role postgres;
+do $$
+begin
+  update public.profiles set stage = 'building', focus_areas = '{web}'
+   where id = (select id from tests_fixture where key = 'a');
+  update public.profiles set stage = 'building', focus_areas = '{web,ai_ml}'
+   where id = (select id from tests_fixture where key = 'c');
+end $$;
+
+do $$
+declare
+  v_c uuid := (select id from tests_fixture where key = 'c');
+  v_rejected int := 0;
+begin
+  begin
+    update public.profiles set stage = 'ninja' where id = v_c;
+  exception when check_violation then v_rejected := v_rejected + 1;
+  end;
+  begin
+    update public.profiles set focus_areas = '{web,mobile,data,games}' where id = v_c;
+  exception when check_violation then v_rejected := v_rejected + 1;
+  end;
+  begin
+    update public.profiles set focus_areas = '{blockchain}' where id = v_c;
+  exception when check_violation then v_rejected := v_rejected + 1;
+  end;
+  if v_rejected <> 3 then
+    raise exception 'P004_stage_check REGRESSION: only % of 3 invalid stage/focus writes were rejected', v_rejected;
+  end if;
+  insert into tests_results values ('P004_stage_check', true, 'ok');
+exception when others then
+  insert into tests_results values ('P004_stage_check', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'c';
+do $$
+declare
+  v_c uuid := (select id from tests_fixture where key = 'c');
+  v_stage text;
+begin
+  update public.profiles set stage = 'learning' where id = v_c;
+  select stage into v_stage from public.profiles where id = v_c;
+  if v_stage is distinct from 'learning' then
+    raise exception 'P004_owner_can_set_stage REGRESSION: owner stage update did not stick (got %)', v_stage;
+  end if;
+  update public.profiles set stage = 'building' where id = v_c;
+  insert into tests_results values ('P004_owner_can_set_stage', true, 'ok');
+exception when others then
+  insert into tests_results values ('P004_owner_can_set_stage', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'c';
+do $$
+declare
+  v_a uuid := (select id from tests_fixture where key = 'a');
+  v_c uuid := (select id from tests_fixture where key = 'c');
+  v_sees_a int;
+  v_sees_c int;
+  v_leak int;
+begin
+  select count(*) filter (where id = v_a), count(*) filter (where id = v_c)
+    into v_sees_a, v_sees_c
+  from public.search_people('', 20, 0, null, null, null, null, 'building', null);
+  if v_sees_c = 0 then
+    raise exception 'P004_search_people_private SETUP: public C did not match its own stage filter';
+  end if;
+  if v_sees_a > 0 then
+    raise exception 'P004_search_people_private REGRESSION: private A matched the stage filter';
+  end if;
+  select count(*) into v_sees_a
+  from public.search_people('', 20, 0, null, null, null, null, null, 'web') where id = v_a;
+  if v_sees_a > 0 then
+    raise exception 'P004_search_people_private REGRESSION: private A matched the focus filter';
+  end if;
+  select count(*) into v_leak
+  from public.search_people('rls_test_a', 20, 0)
+  where id = v_a and (stage is not null or focus_areas is not null);
+  if v_leak > 0 then
+    raise exception 'P004_search_people_private REGRESSION: private A stage/focus returned by keyword search';
+  end if;
+  insert into tests_results values ('P004_search_people_private', true, 'ok');
+exception when others then
+  insert into tests_results values ('P004_search_people_private', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'c';
+do $$
+declare
+  v_a uuid := (select id from tests_fixture where key = 'a');
+  v_leak int;
+begin
+  select count(*) into v_leak
+  from public.get_suggested_profiles(null, 20)
+  where id = v_a and stage is not null;
+  if v_leak > 0 then
+    raise exception 'P004_suggested_private REGRESSION: private A stage returned by get_suggested_profiles';
+  end if;
+  insert into tests_results values ('P004_suggested_private', true, 'ok');
+exception when others then
+  insert into tests_results values ('P004_suggested_private', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_anon();
+do $$
+declare
+  r record;
+begin
+  select * into r from public.get_public_profile('rls_test_a');
+  if r.stage is not null or r.focus_areas is not null then
+    raise exception 'P004_public_profile_stage REGRESSION: private A stage/focus leaked to anon (stage=%, focus=%)', r.stage, r.focus_areas;
+  end if;
+  select * into r from public.get_public_profile('rls_test_c');
+  if r.stage is distinct from 'building' or r.focus_areas is distinct from array['web', 'ai_ml']::text[] then
+    raise exception 'P004_public_profile_stage REGRESSION: public C stage/focus not returned to anon (stage=%, focus=%)', r.stage, r.focus_areas;
+  end if;
+  insert into tests_results values ('P004_public_profile_stage', true, 'ok');
+exception when others then
+  insert into tests_results values ('P004_public_profile_stage', false, sqlerrm);
+end $$;
+reset role;
+
 -- ============ report ============
 -- Print the PASS/FAIL table FIRST so the operator sees exactly which assertions
 -- failed, then raise so psql exits non-zero and the harness actually gates.
@@ -2821,7 +2947,7 @@ declare v_failed int;
 begin
   select count(*) into v_failed from tests_results where not passed;
   if v_failed > 0 then
-    raise exception '% assertion(s) failed — see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view_denied, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, CLUBS_V2_1, CLUBS_V2_2, CLUBS_V2_3, CLUBS_V2_7a, CLUBS_V2_4, CLUBS_V2_7b, CLUBS_V2_5_officer_denied, CLUBS_V2_5_owner_allowed, CLUBS_V2_6_outsider, CLUBS_V2_6_pending, CLUBS_V2_8, CLUBS_V2_9, H1_suggested_profiles, CLUBS_V2_12_outsider, CLUBS_V2_12_anon, SIGNUP_RL_anon_execute, SIGNUP_RL_no_table_access_anon, SIGNUP_RL_no_table_access_authenticated, EXPERIENCES_owner_insert, EXPERIENCES_owner_select, EXPERIENCES_owner_update, EXPERIENCES_b_select_a, EXPERIENCES_b_update_denied, EXPERIENCES_b_delete_denied, EXPERIENCES_anon_select_denied, EXPERIENCES_owner_delete, EXPERIENCES_cap, JOB_LISTINGS_authenticated_select, JOB_LISTINGS_authenticated_insert_denied, JOB_LISTINGS_anon_select_denied, JOB_FIT_owner_insert_select, JOB_FIT_b_select_a_denied, JOB_PITCHES_owner_insert_select, JOB_PITCHES_b_select_a_denied, JOB_SAVES_owner_insert_select, JOB_SAVES_b_select_a_denied, JOB_SAVES_b_delete_a_denied, JOB_SAVES_owner_delete, JOB_SAVES_anon_select_denied, REFERRAL_JOINED_owner_select, REFERRAL_JOINED_b_select_denied, P001_guard_sub_event_frozen, P001_guard_is_bot_frozen, P001_suggested_private_masked, P001_suggested_limit_clamped, P001_suggested_suspended_hidden, P001_group_add_requires_member_follow, P001_group_readd_after_leave_denied, P001_post_hidden_by_suspension_frozen, RESUME_FIELDS_private_nulled, RESUME_FIELDS_anon_public_read.', v_failed;
+    raise exception '% assertion(s) failed — see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view_denied, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, CLUBS_V2_1, CLUBS_V2_2, CLUBS_V2_3, CLUBS_V2_7a, CLUBS_V2_4, CLUBS_V2_7b, CLUBS_V2_5_officer_denied, CLUBS_V2_5_owner_allowed, CLUBS_V2_6_outsider, CLUBS_V2_6_pending, CLUBS_V2_8, CLUBS_V2_9, H1_suggested_profiles, CLUBS_V2_12_outsider, CLUBS_V2_12_anon, SIGNUP_RL_anon_execute, SIGNUP_RL_no_table_access_anon, SIGNUP_RL_no_table_access_authenticated, EXPERIENCES_owner_insert, EXPERIENCES_owner_select, EXPERIENCES_owner_update, EXPERIENCES_b_select_a, EXPERIENCES_b_update_denied, EXPERIENCES_b_delete_denied, EXPERIENCES_anon_select_denied, EXPERIENCES_owner_delete, EXPERIENCES_cap, JOB_LISTINGS_authenticated_select, JOB_LISTINGS_authenticated_insert_denied, JOB_LISTINGS_anon_select_denied, JOB_FIT_owner_insert_select, JOB_FIT_b_select_a_denied, JOB_PITCHES_owner_insert_select, JOB_PITCHES_b_select_a_denied, JOB_SAVES_owner_insert_select, JOB_SAVES_b_select_a_denied, JOB_SAVES_b_delete_a_denied, JOB_SAVES_owner_delete, JOB_SAVES_anon_select_denied, REFERRAL_JOINED_owner_select, REFERRAL_JOINED_b_select_denied, P001_guard_sub_event_frozen, P001_guard_is_bot_frozen, P001_suggested_private_masked, P001_suggested_limit_clamped, P001_suggested_suspended_hidden, P001_group_add_requires_member_follow, P001_group_readd_after_leave_denied, P001_post_hidden_by_suspension_frozen, RESUME_FIELDS_private_nulled, RESUME_FIELDS_anon_public_read, P004_stage_check, P004_owner_can_set_stage, P004_search_people_private, P004_suggested_private, P004_public_profile_stage.', v_failed;
 
   end if;
 end $$;
