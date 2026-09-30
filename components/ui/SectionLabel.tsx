@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 type LabelTag = "h2" | "h3" | "h4" | "p" | "span" | "div" | "dt";
 
-/** Small sentence-case label for section headings and metadata keys. Geist, like everything else. */
+/** x.ai-style label: Geist Mono, uppercase, tracked, faint. Write the text in sentence case; CSS uppercases it. */
 export function SectionLabel({
   as: Tag = "span",
   size = "xs",
@@ -16,7 +16,7 @@ export function SectionLabel({
 }) {
   return (
     <Tag
-      className={`font-medium tabular-nums text-[var(--muted)] ${size === "xs" ? "text-xs" : "text-small"} ${className}`.trim()}
+      className={`font-mono font-medium uppercase tabular-nums tracking-[0.08em] text-[var(--faint)] ${size === "xs" ? "text-[11px]" : "text-xs"} ${className}`.trim()}
     >
       {children}
     </Tag>

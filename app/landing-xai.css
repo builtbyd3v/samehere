@@ -29,3 +29,29 @@
 .landing-brand-link:active {
   transform: scale(0.96);
 }
+
+/* Plan 026: landing loops. Used only through Tailwind motion-safe:animate-[...], so none run under reduced motion. */
+@keyframes landing-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes landing-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes landing-float-alt {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+/* WCAG 2.2.2: the stage strip's Pause control stops every landing loop. */
+main:has(#stage-marquee-pause:checked) .landing-loop {
+  animation-play-state: paused;
+}
+
+/* Subtle film grain over the landing only (one div in LandingPage). */
+.grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}

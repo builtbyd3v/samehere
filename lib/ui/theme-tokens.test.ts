@@ -71,6 +71,7 @@ const PAIRS: [string, string, number][] = [
   ["--amber", "--bg", 14], // Chip tone amber: 14% tint
   ["--green", "--bg", 12],
   ["--coral", "--bg", 12],
+  ["--accent-2", "--bg", 0], // blue text: SameHere count, active nav label
 ];
 
 describe("theme token contrast (WCAG AA 4.5:1)", () => {

@@ -33,9 +33,11 @@ export default function MobileNav({ username, dmUnread = 0 }: { username: string
           key={item.label}
           href={item.href}
           aria-current={item.active ? "page" : undefined}
-          className={`relative flex min-h-[60px] flex-col items-center justify-center gap-1 text-[10px] ${item.active ? "text-[var(--ink)]" : "text-[var(--faint)]"}`}
+          className={`relative flex min-h-[60px] flex-col items-center justify-center gap-1 text-[10px] ${item.active ? "text-[var(--accent-2)]" : "text-[var(--faint)]"}`}
         >
-          {item.icon}
+          <span className={`grid h-7 w-14 place-items-center rounded-full${item.active ? " bg-[var(--accent-soft)] text-[var(--accent)]" : ""}`}>
+            {item.icon}
+          </span>
           {item.label}
           {item.badge ? (
             <span className="absolute left-[calc(50%+4px)] top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-[var(--accent)] px-1 text-[10px] font-semibold leading-none tabular-nums text-[var(--on-accent)]">

@@ -58,10 +58,10 @@ export default function LeftNav({
             href={item.href}
             prefetch={item.prefetch}
             aria-current={active ? "page" : undefined}
-            className={`${ITEM} ${active ? "bg-[var(--fill-3)] text-[var(--ink)]" : ITEM_OFF}`}
+            className={`${ITEM} ${active ? "bg-[var(--accent-soft)] font-medium text-[var(--accent-2)]" : ITEM_OFF}`}
           >
             <span className="flex items-center gap-[11px]">
-              {item.icon}
+              <span className={`grid place-items-center${active ? " text-[var(--accent)]" : ""}`}>{item.icon}</span>
               {item.label}
             </span>
             {badge > 0 ? (
