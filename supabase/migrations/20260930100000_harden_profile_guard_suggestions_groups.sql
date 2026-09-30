@@ -278,3 +278,30 @@ grant execute on function public.add_group_member(uuid, uuid) to authenticated;
 -- (default-privileges trap -- anon/authenticated are granted at the schema
 -- level, not via PUBLIC); name anon explicitly.
 revoke execute on function public.add_group_member(uuid, uuid) from anon;
+
+-- ============================================================
+-- guard_post_context_label_only: body copied from
+-- 20260910100000_portfolio_data_contracts.sql; only the hidden_by_suspension
+-- freeze line is new. create or replace keeps the trigger binding.
+-- ============================================================
+create or replace function public.guard_post_context_label_only()
+returns trigger
+language plpgsql
+set search_path = ''
+as $function$
+begin
+  if current_user in ('authenticated', 'anon') then
+    new.id := old.id;
+    new.user_id := old.user_id;
+    new.content := old.content;
+    new.created_at := old.created_at;
+    new.hidden := old.hidden;
+    new.media := old.media;
+    new.post_type := old.post_type;
+    new.hidden_by_suspension := old.hidden_by_suspension;
+  end if;
+  return new;
+end;
+$function$;
+
+revoke all on function public.guard_post_context_label_only() from public;
