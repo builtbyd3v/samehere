@@ -3429,6 +3429,314 @@ exception when others then
 end $$;
 reset role;
 
+-- ============ REWARD017: plan 017 (referral stage reward) ============
+-- Fresh users. v_ref (never Pro) invited f1..f3. v_sub (active subscriber)
+-- invited g1..g3. v_unc invited k1, k2 (confirmed) and k3 (unconfirmed).
+-- Referral rows are inserted directly: the confirm trigger does not fire for
+-- users inserted already confirmed. A setup block that errors records a
+-- REWARD017_setup_* FAIL row so the gate still trips.
+set local role postgres;
+do $$
+declare
+  v_ref uuid := gen_random_uuid();
+  v_f1  uuid := gen_random_uuid();
+  v_f2  uuid := gen_random_uuid();
+  v_f3  uuid := gen_random_uuid();
+  v_sub uuid := gen_random_uuid();
+  v_g1  uuid := gen_random_uuid();
+  v_g2  uuid := gen_random_uuid();
+  v_g3  uuid := gen_random_uuid();
+  v_unc uuid := gen_random_uuid();
+  v_k1  uuid := gen_random_uuid();
+  v_k2  uuid := gen_random_uuid();
+  v_k3  uuid := gen_random_uuid();
+begin
+  insert into auth.users (
+    instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+    raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+    confirmation_token, recovery_token, email_change_token_new, email_change
+  ) values
+    ('00000000-0000-0000-0000-000000000000', v_ref, 'authenticated', 'authenticated',
+     'rls-rw-ref@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_rw_ref'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_f1, 'authenticated', 'authenticated',
+     'rls-rw-f1@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_rw_f1'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_f2, 'authenticated', 'authenticated',
+     'rls-rw-f2@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_rw_f2'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_f3, 'authenticated', 'authenticated',
+     'rls-rw-f3@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_rw_f3'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_sub, 'authenticated', 'authenticated',
+     'rls-rw-sub@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_rw_sub'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_g1, 'authenticated', 'authenticated',
+     'rls-rw-g1@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_rw_g1'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_g2, 'authenticated', 'authenticated',
+     'rls-rw-g2@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_rw_g2'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_g3, 'authenticated', 'authenticated',
+     'rls-rw-g3@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_rw_g3'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_unc, 'authenticated', 'authenticated',
+     'rls-rw-unc@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_rw_unc'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_k1, 'authenticated', 'authenticated',
+     'rls-rw-k1@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_rw_k1'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_k2, 'authenticated', 'authenticated',
+     'rls-rw-k2@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_rw_k2'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_k3, 'authenticated', 'authenticated',
+     'rls-rw-k3@school.edu', '', null, '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_rw_k3'), now(), now(), '', '', '', '');
+
+  update public.profiles
+     set is_pro = true, pro_source = 'subscription', pro_until = now() + interval '10 days'
+   where id = v_sub;
+
+  insert into public.referrals (referred_id, referrer_id) values
+    (v_f1, v_ref), (v_f2, v_ref), (v_f3, v_ref),
+    (v_g1, v_sub), (v_g2, v_sub), (v_g3, v_sub),
+    (v_k1, v_unc), (v_k2, v_unc), (v_k3, v_unc);
+
+  insert into tests_fixture (key, id) values
+    ('rw_ref', v_ref), ('rw_f1', v_f1), ('rw_f2', v_f2), ('rw_f3', v_f3),
+    ('rw_sub', v_sub), ('rw_g1', v_g1), ('rw_g2', v_g2), ('rw_g3', v_g3),
+    ('rw_unc', v_unc), ('rw_k1', v_k1), ('rw_k2', v_k2), ('rw_k3', v_k3);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'rw_f1';
+do $$
+begin
+  update public.profiles set stage = 'interning' where id = (select id from tests_fixture where key = 'rw_f1');
+exception when others then
+  insert into tests_results values ('REWARD017_setup_f1_stage', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'rw_f2';
+do $$
+begin
+  update public.profiles set stage = 'interning' where id = (select id from tests_fixture where key = 'rw_f2');
+exception when others then
+  insert into tests_results values ('REWARD017_setup_f2_stage', false, sqlerrm);
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare
+  v_ref uuid := (select id from tests_fixture where key = 'rw_ref');
+  v_staged int;
+  v_is_pro boolean;
+  v_spent int;
+begin
+  select count(*) into v_staged from public.profiles
+   where stage = 'interning'
+     and id in (select id from tests_fixture where key in ('rw_f1', 'rw_f2'));
+  select is_pro into v_is_pro from public.profiles where id = v_ref;
+  select count(*) into v_spent from public.referrals
+   where referrer_id = v_ref and reward_granted_at is not null;
+  if v_staged <> 2 or v_is_pro or v_spent <> 0 then
+    raise exception 'REWARD017_two_stages_no_grant REGRESSION: staged=%, is_pro=%, spent=%', v_staged, v_is_pro, v_spent;
+  end if;
+  insert into tests_results values ('REWARD017_two_stages_no_grant', true, 'ok');
+exception when others then
+  insert into tests_results values ('REWARD017_two_stages_no_grant', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'rw_f3';
+do $$
+begin
+  update public.profiles set stage = 'interning' where id = (select id from tests_fixture where key = 'rw_f3');
+exception when others then
+  insert into tests_results values ('REWARD017_setup_f3_stage', false, sqlerrm);
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare
+  v_ref uuid := (select id from tests_fixture where key = 'rw_ref');
+  v_f3  uuid := (select id from tests_fixture where key = 'rw_f3');
+  v_p record;
+  v_spent int;
+  v_notes int;
+begin
+  select is_pro, pro_until, pro_source into v_p from public.profiles where id = v_ref;
+  select count(*) into v_spent from public.referrals
+   where referrer_id = v_ref and reward_granted_at is not null;
+  select count(*) into v_notes from public.notifications
+   where user_id = v_ref and type = 'referral_reward' and actor_id = v_f3;
+  if not v_p.is_pro or v_p.pro_source is distinct from 'referral'
+     or v_p.pro_until is distinct from now() + interval '1 month'
+     or v_spent <> 3 or v_notes <> 1 then
+    raise exception 'REWARD017_third_stage_grants REGRESSION: is_pro=%, source=%, until=%, spent=%, notifications=%',
+      v_p.is_pro, v_p.pro_source, v_p.pro_until, v_spent, v_notes;
+  end if;
+  insert into tests_results values ('REWARD017_third_stage_grants', true, 'ok');
+exception when others then
+  insert into tests_results values ('REWARD017_third_stage_grants', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'rw_f1';
+do $$
+begin
+  update public.profiles set stage = null where id = (select id from tests_fixture where key = 'rw_f1');
+  update public.profiles set stage = 'interning' where id = (select id from tests_fixture where key = 'rw_f1');
+exception when others then
+  insert into tests_results values ('REWARD017_setup_f1_restage', false, sqlerrm);
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare
+  v_ref uuid := (select id from tests_fixture where key = 'rw_ref');
+  v_until timestamptz;
+  v_notes int;
+begin
+  select pro_until into v_until from public.profiles where id = v_ref;
+  select count(*) into v_notes from public.notifications
+   where user_id = v_ref and type = 'referral_reward';
+  if v_until is distinct from now() + interval '1 month' or v_notes <> 1 then
+    raise exception 'REWARD017_idempotent REGRESSION: until=%, notifications=%', v_until, v_notes;
+  end if;
+  insert into tests_results values ('REWARD017_idempotent', true, 'ok');
+exception when others then
+  insert into tests_results values ('REWARD017_idempotent', false, sqlerrm);
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare
+  v_sub uuid := (select id from tests_fixture where key = 'rw_sub');
+  v_p record;
+  v_spent int;
+begin
+  update public.profiles set stage = 'interning'
+   where id in (select id from tests_fixture where key in ('rw_g1', 'rw_g2', 'rw_g3'));
+  select pro_source, pro_until into v_p from public.profiles where id = v_sub;
+  select count(*) into v_spent from public.referrals
+   where referrer_id = v_sub and reward_granted_at is not null;
+  if v_p.pro_source is distinct from 'subscription'
+     or v_p.pro_until is distinct from now() + interval '10 days'
+     or v_spent <> 0 then
+    raise exception 'REWARD017_subscriber_untouched REGRESSION: source=%, until=%, spent=%', v_p.pro_source, v_p.pro_until, v_spent;
+  end if;
+  insert into tests_results values ('REWARD017_subscriber_untouched', true, 'ok');
+exception when others then
+  insert into tests_results values ('REWARD017_subscriber_untouched', false, sqlerrm);
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare
+  v_unc uuid := (select id from tests_fixture where key = 'rw_unc');
+  v_is_pro boolean;
+begin
+  update public.profiles set stage = 'interning'
+   where id in (select id from tests_fixture where key in ('rw_k1', 'rw_k2', 'rw_k3'));
+  select is_pro into v_is_pro from public.profiles where id = v_unc;
+  if v_is_pro then
+    raise exception 'REWARD017_unconfirmed_not_counted REGRESSION: an unconfirmed invitee completed a batch';
+  end if;
+  insert into tests_results values ('REWARD017_unconfirmed_not_counted', true, 'ok');
+exception when others then
+  insert into tests_results values ('REWARD017_unconfirmed_not_counted', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'rw_unc';
+do $$
+begin
+  begin
+    update public.referrals set reward_granted_at = now()
+     where referrer_id = (select id from tests_fixture where key = 'rw_unc');
+  exception when others then
+    null;
+  end;
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare
+  v_unc uuid := (select id from tests_fixture where key = 'rw_unc');
+  v_spent int;
+begin
+  select count(*) into v_spent from public.referrals
+   where referrer_id = v_unc and reward_granted_at is not null;
+  if v_spent <> 0 then
+    raise exception 'REWARD017_client_cannot_spend REGRESSION: a client marked % referrals spent', v_spent;
+  end if;
+  insert into tests_results values ('REWARD017_client_cannot_spend', true, 'ok');
+exception when others then
+  insert into tests_results values ('REWARD017_client_cannot_spend', false, sqlerrm);
+end $$;
+reset role;
+
+-- Two impersonated reads, one finding: the v_unc block records only a failure,
+-- the v_ref block records the result unless a failure is already there.
+select tests.as_user(id) from tests_fixture where key = 'rw_unc';
+do $$
+declare
+  v_row record;
+begin
+  select ready, rewards into v_row from public.get_referral_reward_progress();
+  if v_row.ready is distinct from 2 or v_row.rewards is distinct from 0 then
+    raise exception 'REWARD017_progress_rpc REGRESSION: v_unc got (%, %), expected (2, 0)', v_row.ready, v_row.rewards;
+  end if;
+exception when others then
+  insert into tests_results values ('REWARD017_progress_rpc', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'rw_ref';
+do $$
+declare
+  v_row record;
+begin
+  select ready, rewards into v_row from public.get_referral_reward_progress();
+  if v_row.ready is distinct from 0 or v_row.rewards is distinct from 1 then
+    raise exception 'REWARD017_progress_rpc REGRESSION: v_ref got (%, %), expected (0, 1)', v_row.ready, v_row.rewards;
+  end if;
+  insert into tests_results values ('REWARD017_progress_rpc', true, 'ok') on conflict (finding) do nothing;
+exception when others then
+  insert into tests_results values ('REWARD017_progress_rpc', false, sqlerrm) on conflict (finding) do nothing;
+end $$;
+reset role;
+
+select tests.as_anon();
+do $$
+declare
+  v_state text;
+  v_raised boolean;
+begin
+  begin
+    perform public.get_referral_reward_progress();
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state <> '42501' then
+    raise exception 'REWARD017_progress_anon_denied REGRESSION: anon get_referral_reward_progress did not fail with 42501 (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+  insert into tests_results values ('REWARD017_progress_anon_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('REWARD017_progress_anon_denied', false, sqlerrm);
+end $$;
+reset role;
+
 -- ============ report ============
 -- Print the PASS/FAIL table FIRST so the operator sees exactly which assertions
 -- failed, then raise so psql exits non-zero and the harness actually gates.
@@ -3446,7 +3754,7 @@ declare v_failed int;
 begin
   select count(*) into v_failed from tests_results where not passed;
   if v_failed > 0 then
-    raise exception '% assertion(s) failed, see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view_denied, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, CLUBS_V2_1, CLUBS_V2_2, CLUBS_V2_3, CLUBS_V2_7a, CLUBS_V2_4, CLUBS_V2_7b, CLUBS_V2_5_officer_denied, CLUBS_V2_5_owner_allowed, CLUBS_V2_6_outsider, CLUBS_V2_6_pending, CLUBS_V2_8, CLUBS_V2_9, H1_suggested_profiles, CLUBS_V2_12_outsider, CLUBS_V2_12_anon, SIGNUP_RL_anon_execute, SIGNUP_RL_no_table_access_anon, SIGNUP_RL_no_table_access_authenticated, EXPERIENCES_owner_insert, EXPERIENCES_owner_select, EXPERIENCES_owner_update, EXPERIENCES_b_select_a, EXPERIENCES_b_update_denied, EXPERIENCES_b_delete_denied, EXPERIENCES_anon_select_denied, EXPERIENCES_owner_delete, EXPERIENCES_cap, JOB_LISTINGS_authenticated_select, JOB_LISTINGS_authenticated_insert_denied, JOB_LISTINGS_anon_select_denied, JOB_FIT_owner_insert_select, JOB_FIT_b_select_a_denied, JOB_PITCHES_owner_insert_select, JOB_PITCHES_b_select_a_denied, JOB_SAVES_owner_insert_select, JOB_SAVES_b_select_a_denied, JOB_SAVES_b_delete_a_denied, JOB_SAVES_owner_delete, JOB_SAVES_anon_select_denied, REFERRAL_JOINED_owner_select, REFERRAL_JOINED_b_select_denied, P001_guard_sub_event_frozen, P001_guard_is_bot_frozen, P001_suggested_private_masked, P001_suggested_limit_clamped, P001_suggested_suspended_hidden, P001_group_add_requires_member_follow, P001_group_readd_after_leave_denied, P001_post_hidden_by_suspension_frozen, RESUME_FIELDS_private_nulled, RESUME_FIELDS_anon_public_read, P004_stage_check, P004_owner_can_set_stage, P004_search_people_private, P004_suggested_private, P004_public_profile_stage, STUCK_HELP_matched, STUCK_HELP_private_skipped, STUCK_HELP_blocked_skipped, STUCK_HELP_rate_limited, STUCK_HELP_count_author, STUCK_HELP_count_non_author, STUCK_direct_update_ignored, STUCK_resolve_non_author_denied, STUCK_resolve_foreign_comment_rejected, STUCK_resolve_author_ok, STUCK_accepted_comment_delete_sets_null, STUCK_reopen_author, STUCK_rpc_anon_denied, P023_owner_sets_onboarded_at, REF016_confirm_username_fallback, REF016_invite_code_username, REF016_set_code_rejects_username, REF016_claim_self_denied, REF016_claim_fresh_once, REF016_claim_old_denied, REF016_claim_anon_denied.', v_failed;
+    raise exception '% assertion(s) failed, see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view_denied, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, CLUBS_V2_1, CLUBS_V2_2, CLUBS_V2_3, CLUBS_V2_7a, CLUBS_V2_4, CLUBS_V2_7b, CLUBS_V2_5_officer_denied, CLUBS_V2_5_owner_allowed, CLUBS_V2_6_outsider, CLUBS_V2_6_pending, CLUBS_V2_8, CLUBS_V2_9, H1_suggested_profiles, CLUBS_V2_12_outsider, CLUBS_V2_12_anon, SIGNUP_RL_anon_execute, SIGNUP_RL_no_table_access_anon, SIGNUP_RL_no_table_access_authenticated, EXPERIENCES_owner_insert, EXPERIENCES_owner_select, EXPERIENCES_owner_update, EXPERIENCES_b_select_a, EXPERIENCES_b_update_denied, EXPERIENCES_b_delete_denied, EXPERIENCES_anon_select_denied, EXPERIENCES_owner_delete, EXPERIENCES_cap, JOB_LISTINGS_authenticated_select, JOB_LISTINGS_authenticated_insert_denied, JOB_LISTINGS_anon_select_denied, JOB_FIT_owner_insert_select, JOB_FIT_b_select_a_denied, JOB_PITCHES_owner_insert_select, JOB_PITCHES_b_select_a_denied, JOB_SAVES_owner_insert_select, JOB_SAVES_b_select_a_denied, JOB_SAVES_b_delete_a_denied, JOB_SAVES_owner_delete, JOB_SAVES_anon_select_denied, REFERRAL_JOINED_owner_select, REFERRAL_JOINED_b_select_denied, P001_guard_sub_event_frozen, P001_guard_is_bot_frozen, P001_suggested_private_masked, P001_suggested_limit_clamped, P001_suggested_suspended_hidden, P001_group_add_requires_member_follow, P001_group_readd_after_leave_denied, P001_post_hidden_by_suspension_frozen, RESUME_FIELDS_private_nulled, RESUME_FIELDS_anon_public_read, P004_stage_check, P004_owner_can_set_stage, P004_search_people_private, P004_suggested_private, P004_public_profile_stage, STUCK_HELP_matched, STUCK_HELP_private_skipped, STUCK_HELP_blocked_skipped, STUCK_HELP_rate_limited, STUCK_HELP_count_author, STUCK_HELP_count_non_author, STUCK_direct_update_ignored, STUCK_resolve_non_author_denied, STUCK_resolve_foreign_comment_rejected, STUCK_resolve_author_ok, STUCK_accepted_comment_delete_sets_null, STUCK_reopen_author, STUCK_rpc_anon_denied, P023_owner_sets_onboarded_at, REF016_confirm_username_fallback, REF016_invite_code_username, REF016_set_code_rejects_username, REF016_claim_self_denied, REF016_claim_fresh_once, REF016_claim_old_denied, REF016_claim_anon_denied, REWARD017_two_stages_no_grant, REWARD017_third_stage_grants, REWARD017_idempotent, REWARD017_subscriber_untouched, REWARD017_unconfirmed_not_counted, REWARD017_client_cannot_spend, REWARD017_progress_rpc, REWARD017_progress_anon_denied.', v_failed;
 
   end if;
 end $$;
