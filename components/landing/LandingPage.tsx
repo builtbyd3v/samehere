@@ -10,7 +10,7 @@ import StageMarquee from "./StageMarquee";
 // ponytail: app/page.tsx (out of scope) still passes founderSpotsLeft; the hero pill now
 // advertises export instead (plan 011 decision). Drop the prop and its fetch together.
 const LandingPage: (props: { founderSpotsLeft?: number }) => ReactElement = () => (
-  <main id="top" className="relative min-h-dvh overflow-x-clip bg-[var(--bg)] text-[var(--ink)]">
+  <main id="top" className="dark relative min-h-dvh overflow-x-clip bg-[var(--bg)] text-[var(--ink)]">
     <a href="#main-content" className="landing-skip-link">
       Skip to content
     </a>
