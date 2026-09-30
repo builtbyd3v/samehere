@@ -1,7 +1,7 @@
 import { MessageCircle } from "lucide-react";
 import { Chip, StageChip } from "@/components/ui/Chip";
 import { HairlineCard } from "@/components/ui/HairlineCard";
-import { MonoLabel } from "@/components/ui/MonoLabel";
+import { SectionLabel } from "@/components/ui/SectionLabel";
 import { FOCUS_LABELS, STAGE_LABELS } from "@/lib/stage";
 
 // Illustration only. Placeholder identity on purpose: never a real or realistic person.
@@ -52,7 +52,7 @@ export default function HeroPreview() {
         <div className="my-1.5 h-px bg-[var(--hairline)]" />
         <p className="text-sm font-semibold">{PROJECTS[0].name}</p>
         <p className="-mt-2 text-[13px] text-[var(--muted)]">{PROJECTS[0].blurb}</p>
-        <MonoLabel className="break-all">{URL_TEXT}</MonoLabel>
+        <SectionLabel className="break-all">{URL_TEXT}</SectionLabel>
       </HairlineCard>
 
       {/* Tablet: browser card alone. Desktop (xl): story card, browser card, Stuck card. */}
@@ -65,7 +65,7 @@ export default function HeroPreview() {
             <p className="text-sm text-[var(--ink-3)]">{HEADLINE}</p>
             <Chips />
             <div className="grow" />
-            <MonoLabel className="break-all">{URL_TEXT}</MonoLabel>
+            <SectionLabel className="break-all">{URL_TEXT}</SectionLabel>
           </HairlineCard>
         </div>
 
@@ -77,7 +77,7 @@ export default function HeroPreview() {
             <span className="size-2.5 rounded-full bg-[#2a2c30]" />
             <span className="size-2.5 rounded-full bg-[#2a2c30]" />
             <span className="size-2.5 rounded-full bg-[#2a2c30]" />
-            <span className="ml-3 font-mono text-[11px] text-[var(--faint)]">{URL_TEXT}</span>
+            <span className="ml-3 text-[11px] text-[var(--faint)]">{URL_TEXT}</span>
           </div>
           <div className="flex flex-col gap-[18px] p-7">
             <div className="flex items-center gap-3.5">
@@ -89,7 +89,7 @@ export default function HeroPreview() {
             </div>
             <Chips ai />
             <div className="h-px bg-[var(--hairline)]" />
-            <MonoLabel>Projects</MonoLabel>
+            <SectionLabel>Projects</SectionLabel>
             <div className="flex flex-col gap-3">
               {PROJECTS.map((p) => (
                 <div key={p.name}>
@@ -98,13 +98,13 @@ export default function HeroPreview() {
                 </div>
               ))}
             </div>
-            <MonoLabel>Skills</MonoLabel>
+            <SectionLabel>Skills</SectionLabel>
             <div className="flex flex-wrap gap-1.5">
               {SKILLS.map((s) => (
                 <Chip key={s}>{s}</Chip>
               ))}
             </div>
-            <MonoLabel>Activity</MonoLabel>
+            <SectionLabel>Activity</SectionLabel>
             <div className="grid grid-cols-[repeat(26,minmax(0,1fr))] gap-[3px]">
               {CELLS.map((bg, i) => (
                 <div key={i} className={`aspect-square rounded-[2px] ${bg}`} />

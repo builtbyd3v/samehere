@@ -8,7 +8,7 @@ const SERVER_LEAVES = [
   "components/ui/MentionText.tsx",
   "components/ui/Button.tsx",
   "components/ui/Chip.tsx",
-  "components/ui/MonoLabel.tsx",
+  "components/ui/SectionLabel.tsx",
   "components/ui/HairlineCard.tsx",
   "components/ui/Backdrop.tsx",
   "components/ui/Reveal.tsx",

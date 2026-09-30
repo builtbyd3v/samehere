@@ -1,8 +1,7 @@
 import type { ReactNode } from "react";
 import { Chip, StageChip } from "@/components/ui/Chip";
-import { MonoLabel } from "@/components/ui/MonoLabel";
+import { SectionLabel } from "@/components/ui/SectionLabel";
 import { STAGE_LABELS } from "@/lib/stage";
-import { serifAccent } from "./cta";
 
 const THUMB = "rounded-lg border";
 
@@ -31,7 +30,7 @@ const FEATURES: { id?: string; n: string; title: string; body: string; visual: R
         <div
           className={`${THUMB} h-[78px] w-11 border-[var(--hairline-strong)] bg-[linear-gradient(180deg,rgba(47,109,176,0.5),var(--surface-4))]`}
         />
-        <MonoLabel className="ml-1.5">Link · Square · Story</MonoLabel>
+        <SectionLabel className="ml-1.5">Link · Square · Story</SectionLabel>
       </div>
     ),
   },
@@ -60,9 +59,7 @@ export default function Features() {
           id="how-title"
           className="text-balance text-[32px] font-semibold leading-[1.05] tracking-[-0.035em] md:text-[44px] lg:max-w-[720px] lg:text-[56px] lg:leading-none lg:tracking-[-0.04em]"
         >
-          Built for the part <span className={serifAccent}>you are in</span>
-          <span className="md:hidden">.</span>
-          <span className="hidden md:inline">, not the career you are supposed to have.</span>
+          Built for the part you are in.
         </h2>
         <p className="hidden text-pretty text-base leading-[1.55] text-[var(--muted)] md:mt-4 md:block lg:mt-0 lg:max-w-[340px]">
           Not a popularity contest. Just students one step behind, beside, and ahead of you.
@@ -75,7 +72,7 @@ export default function Features() {
             id={f.id}
             className="flex scroll-mt-6 flex-col gap-2.5 rounded-[20px] border border-[var(--border)] bg-[var(--surface-3)] p-[22px] transition-[translate,border-color] duration-[260ms] ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-white/15 motion-safe:hover:-translate-y-[3px] lg:h-[360px] lg:gap-3.5 lg:rounded-3xl lg:p-8"
           >
-            <MonoLabel size="sm">{f.n}</MonoLabel>
+            <SectionLabel size="sm">{f.n}</SectionLabel>
             <h3 className="text-[21px] font-semibold tracking-[-0.02em] lg:text-[26px]">{f.title}</h3>
             <p className="text-[15px] leading-[1.55] text-[var(--muted)]">{f.body}</p>
             <div className="grow" />

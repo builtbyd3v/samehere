@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/Button";
 import { LightPool } from "@/components/ui/Backdrop";
 import { HairlineCard } from "@/components/ui/HairlineCard";
-import { serifAccent } from "./cta";
 
 export default function FinaleCta() {
   return (
@@ -19,7 +18,7 @@ export default function FinaleCta() {
           id="finale-title"
           className="relative text-balance text-[34px] font-semibold leading-[1.02] tracking-[-0.04em] md:text-5xl lg:max-w-[820px] lg:text-[64px] lg:leading-none lg:tracking-[-0.045em]"
         >
-          Someone is exactly <span className={serifAccent}>where you are.</span>
+          You&apos;re not the only one.
         </h2>
         <p className="relative hidden text-lg text-[var(--muted)] md:block">Free. Pick your stage when you join.</p>
         <Button href="/signup" variant="primary" size="lg" className="w-full md:w-auto">

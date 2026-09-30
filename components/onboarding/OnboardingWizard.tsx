@@ -21,7 +21,7 @@ import AvatarBase from "@/components/ui/Avatar";
 import { LightPool } from "@/components/ui/Backdrop";
 import { Button } from "@/components/ui/Button";
 import { StageDot } from "@/components/ui/Chip";
-import { MonoLabel } from "@/components/ui/MonoLabel";
+import { SectionLabel } from "@/components/ui/SectionLabel";
 import SchoolAutocomplete from "@/components/profile/SchoolAutocomplete";
 import DateRangePicker from "@/components/profile/DateRangePicker";
 import Select from "@/components/ui/Select";
@@ -77,16 +77,16 @@ function StepIntro({ step, title, accent, sub }: StepIntroProps) {
   }, [step]);
   return (
     <div className="flex flex-col gap-3">
-      <MonoLabel as="p" size="sm">
+      <SectionLabel as="p" size="sm">
         Step {step} of {TOTAL_STEPS} · Optional
-      </MonoLabel>
+      </SectionLabel>
       <h1
         ref={headingRef}
         tabIndex={-1}
         className="text-[34px] font-semibold leading-[1.02] tracking-[-0.04em] text-balance outline-none md:text-[52px] md:leading-none"
       >
         {title}{" "}
-        <span className="font-serif font-normal italic tracking-[-0.02em] text-[var(--accent-ink)]">{accent}</span>
+        {accent}
       </h1>
       <p className="text-[15px] text-[var(--muted)] text-pretty md:text-[17px]">{sub}</p>
     </div>

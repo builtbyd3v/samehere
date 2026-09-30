@@ -48,7 +48,7 @@ import {
   ResumeTimeline,
 } from "@/components/portfolio/ProfileSections";
 import { Button } from "@/components/ui/Button";
-import { MonoLabel } from "@/components/ui/MonoLabel";
+import { SectionLabel } from "@/components/ui/SectionLabel";
 import { GrainOverlay, LightPool } from "@/components/ui/Backdrop";
 import { Reveal } from "@/components/ui/Reveal";
 const getProfileByUsername = cache(async (username: string) => fetchProfileByUsername(await createClient(), username));
@@ -236,7 +236,7 @@ async function PublicHeatmapFallback({
   if (heatmap.length === 0) return null;
   return (
     <section className="flex flex-col gap-3.5">
-      <MonoLabel as="h2">Activity</MonoLabel>
+      <SectionLabel as="h2">Activity</SectionLabel>
       <ContributionHeatmap data={heatmap} />
     </section>
   );
@@ -274,9 +274,9 @@ async function PublicPortfolioBelow({
   });
   const posts = (
     <section>
-      <MonoLabel as="h2" className="mb-3">
+      <SectionLabel as="h2" className="mb-3">
         Posts
-      </MonoLabel>
+      </SectionLabel>
       <p className="flex flex-wrap items-center gap-2 text-sm text-[var(--muted)]">
         Sign in to see their posts
         <Button href="/login" variant="ghost" size="sm">

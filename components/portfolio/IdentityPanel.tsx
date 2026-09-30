@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 import Avatar from "@/components/ui/Avatar";
 import { Chip, StageChip } from "@/components/ui/Chip";
-import { MonoLabel } from "@/components/ui/MonoLabel";
+import { SectionLabel } from "@/components/ui/SectionLabel";
 import UserBadges from "@/components/profile/UserBadges";
 import { FOCUS_AREAS, FOCUS_LABELS, STAGE_LABELS, parseStage } from "@/lib/stage";
 import OpenToTags from "./OpenToTags";
@@ -30,9 +30,9 @@ type IdentityPanelProps = {
 function Row({ label, className = "", children }: { label: string; className?: string; children: ReactNode }) {
   return (
     <div className={`flex items-baseline justify-between gap-4 text-[13px] ${className}`.trim()}>
-      <MonoLabel as="dt" className="shrink-0">
+      <SectionLabel as="dt" className="shrink-0">
         {label}
-      </MonoLabel>
+      </SectionLabel>
       <dd className="min-w-0 text-right text-[var(--ink)]">{children}</dd>
     </div>
   );
@@ -89,7 +89,7 @@ export default function IdentityPanel({
           </h1>
           <UserBadges {...badges} />
         </div>
-        <p className="font-mono text-xs text-[var(--faint)]">@{username}</p>
+        <p className="text-[13px] text-[var(--faint)]">@{username}</p>
         {headline && <p className="text-pretty text-base leading-[1.4] text-[var(--ink-3)] xl:text-lg">{headline}</p>}
         {tagline && <p className="text-sm text-[var(--muted)]">{tagline}</p>}
       </div>
@@ -132,7 +132,7 @@ export default function IdentityPanel({
 
       {links && <ResumeLinks {...links} />}
 
-      <p className="font-mono text-[11px] uppercase tabular-nums tracking-[0.06em] text-[var(--faint)]">
+      <p className="text-[13px] tabular-nums text-[var(--faint)]">
         <Link href={`/profile/${username}/followers`} className="hover:text-[var(--ink)]">
           <Count n={counts.followers} /> followers
         </Link>

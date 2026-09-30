@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getViewer, getViewerProfile } from "@/lib/viewer";
 import AvatarBase from "@/components/ui/Avatar";
-import { MonoLabel } from "@/components/ui/MonoLabel";
+import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Skeleton } from "@/components/ui/Skeleton";
 import FollowButton from "@/components/profile/FollowButton";
 import UserBadges from "@/components/profile/UserBadges";
@@ -96,7 +96,7 @@ export default async function RightRail() {
         </section>
       )}
 
-      <MonoLabel as="div" className="flex flex-wrap gap-x-3 gap-y-1">
+      <SectionLabel as="div" className="flex flex-wrap gap-x-3 gap-y-1">
         <Link href="/pro" className="hover:text-[var(--muted)]">
           Pro
         </Link>
@@ -107,7 +107,7 @@ export default async function RightRail() {
           Privacy
         </Link>
         <span>© samehere</span>
-      </MonoLabel>
+      </SectionLabel>
     </>
   );
 }
