@@ -93,11 +93,13 @@ describe("publicIntro + draft leak", () => {
           goals: "secret goals",
           open_to: ["collaborate"],
           study_mode: "online",
+          stage: "building",
+          focus_areas: ["web"],
           is_private: false,
         },
         { ...published, publish_intro: false }
       )
-    ).toEqual({ bio: null, goals: null, open_to: [], study_mode: null });
+    ).toEqual({ bio: null, goals: null, open_to: [], study_mode: null, stage: null, focus_areas: [] });
     const draft: PortfolioProject = {
       id: "p1",
       owner_id: "o1",
@@ -134,6 +136,8 @@ describe("publicIntro + draft leak", () => {
       goals: "secret goals",
       open_to: ["collaborate"] as string[],
       study_mode: "online",
+      stage: "building",
+      focus_areas: ["web"] as string[],
       is_private: true,
     };
     const privatePublished = { ...published, is_private: true, publish_intro: true };
@@ -142,18 +146,24 @@ describe("publicIntro + draft leak", () => {
       goals: "secret goals",
       open_to: ["collaborate"],
       study_mode: "online",
+      stage: "building",
+      focus_areas: ["web"],
     });
     expect(profileIntro(identity, privatePublished, "public")).toEqual({
       bio: null,
       goals: null,
       open_to: [],
       study_mode: null,
+      stage: null,
+      focus_areas: [],
     });
     expect(publicIntro(identity, privatePublished)).toEqual({
       bio: null,
       goals: null,
       open_to: [],
       study_mode: null,
+      stage: null,
+      focus_areas: [],
     });
   });
 });

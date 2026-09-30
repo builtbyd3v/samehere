@@ -12,6 +12,7 @@ import OwnerProjectList from "./OwnerProjectList";
 import ProjectCard from "./ProjectCard";
 import OpenToTags from "./OpenToTags";
 import StudyModeChip from "./StudyModeChip";
+import StageChips from "./StageChips";
 import type { GithubConnectionPublic, GithubContributionDay } from "@/types/portfolio";
 import type { SamehereDay } from "@/lib/portfolio/activity";
 
@@ -20,6 +21,8 @@ export function IntroSection({
   goals,
   openTo,
   studyMode,
+  stage,
+  focusAreas,
   username,
   linkToDm = false,
 }: {
@@ -27,15 +30,19 @@ export function IntroSection({
   goals: string | null;
   openTo: readonly string[];
   studyMode?: string | null;
+  stage?: string | null;
+  focusAreas?: readonly string[];
   username?: string;
   linkToDm?: boolean;
 }) {
-  if (!bio && !goals && openTo.length === 0 && !studyMode) return null;
+  const hasFocus = (focusAreas?.length ?? 0) > 0;
+  if (!bio && !goals && openTo.length === 0 && !studyMode && !stage && !hasFocus) return null;
   return (
     <section className="card-surface p-5 sm:p-6">
       <h2 className="eyebrow">Introduction</h2>
-      {studyMode ? (
+      {studyMode || stage || hasFocus ? (
         <div className="mt-3 flex flex-wrap items-center gap-2">
+          <StageChips stage={stage} focusAreas={focusAreas} />
           <StudyModeChip mode={studyMode} />
         </div>
       ) : null}
