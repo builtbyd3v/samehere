@@ -4,7 +4,6 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Bell, Bookmark, House, MessageCircle, MessageCircleQuestion, Search, User } from "lucide-react";
-import AppBrand from "@/components/brand/AppBrand";
 import FeedbackButton from "@/components/feedback/FeedbackButton";
 import NavMenu from "./NavMenu";
 
@@ -48,10 +47,7 @@ export default function LeftNav({
   ];
 
   return (
-    <nav aria-label="Primary" className="flex h-full flex-col gap-0.5">
-      <div className="px-2.5 pb-[22px] pt-1.5">
-        <AppBrand href="/feed" />
-      </div>
+    <nav aria-label="Primary" className="flex min-h-0 flex-1 flex-col gap-0.5">
 
       {items.map((item) => {
         const active = navActive(pathname, item.href, item.label);

@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { LazyMotion, domMax, m } from "motion/react";
 import ContributionHeatmap, { type HeatmapDay } from "@/components/profile/ContributionHeatmap";
-import { MonoLabel } from "@/components/ui/MonoLabel";
+import { SectionLabel } from "@/components/ui/SectionLabel";
 import { MANUAL_PROJECT_PATH } from "@/lib/github/config";
 import { usePrefersReducedMotion } from "@/lib/landing/usePrefersReducedMotion";
 import {
@@ -140,7 +140,7 @@ export default function ActivityBoard({
     <section className="flex flex-col gap-3.5">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-3">
-          <MonoLabel as="h2">Activity</MonoLabel>
+          <SectionLabel as="h2">Activity</SectionLabel>
           {isOwner ? (
             <Link href={MANUAL_PROJECT_PATH} className="text-sm text-[var(--ink-muted)] underline">
               Manage GitHub

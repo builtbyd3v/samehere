@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import AppBrand from "@/components/brand/AppBrand";
 import { getViewer, getViewerProfile } from "@/lib/viewer";
 import Navbar from "@/components/layout/Navbar";
 import LeftNav, { type ShellUser } from "@/components/layout/LeftNav";
@@ -70,6 +71,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         {user && (
           <aside className="hidden border-r border-[var(--hairline)] lg:block">
             <div className="sticky top-0 flex h-dvh flex-col px-3 py-5">
+              <div className="px-2.5 pb-[22px] pt-1.5">
+                <AppBrand href="/feed" />
+              </div>
               {/* Nav badges are decoration: stream them so a slow unread RPC never
                   blocks the nav from rendering. Fallback is the nav with no badges. */}
               <Suspense fallback={<LeftNav user={shellUser} />}>

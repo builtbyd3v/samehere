@@ -19,10 +19,9 @@ import {
   startOnboarding,
 } from "@/app/(app)/onboarding/actions";
 import AvatarBase from "@/components/ui/Avatar";
-import { LightPool } from "@/components/ui/Backdrop";
 import { Button } from "@/components/ui/Button";
 import { StageDot } from "@/components/ui/Chip";
-import { MonoLabel } from "@/components/ui/MonoLabel";
+import { SectionLabel } from "@/components/ui/SectionLabel";
 import SchoolAutocomplete from "@/components/profile/SchoolAutocomplete";
 import DateRangePicker from "@/components/profile/DateRangePicker";
 import Select from "@/components/ui/Select";
@@ -78,16 +77,16 @@ function StepIntro({ step, title, accent, sub, focusOnMount }: StepIntroProps) {
   }, [focusOnMount]);
   return (
     <div className="flex flex-col gap-3">
-      <MonoLabel as="p" size="sm">
+      <SectionLabel as="p" size="sm">
         Step {step} of {TOTAL_STEPS}
-      </MonoLabel>
+      </SectionLabel>
       <h1
         ref={headingRef}
         tabIndex={-1}
         className="text-[34px] font-semibold leading-[1.02] tracking-[-0.04em] text-balance outline-none md:text-[52px] md:leading-none"
       >
         {title}{" "}
-        <span className="font-serif font-normal italic tracking-[-0.02em] text-[var(--accent-ink)]">{accent}</span>
+        {accent}
       </h1>
       <p className="text-[15px] text-[var(--muted)] text-pretty md:text-[17px]">{sub}</p>
     </div>
@@ -275,11 +274,6 @@ export default function OnboardingWizard({
 
   return (
     <main className="relative isolate mx-auto w-full max-w-[880px] pb-6 md:pb-12">
-      {/* Clips the wide pool sideways only, at the screen edges (the negative inset cancels the shell gutter),
-          so it never scrolls the page and the sticky footer can still bleed to the edges. */}
-      <div aria-hidden className="pointer-events-none absolute -inset-x-4 top-0 -z-10 overflow-x-clip sm:-inset-x-6">
-        <LightPool className="-top-[240px] left-1/2 h-[480px] w-[600px] -translate-x-1/2 md:-top-[360px] md:h-[700px] md:w-[1100px]" />
-      </div>
       <header className="flex h-14 items-center justify-between md:h-16">
         <div
           role="progressbar"

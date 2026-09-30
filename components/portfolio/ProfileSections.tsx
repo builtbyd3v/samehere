@@ -1,5 +1,5 @@
 import CompanyLogo from "@/components/ui/CompanyLogo";
-import { MonoLabel } from "@/components/ui/MonoLabel";
+import { SectionLabel } from "@/components/ui/SectionLabel";
 import { formatDateRange, descriptionBullets } from "@/lib/experience-format";
 import { schoolLogoUrl } from "@/lib/school-logo";
 import type {
@@ -27,7 +27,7 @@ export function IntroSection({
   if (!bio && !goals && !studyMode) return null;
   return (
     <section className="flex flex-col gap-4">
-      <MonoLabel as="h2">About</MonoLabel>
+      <SectionLabel as="h2">About</SectionLabel>
       {bio && (
         <p className="max-w-[60ch] whitespace-pre-line break-words text-pretty text-lg leading-[1.45] tracking-[-0.01em] text-[var(--ink-2)] md:text-[22px]">
           {bio}
@@ -98,16 +98,16 @@ export function ResumeTimeline({
   ];
   return (
     <section>
-      <MonoLabel as="h2" className="mb-3">
+      <SectionLabel as="h2" className="mb-3">
         {heading}
-      </MonoLabel>
+      </SectionLabel>
       <ul>
         {rows.map((row) => (
           <li
             key={row.key}
             className="grid gap-1 border-t border-[var(--hairline)] py-4 md:grid-cols-[140px_minmax(0,1fr)] md:gap-6"
           >
-            <span className="font-mono text-xs uppercase tabular-nums text-[var(--faint)]">{row.when}</span>
+            <span className="text-[13px] tabular-nums text-[var(--muted)]">{row.when}</span>
             <div className="flex min-w-0 gap-3">
               <CompanyLogo name={row.logo.name} logoUrl={row.logo.url} size="sm" />
               <div className="min-w-0">
@@ -135,7 +135,7 @@ export function PublicProjectList({ projects }: { projects: PublicPortfolioProje
   return (
     <section className="flex flex-col gap-4">
       <div className="flex items-baseline justify-between">
-        <MonoLabel as="h2">Shipped</MonoLabel>
+        <SectionLabel as="h2">Shipped</SectionLabel>
         <span className="text-[13px] tabular-nums text-[var(--faint)]">
           {n} {n === 1 ? "project" : "projects"}
         </span>
