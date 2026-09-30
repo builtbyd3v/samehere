@@ -43,3 +43,74 @@ begin
   return new;
 end;
 $function$;
+
+-- ============================================================
+-- get_suggested_profiles: mask private fields, skip suspended users,
+-- respect hide_school in the filter and ranking, clamp the limit.
+-- Body copied from 20260918011000_bet1_discovery_rpcs.sql. Signature unchanged.
+-- ============================================================
+create or replace function public.get_suggested_profiles(p_school text default null, p_limit int default 3)
+returns table(
+  id uuid,
+  username text,
+  display_name text,
+  avatar_url text,
+  year text,
+  major text,
+  goals text,
+  bio text,
+  is_pro boolean,
+  is_founder boolean,
+  is_campus_founder boolean,
+  verified_student boolean,
+  school text
+)
+language sql
+security definer
+set search_path = ''
+stable
+as $$
+  with viewer as (
+    select
+      p.study_mode,
+      coalesce(p.open_to, '{}'::text[]) as open_to,
+      case when p.hide_school then null else ps.school end as school
+    from public.profiles p
+    left join public.profile_school ps on ps.profile_id = p.id
+    where p.id = auth.uid()
+  )
+  select
+    p.id, p.username, p.display_name, p.avatar_url,
+    case when p.is_private then null else p.year end,
+    case when p.is_private then null else p.major end,
+    case when p.is_private then null else p.goals end,
+    case when p.is_private then null else p.bio end,
+    p.is_pro, p.is_founder, p.is_campus_founder, p.verified_student,
+    case when p.hide_school then null else ps.school end
+  from public.profiles p
+  left join public.profile_school ps on ps.profile_id = p.id
+  left join viewer v on true
+  where auth.uid() is not null
+    and p.id <> auth.uid()
+    and p.is_suspended = false
+    and p.id not in (select public.get_blocked_ids())
+    and not exists (
+      select 1 from public.follows f
+      where f.follower_id = auth.uid() and f.following_id = p.id
+    )
+    and (p_school is null or (not p.hide_school and ps.school = p_school))
+  order by
+    (not p.is_private and p.study_mode is not null and v.study_mode is not null and p.study_mode = v.study_mode) desc,
+    case when p.is_private then 0 else (
+      select count(*)::int
+      from unnest(coalesce(p.open_to, '{}'::text[])) as t(tag)
+      where t.tag = any(v.open_to)
+    ) end desc,
+    (not p.hide_school and ps.school is not null and v.school is not null and ps.school = v.school) desc,
+    p.verified_student desc,
+    p.created_at desc
+  limit least(20, greatest(1, coalesce(p_limit, 3)));
+$$;
+
+revoke all on function public.get_suggested_profiles(text, int) from public, anon, authenticated;
+grant execute on function public.get_suggested_profiles(text, int) to authenticated;
