@@ -10,6 +10,7 @@ import { DEGREE_VALUES as DEGREE_VALUES_RAW, pickPrimaryEducation } from "@/lib/
 import { resolveInstitutionDomain } from "@/lib/resolve-domain";
 import { isPortfolioSchemaMissing } from "@/lib/portfolio/errors";
 import { parseOpenTo, parseResumeFields, parseStudyMode, type ResumeFields } from "@/lib/portfolio/owner";
+import { parseFocusAreas, parseStage, stageError } from "@/lib/stage";
 
 // DEGREE_VALUES infers as a narrow string-literal union array (mapped from an
 // `as const` options list), which Array.includes can't check against a plain
@@ -50,6 +51,15 @@ export async function updateProfile(_prev: EditState, formData: FormData): Promi
   if (!openTo.ok) return { error: openTo.unavailable ? openTo.message : openTo.error };
   const studyMode = parseStudyMode(formData.get("study_mode"));
   if (!studyMode.ok) return { error: studyMode.unavailable ? studyMode.message : studyMode.error };
+  // Only the full edit form owns open_to / study_mode / stage / focus_areas.
+  // Onboarding basics also calls this action and must not wipe them.
+  const hasStageFields = formData.get("has_stage_fields") === "1";
+  const stageRaw = formData.get("stage");
+  const stageErr = stageError(stageRaw);
+  if (stageErr) return { error: stageErr };
+  const stage = parseStage(stageRaw);
+  const focus = parseFocusAreas(formData.getAll("focus_areas"));
+  if (!focus.ok) return { error: focus.error };
   // Only the edit form sends these. Onboarding step 1 also calls this action
   // with display_name + bio only, and must not wipe a saved headline or links.
   let resumeFields: ResumeFields | null = null;
@@ -67,13 +77,26 @@ export async function updateProfile(_prev: EditState, formData: FormData): Promi
   // Trust boundary: never take the client's word for Pro status. Non-Pro
   // requests simply don't touch profile_theme (a lapsed Pro keeps their
   // theme until they next edit it).
-  const { data: proRow } = await supabase.from("profiles").select("is_pro, pro_until").eq("id", user.id).single();
+  const { data: proRow } = await supabase
+    .from("profiles")
+    .select("is_pro, pro_until, stage, focus_areas")
+    .eq("id", user.id)
+    .single();
   if (isPro(proRow ?? { is_pro: false, pro_until: null })) {
     const themeRaw = str("profile_theme", 20);
     updates.profile_theme = isProfileTheme(themeRaw) ? themeRaw : null;
   }
 
-  const withOpenTo = { ...updates, open_to: openTo.data, study_mode: studyMode.data, ...(resumeFields ?? {}) };
+  const withOpenTo = hasStageFields
+    ? {
+        ...updates,
+        open_to: openTo.data,
+        study_mode: studyMode.data,
+        stage,
+        focus_areas: focus.data,
+        ...(resumeFields ?? {}),
+      }
+    : { ...updates, ...(resumeFields ?? {}) };
   const first = await supabase.from("profiles").update(withOpenTo).eq("id", user.id);
   if (first.error && isPortfolioSchemaMissing(first.error)) {
     const retry = await supabase.from("profiles").update(updates).eq("id", user.id);
@@ -87,6 +110,17 @@ export async function updateProfile(_prev: EditState, formData: FormData): Promi
   // 7-day cooldown + dedupe live in the trigger) — nothing to call here.
 
   getPostHogServerClient()?.capture({ distinctId: user.id, event: "profile_updated" });
+  const stageChanged =
+    hasStageFields &&
+    stage !== null &&
+    (stage !== (proRow?.stage ?? null) || focus.data.join(",") !== (proRow?.focus_areas ?? []).join(","));
+  if (stageChanged) {
+    getPostHogServerClient()?.capture({
+      distinctId: user.id,
+      event: "stage_set",
+      properties: { stage, focus_count: focus.data.length, source: "edit" },
+    });
+  }
   if (resumeFields) {
     getPostHogServerClient()?.capture({
       distinctId: user.id,

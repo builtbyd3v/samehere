@@ -37,6 +37,8 @@ export async function FeedSearchResults({
     year: filters.year,
     major: filters.major,
     studyMode: filters.mode,
+    stage: filters.stage,
+    focus: filters.focus,
   });
   const hasMore = results.length === SEARCH_PAGE && nextSearchOffset(off) != null;
   const showPager = peoplePage > 1 || hasMore;
@@ -48,6 +50,8 @@ export async function FeedSearchResults({
     major: filters.major,
     mode: filters.mode,
     label: filters.label,
+    stage: filters.stage,
+    focus: filters.focus,
   };
 
   if (results.length === 0) {

@@ -17,11 +17,13 @@ describe("URL query contracts", () => {
     }
   });
 
-  it("locks /search empty-query browse + mode/tag/label chips", () => {
+  it("locks /search empty-query browse + mode/tag/label/stage/focus chips", () => {
     expect(discoveryHref({})).toBe("/search");
     expect(discoveryHref({ filters: parseDiscoveryFilters({ mode: "online" }) })).toBe("/search?mode=online");
     expect(discoveryHref({ filters: parseDiscoveryFilters({ tag: "study" }) })).toBe("/search?tag=study");
     expect(discoveryHref({ filters: parseDiscoveryFilters({ label: "stuck" }) })).toBe("/search?label=stuck");
+    expect(discoveryHref({ filters: parseDiscoveryFilters({ stage: "building" }) })).toBe("/search?stage=building");
+    expect(discoveryHref({ filters: parseDiscoveryFilters({ focus: "web" }) })).toBe("/search?focus=web");
   });
 
   it("hard-keeps portfolio share path untouched by discovery/feed queries", () => {

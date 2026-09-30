@@ -6,6 +6,7 @@ import { CONTEXT_LABELS, OPEN_TO_TAGS, STUDY_MODES } from "@/lib/portfolio/valid
 import { OPEN_TO_LABELS, STUDY_MODE_LABELS } from "@/lib/portfolio/labels";
 import { YEAR_OPTIONS, YEAR_VALUES } from "@/lib/education-options";
 import { discoveryHref, toggleFilter, type DiscoveryFilters } from "@/lib/discovery";
+import { FOCUS_AREAS, FOCUS_LABELS, STAGES, STAGE_LABELS } from "@/lib/stage";
 
 const chip =
   "rounded-full border px-2.5 py-1 text-xs transition hover:border-[var(--border-strong)]";
@@ -23,6 +24,20 @@ export default function SearchFilters({
 }) {
   return (
     <div className="mt-4 space-y-3">
+      <FilterRow label="Stage">
+        {STAGES.map((s) => (
+          <Link key={s} href={toggleFilter(filters, "stage", s, q)} className={`${chip} ${filters.stage === s ? on : off}`}>
+            {STAGE_LABELS[s]}
+          </Link>
+        ))}
+      </FilterRow>
+      <FilterRow label="Focus">
+        {FOCUS_AREAS.map((f) => (
+          <Link key={f} href={toggleFilter(filters, "focus", f, q)} className={`${chip} ${filters.focus === f ? on : off}`}>
+            {FOCUS_LABELS[f]}
+          </Link>
+        ))}
+      </FilterRow>
       <FilterRow label="Open to">
         {OPEN_TO_TAGS.map((tag) => (
           <Link key={tag} href={toggleFilter(filters, "tag", tag, q)} className={`${chip} ${filters.tag === tag ? on : off}`}>
@@ -81,6 +96,8 @@ export default function SearchFilters({
             {filters.year ? <input type="hidden" name="year" value={filters.year} /> : null}
             {filters.mode ? <input type="hidden" name="mode" value={filters.mode} /> : null}
             {filters.label ? <input type="hidden" name="label" value={filters.label} /> : null}
+            {filters.stage ? <input type="hidden" name="stage" value={filters.stage} /> : null}
+            {filters.focus ? <input type="hidden" name="focus" value={filters.focus} /> : null}
             <input
               name="major"
               defaultValue={filters.major ?? ""}

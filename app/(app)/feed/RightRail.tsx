@@ -28,6 +28,9 @@ export default async function RightRail() {
       : Promise.resolve({ data: [] }),
   ]);
   const suggested = suggestedRows ?? [];
+  const viewerStage = profile?.stage ?? null;
+  // Honest heading: only claim "same stage" when the top suggestion really is.
+  const sameStage = viewerStage !== null && suggested[0]?.stage === viewerStage;
   const schoolPeople = schoolRows ?? [];
 
   return (
@@ -35,7 +38,7 @@ export default async function RightRail() {
       {suggested.length > 0 && (
         <section className="card p-5">
           <h2 className="mb-3 text-sm font-semibold text-[var(--ink)]">
-            {showSchool ? "People you should meet" : "People at your stage"}
+            {sameStage ? "Same stage as you" : showSchool ? "People you should meet" : "People at your stage"}
           </h2>
           <div className="flex flex-col gap-2">
             {suggested.map((p, i) => {

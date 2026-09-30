@@ -94,6 +94,7 @@ describe("search hrefs / parseSearchPage", () => {
     expect(searchPageOffset(2)).toBe(SEARCH_PAGE);
     expect(searchHref({ q: "rust" })).toBe("/search?q=rust");
     expect(searchHref({ q: "", tag: "study", mode: "online" })).toBe("/search?tag=study&mode=online");
+    expect(searchHref({ q: "", stage: "learning", focus: "data" })).toBe("/search?stage=learning&focus=data");
     expect(postsSearchHref("", 0, "stuck")).toBe("/search/posts?label=stuck");
     expect(searchHref({ q: "rust", peoplePage: 2 })).toBe("/search?q=rust&peoplePage=2");
     expect(searchHref({ q: "rust", projectPage: 3 })).toBe("/search?q=rust&projectPage=3");

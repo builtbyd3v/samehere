@@ -3,6 +3,7 @@ import UserBadges from "@/components/profile/UserBadges";
 import AvatarBase from "@/components/ui/Avatar";
 import OpenToTags from "@/components/portfolio/OpenToTags";
 import StudyModeChip from "@/components/portfolio/StudyModeChip";
+import StageChips from "@/components/portfolio/StageChips";
 import type { SearchPerson } from "@/lib/search";
 
 export default function SearchPersonCard({ person }: { person: SearchPerson }) {
@@ -35,6 +36,11 @@ export default function SearchPersonCard({ person }: { person: SearchPerson }) {
         </Link>
         <StudyModeChip mode={person.study_mode} />
       </div>
+      {person.stage || (person.focus_areas?.length ?? 0) > 0 ? (
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          <StageChips stage={person.stage} focusAreas={person.focus_areas} />
+        </div>
+      ) : null}
       <OpenToTags tags={person.open_to ?? []} username={person.username} linkToDm />
     </li>
   );

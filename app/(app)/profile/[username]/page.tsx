@@ -45,7 +45,7 @@ import {
   PublicProjectList,
 } from "@/components/portfolio/ProfileSections";
 const PROFILE_SELECT =
-  "id, username, display_name, avatar_url, banner_url, year, major, bio, goals, open_to, study_mode, is_private, heatmap_visibility, is_pro, pro_until, is_founder, is_campus_founder, profile_theme, verified_student, is_bot, headline, github_url, linkedin_url, website_url";
+  "id, username, display_name, avatar_url, banner_url, year, major, bio, goals, open_to, study_mode, is_private, heatmap_visibility, is_pro, pro_until, is_founder, is_campus_founder, profile_theme, verified_student, is_bot, headline, github_url, linkedin_url, website_url, stage, focus_areas";
 const PROFILE_SELECT_FALLBACK =
   "id, username, display_name, avatar_url, banner_url, year, major, bio, goals, is_private, heatmap_visibility, is_pro, pro_until, is_founder, is_campus_founder, profile_theme, verified_student, is_bot";
 
@@ -162,7 +162,14 @@ function PortfolioBody({
   activity: ReactNode;
   posts: ReactNode;
   currentPro: boolean;
-  intro: { bio: string | null; goals: string | null; open_to: string[]; study_mode: string | null };
+  intro: {
+    bio: string | null;
+    goals: string | null;
+    open_to: string[];
+    study_mode: string | null;
+    stage: string | null;
+    focus_areas: string[];
+  };
   username: string;
 }) {
   if (unavailable) {
@@ -175,6 +182,8 @@ function PortfolioBody({
             goals={intro.goals}
             openTo={intro.open_to}
             studyMode={intro.study_mode}
+            stage={intro.stage}
+            focusAreas={intro.focus_areas}
             username={username}
           />
         )}
@@ -200,6 +209,8 @@ function PortfolioBody({
               goals={intro.goals}
               openTo={intro.open_to}
               studyMode={intro.study_mode}
+              stage={intro.stage}
+              focusAreas={intro.focus_areas}
               username={username}
               linkToDm={inviteDm}
             />
@@ -267,6 +278,8 @@ async function PublicPortfolioBelow({
     goals: string | null;
     open_to: string[] | null;
     study_mode?: string | null;
+    stage?: string | null;
+    focus_areas?: string[] | null;
     is_private: boolean;
     is_pro: boolean;
     heatmap_visibility: string | null;
@@ -285,6 +298,8 @@ async function PublicPortfolioBelow({
       goals: profile.goals,
       open_to: profile.open_to,
       study_mode: "study_mode" in profile ? profile.study_mode ?? null : null,
+      stage: profile.stage ?? null,
+      focus_areas: profile.focus_areas ?? null,
       is_private: profile.is_private,
     },
     projection,
@@ -598,6 +613,8 @@ export default async function ProfilePage({
       goals: profile.goals,
       open_to: "open_to" in profile && Array.isArray(profile.open_to) ? profile.open_to : [],
       study_mode: "study_mode" in profile ? (profile.study_mode as string | null) ?? null : null,
+      stage: "stage" in profile ? (profile.stage as string | null) ?? null : null,
+      focus_areas: "focus_areas" in profile && Array.isArray(profile.focus_areas) ? profile.focus_areas : [],
       is_private: profile.is_private,
     },
     projection,
@@ -739,6 +756,8 @@ export default async function ProfilePage({
                 goals={intro.goals}
                 openTo={intro.open_to}
                 studyMode={intro.study_mode}
+                stage={intro.stage}
+                focusAreas={intro.focus_areas}
                 username={profile.username}
               />
             )}
