@@ -15,21 +15,25 @@
  * Change a colour in globals.css and forget this file, and the build tells you.
  */
 export const DARK = {
-  "--canvas": "#0a0a0a",
-  "--surface": "#161616",
-  "--surface-post": "#1f2228",
+  "--canvas": "#08090a",
+  "--surface": "#0f1012",
+  "--surface-post": "#17191c",
   "--border": "rgba(255, 255, 255, 0.08)",
-  "--ink": "#f5f5f5",
-  "--ink-muted": "#a1a5ab",
+  "--ink": "#f4f4f5",
+  "--ink-muted": "#9a9ea6",
   "--ink-faint": "rgba(245, 245, 245, 0.68)",
   "--featured-surface": "rgba(255, 255, 255, 0.05)",
   "--blue": "#4f9fe8",
+  "--blue-2": "#7ec4ff",
+  "--accent-blue-soft": "rgba(0, 117, 222, 0.14)",
+  "--label-stuck": "#e0a83a",
   "--founder": "#ecc94b",
   "--campus-founder": "#5fce8f",
   "--hm0": "rgba(255, 255, 255, 0.07)",
   "--hm1": "#1e3a5f",
   "--hm2": "#2f6db0",
   "--hm3": "#4f9fe8",
+  "--faint": "#787c84",
 } as const;
 
 // Readable aliases. The card that draws a raised panel on the canvas uses
@@ -47,3 +51,9 @@ export const BLUE = DARK["--blue"];
 export const GOLD = DARK["--founder"];
 export const GREEN = DARK["--campus-founder"]; // Social Butterfly
 export const HM = [DARK["--hm0"], DARK["--hm1"], DARK["--hm2"], DARK["--hm3"]] as const;
+export const BLUE_2 = DARK["--blue-2"];
+export const BLUE_SOFT = DARK["--accent-blue-soft"];
+export const AMBER = DARK["--label-stuck"];
+
+// Export card ("Midnight editorial") faint label shade.
+export const FAINT_LABEL = DARK["--faint"];

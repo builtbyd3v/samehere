@@ -1,6 +1,6 @@
 import { parseContextLabel, type ContextLabel } from "@/lib/context-label";
 
-export type FeedTab = "latest" | "following";
+export type FeedTab = "latest" | "stage" | "following";
 
 /** Chip order on the feed. Composer still uses CONTEXT_LABELS. */
 export const FEED_FILTER_LABELS = ["stuck", "learning", "building", "looking_for_team"] as const satisfies readonly ContextLabel[];
@@ -11,10 +11,12 @@ export const FOLLOWING_SEED_MAX = 5;
 /** How many network labeled posts to show in the Following empty state. */
 export const LABELED_SEED_LIMIT = 8;
 
-export function feedPath(opts?: { tab?: FeedTab; label?: ContextLabel | null }): string {
+export function feedPath(opts?: { tab?: FeedTab; label?: ContextLabel | null; open?: boolean }): string {
   const label = opts?.label ?? null;
+  if (label === "stuck" && opts?.open) return "/feed?label=stuck&open=1";
   if (label) return `/feed?label=${label}`;
   if (opts?.tab === "following") return "/feed?tab=following";
+  if (opts?.tab === "stage") return "/feed?tab=stage";
   return "/feed";
 }
 
@@ -24,7 +26,30 @@ export function parseFeedView(params: { tab?: string; label?: string }): {
 } {
   const label = parseContextLabel(params.label);
   if (label) return { tab: "latest", label };
-  return { tab: params.tab === "following" ? "following" : "latest", label: null };
+  const tab: FeedTab = params.tab === "following" || params.tab === "stage" ? params.tab : "latest";
+  return { tab, label: null };
+}
+
+/** `/feed?label=stuck&open=1`: only unresolved Stuck posts. Ignored on other labels. */
+export function stuckOpenOnly(label: ContextLabel | null, open: string | undefined): boolean {
+  return label === "stuck" && open === "1";
+}
+
+/** The underline tabs on /feed. "open" is the Stuck label filter, shown as "Open questions". */
+export type FeedTabKey = FeedTab | "open";
+
+export const FEED_TABS: readonly { key: FeedTabKey; label: string; short?: string; href: string }[] = [
+  { key: "latest", label: "Latest", href: feedPath() },
+  { key: "stage", label: "Your stage", href: feedPath({ tab: "stage" }) },
+  { key: "following", label: "Following", href: feedPath({ tab: "following" }) },
+  { key: "open", label: "Open questions", short: "Open", href: feedPath({ label: "stuck", open: true }) },
+];
+
+/** Which tab is underlined. Other label filters (learning, building, team) underline none. */
+export function activeFeedTab(view: { tab: FeedTab; label: ContextLabel | null }): FeedTabKey | null {
+  if (view.label === "stuck") return "open";
+  if (view.label) return null;
+  return view.tab;
 }
 
 export function shouldSeedFollowing(followCount: number): boolean {

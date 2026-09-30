@@ -18,7 +18,7 @@ function StageMark({
     );
   }
   return (
-    <span className="flex h-6 w-6 items-center justify-center text-[11px] text-[var(--ink-muted)]">
+    <span className="flex h-6 w-6 items-center justify-center text-meta text-[var(--ink-muted)]">
       {index + 1}
     </span>
   );

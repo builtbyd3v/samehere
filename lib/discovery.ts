@@ -1,5 +1,6 @@
 import { CONTEXT_LABELS, OPEN_TO_TAGS, STUDY_MODES } from "@/lib/portfolio/validation";
 import { YEAR_VALUES } from "@/lib/education-options";
+import { FOCUS_AREAS, STAGES, type FocusArea, type Stage } from "@/lib/stage";
 import { TEXT_LIMITS } from "@/lib/utils/validation";
 
 function pageOrOne(n: number): number {
@@ -13,12 +14,16 @@ export type DiscoveryFilters = {
   major: string | null;
   mode: (typeof STUDY_MODES)[number] | null;
   label: (typeof CONTEXT_LABELS)[number] | null;
+  stage: Stage | null;
+  focus: FocusArea | null;
 };
 
 const TAGS = new Set<string>(OPEN_TO_TAGS);
 const YEARS = new Set<string>(YEAR_VALUES);
 const MODES = new Set<string>(STUDY_MODES);
 const LABELS = new Set<string>(CONTEXT_LABELS);
+const STAGE_SET = new Set<string>(STAGES);
+const FOCUS_SET = new Set<string>(FOCUS_AREAS);
 
 function oneOf<T extends string>(raw: string | undefined, allowed: Set<string>): T | null {
   const v = (raw ?? "").trim();
@@ -39,6 +44,8 @@ export function parseDiscoveryFilters(params: {
   major?: string;
   mode?: string;
   label?: string;
+  stage?: string;
+  focus?: string;
 }): DiscoveryFilters {
   return {
     tag: oneOf(params.tag, TAGS),
@@ -46,15 +53,22 @@ export function parseDiscoveryFilters(params: {
     major: parseMajorFilter(params.major),
     mode: oneOf(params.mode, MODES),
     label: oneOf(params.label, LABELS),
+    stage: oneOf(params.stage, STAGE_SET),
+    focus: oneOf(params.focus, FOCUS_SET),
   };
 }
 
 export function hasDiscoveryFilters(filters: DiscoveryFilters): boolean {
-  return Boolean(filters.tag || filters.year || filters.major || filters.mode || filters.label);
+  return Boolean(filters.tag || filters.year || filters.major || filters.mode || filters.label || filters.stage || filters.focus);
 }
 
 export function hasPeopleFilters(filters: DiscoveryFilters): boolean {
-  return Boolean(filters.tag || filters.year || filters.major || filters.mode);
+  return Boolean(filters.tag || filters.year || filters.major || filters.mode || filters.stage || filters.focus);
+}
+
+/** Names of the facets that are set. Never values: major is free text. */
+export function activeFacets(filters: DiscoveryFilters): (keyof DiscoveryFilters)[] {
+  return (["tag", "year", "major", "mode", "label", "stage", "focus"] as const).filter((key) => filters[key] !== null);
 }
 
 export type DiscoveryHrefOpts = {
@@ -68,6 +82,8 @@ export function discoveryHref({ q = "", filters, peoplePage = 1, projectPage = 1
   const params = new URLSearchParams();
   const query = q.trim().slice(0, TEXT_LIMITS.searchQuery);
   if (query) params.set("q", query);
+  if (filters?.stage) params.set("stage", filters.stage);
+  if (filters?.focus) params.set("focus", filters.focus);
   if (filters?.tag) params.set("tag", filters.tag);
   if (filters?.year) params.set("year", filters.year);
   if (filters?.major) params.set("major", filters.major);

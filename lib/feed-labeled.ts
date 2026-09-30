@@ -1,9 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { POST_SELECT, PAGE, withEngagement, type FeedPost, type PostRow } from "@/components/feed/PostCard";
+import { POST_SELECT, POST_SELECT_AUTHOR_INNER, PAGE, withEngagement, type FeedPost, type PostRow } from "@/components/feed/PostCard";
 import { attachSignedMedia } from "@/lib/media";
 import { fetchViewerMineState } from "@/lib/feed-engagement";
 import type { ContextLabel } from "@/lib/context-label";
 import type { FeedCursor } from "@/lib/feed-cursor";
+import type { Stage } from "@/lib/stage";
 import type { Database } from "@/types/database.types";
 
 // Network-wide labeled posts, recency + id. Query only — no new table, no RPC.
@@ -14,24 +15,36 @@ export async function fetchLabeledPosts(
   opts: {
     viewerId: string | null;
     label?: ContextLabel | null;
+    openOnly?: boolean;
     cursor?: FeedCursor | null;
     limit?: number;
     excludeUserIds?: Iterable<string>;
     blockedIds?: Iterable<string>;
+    authorStage?: Stage | null;
   },
 ): Promise<FeedPost[]> {
   const limit = opts.limit ?? PAGE;
   let query = supabase
     .from("posts")
-    .select(POST_SELECT)
+    .select(opts.authorStage ? POST_SELECT_AUTHOR_INNER : POST_SELECT)
     .order("created_at", { ascending: false })
     .order("id", { ascending: false })
     .limit(limit);
 
   if (opts.label) {
     query = query.eq("context_label", opts.label);
-  } else {
+  } else if (!opts.authorStage) {
     query = query.not("context_label", "is", null);
+  }
+  if (opts.openOnly) query = query.is("resolved_at", null);
+
+  // Your stage: authors at the viewer's stage. Private authors are never matched
+  // by stage (same rule as search_people / get_suggested_profiles in plan 004).
+  // Posts RLS and the block filter below still apply.
+  // ponytail: hasMore is "page came back full after the block filter", same as
+  // LabeledTab; a page shortened by blocks can end pagination early.
+  if (opts.authorStage) {
+    query = query.eq("author.stage", opts.authorStage).eq("author.is_private", false);
   }
 
   if (opts.cursor) {

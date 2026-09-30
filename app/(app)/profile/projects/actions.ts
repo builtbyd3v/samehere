@@ -10,11 +10,13 @@ import {
   deleteProject,
   parseProjectWrite,
   parsePublishFlags,
+  publishedSections,
   reorderProjects,
   saveOwnerSettings,
   setProjectStatus,
   updateProjectFields,
 } from "@/lib/portfolio/owner";
+import { getPostHogServerClient } from "@/lib/posthog-server";
 import type { PortfolioClient } from "@/lib/portfolio/client";
 import type { ProjectWriteInput } from "@/types/portfolio";
 
@@ -181,6 +183,14 @@ export async function savePublicationAction(
     { isPrivate: ctx.data.isPrivate, isPro: ctx.data.isPro }
   );
   if (!saved.ok) return actionError(saved);
+  const sections = publishedSections(parsed.data);
+  if (sections.length > 0) {
+    getPostHogServerClient()?.capture({
+      distinctId: ctx.data.userId,
+      event: "portfolio_published",
+      properties: { sections, is_private: ctx.data.isPrivate },
+    });
+  }
   revalidateProfile(ctx.data.username);
   return {};
 }

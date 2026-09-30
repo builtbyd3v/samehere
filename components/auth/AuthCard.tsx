@@ -7,10 +7,8 @@ type Props = {
 export default function AuthCard({ title, children, shake = false }: Props) {
   return (
     <div className={`w-full max-w-md${shake ? " auth-shake" : ""}`}>
-      <h1 className="auth-card-title text-xl font-medium tracking-[-0.03em] text-[var(--ink)] sm:text-2xl">
-        {title}
-      </h1>
-      <div className="auth-card-panel card-raised">{children}</div>
+      <h2 className="auth-card-title text-section font-semibold text-[var(--ink)]">{title}</h2>
+      <div className="auth-card-panel rounded-[20px] border border-[var(--border)] bg-[var(--surface-3)]">{children}</div>
     </div>
   );
 }

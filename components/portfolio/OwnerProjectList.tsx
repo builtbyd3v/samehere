@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { ChevronDown, ChevronUp, Plus } from "lucide-react";
+import { SectionLabel } from "@/components/ui/SectionLabel";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import type { PortfolioProject } from "@/types/portfolio";
 import { reorderProjectsAction } from "@/app/(app)/profile/projects/actions";
 import ProjectCard from "./ProjectCard";
@@ -36,13 +37,7 @@ export default function OwnerProjectList({
   return (
     <section>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="eyebrow">Projects</h2>
-        {!previewPublic && (
-          <Link href="/profile/projects/new" className="btn-primary inline-flex items-center gap-1.5 !px-3 !py-1.5 text-sm">
-            <Plus strokeWidth={1.5} className="h-4 w-4" />
-            Add project
-          </Link>
-        )}
+        <SectionLabel as="h2">Shipped</SectionLabel>
       </div>
       {error && (
         <p role="alert" className="mb-3 text-sm text-[var(--danger)]">
@@ -50,13 +45,23 @@ export default function OwnerProjectList({
         </p>
       )}
       {visible.length === 0 ? (
-        <div className="card px-5 py-8 text-sm text-[var(--ink-muted)]">
-          {previewPublic ? "No published projects." : "No projects yet. Add one to start your portfolio."}
+        <div className="rounded-2xl border border-[var(--hairline)] px-5 py-8 text-sm text-[var(--muted)]">
+          {previewPublic ? (
+            "No published projects."
+          ) : (
+            <>
+              No projects yet.{" "}
+              <Link href="/profile/projects/new" className="text-[var(--ink)] underline underline-offset-2">
+                Add one
+              </Link>{" "}
+              to start your portfolio.
+            </>
+          )}
         </div>
       ) : (
-        <ul className="flex flex-col gap-3">
+        <ul className="grid grid-cols-1 gap-3.5 md:grid-cols-2">
           {visible.map((project, index) => (
-            <li key={project.id} className="flex flex-col gap-2">
+            <li key={project.id} className="flex min-w-0 flex-col gap-2">
               {!previewPublic && (
                 <div className="flex gap-1">
                   <button

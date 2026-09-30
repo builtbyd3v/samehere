@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getPostHogServerClient } from "@/lib/posthog-server";
 import { TEXT_LIMITS, textLimitError } from "@/lib/utils/validation";
 
 export type CommentState = { error?: string; ok?: boolean };
@@ -33,6 +34,21 @@ export async function createComment(_prev: CommentState, formData: FormData): Pr
   const { error } = await supabase.from("comments").insert({ post_id: postId, user_id: user.id, content });
   if (error) return { error: "Could not post your comment. Try again." };
 
+  // analytics only: never break the comment action
+  try {
+    const posthog = getPostHogServerClient();
+    if (posthog) {
+      const { data: post } = await supabase.from("posts").select("context_label").eq("id", postId).maybeSingle();
+      posthog.capture({
+        distinctId: user.id,
+        event: "comment_created",
+        properties: { on_label: post?.context_label ?? null },
+      });
+    }
+  } catch {
+    // ignore
+  }
+
   revalidatePath(`/post/${postId}`);
   return { ok: true };
 }
@@ -47,4 +63,54 @@ export async function deleteComment(commentId: string): Promise<void> {
   if (!user) return;
 
   await supabase.from("comments").delete().eq("id", commentId);
+}
+
+export type StuckState = { error?: string };
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Author marks their Stuck post solved, optionally naming the comment that helped.
+// The RPC enforces author + stuck + comment-on-this-post; this only validates shape.
+export async function markStuckResolved(postId: string, commentId: string | null): Promise<StuckState> {
+  if (typeof postId !== "string" || !UUID_RE.test(postId)) return { error: "Invalid post." };
+  if (commentId !== null && (typeof commentId !== "string" || !UUID_RE.test(commentId))) {
+    return { error: "Invalid comment." };
+  }
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be logged in." };
+
+  const { data: post } = await supabase.from("posts").select("created_at").eq("id", postId).maybeSingle();
+  if (!post) return { error: "Post not found." };
+
+  const { error } = await supabase.rpc("mark_stuck_resolved", {
+    p_post_id: postId,
+    ...(commentId ? { p_comment_id: commentId } : {}),
+  });
+  if (error) return { error: "Could not mark this solved." };
+
+  const openedMs = post.created_at ? Date.parse(post.created_at) : Date.now();
+  getPostHogServerClient()?.capture({
+    distinctId: user.id,
+    event: "stuck_resolved",
+    properties: {
+      with_comment: commentId !== null,
+      hours_open: Math.max(0, Math.round((Date.now() - openedMs) / 3_600_000)),
+    },
+  });
+  return {};
+}
+
+export async function reopenStuck(postId: string): Promise<StuckState> {
+  if (typeof postId !== "string" || !UUID_RE.test(postId)) return { error: "Invalid post." };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You must be logged in." };
+  const { error } = await supabase.rpc("reopen_stuck", { p_post_id: postId });
+  if (error) return { error: "Could not reopen this post." };
+  return {};
 }

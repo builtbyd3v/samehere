@@ -85,7 +85,7 @@ export default async function SettingsPage() {
 
   return (
     <main className="page-enter mx-auto max-w-xl px-5 py-10">
-      <h1 className="mb-6 text-2xl font-semibold tracking-[-0.02em] text-[var(--ink)]">Settings</h1>
+      <h1 className="mb-6 text-title font-semibold text-[var(--ink)]">Settings</h1>
 
       <div className="space-y-5">
         <section className="card p-6">

@@ -17,7 +17,7 @@ export default async function EditProfilePage() {
   if (!user) redirect("/login");
 
   const profileSelect =
-    "username, display_name, avatar_url, banner_url, year, major, bio, goals, open_to, study_mode, is_private, hide_school, heatmap_visibility, is_pro, pro_until, profile_theme";
+    "username, display_name, avatar_url, banner_url, year, major, bio, goals, open_to, study_mode, is_private, hide_school, heatmap_visibility, is_pro, pro_until, profile_theme, headline, github_url, linkedin_url, website_url, stage, focus_areas";
   const profileFallback =
     "username, display_name, avatar_url, banner_url, year, major, bio, goals, is_private, hide_school, heatmap_visibility, is_pro, pro_until, profile_theme";
   const firstProfile = await supabase.from("profiles").select(profileSelect).eq("id", user.id).single();
@@ -65,6 +65,12 @@ export default async function EditProfilePage() {
           school: schoolRow?.school ?? "",
           open_to: "open_to" in profile && Array.isArray(profile.open_to) ? profile.open_to : [],
           study_mode: "study_mode" in profile && typeof profile.study_mode === "string" ? profile.study_mode : null,
+          stage: "stage" in profile && typeof profile.stage === "string" ? profile.stage : null,
+          focus_areas: "focus_areas" in profile && Array.isArray(profile.focus_areas) ? profile.focus_areas : [],
+          headline: "headline" in profile && typeof profile.headline === "string" ? profile.headline : null,
+          github_url: "github_url" in profile && typeof profile.github_url === "string" ? profile.github_url : null,
+          linkedin_url: "linkedin_url" in profile && typeof profile.linkedin_url === "string" ? profile.linkedin_url : null,
+          website_url: "website_url" in profile && typeof profile.website_url === "string" ? profile.website_url : null,
         }}
       />
       {/* Experience + Education auto-save through their own actions; the single
@@ -87,7 +93,7 @@ export default async function EditProfilePage() {
           <button
             type="submit"
             form="edit-profile-form"
-            className="btn-primary w-full !py-2.5 text-[15px]"
+            className="btn-primary w-full !py-2.5 text-body"
           >
             Save profile
           </button>

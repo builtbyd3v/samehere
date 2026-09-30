@@ -23,7 +23,7 @@ export const CTA = {
 
 export const feed = {
   latestEmpty: {
-    title: "Nothing here yet",
+    title: "No posts in Latest yet",
     description: "Be the first to share what you’re building, learning, or stuck on.",
   },
   followingThin: {
@@ -47,7 +47,7 @@ export const search = {
   noPeople: {
     title: "No people found",
     description: (q: string) =>
-      `Nothing matched “${q}”. Try another name, username, or project — or browse Latest while the network is thin.`,
+      `Nothing matched “${q}”. Try another name, username, or project, or browse Latest while the network is thin.`,
   },
   noMorePeople: {
     title: "No more people for this query",
@@ -65,7 +65,7 @@ export const search = {
 export const messages = {
   inboxEmpty: {
     title: "No conversations yet",
-    description: "Start one from a profile, or find someone to message.",
+    description: "Open someone’s portfolio and tap Message, or find people to talk to.",
   },
   inboxLoadFailed: {
     title: "Couldn’t load messages",

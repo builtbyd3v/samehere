@@ -1370,6 +1370,8 @@ export type Database = {
           id: string
           media: Json
           post_type: string | null
+          resolved_at: string | null
+          resolved_comment_id: string | null
           team_event_date: string | null
           team_event_mode: string | null
           team_event_name: string | null
@@ -1383,6 +1385,8 @@ export type Database = {
           id?: string
           media?: Json
           post_type?: string | null
+          resolved_at?: string | null
+          resolved_comment_id?: string | null
           team_event_date?: string | null
           team_event_mode?: string | null
           team_event_name?: string | null
@@ -1396,12 +1400,21 @@ export type Database = {
           id?: string
           media?: Json
           post_type?: string | null
+          resolved_at?: string | null
+          resolved_comment_id?: string | null
           team_event_date?: string | null
           team_event_mode?: string | null
           team_event_name?: string | null
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "posts_resolved_comment_id_fkey"
+            columns: ["resolved_comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "posts_user_id_fkey"
             columns: ["user_id"]
@@ -1495,6 +1508,12 @@ export type Database = {
           onboarded_at: string | null
           open_to: string[]
           study_mode: string | null
+          stage: string | null
+          focus_areas: string[]
+          headline: string | null
+          github_url: string | null
+          linkedin_url: string | null
+          website_url: string | null
           pro_source: string | null
           pro_until: string | null
           profile_theme: string | null
@@ -1531,6 +1550,12 @@ export type Database = {
           onboarded_at?: string | null
           open_to?: string[]
           study_mode?: string | null
+          stage?: string | null
+          focus_areas?: string[]
+          headline?: string | null
+          github_url?: string | null
+          linkedin_url?: string | null
+          website_url?: string | null
           pro_source?: string | null
           pro_until?: string | null
           profile_theme?: string | null
@@ -1567,6 +1592,12 @@ export type Database = {
           onboarded_at?: string | null
           open_to?: string[]
           study_mode?: string | null
+          stage?: string | null
+          focus_areas?: string[]
+          headline?: string | null
+          github_url?: string | null
+          linkedin_url?: string | null
+          website_url?: string | null
           pro_source?: string | null
           pro_until?: string | null
           profile_theme?: string | null
@@ -1633,18 +1664,21 @@ export type Database = {
           qualified_at: string | null
           referred_id: string
           referrer_id: string
+          reward_granted_at: string | null
         }
         Insert: {
           created_at?: string
           qualified_at?: string | null
           referred_id: string
           referrer_id: string
+          reward_granted_at?: string | null
         }
         Update: {
           created_at?: string
           qualified_at?: string | null
           referred_id?: string
           referrer_id?: string
+          reward_granted_at?: string | null
         }
         Relationships: [
           {
@@ -2102,6 +2136,7 @@ export type Database = {
       block_user: { Args: { target: string }; Returns: undefined }
       can_read_channel: { Args: { p_conversation: string }; Returns: boolean }
       check_invite_code: { Args: { p_code: string }; Returns: boolean }
+      claim_signup_referral: { Args: { p_ref: string }; Returns: boolean }
       club_approve: {
         Args: { p_club: string; p_user: string }
         Returns: undefined
@@ -2292,6 +2327,7 @@ export type Database = {
           banner_url: string
           bio: string
           display_name: string
+          focus_areas: string[] | null
           goals: string
           heatmap_visibility: string
           id: string
@@ -2303,7 +2339,12 @@ export type Database = {
           major: string
           open_to: string[] | null
           school: string
+          stage: string | null
           study_mode: string | null
+          headline: string | null
+          github_url: string | null
+          linkedin_url: string | null
+          website_url: string | null
           username: string
           verified_student: boolean
           year: string
@@ -2360,6 +2401,10 @@ export type Database = {
           samehere_count: number
         }[]
       }
+      get_referral_reward_progress: {
+        Args: never
+        Returns: { ready: number; rewards: number }[]
+      }
       get_referral_stats: {
         Args: never
         Returns: {
@@ -2390,6 +2435,7 @@ export type Database = {
           is_pro: boolean
           major: string
           school: string
+          stage: string | null
           username: string
           verified_student: boolean
           year: string
@@ -2472,6 +2518,16 @@ export type Database = {
           user_id: string
         }[]
       }
+      list_weekly_digest: {
+        Args: never
+        Returns: {
+          email: string
+          people: Json
+          questions: Json
+          user_id: string
+          views_7d: number | null
+        }[]
+      }
       list_weekly_match_recipients: {
         Args: never
         Returns: {
@@ -2488,6 +2544,10 @@ export type Database = {
       }
       mark_all_notifications_read: { Args: never; Returns: undefined }
       mark_dm_read: { Args: { p_conversation_id: string }; Returns: undefined }
+      mark_stuck_resolved: {
+        Args: { p_comment_id?: string; p_post_id: string }
+        Returns: undefined
+      }
       media_paths_owned: {
         Args: { p_media: Json; p_user: string }
         Returns: boolean
@@ -2499,6 +2559,7 @@ export type Database = {
         Args: { p_conversation_id: string; p_member_id: string }
         Returns: undefined
       }
+      reopen_stuck: { Args: { p_post_id: string }; Returns: undefined }
       request_follow: { Args: { p_target: string }; Returns: string }
       request_school_verification: {
         Args: { p_code_hash: string; p_email: string }
@@ -2510,6 +2571,8 @@ export type Database = {
       }
       rl_check_signup: { Args: { p_ip_hash: string }; Returns: boolean }
       set_referral_code: { Args: { p_code: string }; Returns: string }
+      stuck_help_count: { Args: { p_post_id: string }; Returns: number }
+      helped_students_count: { Args: { p_profile_id: string }; Returns: number }
       sweep_unconfirmed_signups: { Args: never; Returns: number }
       acquire_repository_analysis_lease: {
         Args: { p_analysis_id: string; p_ttl_seconds?: number; p_worker_id: string }
@@ -2749,23 +2812,27 @@ export type Database = {
       }
       search_people: {
         Args: {
+          p_focus?: string
           p_limit?: number
           p_major?: string
           p_offset?: number
           p_open_to?: string
           p_query?: string
+          p_stage?: string
           p_study_mode?: string
           p_year?: string
         }
         Returns: {
           avatar_url: string | null
           display_name: string | null
+          focus_areas: string[] | null
           id: string
           is_campus_founder: boolean
           is_founder: boolean
           is_pro: boolean
           major: string | null
           open_to: string[] | null
+          stage: string | null
           study_mode: string | null
           username: string
           verified_student: boolean

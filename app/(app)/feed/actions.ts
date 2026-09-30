@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { POST_SELECT, PAGE, withEngagement, type PostRow } from "@/components/feed/PostCard";
 import { attachSignedMedia, verifyMediaLimits } from "@/lib/media";
@@ -14,8 +15,28 @@ import { TEXT_LIMITS, textLimitError } from "@/lib/utils/validation";
 import { contextLabelError, parseContextLabel } from "@/lib/context-label";
 import { fetchLabeledPosts } from "@/lib/feed-labeled";
 import { parseTeamEventFields, teamEventError } from "@/lib/team-event";
+import { STAGE_MOMENT_COOKIE, parseStage, parseStageMoment } from "@/lib/stage";
 
 export type ComposerState = { error?: string; ok?: boolean };
+
+// Called once by the feed when it shows the stage-moment prompt. Clearing the
+// cookie here makes the prompt one-time even if the student ignores it.
+export async function consumeStageMoment(): Promise<void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const store = await cookies();
+  const moment = parseStageMoment(store.get(STAGE_MOMENT_COOKIE)?.value);
+  store.delete(STAGE_MOMENT_COOKIE);
+  if (user && moment) {
+    getPostHogServerClient()?.capture({
+      distinctId: user.id,
+      event: "stage_moment_prompt_shown",
+      properties: { from: moment.from, to: moment.to },
+    });
+  }
+}
 
 // Next page for "Load more": posts (+ quote-reposts + plain reposts) strictly
 // older than the cursor (created_at of the last row shown). Keyset pagination
@@ -92,11 +113,13 @@ export async function loadMorePosts(
 // anything. Junk labels stop pagination instead of scanning the firehose.
 export async function loadMoreLabeledPosts(
   labelRaw: string,
+  openRaw: boolean,
   cursor: string,
 ): Promise<{ items: FeedTimelineItem[]; nextCursor: string | null }> {
   const label = parseContextLabel(labelRaw);
   const decoded = decodeCursor(cursor);
   if (!label || !decoded) return { items: [], nextCursor: null };
+  const openOnly = label === "stuck" && openRaw === true;
 
   const supabase = await createClient();
   const {
@@ -105,9 +128,31 @@ export async function loadMoreLabeledPosts(
   const posts = await fetchLabeledPosts(supabase, {
     viewerId: user?.id ?? null,
     label,
+    openOnly,
     cursor: decoded,
     limit: PAGE,
   });
+  const items = posts.map((post) => ({ kind: "post" as const, created_at: post.created_at, post }));
+  const last = items[items.length - 1];
+  return { items, nextCursor: last ? encodeCursor(last.created_at, itemId(last)) : null };
+}
+
+// Next page for the Your stage tab. The stage is read from the viewer's own
+// row, never taken from the client.
+export async function loadMoreStagePosts(
+  cursor: string,
+): Promise<{ items: FeedTimelineItem[]; nextCursor: string | null }> {
+  const decoded = decodeCursor(cursor);
+  if (!decoded) return { items: [], nextCursor: null };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { items: [], nextCursor: null };
+  const { data: me } = await supabase.from("profiles").select("stage").eq("id", user.id).maybeSingle();
+  const stage = parseStage(me?.stage);
+  if (!stage) return { items: [], nextCursor: null };
+  const posts = await fetchLabeledPosts(supabase, { viewerId: user.id, authorStage: stage, cursor: decoded, limit: PAGE });
   const items = posts.map((post) => ({ kind: "post" as const, created_at: post.created_at, post }));
   const last = items[items.length - 1];
   return { items, nextCursor: last ? encodeCursor(last.created_at, itemId(last)) : null };
@@ -177,16 +222,20 @@ export async function createPost(_prev: ComposerState, formData: FormData): Prom
   if (eventErr) return { error: eventErr };
   const event = parseTeamEventFields(eventInput);
 
-  const { error } = await supabase.from("posts").insert({
-    user_id: user.id,
-    content,
-    media,
-    context_label,
-    team_event_name: event.team_event_name,
-    team_event_date: event.team_event_date,
-    team_event_mode: event.team_event_mode,
-  });
-  if (error) return { error: "Could not publish your post. Try again." };
+  const { data: inserted, error } = await supabase
+    .from("posts")
+    .insert({
+      user_id: user.id,
+      content,
+      media,
+      context_label,
+      team_event_name: event.team_event_name,
+      team_event_date: event.team_event_date,
+      team_event_mode: event.team_event_mode,
+    })
+    .select("id")
+    .single();
+  if (error || !inserted) return { error: "Could not publish your post. Try again." };
 
   const posthog = getPostHogServerClient();
   posthog?.capture({
@@ -200,6 +249,25 @@ export async function createPost(_prev: ComposerState, formData: FormData): Prom
       has_team_event: Boolean(event.team_event_name || event.team_event_date || event.team_event_mode),
     },
   });
+  const momentFrom = parseStage(formData.get("moment_from"));
+  const momentTo = parseStage(formData.get("moment_to"));
+  if (momentFrom && momentTo && momentFrom !== momentTo) {
+    posthog?.capture({
+      distinctId: user.id,
+      event: "stage_moment_posted",
+      properties: { from: momentFrom, to: momentTo, context_label, edited: !content.startsWith("Moved from ") },
+    });
+  }
+
+  // The posts_notify_stuck_helpers trigger already ran inside the insert.
+  if (context_label === "stuck" && posthog) {
+    try {
+      const { data: count } = await supabase.rpc("stuck_help_count", { p_post_id: inserted.id });
+      posthog.capture({ distinctId: user.id, event: "stuck_help_sent", properties: { count: count ?? 0 } });
+    } catch {
+      // analytics only
+    }
+  }
 
   // activated: fires once, on the user's first post ever. Wrapped defensively —
   // a failure here must never surface as a broken post action.

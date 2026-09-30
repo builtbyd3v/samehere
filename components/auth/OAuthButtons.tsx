@@ -2,6 +2,8 @@
 
 import { useSearchParams } from "next/navigation";
 import posthog from "posthog-js";
+import { Button } from "@/components/ui/Button";
+import { parseRef, REF_COOKIE } from "@/lib/referrals";
 import { createClient } from "@/lib/supabase/client";
 
 function GoogleMark() {
@@ -28,13 +30,18 @@ function GitHubMark() {
 // in app/auth/callback/route.ts after the provider redirects back.
 export default function OAuthButtons({ variant }: { variant?: "signup" | "login" }) {
   const refFromLink = useSearchParams().get("ref") ?? "";
+  const ref = parseRef(refFromLink);
 
   async function start(provider: "google" | "github") {
     // Capture before kicking off the redirect: signInWithOAuth calls
     // window.location.assign internally, so anything queued after the
     // await risks being dropped by the navigation.
     if (variant === "signup") {
-      posthog.capture("signup_submitted", { has_ref: !!refFromLink, method: "oauth", provider });
+      posthog.capture("signup_submitted", { has_ref: !!ref, ref, method: "oauth", provider });
+    }
+    if (variant === "signup" && ref) {
+      // Carries the ref through the provider round trip; read once by app/auth/callback.
+      document.cookie = `${REF_COOKIE}=${ref}; Max-Age=900; Path=/; SameSite=Lax`;
     }
     const supabase = createClient();
     await supabase.auth.signInWithOAuth({
@@ -45,19 +52,19 @@ export default function OAuthButtons({ variant }: { variant?: "signup" | "login"
 
   return (
     <div className="mb-4 flex flex-col gap-2.5">
-      <button type="button" onClick={() => start("google")} className="btn-surface w-full py-2 text-[15px] sm:py-2.5">
+      <Button variant="secondary" size="lg" className="w-full" onClick={() => start("google")}>
         <GoogleMark />
         <span>Continue with Google</span>
-      </button>
-      <button type="button" onClick={() => start("github")} className="btn-surface w-full py-2 text-[15px] sm:py-2.5">
+      </Button>
+      <Button variant="secondary" size="lg" className="w-full" onClick={() => start("github")}>
         <GitHubMark />
         <span>Continue with GitHub</span>
-      </button>
+      </Button>
     </div>
   );
 }
 
-// "or" divider between OAuth and the email form — shared so both forms match.
+// "or" divider between OAuth and the email form, shared so both forms match.
 export function OAuthDivider() {
   return (
     <div className="mb-4 flex items-center gap-3 text-xs text-[var(--ink-muted)]">

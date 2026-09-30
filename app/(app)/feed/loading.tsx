@@ -2,16 +2,14 @@ import { Skeleton, PostCardSkeleton } from "@/components/ui/Skeleton";
 
 export default function FeedLoading() {
   return (
-    <main className="mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8">
-      <div className="mb-5 flex items-center justify-between gap-3">
-        <Skeleton className="h-8 w-20" />
-        <div className="flex shrink-0 items-center gap-1">
-          <Skeleton className="h-9 w-9 rounded-full" />
-          <Skeleton className="h-9 w-9 rounded-full" />
-        </div>
+    <main className="mx-auto max-w-[620px]">
+      <div className="flex h-11 items-center gap-6 border-b border-[var(--hairline)] lg:h-16">
+        <Skeleton className="h-4 w-12" />
+        <Skeleton className="h-4 w-20" />
+        <Skeleton className="h-4 w-16" />
+        <Skeleton className="h-4 w-24" />
       </div>
-      <Skeleton className="mb-6 h-9 w-40 rounded-full" />
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col">
         <PostCardSkeleton />
         <PostCardSkeleton />
         <PostCardSkeleton />

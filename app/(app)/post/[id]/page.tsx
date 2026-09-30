@@ -6,8 +6,10 @@ import { createClient as createAnonClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import PostCard, { POST_SELECT, withEngagement, type PostRow } from "@/components/feed/PostCard";
 import CommentThread from "@/components/feed/CommentThread";
+import StuckResolveButton from "@/components/feed/StuckResolveButton";
 import UserBadges from "@/components/profile/UserBadges";
 import AvatarBase from "@/components/ui/Avatar";
+import { Button } from "@/components/ui/Button";
 import MentionText from "@/components/ui/MentionText";
 import ProfileHoverLink from "@/components/profile/ProfileHoverLink";
 import LocalTime from "@/components/ui/LocalTime";
@@ -139,37 +141,37 @@ async function PublicPostView({ id }: { id: string }) {
               </ProfileHoverLink>
               <UserBadges isPro={post.author_is_pro} isFounder={post.author_is_founder} isCampusFounder={post.author_is_campus_founder} isVerifiedStudent={post.author_verified_student} isBot={post.author_is_bot} />
             </div>
-            <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">
+            <p className="mt-0.5 text-small text-[var(--ink-muted)]">
               <span>@{post.author_username}</span>
               <span className="mx-1 text-[var(--ink-faint)]">·</span>
               <LocalTime iso={post.created_at} variant="ago" />
             </p>
-            <p className="mt-3 max-w-[65ch] whitespace-pre-line break-words text-[16px] leading-[1.55] text-[var(--ink)]">
+            <p className="mt-3 max-w-[65ch] whitespace-pre-line break-words text-base leading-[1.55] text-[var(--ink)]">
               <MentionText>{post.content}</MentionText>
             </p>
           </div>
         </div>
 
         {/* Read-only counts — anon can't react. No buttons, no handlers. */}
-        <div className="mt-4 flex items-center gap-4 border-t border-[var(--border)] pt-3 text-[13px] text-[var(--ink-muted)]">
+        <div className="mt-4 flex items-center gap-4 border-t border-[var(--border)] pt-3 text-small text-[var(--ink-muted)]">
           <span className="inline-flex items-center gap-1.5">
-            <IconSame /> {post.samehere_count}
+            <IconSame /> <span className="sr-only">Same here:</span> {post.samehere_count}
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <IconRepost /> {post.repost_count}
+            <IconRepost /> <span className="sr-only">Reposts:</span> {post.repost_count}
           </span>
         </div>
       </article>
 
-      <div className="card mt-6 px-6 py-10 text-center">
-        <p className="font-medium text-[var(--ink)]">Sign in to reply</p>
+      <div className="mt-6 rounded-[20px] border border-[var(--border)] px-6 py-10 text-center">
+        <p className="font-medium text-[var(--ink)]">Log in to reply</p>
         <div className="mt-4 flex justify-center gap-2">
-          <Link href="/login" className="btn-ghost !rounded-full !px-4 !py-1.5 text-sm">
-            Sign in
-          </Link>
-          <Link href="/signup" className="btn-primary !rounded-full !px-4 !py-1.5 text-sm">
-            Sign up
-          </Link>
+          <Button href="/login" variant="ghost" size="md">
+            Log in
+          </Button>
+          <Button href="/signup" variant="primary" size="md">
+            Join free
+          </Button>
         </div>
       </div>
     </main>
@@ -218,6 +220,7 @@ export default async function PostPage({
   const viewerId = user?.id ?? null;
   const mine = await fetchViewerMineState(supabase, viewerId, [signed.id], []);
   const [post] = withEngagement([signed], mine);
+  const isStuckAuthor = post.context_label === "stuck" && viewerId === post.user_id;
 
   // Own profile, for the optimistic comment row's avatar/name/badges (the
   // real row won't have these until the server round-trip resolves).
@@ -250,6 +253,17 @@ export default async function PostPage({
         <PostCard post={post} viewerId={viewerId} variant="detail" />
       </div>
 
+      {isStuckAuthor && (
+        <div className="mt-3 flex justify-end">
+          <StuckResolveButton
+            postId={post.id}
+            reopen={Boolean(post.resolved_at)}
+            label={post.resolved_at ? "Reopen" : "Mark solved"}
+            variant="outline"
+          />
+        </div>
+      )}
+
       <section className="card mt-6 p-4 sm:p-5">
         <CommentThread
           postId={post.id}
@@ -257,6 +271,8 @@ export default async function PostPage({
           viewerId={viewerId}
           viewer={viewerAuthor}
           autoFocus={reply === "1"}
+          acceptedCommentId={post.resolved_comment_id}
+          canAccept={isStuckAuthor}
         />
       </section>
     </main>

@@ -34,6 +34,11 @@ const { fakeAdmin } = vi.hoisted(() => {
           builder._result = updateResult;
           return builder;
         },
+        delete() {
+          calls.push({ table, method: "delete", args: [] });
+          builder._result = { error: null };
+          return builder;
+        },
         eq(...args: unknown[]) {
           calls.push({ table, method: "eq", args });
           return builder;
@@ -394,5 +399,53 @@ describe("POST /api/stripe/webhook — subscription tie-break asymmetry", () => 
 
     const update = fakeAdmin.calls.find((c) => c.table === "profiles" && c.method === "update");
     expect(update?.args[0]).toMatchObject({ is_pro: false });
+  });
+});
+
+describe("POST /api/stripe/webhook: write failures", () => {
+  const released = () =>
+    fakeAdmin.calls.some((c) => c.table === "stripe_events" && c.method === "delete");
+
+  it("returns 500 and releases the claim when the one-time grant fails", async () => {
+    fakeAdmin.setUpdateResult({ error: { message: "boom" } });
+    const res = await post(
+      makeCheckoutSessionEvent({
+        client_reference_id: "user-1",
+        metadata: { supabase_id: "user-1" },
+        mode: "payment",
+        payment_status: "paid",
+        created: 1770000000,
+      })
+    );
+    expect(res.status).toBe(500);
+    expect(released()).toBe(true);
+  });
+
+  it("returns 500 and releases the claim when a subscription.deleted write fails", async () => {
+    fakeAdmin.setUpdateResult({ error: { message: "boom" } });
+    const res = await post(
+      makeSubscriptionEvent({
+        type: "customer.subscription.deleted",
+        customerId: "cus_1",
+        status: "canceled",
+        created: 1770000000,
+      })
+    );
+    expect(res.status).toBe(500);
+    expect(released()).toBe(true);
+  });
+
+  it("returns 200 and keeps the claim when the write succeeds", async () => {
+    const res = await post(
+      makeCheckoutSessionEvent({
+        client_reference_id: "user-1",
+        metadata: { supabase_id: "user-1" },
+        mode: "payment",
+        payment_status: "paid",
+        created: 1770000000,
+      })
+    );
+    expect(res.status).toBe(200);
+    expect(released()).toBe(false);
   });
 });

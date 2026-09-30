@@ -6,12 +6,11 @@ import type { PostMedia } from "@/lib/media";
 // that never repeats — zero cache hits, one paid optimization per request, no
 // benefit. Avatars use next/image because their URLs are stable. Revisit only if
 // post media moves to stable public URLs.
-export default function PostMediaGrid({ media, compact = false }: { media: PostMedia[]; compact?: boolean }) {
-  const mt = compact ? "mt-3" : "mt-4";
+export default function PostMediaGrid({ media }: { media: PostMedia[] }) {
   if (media.length === 1) {
     const m = media[0];
     return (
-      <div className={`${mt} overflow-hidden rounded-xl border border-[var(--border)]`}>
+      <div className="overflow-hidden rounded-xl border border-[var(--hairline)] lg:rounded-[14px]">
         {m.type === "image" ? (
           // eslint-disable-next-line @next/next/no-img-element -- signed URL, optimizer never caches
           <img src={m.url} alt="" loading="lazy" decoding="async" className="max-h-[420px] w-full object-cover" />
@@ -23,7 +22,7 @@ export default function PostMediaGrid({ media, compact = false }: { media: PostM
   }
 
   return (
-    <div className={`${mt} grid grid-cols-2 gap-1 overflow-hidden rounded-xl border border-[var(--border)]`}>
+    <div className="grid grid-cols-2 gap-1 overflow-hidden rounded-xl border border-[var(--hairline)] lg:rounded-[14px]">
       {media.map((m, i) =>
         m.type === "image" ? (
           // eslint-disable-next-line @next/next/no-img-element -- signed URL, optimizer never caches

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { cache, Suspense, type CSSProperties, type ReactNode } from "react";
 import type {
   PortfolioProject,
+  PortfolioSection,
   PublicPortfolioEducation,
   PublicPortfolioExperience,
   PublicPortfolioProject,
@@ -10,51 +11,47 @@ import type {
 } from "@/types/portfolio";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import type { FollowState } from "@/components/profile/FollowButton";
 import ProfileActions from "@/components/profile/ProfileActions";
 import BlockButton from "@/components/profile/BlockButton";
 import ProfileActivitySection from "@/components/profile/ProfileActivitySection";
 import ProfileActivityBlock from "@/components/profile/ProfileActivityBlock";
 import ProfileRecentPosts from "@/components/profile/ProfileRecentPosts";
 import ContributionHeatmap, { type HeatmapDay } from "@/components/profile/ContributionHeatmap";
-import UserBadges from "@/components/profile/UserBadges";
-import AvatarBase from "@/components/ui/Avatar";
 import { HeatmapSkeleton, PortfolioSectionsFallback, ProfilePostsSkeleton } from "@/components/ui/Skeleton";
-import { isPro } from "@/lib/pro";
-import { PROFILE_THEMES, isProfileTheme, themeCssVars } from "@/lib/themes";
-import { pickPrimaryEducation } from "@/lib/education-options";
 import { createAnonPortfolioClient, hasPortfolioAuthCookie, portfolioReadClient, type PortfolioClient } from "@/lib/portfolio/client";
-import { getOwnerGithubConnection, getOwnerGithubDays, loadPublicPortfolioBundle } from "@/lib/portfolio/public";
-import { listOwnerProjects } from "@/lib/portfolio/owner";
+import { loadPublicPortfolioBundle } from "@/lib/portfolio/public";
+import {
+  displaySectionOrder,
+  fetchProfileByUsername,
+  loadPublicProfilePage,
+  loadViewerProfilePage,
+  publicProfileIntro,
+  schoolMajorLine,
+} from "@/lib/portfolio/profile-page-data";
 import { profileShareTitle } from "@/lib/og/copy";
-import { metadataDescription, profileIntro, publicSectionVisible, robotsForProjection } from "@/lib/portfolio/projection";
-import { effectiveSectionOrder, eligiblePublicView } from "@/lib/portfolio/metrics";
-import { PORTFOLIO_SECTIONS } from "@/lib/portfolio/validation";
+import { hasPublishedSection, metadataDescription, publicSectionVisible, robotsForProjection } from "@/lib/portfolio/projection";
+import { eligiblePublicView } from "@/lib/portfolio/metrics";
 import TrackPortfolioView from "@/components/portfolio/TrackPortfolioView";
+import RefLanding from "@/components/portfolio/RefLanding";
 import { OwnerAnalyticsSection, PortfolioAnalyticsFallback } from "@/components/portfolio/PortfolioAnalytics";
 import SharePortfolioButton from "@/components/portfolio/SharePortfolioButton";
+import ExportPortfolioButton from "@/components/portfolio/ExportPortfolioButton";
 import PortfolioBanner from "@/components/portfolio/PortfolioBanner";
+import IdentityPanel from "@/components/portfolio/IdentityPanel";
+import ProfileSegments, { type ProfileTab } from "@/components/portfolio/ProfileSegments";
 import UnavailableNotice from "@/components/portfolio/UnavailableNotice";
 import {
   ActivitySection,
-  EducationList,
-  ExperienceList,
   IntroSection,
   OwnerProjects,
   PublicProjectList,
+  ResumeTimeline,
 } from "@/components/portfolio/ProfileSections";
-const PROFILE_SELECT =
-  "id, username, display_name, avatar_url, banner_url, year, major, bio, goals, open_to, study_mode, is_private, heatmap_visibility, is_pro, pro_until, is_founder, is_campus_founder, profile_theme, verified_student, is_bot";
-const PROFILE_SELECT_FALLBACK =
-  "id, username, display_name, avatar_url, banner_url, year, major, bio, goals, is_private, heatmap_visibility, is_pro, pro_until, is_founder, is_campus_founder, profile_theme, verified_student, is_bot";
-
-const getProfileByUsername = cache(async (username: string) => {
-  const supabase = await createClient();
-  const first = await supabase.from("profiles").select(PROFILE_SELECT).eq("username", username).maybeSingle();
-  if (!first.error) return first.data;
-  const fallback = await supabase.from("profiles").select(PROFILE_SELECT_FALLBACK).eq("username", username).maybeSingle();
-  return fallback.data;
-});
+import { Button } from "@/components/ui/Button";
+import { SectionLabel } from "@/components/ui/SectionLabel";
+import { Reveal } from "@/components/ui/Reveal";
+import { parseRef } from "@/lib/referrals";
+const getProfileByUsername = cache(async (username: string) => fetchProfileByUsername(await createClient(), username));
 
 const loadViewerPublicMeta = cache(async (username: string, hasAuth: boolean) => {
   const client = await portfolioReadClient(hasAuth);
@@ -65,26 +62,18 @@ const loadViewerPublicMeta = cache(async (username: string, hasAuth: boolean) =>
   return { profile: data?.[0] ?? null, portfolio };
 });
 
-function Stat({ value, label, accent, href }: { value: number; label: string; accent?: boolean; href?: string }) {
-  const content = (
-    <span className="text-[13px] text-[var(--ink-muted)]">
-      <b
-        className={`font-semibold tabular-nums tracking-[-0.01em] ${accent ? "" : "text-[var(--ink)]"}`}
-        style={accent ? { color: "var(--profile-accent)" } : undefined}
-      >
-        {value.toLocaleString()}
-      </b>{" "}
-      <span>{label}</span>
-    </span>
-  );
-  return href ? (
-    <Link href={href} className="hover:underline">
-      {content}
-    </Link>
-  ) : (
-    content
-  );
-}
+// Phone segments: each section panel hides unless its tab is active (below md only).
+const PANEL: Record<ProfileTab, string> = {
+  resume: "group-data-[tab=posts]:max-md:hidden group-data-[tab=activity]:max-md:hidden",
+  posts: "group-data-[tab=resume]:max-md:hidden group-data-[tab=activity]:max-md:hidden",
+  activity: "group-data-[tab=resume]:max-md:hidden group-data-[tab=posts]:max-md:hidden",
+};
+const tabOf = (section: PortfolioSection): ProfileTab =>
+  section === "posts" ? "posts" : section === "activity" ? "activity" : "resume";
+
+/** Stacked right-column sections outside the segmented body. */
+const COLUMN = "flex flex-col gap-10 md:gap-12 xl:gap-14";
+const PAGE_MAIN = "relative isolate mx-auto w-full max-w-2xl overflow-x-clip py-6 sm:py-8 xl:max-w-[1120px] xl:py-16";
 
 export async function generateMetadata({
   params,
@@ -108,27 +97,16 @@ export async function generateMetadata({
   };
 }
 
-function OwnerBar({
-  username,
-  previewPublic,
-}: {
-  username: string;
-  previewPublic: boolean;
-}) {
+function ProfileBackdrop({ bannerUrl, accent }: { bannerUrl: string | null; accent: boolean }) {
+  if (!bannerUrl && !accent) return null;
   return (
-    <div className="mb-3 flex flex-wrap items-center gap-2">
-      <Link href="/profile/edit" className="btn-ghost !rounded-full !px-4 !py-1.5 text-sm">
-        Edit profile
-      </Link>
-      <Link href="/profile/projects/new" className="btn-primary !rounded-full !px-4 !py-1.5 text-sm">
-        Add project
-      </Link>
-      <Link
-        href={previewPublic ? `/profile/${username}` : `/profile/${username}?preview=public`}
-        className="btn-ghost !rounded-full !px-4 !py-1.5 text-sm"
-      >
-        {previewPublic ? "Owner view" : "Public preview"}
-      </Link>
+    <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[300px] overflow-hidden mask-b-from-10% mask-x-from-70% xl:h-[420px]">
+      {bannerUrl ? (
+        <PortfolioBanner src={bannerUrl} />
+      ) : (
+        // ponytail: local accent tint because LightPool has no tint prop; it is the Pro theme color the owner picked, not decoration.
+        <div className="absolute inset-0 bg-[radial-gradient(90%_70%_at_20%_0%,color-mix(in_srgb,var(--profile-accent)_45%,transparent),transparent_70%)] xl:bg-[radial-gradient(45%_80%_at_22%_0%,color-mix(in_srgb,var(--profile-accent)_40%,transparent),transparent_70%)]" />
+      )}
     </div>
   );
 }
@@ -147,7 +125,6 @@ function PortfolioBody({
   posts,
   currentPro,
   intro,
-  username,
 }: {
   projection: PublicPortfolioProjection | null;
   unavailable: boolean;
@@ -161,71 +138,80 @@ function PortfolioBody({
   activity: ReactNode;
   posts: ReactNode;
   currentPro: boolean;
-  intro: { bio: string | null; goals: string | null; open_to: string[]; study_mode: string | null };
-  username: string;
+  intro: {
+    bio: string | null;
+    goals: string | null;
+    open_to: string[];
+    study_mode: string | null;
+    stage: string | null;
+    focus_areas: string[];
+  };
 }) {
   if (unavailable) {
     return (
-      <>
+      <div className={COLUMN}>
         {isOwner && <UnavailableNotice />}
         {isOwner && !previewPublic && (
           <IntroSection
             bio={intro.bio}
             goals={intro.goals}
-            openTo={intro.open_to}
             studyMode={intro.study_mode}
-            username={username}
           />
         )}
         {posts}
-      </>
+      </div>
     );
   }
-  const inviteDm = !isOwner || previewPublic;
-  const order = effectiveSectionOrder(projection?.section_order ?? [], currentPro);
+  const order = displaySectionOrder(projection?.section_order ?? [], currentPro);
   const show = (section: (typeof order)[number]) => {
     if (isOwner && !previewPublic) return true;
     if (!projection) return false;
     return publicSectionVisible(projection, section);
   };
+  const tabs: ProfileTab[] = ["resume"];
+  if (show("posts") && posts) tabs.push("posts");
+  if (show("activity")) tabs.push("activity");
   return (
-    <div className="portfolio-stack mt-6">
+    <ProfileSegments tabs={tabs}>
       {order.map((section) => {
+        let content: ReactNode = null;
         if (section === "intro" && show("intro")) {
-          return (
+          content = (
             <IntroSection
-              key="intro"
               bio={intro.bio}
               goals={intro.goals}
-              openTo={intro.open_to}
               studyMode={intro.study_mode}
-              username={username}
-              linkToDm={inviteDm}
             />
           );
-        }
-        if (section === "projects" && show("projects")) {
-          return isOwner && !previewPublic ? (
-            <OwnerProjects key="projects" projects={ownerProjects} previewPublic={false} />
+        } else if (section === "projects" && show("projects")) {
+          content = isOwner && !previewPublic ? (
+            <OwnerProjects projects={ownerProjects} previewPublic={false} />
           ) : (
-            <PublicProjectList key="projects" projects={publicProjects} />
+            <PublicProjectList projects={publicProjects} />
           );
+        } else if (section === "activity" && show("activity")) {
+          content = activity;
+        } else if (section === "experience" || section === "education") {
+          // One timeline at the first of the two; each half keeps its own publish flag.
+          if (section !== order.find((s) => s === "experience" || s === "education")) return null;
+          content = (
+            <ResumeTimeline
+              experience={show("experience") ? experience : []}
+              education={show("education") ? education : []}
+              logos={logos}
+            />
+          );
+        } else if (section === "posts" && show("posts")) {
+          content = posts;
         }
-        if (section === "activity" && show("activity")) {
-          return <div key="activity">{activity}</div>;
-        }
-        if (section === "experience" && show("experience")) {
-          return <ExperienceList key="experience" items={experience} logos={logos} />;
-        }
-        if (section === "education" && show("education")) {
-          return <EducationList key="education" items={education} />;
-        }
-        if (section === "posts" && show("posts")) {
-          return <div key="posts">{posts}</div>;
-        }
-        return null;
+        if (!content) return null;
+        return (
+          <div key={section} className={`empty:hidden ${PANEL[tabOf(section)]}`}>
+            {content}
+          </div>
+        );
       })}
-    </div>
+    </ProfileSegments>
   );
 }
 
@@ -244,8 +230,8 @@ async function PublicHeatmapFallback({
   }));
   if (heatmap.length === 0) return null;
   return (
-    <section className="card-surface mt-3 p-5 sm:p-6">
-      <h2 className="eyebrow mb-4">Activity</h2>
+    <section className="flex flex-col gap-3.5">
+      <SectionLabel as="h2">Activity</SectionLabel>
       <ContributionHeatmap data={heatmap} />
     </section>
   );
@@ -254,62 +240,44 @@ async function PublicHeatmapFallback({
 async function PublicPortfolioBelow({
   username,
   profile,
+  intro,
   client,
   bundlePromise,
 }: {
   username: string;
   profile: {
     id: string;
-    username: string;
-    display_name: string | null;
-    bio: string | null;
-    goals: string | null;
-    open_to: string[] | null;
-    study_mode?: string | null;
     is_private: boolean;
     is_pro: boolean;
     heatmap_visibility: string | null;
   };
+  intro: ReturnType<typeof publicProfileIntro>;
   client: PortfolioClient;
   bundlePromise: ReturnType<typeof loadPublicPortfolioBundle>;
 }) {
   const bundle = await bundlePromise;
   const projection = bundle.ok ? bundle.data.projection : null;
-  const intro = profileIntro(
-    {
-      id: profile.id,
-      username: profile.username,
-      display_name: profile.display_name,
-      bio: profile.bio,
-      goals: profile.goals,
-      open_to: profile.open_to,
-      study_mode: "study_mode" in profile ? profile.study_mode ?? null : null,
-      is_private: profile.is_private,
-    },
-    projection,
-    "public"
-  );
   const trackView = eligiblePublicView({
     isOwner: false,
     previewPublic: false,
     isPrivate: profile.is_private,
     isBlocked: false,
     isSuspended: false,
-    hasRenderedPublicContent: Boolean(
-      projection && PORTFOLIO_SECTIONS.some((section) => publicSectionVisible(projection, section))
-    ),
+    hasRenderedPublicContent: hasPublishedSection(projection),
   });
   const posts = (
-    <section className="mt-6">
-      <h2 className="eyebrow mb-3">Posts</h2>
-      <p className="flex flex-wrap items-center gap-2 text-sm text-[var(--ink-muted)]">
-        Sign in to see their posts
-        <Link href="/login" className="btn-ghost !rounded-full !px-3 !py-1 text-xs">
-          Sign in
-        </Link>
-        <Link href="/signup" className="btn-primary !rounded-full !px-3 !py-1 text-xs">
-          Sign up
-        </Link>
+    <section>
+      <SectionLabel as="h2" className="mb-3">
+        Posts
+      </SectionLabel>
+      <p className="flex flex-wrap items-center gap-2 text-sm text-[var(--muted)]">
+        Log in to see their posts
+        <Button href="/login" variant="ghost" size="sm">
+          Log in
+        </Button>
+        <Button href={`/signup?ref=${encodeURIComponent(username)}`} variant="primary" size="sm">
+          Join free
+        </Button>
       </p>
     </section>
   );
@@ -318,14 +286,14 @@ async function PublicPortfolioBelow({
     <>
       {trackView && <TrackPortfolioView username={username} />}
       {!bundle.ok && bundle.unavailable ? (
-        <>
+        <div className={COLUMN}>
           {profile.heatmap_visibility === "public" && (
             <Suspense fallback={<HeatmapSkeleton />}>
               <PublicHeatmapFallback client={client} profileId={profile.id} />
             </Suspense>
           )}
           {posts}
-        </>
+        </div>
       ) : (
         <PortfolioBody
           projection={projection}
@@ -349,7 +317,6 @@ async function PublicPortfolioBelow({
           }
           currentPro={profile.is_pro}
           intro={intro}
-          username={username}
           posts={posts}
         />
       )}
@@ -357,67 +324,138 @@ async function PublicPortfolioBelow({
   );
 }
 
-async function PublicProfileView({ username }: { username: string }) {
-  const client = createAnonPortfolioClient();
-  const { data: profileRows } = await client.rpc("get_public_profile", { p_username: username });
-  const profile = profileRows?.[0] ?? null;
-  if (!profile) notFound();
+/** The two-column frame shared by both views. */
+function ProfileGrid({
+  panel,
+  notice,
+  single,
+  children,
+}: {
+  panel: ReactNode;
+  notice?: ReactNode;
+  single?: boolean;
+  children: ReactNode;
+}) {
+  if (single) {
+    return (
+      <div data-profile-grid className="mx-auto flex w-full max-w-[440px] flex-col gap-6">
+        <Reveal delay={0}>{panel}</Reveal>
+        {notice}
+        {children}
+      </div>
+    );
+  }
+  return (
+    <div
+      data-profile-grid
+      className="flex flex-col gap-8 xl:grid xl:grid-cols-[300px_minmax(0,1fr)] xl:gap-12 min-[90rem]:grid-cols-[340px_minmax(0,1fr)] min-[90rem]:gap-[72px]"
+    >
+      {/* ponytail: the panel is sticky only on viewports at least 880px tall, so the counts are never cut off on short laptops. */}
+      <aside className="xl:self-start xl:[@media(min-height:880px)]:sticky xl:[@media(min-height:880px)]:top-24">
+        <Reveal delay={0}>{panel}</Reveal>
+        {notice}
+      </aside>
+      {/* ponytail: one reveal for the whole column (a per-panel reveal would replay on every segment tap); add a CSS-only stagger later if wanted. */}
+      <div className="min-w-0 xl:pt-2">
+        <Reveal delay={80}>{children}</Reveal>
+      </div>
+    </div>
+  );
+}
 
-  const countsPromise = client.rpc("get_public_profile_counts", { p_profile_id: profile.id });
-  const bundlePromise = loadPublicPortfolioBundle(client, username);
-  const { data: countRows } = await countsPromise;
-  const counts = countRows?.[0] ?? { posts: 0, followers: 0, following: 0 };
-  const displayName = profile.display_name ?? profile.username;
-  const metaParts = [profile.school, profile.major].filter(Boolean);
-  const metaLine = metaParts.length <= 1 ? metaParts[0] ?? null : `${metaParts[0]} · ${metaParts.slice(1).join(", ")}`;
-  const bannerUrl = profile.banner_url;
-  const accentColor = profile.accent_color;
+function NothingPublished({ owner, username, isPrivate }: { owner: boolean; username: string; isPrivate: boolean }) {
+  if (owner) {
+    return (
+      <p className="text-small text-[var(--muted)]">
+        Nothing published yet. Visitors only see this header.{" "}
+        <Link href="/profile/edit#publication" className="text-[var(--ink)] underline underline-offset-2">
+          Choose what to publish
+        </Link>
+      </p>
+    );
+  }
+  return (
+    <p className="text-small text-[var(--muted)]">
+      {isPrivate ? "This account is private." : `@${username} has not published their portfolio yet.`}
+    </p>
+  );
+}
+
+async function PublicProfileView({ username, landingRef }: { username: string; landingRef: string | null }) {
+  const client = createAnonPortfolioClient();
+  const data = await loadPublicProfilePage(client, username);
+  if (!data) notFound();
+  const { profile, counts, helped, bundlePromise, displayName, schoolLine, bannerUrl, accentColor } = data;
+  // ponytail: the logged-out header now waits for the portfolio bundle (it already runs in parallel with counts); if logged-out TTFB regresses, stream the table rows behind their own Suspense.
+  const bundle = await bundlePromise;
+  const intro = publicProfileIntro(profile, bundle.ok ? bundle.data.projection : null);
+  const nothingPublished = !profile.is_private && bundle.ok && !hasPublishedSection(bundle.data.projection);
 
   return (
     <main
-      className="page-enter mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8"
+      data-profile-page
+      className={PAGE_MAIN}
       style={accentColor ? ({ "--profile-accent": accentColor } as CSSProperties) : undefined}
     >
-      <section className="card-raised portfolio-enter-header overflow-hidden">
-        <PortfolioBanner username={profile.username} src={bannerUrl} accent={accentColor} />
-        <div className="px-5 pb-5 sm:px-6 sm:pb-6">
-          <div className="flex flex-col gap-3 min-[391px]:flex-row min-[391px]:items-end min-[391px]:justify-between">
-            <AvatarBase
-              src={profile.avatar_url}
-              seed={profile.username}
-              name={displayName}
-              pro={profile.is_pro}
-              priority
-              style={accentColor ? { borderColor: accentColor } : undefined}
-              className="relative z-10 -mt-12 h-24 w-24 shrink-0 rounded-full border-2 border-[var(--surface-raised)] text-3xl sm:-mt-14 sm:h-28 sm:w-28"
+      {landingRef && <RefLanding refCode={landingRef} />}
+      <ProfileBackdrop bannerUrl={bannerUrl} accent={Boolean(accentColor)} />
+      <ProfileGrid
+        panel={
+          <IdentityPanel
+            username={profile.username}
+            displayName={displayName}
+            avatarUrl={profile.avatar_url}
+            pro={profile.is_pro}
+            priority
+            badges={{
+              isPro: profile.is_pro,
+              isFounder: profile.is_founder,
+              isCampusFounder: profile.is_campus_founder,
+              isVerifiedStudent: profile.verified_student,
+              isBot: profile.is_bot,
+            }}
+            headline={profile.headline}
+            tagline={null}
+            stage={intro.stage}
+            focusAreas={intro.focus_areas}
+            schoolLine={schoolLine}
+            openTo={intro.open_to}
+            inviteDm
+            links={{ github: profile.github_url, linkedin: profile.linkedin_url, website: profile.website_url }}
+            counts={{ posts: Number(counts.posts), followers: Number(counts.followers), following: Number(counts.following) }}
+            helped={helped}
+            actions={<SharePortfolioButton username={profile.username} displayName={displayName} />}
+          />
+        }
+        single={nothingPublished}
+      >
+        {profile.is_private ? (
+          <div className="rounded-2xl border border-[var(--hairline)] px-6 py-8 text-center">
+            <p className="font-medium text-[var(--ink)]">This account is private</p>
+          </div>
+        ) : nothingPublished ? (
+          <NothingPublished owner={false} username={profile.username} isPrivate={false} />
+        ) : (
+          <Suspense fallback={<PortfolioSectionsFallback />}>
+            <PublicPortfolioBelow
+              username={username}
+              profile={profile}
+              intro={intro}
+              client={client}
+              bundlePromise={bundlePromise}
             />
-            <SharePortfolioButton username={profile.username} displayName={displayName} />
-          </div>
-          <div className="mt-3">
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-              <h1 className="text-[32px] font-semibold tracking-[-0.025em]">{displayName}</h1>
-              <UserBadges isPro={profile.is_pro} isFounder={profile.is_founder} isCampusFounder={profile.is_campus_founder} isVerifiedStudent={profile.verified_student} isBot={profile.is_bot} />
-            </div>
-            <p className="mt-0.5 text-[15px] text-[var(--ink-muted)]">@{profile.username}</p>
-            {metaLine && <p className="mt-2 text-sm text-[var(--ink-muted)]">{metaLine}</p>}
-            <div className="profile-stat-enter mt-4 flex flex-wrap gap-x-6 gap-y-1">
-              <Stat value={Number(counts.posts)} label="posts" accent={Boolean(accentColor)} />
-              <Stat value={Number(counts.followers)} label="followers" accent={Boolean(accentColor)} href={`/profile/${profile.username}/followers`} />
-              <Stat value={Number(counts.following)} label="following" accent={Boolean(accentColor)} href={`/profile/${profile.username}/following`} />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {profile.is_private ? (
-        <div className="card mt-3 px-6 py-8 text-center">
-          <p className="font-medium text-[var(--ink)]">This account is private</p>
-        </div>
-      ) : (
-        <Suspense fallback={<PortfolioSectionsFallback />}>
-          <PublicPortfolioBelow username={username} profile={profile} client={client} bundlePromise={bundlePromise} />
-        </Suspense>
-      )}
+          </Suspense>
+        )}
+      </ProfileGrid>
+      {/* Matches the single 440px column when nothing is published, otherwise spans both columns. */}
+      <div
+        className={`mt-12 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--hairline)] pt-6${nothingPublished ? " mx-auto w-full max-w-[440px]" : ""}`}
+      >
+        <p className="text-small text-[var(--muted)]">This portfolio is built on samehere. Free for CS students.</p>
+        <Button href={`/signup?ref=${encodeURIComponent(profile.username)}`} variant="secondary" size="sm">
+          Make yours
+        </Button>
+      </div>
     </main>
   );
 }
@@ -427,178 +465,56 @@ export default async function ProfilePage({
   searchParams,
 }: {
   params: Promise<{ username: string }>;
-  searchParams?: Promise<{ preview?: string }>;
+  searchParams?: Promise<{ preview?: string; ref?: string | string[] }>;
 }) {
   const { username } = await params;
-  const previewPublic = (await searchParams)?.preview === "public";
-  if (!(await hasPortfolioAuthCookie())) return <PublicProfileView username={username} />;
+  const sp = await searchParams;
+  const previewPublic = sp?.preview === "public";
+  const landingRef = parseRef(sp?.ref);
+  if (!(await hasPortfolioAuthCookie())) return <PublicProfileView username={username} landingRef={landingRef} />;
 
   const supabase = await createClient();
   const [{ data: { user } }, profile] = await Promise.all([
     supabase.auth.getUser(),
     getProfileByUsername(username),
   ]);
-  if (!user) return <PublicProfileView username={username} />;
+  if (!user) return <PublicProfileView username={username} landingRef={landingRef} />;
   if (!profile) notFound();
 
   const isOwner = user.id === profile.id;
   const displayName = profile.display_name ?? profile.username;
 
   const readClient = await portfolioReadClient(true);
-  const [
-    schoolRes,
-    countRes,
-    relRes,
-    blockedIdsRes,
-    myBlockRes,
+  const {
+    counts,
+    helped,
+    isBlocked,
+    amIBlocking,
+    followState,
+    contentHidden,
+    resume,
+    portfolioUnavailable,
+    projection,
     bundle,
     ownerProjects,
-    ownerGithub,
-    ownerGithubDays,
-    ownerExpEdu,
-  ] = await Promise.all([
-    supabase.from("profile_school").select("school").eq("profile_id", profile.id).maybeSingle(),
-    supabase.rpc("get_profile_counts", { p_profile_id: profile.id }),
-    user && !isOwner
-      ? supabase.from("follows").select("status").eq("follower_id", user.id).eq("following_id", profile.id).maybeSingle()
-      : Promise.resolve({ data: null as { status: string } | null }),
-    user && !isOwner ? supabase.rpc("get_blocked_ids") : Promise.resolve({ data: [] as string[] }),
-    user && !isOwner
-      ? supabase.from("blocks").select("id").eq("blocker_id", user.id).eq("blocked_id", profile.id).maybeSingle()
-      : Promise.resolve({ data: null as { id: string } | null }),
-    loadPublicPortfolioBundle(readClient, username),
-    isOwner ? listOwnerProjects(supabase, user.id) : Promise.resolve({ ok: true as const, data: [] }),
-    isOwner ? getOwnerGithubConnection(readClient, user.id) : Promise.resolve({ ok: true as const, data: null }),
-    isOwner ? getOwnerGithubDays(readClient, user.id) : Promise.resolve({ ok: true as const, data: [] }),
-    isOwner && !previewPublic
-      ? Promise.all([
-          supabase
-            .from("experiences")
-            .select("id, kind, org, role, term, note, start_date, end_date, is_current")
-            .eq("user_id", profile.id)
-            .order("created_at", { ascending: false }),
-          supabase
-            .from("education")
-            .select("id, school, degree, field, class_year, start_date, end_date, school_domain, is_current")
-            .eq("user_id", profile.id)
-            .order("start_date", { ascending: false, nullsFirst: false }),
-        ])
-      : Promise.resolve(null),
-  ]);
-
+    experience,
+    education,
+    logoByName,
+    school,
+    tagline,
+    pro,
+    bannerUrl,
+    theme,
+    themeVars,
+    intro,
+    canReadHeatmap,
+    publicSamehere,
+    publicSamehereKnown,
+    github,
+    connection,
+    showPosts,
+  } = await loadViewerProfilePage({ supabase, readClient, userId: user.id, profile, isOwner, previewPublic });
   const viewerId = user.id;
-  const school = schoolRes.data?.school ?? null;
-  const counts = countRes.data?.[0] ?? { posts: 0, followers: 0, following: 0 };
-  const isAcceptedFollower = relRes.data?.status === "accepted";
-
-  const isBlocked = !!(blockedIdsRes.data ?? []).includes(profile.id);
-  const amIBlocking = !!myBlockRes.data;
-  const followState: FollowState =
-    relRes.data?.status === "accepted" ? "following" : relRes.data?.status === "pending" ? "pending" : "none";
-  const contentHidden = (profile.is_private && !isOwner && !isAcceptedFollower) || isBlocked;
-  const portfolioUnavailable = !bundle.ok && Boolean(bundle.unavailable);
-  const projection = bundle.ok ? bundle.data.projection : null;
-  const usePublicSections = !isOwner || previewPublic;
-
-  let experience: PublicPortfolioExperience[] = [];
-  let education: Array<PublicPortfolioEducation & { school_domain?: string | null }> = [];
-  if (usePublicSections && bundle.ok) {
-    experience = bundle.data.sections.experience;
-    education = bundle.data.sections.education;
-  } else if (ownerExpEdu) {
-    const [expRes, eduRes] = ownerExpEdu;
-    experience = (expRes.data ?? []).map((row) => ({
-      id: row.id,
-      kind: row.kind,
-      org: row.org,
-      role: row.role,
-      term: row.term,
-      note: row.note,
-      start_date: row.start_date,
-      end_date: row.end_date,
-      is_current: row.is_current,
-    }));
-    education = (eduRes.data ?? []).map((row) => ({
-      id: row.id,
-      school: row.school,
-      degree: row.degree,
-      field: row.field,
-      class_year: row.class_year,
-      start_date: row.start_date,
-      end_date: row.end_date,
-      is_current: row.is_current,
-      school_domain: row.school_domain,
-    }));
-  }
-
-  const logoNames = [...new Set(experience.map((e) => e.org))];
-  const logoByName = new Map<string, string | null>();
-  if (logoNames.length > 0) {
-    const { data: companies } = await supabase.from("job_companies").select("name, logo_url").in("name", logoNames);
-    for (const c of companies ?? []) logoByName.set(c.name.trim().toLowerCase(), c.logo_url);
-  }
-
-  function currentNewestFirst<T extends { start_date: string | null; is_current: boolean }>(rows: T[]): T[] {
-    return rows.filter((r) => r.is_current).sort((a, b) => (b.start_date ?? "").localeCompare(a.start_date ?? ""));
-  }
-  const currentExp = currentNewestFirst(experience)[0] ?? null;
-  const currentEdu = pickPrimaryEducation(currentNewestFirst(education)) ?? null;
-  const expPhrase = currentExp ? `${currentExp.role} at ${currentExp.org}` : null;
-  const eduPhrase = currentEdu
-    ? currentEdu.field
-      ? `${currentEdu.field} at ${currentEdu.school}`
-      : currentEdu.degree
-        ? `${currentEdu.degree} at ${currentEdu.school}`
-        : currentEdu.school
-    : null;
-  const expEduTagline = [expPhrase, eduPhrase].filter(Boolean).join(" · ");
-  const canCiteExpEdu =
-    !contentHidden &&
-    (isOwner && !previewPublic
-      ? true
-      : Boolean(
-          projection &&
-            !projection.is_private &&
-            (publicSectionVisible(projection, "experience") || publicSectionVisible(projection, "education"))
-        ));
-  const tagline = canCiteExpEdu ? expEduTagline : "";
-  const metaParts = [school, profile.major].filter(Boolean);
-  const fallbackMetaLine =
-    metaParts.length <= 1 ? metaParts[0] ?? null : `${metaParts[0]} · ${metaParts.slice(1).join(", ")}`;
-  const metaLine = tagline || fallbackMetaLine;
-
-  const pro = isPro(profile);
-  const bannerUrl = pro ? profile.banner_url : null;
-  const theme = pro && isProfileTheme(profile.profile_theme) ? profile.profile_theme : null;
-  const accentColor = theme ? PROFILE_THEMES[theme].accent : null;
-  const themeVars = themeCssVars(theme);
-
-  const intro = profileIntro(
-    {
-      id: profile.id,
-      username: profile.username,
-      display_name: profile.display_name,
-      bio: profile.bio,
-      goals: profile.goals,
-      open_to: "open_to" in profile && Array.isArray(profile.open_to) ? profile.open_to : [],
-      study_mode: "study_mode" in profile ? (profile.study_mode as string | null) ?? null : null,
-      is_private: profile.is_private,
-    },
-    projection,
-    isOwner && !previewPublic ? "owner" : "public"
-  );
-
-  const canReadHeatmap = isOwner || isAcceptedFollower || profile.heatmap_visibility === "public";
-  const publicSamehere = bundle.ok ? bundle.data.samehere : [];
-  const publicSamehereKnown = bundle.ok ? bundle.data.samehereKnown : false;
-  const github = usePublicSections && bundle.ok ? bundle.data.github : ownerGithubDays.ok ? ownerGithubDays.data : [];
-  const connection = isOwner && !previewPublic && ownerGithub.ok ? ownerGithub.data : null;
-
-  const showPosts = isOwner
-    ? !previewPublic || (projection?.publish_posts ?? false) || (profile.is_private && isAcceptedFollower)
-    : profile.is_private
-      ? isAcceptedFollower && !isBlocked
-      : !isBlocked && (portfolioUnavailable || (projection?.publish_posts ?? false) || !bundle.ok);
 
   const activitySection = (
     <Suspense fallback={<HeatmapSkeleton />}>
@@ -627,23 +543,62 @@ export default async function ProfilePage({
     </Suspense>
   ) : null;
 
+  const ownerActions = (
+    <div className="grid w-full grid-cols-2 gap-2">
+      <Button href="/profile/edit" variant="primary" size="md" shape="rounded" className="col-span-2">
+        Edit profile
+      </Button>
+      <Button href="/profile/projects/new" variant="secondary" size="md" shape="rounded">
+        Add project
+      </Button>
+      <Button href={`/profile/${profile.username}?preview=public`} variant="secondary" size="md" shape="rounded">
+        Public preview
+      </Button>
+      <SharePortfolioButton username={profile.username} displayName={displayName} shape="rounded" fullWidth />
+      {/* plan 007: owner-only export */}
+      <ExportPortfolioButton username={profile.username} fullWidth />
+    </div>
+  );
+  // Public preview shows what a signed-in visitor sees. Follow and Message are inert here.
+  const previewActions = (
+    <>
+      <div className="flex w-full items-center gap-2">
+        <Button variant="primary" size="md" className="flex-1" disabled>
+          Follow
+        </Button>
+        <Button variant="secondary" size="md" className="flex-1" disabled>
+          Message
+        </Button>
+      </div>
+      <SharePortfolioButton username={profile.username} displayName={displayName} />
+    </>
+  );
+  const nothingPublished =
+    !portfolioUnavailable && (!isOwner || previewPublic) && !postsSection && !hasPublishedSection(projection);
+  const actions = isOwner ? (previewPublic ? previewActions : ownerActions) : (
+    <>
+      <div className="w-full">
+        <ProfileActions
+          username={profile.username}
+          targetId={profile.id}
+          viewerId={user.id}
+          followState={followState}
+          blocked={isBlocked}
+          amIBlocking={amIBlocking}
+        />
+      </div>
+      <SharePortfolioButton username={profile.username} displayName={displayName} />
+    </>
+  );
+
   return (
     <main
-      className={`page-enter mx-auto max-w-2xl px-4 py-6 sm:px-5 sm:py-8${theme ? " profile-themed" : ""}`}
+      data-profile-page
+      className={`${PAGE_MAIN}${theme ? " profile-themed" : ""}`}
       style={themeVars}
     >
+      <ProfileBackdrop bannerUrl={bannerUrl} accent={Boolean(theme)} />
       <div className="theme-zone">
-        {isOwner && <OwnerBar username={profile.username} previewPublic={previewPublic} />}
-        {isOwner && !previewPublic && (
-          <Suspense fallback={<PortfolioAnalyticsFallback />}>
-            <OwnerAnalyticsSection
-              client={supabase}
-              ownerId={profile.id}
-              currentPro={pro}
-              titles={new Map((ownerProjects.ok ? ownerProjects.data : []).map((project) => [project.id, project.title]))}
-            />
-          </Suspense>
-        )}
         {!isOwner &&
           eligiblePublicView({
             isOwner: false,
@@ -651,108 +606,116 @@ export default async function ProfilePage({
             isPrivate: contentHidden,
             isBlocked,
             isSuspended: false,
-            hasRenderedPublicContent: Boolean(
-              projection && PORTFOLIO_SECTIONS.some((section) => publicSectionVisible(projection, section))
-            ),
+            hasRenderedPublicContent: hasPublishedSection(projection),
           }) && <TrackPortfolioView username={profile.username} />}
-        <section className="card-raised portfolio-enter-header overflow-hidden">
-          <PortfolioBanner username={profile.username} src={bannerUrl} accent={accentColor} />
-          <div className="px-5 pb-5 sm:px-6 sm:pb-6">
-            <div className="flex flex-col gap-3 min-[391px]:flex-row min-[391px]:items-end min-[391px]:justify-between">
-              <AvatarBase
-                src={profile.avatar_url}
-                seed={profile.username}
-                name={displayName}
-                pro={pro}
-                style={accentColor ? { borderColor: accentColor } : undefined}
-                className="relative z-10 -mt-12 h-24 w-24 shrink-0 rounded-full border-2 border-[var(--surface-raised)] text-3xl sm:-mt-14 sm:h-28 sm:w-28"
-              />
-              {isOwner ? (
-                <SharePortfolioButton username={profile.username} displayName={displayName} />
-              ) : (
-                <div className="flex w-full shrink-0 flex-col items-stretch gap-2 min-[391px]:w-auto min-[391px]:items-end">
-                  <ProfileActions
-                    username={profile.username}
-                    targetId={profile.id}
-                    viewerId={user.id}
-                    followState={followState}
-                    blocked={isBlocked}
-                    amIBlocking={amIBlocking}
-                  />
-                  <SharePortfolioButton username={profile.username} displayName={displayName} />
-                </div>
-              )}
-            </div>
-            <div className="mt-3">
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                <h1 className="text-[32px] font-semibold tracking-[-0.025em]">{displayName}</h1>
-                <UserBadges isPro={profile.is_pro} isFounder={profile.is_founder} isCampusFounder={profile.is_campus_founder} isVerifiedStudent={profile.verified_student} isBot={profile.is_bot} />
-              </div>
-              <p className="mt-0.5 text-[15px] text-[var(--ink-muted)]">@{profile.username}</p>
-              {metaLine && <p className="mt-2 text-sm text-[var(--ink-muted)]">{metaLine}</p>}
-              <div className="profile-stat-enter mt-4 flex flex-wrap gap-x-6 gap-y-1">
-                <Stat value={Number(counts.posts)} label="posts" accent={!!theme} />
-                <Stat value={Number(counts.followers)} label="followers" accent={!!theme} href={`/profile/${profile.username}/followers`} />
-                <Stat value={Number(counts.following)} label="following" accent={!!theme} href={`/profile/${profile.username}/following`} />
-              </div>
-            </div>
+        {isOwner && previewPublic && (
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--border)] px-4 py-3">
+            <p className="text-small text-[var(--muted)]">You are previewing your portfolio as a visitor sees it.</p>
+            <Button href={`/profile/${profile.username}`} variant="secondary" size="sm" shape="rounded">
+              Back to owner view
+            </Button>
           </div>
-        </section>
-
-        {portfolioUnavailable && isOwner && (
-          <>
-            <UnavailableNotice />
-            {!previewPublic && (
-              <IntroSection
-                bio={intro.bio}
-                goals={intro.goals}
-                openTo={intro.open_to}
-                studyMode={intro.study_mode}
-                username={profile.username}
-              />
-            )}
-            {canReadHeatmap && (
+        )}
+        <ProfileGrid
+          panel={
+            <IdentityPanel
+              username={profile.username}
+              displayName={displayName}
+              avatarUrl={profile.avatar_url}
+              pro={pro}
+              badges={{
+                isPro: profile.is_pro,
+                isFounder: profile.is_founder,
+                isCampusFounder: profile.is_campus_founder,
+                isVerifiedStudent: profile.verified_student,
+                isBot: profile.is_bot,
+              }}
+              headline={resume?.headline ?? null}
+              tagline={tagline || null}
+              stage={intro.stage}
+              focusAreas={intro.focus_areas}
+              schoolLine={schoolMajorLine(school, profile.major)}
+              openTo={intro.open_to}
+              inviteDm={!isOwner || previewPublic}
+              links={resume ? { github: resume.github, linkedin: resume.linkedin, website: resume.website } : null}
+              counts={{ posts: Number(counts.posts), followers: Number(counts.followers), following: Number(counts.following) }}
+              helped={helped}
+              actions={actions}
+            />
+          }
+          single={nothingPublished}
+          notice={
+            isOwner &&
+            !previewPublic &&
+            projection &&
+            !projection.is_private &&
+            !hasPublishedSection(projection) && (
               <div className="mt-4">
+                <NothingPublished owner username={profile.username} isPrivate={false} />
+              </div>
+            )
+          }
+        >
+          {nothingPublished && (
+            <NothingPublished owner={isOwner} username={profile.username} isPrivate={contentHidden} />
+          )}
+          {portfolioUnavailable && isOwner && (
+            <div className={COLUMN}>
+              <UnavailableNotice />
+              {!previewPublic && (
+                <IntroSection
+                  bio={intro.bio}
+                  goals={intro.goals}
+                  studyMode={intro.study_mode}
+                />
+              )}
+              {canReadHeatmap && (
                 <Suspense fallback={<HeatmapSkeleton />}>
                   <ProfileActivitySection profileId={profile.id} isOwner={isOwner} />
                 </Suspense>
-              </div>
-            )}
-            <ExperienceList items={experience} logos={logoByName} />
-            <EducationList items={education} />
-            {postsSection}
-          </>
-        )}
-        {portfolioUnavailable && !isOwner && (
-          <>
-            {!contentHidden && canReadHeatmap && (
-              <div className="mt-4">
+              )}
+              <ResumeTimeline experience={experience} education={education} logos={logoByName} />
+              {postsSection}
+            </div>
+          )}
+          {portfolioUnavailable && !isOwner && (
+            <div className={COLUMN}>
+              {!contentHidden && canReadHeatmap && (
                 <Suspense fallback={<HeatmapSkeleton />}>
                   <ProfileActivitySection profileId={profile.id} isOwner={false} />
                 </Suspense>
-              </div>
-            )}
-            {postsSection}
-          </>
-        )}
-        {!portfolioUnavailable && (
-          <PortfolioBody
-            projection={projection}
-            unavailable={false}
-            isOwner={isOwner}
-            previewPublic={previewPublic && isOwner}
-            ownerProjects={ownerProjects.ok ? ownerProjects.data : []}
-            publicProjects={bundle.ok ? bundle.data.sections.projects : []}
-            experience={experience}
-            education={education}
-            logos={logoByName}
-            activity={activitySection}
-            currentPro={isOwner ? pro : Boolean(profile.is_pro)}
-            intro={intro}
-            username={profile.username}
-            posts={postsSection}
-          />
-        )}
+              )}
+              {postsSection}
+            </div>
+          )}
+          {!portfolioUnavailable && !nothingPublished && (
+            <PortfolioBody
+              projection={projection}
+              unavailable={false}
+              isOwner={isOwner}
+              previewPublic={previewPublic && isOwner}
+              ownerProjects={ownerProjects.ok ? ownerProjects.data : []}
+              publicProjects={bundle.ok ? bundle.data.sections.projects : []}
+              experience={experience}
+              education={education}
+              logos={logoByName}
+              activity={activitySection}
+              currentPro={isOwner ? pro : Boolean(profile.is_pro)}
+              intro={intro}
+              posts={postsSection}
+            />
+          )}
+          {isOwner && !previewPublic && (
+            <Suspense fallback={pro ? <PortfolioAnalyticsFallback /> : null}>
+              <OwnerAnalyticsSection
+                client={supabase}
+                ownerId={profile.id}
+                currentPro={pro}
+                titles={new Map((ownerProjects.ok ? ownerProjects.data : []).map((project) => [project.id, project.title]))}
+              />
+            </Suspense>
+          )}
+        </ProfileGrid>
 
         {!isOwner && user && (!isBlocked || amIBlocking) && (
           <div className="mt-3 flex justify-end">

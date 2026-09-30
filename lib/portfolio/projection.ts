@@ -17,6 +17,8 @@ export type ProfileIdentity = {
   goals: string | null;
   open_to: string[] | null;
   study_mode: string | null;
+  stage: string | null;
+  focus_areas: string[] | null;
   is_private: boolean;
 };
 
@@ -53,6 +55,11 @@ export function publicSectionVisible(
   }
 }
 
+/** True when a visitor can see at least one portfolio section. */
+export function hasPublishedSection(projection: PublicPortfolioProjection | null): boolean {
+  return Boolean(projection && PORTFOLIO_SECTIONS.some((section) => publicSectionVisible(projection, section)));
+}
+
 export function orderedSections(order: readonly string[]): PortfolioSection[] {
   if (sectionOrderError(order)) return [...PORTFOLIO_SECTIONS];
   return order as PortfolioSection[];
@@ -60,13 +67,22 @@ export function orderedSections(order: readonly string[]): PortfolioSection[] {
 
 export function publicIntro(identity: ProfileIdentity, projection: PublicPortfolioProjection | null) {
   if (!projection || !publicSectionVisible(projection, "intro")) {
-    return { bio: null, goals: null, open_to: [] as string[], study_mode: null as string | null };
+    return {
+      bio: null,
+      goals: null,
+      open_to: [] as string[],
+      study_mode: null as string | null,
+      stage: null as string | null,
+      focus_areas: [] as string[],
+    };
   }
   return {
     bio: identity.bio,
     goals: identity.goals,
     open_to: identity.open_to ?? [],
     study_mode: identity.study_mode ?? null,
+    stage: identity.stage ?? null,
+    focus_areas: identity.focus_areas ?? [],
   };
 }
 
@@ -81,6 +97,8 @@ export function profileIntro(
       goals: identity.goals,
       open_to: identity.open_to ?? [],
       study_mode: identity.study_mode ?? null,
+      stage: identity.stage ?? null,
+      focus_areas: identity.focus_areas ?? [],
     };
   }
   return publicIntro(identity, projection);

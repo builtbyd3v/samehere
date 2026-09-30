@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import "../landing-xai.css";
 import Pricing from "@/components/landing/Pricing";
 import LandingFooter from "@/components/landing/LandingFooter";
 import PublicHeader from "@/components/brand/PublicHeader";
@@ -16,8 +15,8 @@ export const metadata: Metadata = {
 
 export default function PricingPage() {
   return (
-    <main className="min-h-[100dvh] bg-[var(--canvas)] text-[var(--ink)]">
-      <PublicHeader action />
+    <main className="min-h-dvh bg-[var(--bg)] text-[var(--ink)]">
+      <PublicHeader />
       <Pricing />
       <LandingFooter />
     </main>

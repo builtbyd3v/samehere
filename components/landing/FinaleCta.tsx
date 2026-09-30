@@ -1,24 +1,21 @@
-import Link from "next/link";
-import SameHereBrand from "@/components/brand/SameHereBrand";
-import { signupCta } from "./cta";
+import { Button } from "@/components/ui/Button";
+import { HairlineCard } from "@/components/ui/HairlineCard";
 
 export default function FinaleCta() {
   return (
-    <section className="landing-finale surface-grain" aria-labelledby="finale-title">
-      <div className="landing-finale-glow" aria-hidden />
-      <div className="landing-finale-mark">
-        <SameHereBrand mode="settled" />
-      </div>
-      <h2 id="finale-title">
-        You&apos;re not the only one.
-        <br />
-        <span className="landing-finale-outline">same here.</span>
-      </h2>
-      <div className="landing-finale-actions">
-        <Link href="/signup" className={signupCta}>
-          Join free
-        </Link>
-      </div>
+    <section aria-labelledby="finale-title" className="relative mx-auto mt-[72px] max-w-[1440px] px-4 md:px-8 lg:mt-[200px] xl:px-16">
+      <HairlineCard radius={32} innerClassName="flex flex-col items-center gap-[18px] px-[22px] py-12 text-center md:gap-6 md:px-16 md:py-24">
+        <h2
+          id="finale-title"
+          className="text-balance text-[34px] font-semibold leading-[1.02] tracking-[-0.04em] md:text-5xl lg:text-[64px] lg:leading-none lg:tracking-[-0.045em]"
+        >
+          You&apos;re not the only one.
+        </h2>
+        <p className="text-pretty text-lg text-[var(--muted)]">Pick your stage when you join. Free for students.</p>
+        <Button href="/signup" variant="primary" size="lg" className="w-full md:w-auto">
+          Join samehere
+        </Button>
+      </HairlineCard>
     </section>
   );
 }

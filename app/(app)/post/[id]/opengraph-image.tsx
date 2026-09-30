@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 import { createClient } from "@supabase/supabase-js";
-import sharp from "sharp";
 import { BORDER, INK, INK_FAINT, INK_MUTED, POST } from "@/lib/og-tokens";
+import { avatarDataUri } from "@/lib/og/avatar";
 import { loadOgFonts } from "@/lib/og/fonts";
 import { OgWordmark, ogCanvasStyle } from "@/lib/og/mark";
 
@@ -29,19 +29,6 @@ function anonSupabase() {
   return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-}
-
-async function avatarDataUri(url: string | null): Promise<string | null> {
-  if (!url) return null;
-  try {
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const buf = Buffer.from(await res.arrayBuffer());
-    const png = await sharp(buf).resize(160, 160, { fit: "cover" }).png().toBuffer();
-    return `data:image/png;base64,${png.toString("base64")}`;
-  } catch {
-    return null;
-  }
 }
 
 function clip(text: string, max: number): string {
@@ -72,7 +59,7 @@ export default async function OgImage({ params }: { params: Promise<{ id: string
   }
 
   const name = post.author_display_name ?? post.author_username;
-  const avatar = await avatarDataUri(post.author_avatar_url);
+  const avatar = await avatarDataUri(post.author_avatar_url, 160);
   const body = clip(post.content, 220);
   const letter = name.charAt(0).toUpperCase();
 

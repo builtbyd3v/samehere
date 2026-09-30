@@ -22,7 +22,7 @@ export default async function EditProjectPage({ params }: { params: Promise<{ id
     if (project.unavailable) {
       return (
         <main className="mx-auto max-w-xl px-5 py-10">
-          <h1 className="text-2xl font-semibold tracking-[-0.02em]">Edit project</h1>
+          <h1 className="text-title font-semibold">Edit project</h1>
           <UnavailableNotice />
         </main>
       );

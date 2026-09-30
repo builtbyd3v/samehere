@@ -3,6 +3,8 @@
 import { useOptimistic } from "react";
 import CommentComposer from "./CommentComposer";
 import DeleteCommentButton from "./DeleteCommentButton";
+import StuckResolveButton from "./StuckResolveButton";
+import { Chip } from "@/components/ui/Chip";
 import UserBadges from "@/components/profile/UserBadges";
 import AvatarBase from "@/components/ui/Avatar";
 import MentionText from "@/components/ui/MentionText";
@@ -27,12 +29,16 @@ export default function CommentThread({
   viewerId,
   viewer,
   autoFocus = false,
+  acceptedCommentId = null,
+  canAccept = false,
 }: {
   postId: string;
   initialComments: Comment[];
   viewerId: string | null;
   viewer: CommentAuthor | null;
   autoFocus?: boolean;
+  acceptedCommentId?: string | null;
+  canAccept?: boolean;
 }) {
   const [comments, addOptimisticComment] = useOptimistic(
     initialComments,
@@ -87,11 +93,15 @@ export default function CommentThread({
                   )}
                   {c.author && <UserBadges isPro={c.author.is_pro} isFounder={c.author.is_founder} isCampusFounder={c.author.is_campus_founder} isVerifiedStudent={c.author.verified_student} />}
                   {c.author && <span className="text-[var(--ink-muted)]">@{c.author.username}</span>}
-                  <div className="ml-auto">
+                  <div className="ml-auto flex items-center gap-3">
+                    {c.id === acceptedCommentId && <Chip tone="green">Helped</Chip>}
+                    {canAccept && !c.pending && c.id !== acceptedCommentId && c.user_id !== viewerId && (
+                      <StuckResolveButton postId={postId} commentId={c.id} label="This helped" />
+                    )}
                     {!c.pending && <DeleteCommentButton commentId={c.id} canDelete={viewerId === c.user_id} />}
                   </div>
                 </div>
-                <p className="mt-0.5 whitespace-pre-line break-words text-[15px] leading-[1.55]">
+                <p className="mt-0.5 whitespace-pre-line break-words text-body leading-[1.55]">
                   <MentionText>{c.content}</MentionText>
                 </p>
               </div>

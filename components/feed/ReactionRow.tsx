@@ -2,10 +2,9 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { motion, useReducedMotion } from "motion/react";
-import { ICON_SPRING } from "@/lib/motion/spring";
+import { Bookmark, MessageCircle, Repeat2 } from "lucide-react";
 import { getBrowserClient } from "@/lib/supabase/client";
-import { IconSame, IconComment, IconRepost, IconBookmark } from "@/components/icons";
+import { IconSame } from "@/components/icons";
 import { useRepostState, setRepostState } from "@/lib/repost-store";
 
 type Props = {
@@ -19,22 +18,21 @@ type Props = {
   mineSamehere: boolean;
   mineRepost: boolean;
   mineBookmark: boolean;
-  compact?: boolean;
   hideComments?: boolean;
+  /** Comment link reads "{n} answers" (Stuck posts). */
+  answers?: boolean;
+  /** Contextual call to action, right-aligned before the bookmark. */
+  cta?: React.ReactNode;
 };
 
+// Transitions come from the global `a, button` rule in app/globals.css.
+// 44px hit area on phones, 30px rows from lg (artboard).
 const action =
-  "inline-flex min-h-9 items-center gap-1.5 rounded-full px-2.5 text-[13px] font-medium transition duration-150 hover:bg-[var(--featured-surface)] active:translate-y-[1px] disabled:opacity-40 disabled:active:translate-y-0";
+  "inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-lg px-2 hover:bg-[var(--fill-2)] active:scale-[0.96] disabled:opacity-40 disabled:active:scale-100 lg:h-[30px] lg:min-h-0 lg:min-w-0";
+// Off actions brighten on hover; on-states keep their color (plan 026).
+const off = "hover:text-[var(--ink)]";
 
-const inactive = "text-[var(--ink-muted)] hover:bg-[var(--featured-surface)] hover:text-[var(--ink)]";
-
-const sameColor = (on: boolean) =>
-  on ? "bg-[var(--featured-surface)] text-[var(--blue)]" : inactive;
-const repostColor = (on: boolean) =>
-  on ? "bg-[var(--featured-surface)] text-[#00ba7c]" : inactive;
-const bookmarkColor = (on: boolean) =>
-  on ? "bg-[var(--featured-surface)] text-[var(--blue)]" : inactive;
-const commentColor = "text-[var(--ink-muted)] hover:text-[var(--ink)]";
+const ICON = { size: 15, strokeWidth: 1.7, "aria-hidden": true } as const;
 
 function ActionButton({
   children,
@@ -51,27 +49,18 @@ function ActionButton({
   title?: string;
 } & React.AriaAttributes) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      title={title}
-      className={`btn-tap ${className}`}
-      {...a11y}
-    >
+    <button type="button" onClick={onClick} disabled={disabled} title={title} className={className} {...a11y}>
       {children}
     </button>
   );
 }
 
 export default function ReactionRow(props: Props) {
-  const { postId, quoteId, viewerId, authorPrivate, commentCount, compact = false, hideComments = false } = props;
+  const { postId, quoteId, viewerId, authorPrivate, commentCount, hideComments = false, answers = false, cta } = props;
   const [supabase] = useState(getBrowserClient);
   const targetCol = quoteId ? ("repost_id" as const) : ("post_id" as const);
   const targetId = quoteId ?? postId;
   const commentsHref = quoteId ? `/quote/${quoteId}` : `/post/${postId}`;
-  const [pop, setPop] = useState(false);
-  const reduceMotion = useReducedMotion();
   const [s, setS] = useState({
     samehere: props.samehere,
     mineSamehere: props.mineSamehere,
@@ -85,10 +74,6 @@ export default function ReactionRow(props: Props) {
     const mine = s.mineSamehere;
     const d = mine ? -1 : 1;
     setS((p) => ({ ...p, mineSamehere: !mine, samehere: p.samehere + d }));
-    if (!mine && !reduceMotion) {
-      setPop(true);
-      setTimeout(() => setPop(false), 500);
-    }
     const { error } = mine
       ? await supabase.from("reactions").delete().eq(targetCol, targetId).eq("user_id", viewerId).eq("type", type)
       : await supabase.from("reactions").insert(
@@ -126,83 +111,58 @@ export default function ReactionRow(props: Props) {
   }
 
   return (
-    <>
-      <div className={`${compact ? "mt-3" : "mt-4"} flex flex-wrap items-center gap-0.5 border-t border-[var(--border)] pt-3`}>
-        <ActionButton
-          onClick={() => toggleReaction("samehere")}
-          disabled={!viewerId}
-          aria-pressed={s.mineSamehere}
-          aria-label={s.mineSamehere ? "SameHere added" : "SameHere"}
-          className={`${action} ${sameColor(s.mineSamehere)}`}
-        >
-          <span className="relative inline-flex">
-            <motion.span
-              className="inline-flex"
-              animate={{ scale: pop ? 1.3 : 1 }}
-              transition={reduceMotion ? { duration: 0 } : ICON_SPRING}
-            >
-              <IconSame on={s.mineSamehere} />
-            </motion.span>
-            {pop ? (
-              <span className="same-burst pointer-events-none absolute left-1/2 top-1/2" aria-hidden>
-                <span />
-                <span />
-                <span />
-              </span>
-            ) : null}
-          </span>
-          {s.samehere > 0 && (
-            <span className="same-tick inline-block tabular-nums" key={s.samehere}>
-              {s.samehere}
-            </span>
+    <div className="-ml-2 flex flex-wrap items-center gap-1 text-small text-[var(--muted)]">
+      <ActionButton
+        onClick={() => toggleReaction("samehere")}
+        disabled={!viewerId}
+        aria-pressed={s.mineSamehere}
+        aria-label={s.samehere > 0 ? `Same here, ${s.samehere}` : "Same here"}
+        className={`${action} ${s.mineSamehere ? "text-[var(--accent-2)]" : off}`}
+      >
+        <IconSame on={s.mineSamehere} className={`size-[15px]${s.mineSamehere ? " text-[var(--accent)]" : ""}`} />
+        {s.samehere > 0 && <span className="tabular-nums">{s.samehere}</span>}
+      </ActionButton>
+
+      {!hideComments && (
+        <Link href={commentsHref} aria-label={answers ? `${commentCount} answers` : "Comments"} className={`${action} ${off}`}>
+          <MessageCircle {...ICON} />
+          {answers ? (
+            <>
+              <span className="tabular-nums">{commentCount}</span>
+              <span className="hidden sm:inline"> {commentCount === 1 ? "answer" : "answers"}</span>
+            </>
+          ) : (
+            commentCount > 0 && <span className="tabular-nums">{commentCount}</span>
           )}
-        </ActionButton>
+        </Link>
+      )}
 
-        {!hideComments && (
-          <Link href={commentsHref} aria-label="Comments" className={`${action} font-normal ${commentColor}`}>
-            <IconComment />
-            {commentCount > 0 && <span>{commentCount}</span>}
-          </Link>
-        )}
+      <ActionButton
+        onClick={toggleRepost}
+        disabled={!viewerId || authorPrivate}
+        aria-pressed={repostState.mine}
+        aria-label={
+          authorPrivate ? "Reposting is off for private accounts" : repostState.mine ? "Reposted" : "Repost"
+        }
+        title={authorPrivate ? "Private posts can't be reposted" : undefined}
+        className={`${action} ${repostState.mine ? "text-[var(--green)]" : off}`}
+      >
+        <Repeat2 {...ICON} />
+        {repostState.count > 0 && <span className="tabular-nums">{repostState.count}</span>}
+      </ActionButton>
 
-        <ActionButton
-          onClick={toggleRepost}
-          disabled={!viewerId || authorPrivate}
-          aria-pressed={repostState.mine}
-          aria-label={
-            authorPrivate ? "Reposting is off for private accounts" : repostState.mine ? "Reposted" : "Repost"
-          }
-          title={authorPrivate ? "Private posts can't be reposted" : undefined}
-          className={`${action} ${repostColor(repostState.mine)}`}
-        >
-          <motion.span
-            className="inline-flex"
-            animate={{ scale: 1 }}
-            whileTap={reduceMotion ? undefined : { scale: 1.15 }}
-            transition={reduceMotion ? { duration: 0 } : ICON_SPRING}
-          >
-            <IconRepost />
-          </motion.span>
-          {repostState.count > 0 && <span>{repostState.count}</span>}
-        </ActionButton>
+      <span className="grow" />
+      {cta}
 
-        <ActionButton
-          onClick={toggleBookmark}
-          disabled={!viewerId}
-          aria-pressed={s.mineBookmark}
-          aria-label={s.mineBookmark ? "Bookmarked" : "Bookmark"}
-          className={`${action} ml-auto ${bookmarkColor(s.mineBookmark)}`}
-        >
-          <motion.span
-            className="inline-flex"
-            animate={{ scale: 1 }}
-            whileTap={reduceMotion ? undefined : { scale: 1.15 }}
-            transition={reduceMotion ? { duration: 0 } : ICON_SPRING}
-          >
-            <IconBookmark on={s.mineBookmark} />
-          </motion.span>
-        </ActionButton>
-      </div>
-    </>
+      <ActionButton
+        onClick={toggleBookmark}
+        disabled={!viewerId}
+        aria-pressed={s.mineBookmark}
+        aria-label={s.mineBookmark ? "Bookmarked" : "Bookmark"}
+        className={`${action} ${s.mineBookmark ? "text-[var(--accent)]" : off}`}
+      >
+        <Bookmark {...ICON} fill={s.mineBookmark ? "currentColor" : "none"} />
+      </ActionButton>
+    </div>
   );
 }

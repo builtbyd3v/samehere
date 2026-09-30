@@ -58,6 +58,8 @@ export async function updateSession(request: NextRequest) {
   // Single-segment only, so `/profile/edit` (the edit page — `edit` is also a
   // reserved username) and `/post/x/anything` never match.
   const isPublicProfile = path !== '/profile/edit' && /^\/profile\/[^/]+$/.test(path)
+  // Portfolio card PNG export (app/(app)/profile/[username]/card/route.tsx). Reads only anon-safe RPCs.
+  const isPortfolioCard = /^\/profile\/[^/]+\/card$/.test(path)
   const isPublicPost = /^\/post\/[^/]+$/.test(path)
   const isPublicQuote = /^\/quote\/[^/]+$/.test(path)
   // "May an ANONYMOUS visitor reach this?" — the public surface + the two
@@ -80,7 +82,7 @@ export async function updateSession(request: NextRequest) {
     path.startsWith('/auth/') ||
     path === '/api/stripe/webhook' ||
     // Both do their own auth: cron via secret header, unsubscribe via HMAC token.
-    path === '/api/cron/unread-digest' ||
+    path === '/api/cron/weekly-digest' ||
     path === '/api/cron/github-sync' ||
     // GitHub OAuth start/callback do their own login/state redirects.
     (path === GITHUB_CONNECT_PATH && request.method === 'GET') ||
@@ -97,6 +99,7 @@ export async function updateSession(request: NextRequest) {
     path.startsWith('/ingest') ||
     isMetadataImage ||
     isPublicProfile ||
+    isPortfolioCard ||
     isPublicPost ||
     isPublicQuote
   // "May a SUSPENDED (logged-in) user reach this?" — a much smaller set.

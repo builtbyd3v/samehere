@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  activeFacets,
   discoveryHref,
   hasDiscoveryFilters,
   hasPeopleFilters,
@@ -17,6 +18,8 @@ describe("parseDiscoveryFilters", () => {
         major: "Computer Science",
         mode: "online",
         label: "stuck",
+        stage: "building",
+        focus: "ai_ml",
       }),
     ).toEqual({
       tag: "study",
@@ -24,13 +27,26 @@ describe("parseDiscoveryFilters", () => {
       major: "Computer Science",
       mode: "online",
       label: "stuck",
+      stage: "building",
+      focus: "ai_ml",
     });
-    expect(parseDiscoveryFilters({ tag: "hiring", year: "13", mode: "remote", label: "shipping" })).toEqual({
+    expect(
+      parseDiscoveryFilters({
+        tag: "hiring",
+        year: "13",
+        mode: "remote",
+        label: "shipping",
+        stage: "ninja",
+        focus: "blockchain",
+      }),
+    ).toEqual({
       tag: null,
       year: null,
       major: null,
       mode: null,
       label: null,
+      stage: null,
+      focus: null,
     });
   });
 
@@ -71,5 +87,32 @@ describe("discoveryHref / empty-query browse + chips", () => {
     expect(discoveryHref({ q: "", filters: chips })).toBe("/search?mode=online&label=stuck");
     expect(discoveryHref({ q: "   ", filters: chips })).toBe("/search?mode=online&label=stuck");
     expect(discoveryHref({ q: "rust", filters: chips })).toBe("/search?q=rust&mode=online&label=stuck");
+  });
+});
+
+describe("stage / focus", () => {
+  it("locks stage / focus query keys", () => {
+    expect(discoveryHref({ filters: parseDiscoveryFilters({ stage: "building" }) })).toBe("/search?stage=building");
+    expect(discoveryHref({ filters: parseDiscoveryFilters({ focus: "ai_ml" }) })).toBe("/search?focus=ai_ml");
+    expect(discoveryHref({ filters: parseDiscoveryFilters({ stage: "job_search", focus: "web", tag: "study" }) })).toBe(
+      "/search?stage=job_search&focus=web&tag=study",
+    );
+    expect(hasPeopleFilters(parseDiscoveryFilters({ stage: "interning" }))).toBe(true);
+  });
+});
+
+describe("activeFacets", () => {
+  it("is empty with no filters", () => {
+    expect(activeFacets(parseDiscoveryFilters({}))).toEqual([]);
+  });
+
+  it("names the set facets in order", () => {
+    expect(activeFacets(parseDiscoveryFilters({ tag: "study", label: "stuck" }))).toEqual(["tag", "label"]);
+  });
+
+  it("sends the major facet name, never its value", () => {
+    const facets = activeFacets(parseDiscoveryFilters({ major: "Computer Science" }));
+    expect(facets).toEqual(["major"]);
+    expect(facets).not.toContain("Computer Science");
   });
 });

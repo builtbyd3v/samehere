@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { PortfolioProject, PublicPortfolioProjection } from "@/types/portfolio";
 import {
   assertNoDraftLeak,
+  hasPublishedSection,
   metadataDescription,
   orderedSections,
   ownerPreviewProjects,
@@ -93,11 +94,13 @@ describe("publicIntro + draft leak", () => {
           goals: "secret goals",
           open_to: ["collaborate"],
           study_mode: "online",
+          stage: "building",
+          focus_areas: ["web"],
           is_private: false,
         },
         { ...published, publish_intro: false }
       )
-    ).toEqual({ bio: null, goals: null, open_to: [], study_mode: null });
+    ).toEqual({ bio: null, goals: null, open_to: [], study_mode: null, stage: null, focus_areas: [] });
     const draft: PortfolioProject = {
       id: "p1",
       owner_id: "o1",
@@ -134,6 +137,8 @@ describe("publicIntro + draft leak", () => {
       goals: "secret goals",
       open_to: ["collaborate"] as string[],
       study_mode: "online",
+      stage: "building",
+      focus_areas: ["web"] as string[],
       is_private: true,
     };
     const privatePublished = { ...published, is_private: true, publish_intro: true };
@@ -142,18 +147,44 @@ describe("publicIntro + draft leak", () => {
       goals: "secret goals",
       open_to: ["collaborate"],
       study_mode: "online",
+      stage: "building",
+      focus_areas: ["web"],
     });
     expect(profileIntro(identity, privatePublished, "public")).toEqual({
       bio: null,
       goals: null,
       open_to: [],
       study_mode: null,
+      stage: null,
+      focus_areas: [],
     });
     expect(publicIntro(identity, privatePublished)).toEqual({
       bio: null,
       goals: null,
       open_to: [],
       study_mode: null,
+      stage: null,
+      focus_areas: [],
     });
+  });
+});
+
+describe("hasPublishedSection", () => {
+  it("is true only when a visitor can see a section", () => {
+    expect(hasPublishedSection(null)).toBe(false);
+    expect(hasPublishedSection(published)).toBe(true);
+    expect(
+      hasPublishedSection({
+        ...published,
+        publish_intro: false,
+        publish_projects: false,
+        publish_activity: false,
+        publish_experience: false,
+        publish_education: false,
+        publish_posts: false,
+        activity_visible: false,
+      })
+    ).toBe(false);
+    expect(hasPublishedSection({ ...published, is_private: true })).toBe(false);
   });
 });

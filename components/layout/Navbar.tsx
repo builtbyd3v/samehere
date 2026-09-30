@@ -1,61 +1,47 @@
+import { Suspense } from "react";
 import Link from "next/link";
+import { Bell } from "lucide-react";
 import AppBrand from "@/components/brand/AppBrand";
+import PublicHeader from "@/components/brand/PublicHeader";
 import NavMenu from "./NavMenu";
-import SearchBar from "@/components/search/SearchBar";
-import { IconBolt } from "@/components/icons";
-import { signupCtaSm, ghostCtaSm } from "@/components/landing/cta";
+import type { ShellUser } from "./LeftNav";
+import { getUnreadCounts } from "@/lib/unread";
 
-export default function Navbar({
-  username,
-  avatarUrl,
-  isPro,
-  isAdmin,
-}: {
-  username: string | null;
-  avatarUrl: string | null;
-  isPro: boolean;
-  isAdmin: boolean;
-}) {
+function NotifBell({ unread }: { unread: boolean }) {
   return (
-    <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--canvas)]/85 backdrop-blur-md">
-      <nav className="app-nav brand-header-bar">
-        <div className="flex items-center gap-2">
-          <AppBrand href={username ? "/feed" : "/"} />
-          {isPro && (
-            <Link
-              href="/pro"
-              title="Pro"
-              aria-label="Pro"
-              className="grid h-7 w-7 place-items-center rounded-full text-[var(--blue)] transition hover:bg-[var(--featured-surface)]"
-            >
-              <IconBolt className="h-4 w-4" aria-hidden />
-            </Link>
-          )}
-        </div>
-        {username && <SearchBar variant="nav" />}
-        {username ? (
-          <div className="flex items-center gap-1 text-sm sm:gap-1.5">
-            {!isPro && (
-              <Link
-                href="/pro"
-                className="rounded-full px-2.5 py-1 font-medium text-[var(--blue)] transition hover:bg-[var(--featured-surface)]"
-              >
-                Join Pro
-              </Link>
-            )}
-            <NavMenu username={username} avatarUrl={avatarUrl} isAdmin={isAdmin} isPro={isPro} />
-          </div>
-        ) : (
-          <div className="flex items-center gap-2 text-sm">
-            <Link href="/login" prefetch className={ghostCtaSm}>
-              Sign in
-            </Link>
-            <Link href="/signup" prefetch className={signupCtaSm}>
-              Sign up
-            </Link>
-          </div>
-        )}
-      </nav>
-    </header>
+    <Link
+      href="/notifications"
+      aria-label={unread ? "Notifications, unread" : "Notifications"}
+      className="relative grid size-11 place-items-center text-[var(--ink)]"
+    >
+      <Bell size={20} strokeWidth={1.6} aria-hidden />
+      {unread ? <span className="absolute right-2.5 top-2.5 size-[7px] rounded-full bg-[var(--accent)]" aria-hidden /> : null}
+    </Link>
   );
+}
+
+async function NotifBellLive() {
+  const { notif } = await getUnreadCounts();
+  return <NotifBell unread={notif > 0} />;
+}
+
+export default function Navbar({ user }: { user: ShellUser }) {
+  if (user.username) {
+    // Signed in: phone header only. Desktop chrome is the left nav.
+    return (
+      <header className="sticky top-0 z-40 border-b border-[var(--hairline)] bg-[var(--bg)]/85 pt-[env(safe-area-inset-top)] backdrop-blur-md lg:hidden">
+        <div className="grid h-14 grid-cols-[44px_1fr_44px] items-center px-2">
+          <NavMenu variant="avatar" user={user} />
+          <div className="flex justify-center">
+            <AppBrand href="/feed" />
+          </div>
+          <Suspense fallback={<NotifBell unread={false} />}>
+            <NotifBellLive />
+          </Suspense>
+        </div>
+      </header>
+    );
+  }
+
+  return <PublicHeader />;
 }

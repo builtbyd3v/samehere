@@ -2529,6 +2529,1482 @@ exception when others then
 end $$;
 reset role;
 
+-- ============ P001: 20260930100000_harden_profile_guard_suggestions_groups.sql ============
+-- Setup, as postgres. Earlier blocks leave B suspended (M5) and A blocking B
+-- (H5_reverse); clear those plus every follow/block among A, B, C so A and C
+-- are eligible suggestions for B and the group checks start from no edges.
+-- Seed known values for B's frozen columns, and give private A non-null
+-- profile fields so the masking assertion is meaningful.
+set local role postgres;
+do $$
+declare
+  v_a uuid := (select id from tests_fixture where key = 'a');
+  v_b uuid := (select id from tests_fixture where key = 'b');
+  v_c uuid := (select id from tests_fixture where key = 'c');
+begin
+  update public.profiles set is_suspended = false where id = v_b;
+  delete from public.blocks
+   where blocker_id in (v_a, v_b, v_c) and blocked_id in (v_a, v_b, v_c);
+  delete from public.follows
+   where follower_id in (v_a, v_b, v_c) and following_id in (v_a, v_b, v_c);
+  update public.profiles
+     set last_subscription_event_at = '2026-01-01T00:00:00Z', is_bot = false
+   where id = v_b;
+  update public.profiles
+     set bio = 'private bio', goals = 'private goals', year = 'junior', major = 'private major'
+   where id = v_a;
+end $$;
+reset role;
+
+-- ============ P001_guard_sub_event_frozen / P001_guard_is_bot_frozen ============
+-- B writes its own billing high-water mark and bot flag through the owner
+-- UPDATE policy; guard_profile_privileged must silently keep the old values.
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+begin
+  update public.profiles set last_subscription_event_at = '2100-01-01T00:00:00Z'
+   where id = (select id from tests_fixture where key = 'b');
+  update public.profiles set is_bot = true
+   where id = (select id from tests_fixture where key = 'b');
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare v_ts timestamptz;
+begin
+  select last_subscription_event_at into v_ts from public.profiles
+   where id = (select id from tests_fixture where key = 'b');
+  if v_ts is distinct from '2026-01-01T00:00:00Z'::timestamptz then
+    raise exception 'P001_guard_sub_event_frozen REGRESSION: B set its own last_subscription_event_at to %; guard_profile_privileged must freeze it', v_ts;
+  end if;
+  insert into tests_results values ('P001_guard_sub_event_frozen', true, 'ok');
+exception when others then
+  insert into tests_results values ('P001_guard_sub_event_frozen', false, sqlerrm);
+end $$;
+
+do $$
+declare v_bot boolean;
+begin
+  select is_bot into v_bot from public.profiles
+   where id = (select id from tests_fixture where key = 'b');
+  if v_bot then
+    raise exception 'P001_guard_is_bot_frozen REGRESSION: B set its own is_bot = true; guard_profile_privileged must freeze it';
+  end if;
+  insert into tests_results values ('P001_guard_is_bot_frozen', true, 'ok');
+exception when others then
+  insert into tests_results values ('P001_guard_is_bot_frozen', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ P001_suggested_private_masked / P001_suggested_limit_clamped ============
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+declare r record;
+begin
+  select * into r from public.get_suggested_profiles(null, 50) s
+   where s.id = (select id from tests_fixture where key = 'a');
+  if not found then
+    raise exception 'P001_suggested_private_masked SETUP: private fixture A missing from B''s suggestions, so the masking check would be vacuous';
+  end if;
+  if r.bio is not null or r.goals is not null or r.year is not null or r.major is not null then
+    raise exception 'P001_suggested_private_masked REGRESSION: get_suggested_profiles returned private A''s bio/goals/year/major';
+  end if;
+  insert into tests_results values ('P001_suggested_private_masked', true, 'ok');
+exception when others then
+  insert into tests_results values ('P001_suggested_private_masked', false, sqlerrm);
+end $$;
+
+-- ponytail: the fixture set has fewer than 21 eligible profiles, so this only
+-- bites once the DB is larger; seed 21+ users here if it ever needs to.
+do $$
+declare v_n int;
+begin
+  select count(*) into v_n from public.get_suggested_profiles(null, 100000);
+  if v_n > 20 then
+    raise exception 'P001_suggested_limit_clamped REGRESSION: get_suggested_profiles(null, 100000) returned % rows; limit must clamp to 20', v_n;
+  end if;
+  insert into tests_results values ('P001_suggested_limit_clamped', true, 'ok');
+exception when others then
+  insert into tests_results values ('P001_suggested_limit_clamped', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ P001_suggested_suspended_hidden ============
+set local role postgres;
+update public.profiles set is_suspended = true where id = (select id from tests_fixture where key = 'c');
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+begin
+  if exists (
+    select 1 from public.get_suggested_profiles(null, 20) s
+    where s.id = (select id from tests_fixture where key = 'c')
+  ) then
+    raise exception 'P001_suggested_suspended_hidden REGRESSION: get_suggested_profiles returned suspended user C';
+  end if;
+  insert into tests_results values ('P001_suggested_suspended_hidden', true, 'ok');
+exception when others then
+  insert into tests_results values ('P001_suggested_suspended_hidden', false, sqlerrm);
+end $$;
+reset role;
+
+set local role postgres;
+update public.profiles set is_suspended = false where id = (select id from tests_fixture where key = 'c');
+reset role;
+
+-- ============ P001_group_add_requires_member_follow ============
+-- B follows public C (auto-accepted, no consent from C); C does not follow B.
+set local role postgres;
+insert into public.follows (follower_id, following_id, status)
+values (
+  (select id from tests_fixture where key = 'b'),
+  (select id from tests_fixture where key = 'c'),
+  'accepted'
+);
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+declare v_raised boolean := false;
+begin
+  begin
+    perform public.create_group_conversation('t', array[(select id from tests_fixture where key = 'c')]);
+  exception when others then
+    if sqlerrm not like '%can only add people who follow you%' then
+      raise exception 'P001_group_add_requires_member_follow WRONG REASON: %', sqlerrm;
+    end if;
+    v_raised := true;
+  end;
+  if not v_raised then
+    raise exception 'P001_group_add_requires_member_follow REGRESSION: B pulled C into a group though C does not follow B';
+  end if;
+  insert into tests_results values ('P001_group_add_requires_member_follow', true, 'ok');
+exception when others then
+  insert into tests_results values ('P001_group_add_requires_member_follow', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ P001_group_readd_after_leave_denied ============
+-- C follows B, so B may start a group with C; C then leaves, and B must not
+-- be able to pull C back in.
+set local role postgres;
+insert into public.follows (follower_id, following_id, status)
+values (
+  (select id from tests_fixture where key = 'c'),
+  (select id from tests_fixture where key = 'b'),
+  'accepted'
+);
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+begin
+  insert into tests_fixture (key, id)
+  values ('p001_group', public.create_group_conversation('p001', array[(select id from tests_fixture where key = 'c')]));
+end $$;
+reset role;
+
+set local role postgres;
+update public.conversation_members set left_at = now()
+ where conversation_id = (select id from tests_fixture where key = 'p001_group')
+   and user_id = (select id from tests_fixture where key = 'c');
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+declare v_raised boolean := false;
+begin
+  begin
+    perform public.add_group_member(
+      (select id from tests_fixture where key = 'p001_group'),
+      (select id from tests_fixture where key = 'c')
+    );
+  exception when others then
+    if sqlerrm not like '%they left this group%' then
+      raise exception 'P001_group_readd_after_leave_denied WRONG REASON: %', sqlerrm;
+    end if;
+    v_raised := true;
+  end;
+  if not v_raised then
+    raise exception 'P001_group_readd_after_leave_denied REGRESSION: B re-added C after C left the group';
+  end if;
+  insert into tests_results values ('P001_group_readd_after_leave_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('P001_group_readd_after_leave_denied', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ P001_post_hidden_by_suspension_frozen ============
+-- An author must not be able to mark their own admin-hidden post as
+-- suspension collateral (which admin_unsuspend_user would then restore).
+set local role postgres;
+update public.posts set hidden = true, hidden_by_suspension = false
+ where id = (select id from tests_fixture where key = 'post_b');
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'b';
+do $$
+begin
+  update public.posts set hidden_by_suspension = true
+   where id = (select id from tests_fixture where key = 'post_b');
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare v_flag boolean;
+begin
+  select hidden_by_suspension into v_flag from public.posts
+   where id = (select id from tests_fixture where key = 'post_b');
+  if v_flag then
+    raise exception 'P001_post_hidden_by_suspension_frozen REGRESSION: author B set hidden_by_suspension on its own admin-hidden post';
+  end if;
+  insert into tests_results values ('P001_post_hidden_by_suspension_frozen', true, 'ok');
+exception when others then
+  insert into tests_results values ('P001_post_hidden_by_suspension_frozen', false, sqlerrm);
+end $$;
+update public.posts set hidden = false where id = (select id from tests_fixture where key = 'post_b');
+reset role;
+
+-- ============ RESUME_FIELDS: headline + links follow get_public_profile privacy ============
+update public.profiles
+   set headline = 'Private headline', github_url = 'https://github.com/rls-a',
+       linkedin_url = 'https://www.linkedin.com/in/rls-a', website_url = 'https://a.example.com'
+ where id = (select id from tests_fixture where key = 'a');
+update public.profiles
+   set headline = 'Public headline', github_url = 'https://github.com/rls-c'
+ where id = (select id from tests_fixture where key = 'c');
+
+select tests.as_anon();
+do $$
+declare r record;
+begin
+  select * into r from public.get_public_profile('rls_test_a');
+  if r.headline is not null or r.github_url is not null
+     or r.linkedin_url is not null or r.website_url is not null then
+    raise exception 'RESUME_FIELDS_private_nulled REGRESSION: private account headline/links leaked to anon (headline=%, github=%, linkedin=%, website=%)', r.headline, r.github_url, r.linkedin_url, r.website_url;
+  end if;
+  insert into tests_results values ('RESUME_FIELDS_private_nulled', true, 'ok');
+exception when others then
+  insert into tests_results values ('RESUME_FIELDS_private_nulled', false, sqlerrm);
+end $$;
+do $$
+declare r record;
+begin
+  select * into r from public.get_public_profile('rls_test_c');
+  if r.headline is distinct from 'Public headline'
+     or r.github_url is distinct from 'https://github.com/rls-c' then
+    raise exception 'RESUME_FIELDS_anon_public_read REGRESSION: anon could not read a public headline/link (headline=%, github=%)', r.headline, r.github_url;
+  end if;
+  insert into tests_results values ('RESUME_FIELDS_anon_public_read', true, 'ok');
+exception when others then
+  insert into tests_results values ('RESUME_FIELDS_anon_public_read', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ P004: stage / focus_areas privacy and CHECKs ============
+set local role postgres;
+do $$
+begin
+  update public.profiles set stage = 'building', focus_areas = '{web}'
+   where id = (select id from tests_fixture where key = 'a');
+  update public.profiles set stage = 'building', focus_areas = '{web,ai_ml}'
+   where id = (select id from tests_fixture where key = 'c');
+end $$;
+
+do $$
+declare
+  v_c uuid := (select id from tests_fixture where key = 'c');
+  v_rejected int := 0;
+begin
+  begin
+    update public.profiles set stage = 'ninja' where id = v_c;
+  exception when check_violation then v_rejected := v_rejected + 1;
+  end;
+  begin
+    update public.profiles set focus_areas = '{web,mobile,data,games}' where id = v_c;
+  exception when check_violation then v_rejected := v_rejected + 1;
+  end;
+  begin
+    update public.profiles set focus_areas = '{blockchain}' where id = v_c;
+  exception when check_violation then v_rejected := v_rejected + 1;
+  end;
+  if v_rejected <> 3 then
+    raise exception 'P004_stage_check REGRESSION: only % of 3 invalid stage/focus writes were rejected', v_rejected;
+  end if;
+  insert into tests_results values ('P004_stage_check', true, 'ok');
+exception when others then
+  insert into tests_results values ('P004_stage_check', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'c';
+do $$
+declare
+  v_c uuid := (select id from tests_fixture where key = 'c');
+  v_stage text;
+begin
+  update public.profiles set stage = 'learning' where id = v_c;
+  select stage into v_stage from public.profiles where id = v_c;
+  if v_stage is distinct from 'learning' then
+    raise exception 'P004_owner_can_set_stage REGRESSION: owner stage update did not stick (got %)', v_stage;
+  end if;
+  update public.profiles set stage = 'building' where id = v_c;
+  insert into tests_results values ('P004_owner_can_set_stage', true, 'ok');
+exception when others then
+  insert into tests_results values ('P004_owner_can_set_stage', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'c';
+do $$
+declare
+  v_a uuid := (select id from tests_fixture where key = 'a');
+  v_c uuid := (select id from tests_fixture where key = 'c');
+  v_sees_a int;
+  v_sees_c int;
+  v_leak int;
+begin
+  select count(*) filter (where id = v_a), count(*) filter (where id = v_c)
+    into v_sees_a, v_sees_c
+  from public.search_people('', 20, 0, null, null, null, null, 'building', null);
+  if v_sees_c = 0 then
+    raise exception 'P004_search_people_private SETUP: public C did not match its own stage filter';
+  end if;
+  if v_sees_a > 0 then
+    raise exception 'P004_search_people_private REGRESSION: private A matched the stage filter';
+  end if;
+  select count(*) into v_sees_a
+  from public.search_people('', 20, 0, null, null, null, null, null, 'web') where id = v_a;
+  if v_sees_a > 0 then
+    raise exception 'P004_search_people_private REGRESSION: private A matched the focus filter';
+  end if;
+  select count(*) into v_leak
+  from public.search_people('rls_test_a', 20, 0)
+  where id = v_a and (stage is not null or focus_areas is not null);
+  if v_leak > 0 then
+    raise exception 'P004_search_people_private REGRESSION: private A stage/focus returned by keyword search';
+  end if;
+  insert into tests_results values ('P004_search_people_private', true, 'ok');
+exception when others then
+  insert into tests_results values ('P004_search_people_private', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'c';
+do $$
+declare
+  v_a uuid := (select id from tests_fixture where key = 'a');
+  v_leak int;
+begin
+  select count(*) into v_leak
+  from public.get_suggested_profiles(null, 20)
+  where id = v_a and stage is not null;
+  if v_leak > 0 then
+    raise exception 'P004_suggested_private REGRESSION: private A stage returned by get_suggested_profiles';
+  end if;
+  insert into tests_results values ('P004_suggested_private', true, 'ok');
+exception when others then
+  insert into tests_results values ('P004_suggested_private', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_anon();
+do $$
+declare
+  r record;
+begin
+  select * into r from public.get_public_profile('rls_test_a');
+  if r.stage is not null or r.focus_areas is not null then
+    raise exception 'P004_public_profile_stage REGRESSION: private A stage/focus leaked to anon (stage=%, focus=%)', r.stage, r.focus_areas;
+  end if;
+  select * into r from public.get_public_profile('rls_test_c');
+  if r.stage is distinct from 'building' or r.focus_areas is distinct from array['web', 'ai_ml']::text[] then
+    raise exception 'P004_public_profile_stage REGRESSION: public C stage/focus not returned to anon (stage=%, focus=%)', r.stage, r.focus_areas;
+  end if;
+  insert into tests_results values ('P004_public_profile_stage', true, 'ok');
+exception when others then
+  insert into tests_results values ('P004_public_profile_stage', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ STUCK: plan 009 (resolved state + stuck_help nudge) ============
+-- Fresh users so earlier blocks between fixture users a/b cannot interfere.
+-- Focus 'robotics' is used by no other fixture, so the only match is v_helper.
+set local role postgres;
+do $$
+declare
+  v_author  uuid := gen_random_uuid();
+  v_helper  uuid := gen_random_uuid();
+  v_private uuid := gen_random_uuid();
+  v_blocker uuid := gen_random_uuid();
+  v_limited uuid := gen_random_uuid();
+  v_post uuid;
+  v_comment uuid;
+  v_foreign uuid;
+begin
+  insert into auth.users (
+    instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+    raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+    confirmation_token, recovery_token, email_change_token_new, email_change
+  ) values
+    ('00000000-0000-0000-0000-000000000000', v_author, 'authenticated', 'authenticated',
+     'rls-stuck-author@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_stuck_author'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_helper, 'authenticated', 'authenticated',
+     'rls-stuck-helper@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_stuck_helper'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_private, 'authenticated', 'authenticated',
+     'rls-stuck-private@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_stuck_private'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_blocker, 'authenticated', 'authenticated',
+     'rls-stuck-blocker@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_stuck_blocker'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_limited, 'authenticated', 'authenticated',
+     'rls-stuck-limited@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_stuck_limited'), now(), now(), '', '', '', '');
+
+  update public.profiles
+     set open_to = array['feedback'], focus_areas = array['robotics']
+   where id in (v_author, v_helper, v_private, v_blocker, v_limited);
+  update public.profiles set is_private = true where id = v_private;
+  insert into public.blocks (blocker_id, blocked_id) values (v_blocker, v_author);
+  -- v_limited already received 3 stuck_help in the last 24h.
+  insert into public.notifications (user_id, actor_id, type)
+  values (v_limited, v_helper, 'stuck_help'), (v_limited, v_helper, 'stuck_help'), (v_limited, v_helper, 'stuck_help');
+
+  insert into public.posts (user_id, content, context_label)
+  values (v_author, 'stuck on RLS', 'stuck') returning id into v_post;
+  insert into public.comments (post_id, user_id, content)
+  values (v_post, v_helper, 'try this') returning id into v_comment;
+  insert into public.comments (post_id, user_id, content)
+  values ((select id from tests_fixture where key = 'post_public'), v_helper, 'unrelated') returning id into v_foreign;
+
+  insert into tests_fixture (key, id) values
+    ('stuck_author', v_author), ('stuck_helper', v_helper), ('stuck_private', v_private),
+    ('stuck_blocker', v_blocker), ('stuck_limited', v_limited),
+    ('stuck_post', v_post), ('stuck_comment', v_comment), ('stuck_foreign_comment', v_foreign);
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare
+  v_post uuid := (select id from tests_fixture where key = 'stuck_post');
+  v_helper uuid := (select id from tests_fixture where key = 'stuck_helper');
+  v_n int;
+begin
+  select count(*) into v_n from public.notifications
+   where type = 'stuck_help' and post_id = v_post and user_id = v_helper;
+  if v_n <> 1 then
+    raise exception 'STUCK_HELP_matched REGRESSION: matched helper got % stuck_help rows, expected 1', v_n;
+  end if;
+  insert into tests_results values ('STUCK_HELP_matched', true, 'ok');
+exception when others then
+  insert into tests_results values ('STUCK_HELP_matched', false, sqlerrm);
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare
+  v_post uuid := (select id from tests_fixture where key = 'stuck_post');
+  v_private uuid := (select id from tests_fixture where key = 'stuck_private');
+  v_n int;
+begin
+  select count(*) into v_n from public.notifications
+   where type = 'stuck_help' and post_id = v_post and user_id = v_private;
+  if v_n <> 0 then
+    raise exception 'STUCK_HELP_private_skipped REGRESSION: private profile got % stuck_help rows', v_n;
+  end if;
+  insert into tests_results values ('STUCK_HELP_private_skipped', true, 'ok');
+exception when others then
+  insert into tests_results values ('STUCK_HELP_private_skipped', false, sqlerrm);
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare
+  v_post uuid := (select id from tests_fixture where key = 'stuck_post');
+  v_blocker uuid := (select id from tests_fixture where key = 'stuck_blocker');
+  v_n int;
+begin
+  select count(*) into v_n from public.notifications
+   where type = 'stuck_help' and post_id = v_post and user_id = v_blocker;
+  if v_n <> 0 then
+    raise exception 'STUCK_HELP_blocked_skipped REGRESSION: blocker got % stuck_help rows', v_n;
+  end if;
+  insert into tests_results values ('STUCK_HELP_blocked_skipped', true, 'ok');
+exception when others then
+  insert into tests_results values ('STUCK_HELP_blocked_skipped', false, sqlerrm);
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare
+  v_post uuid := (select id from tests_fixture where key = 'stuck_post');
+  v_limited uuid := (select id from tests_fixture where key = 'stuck_limited');
+  v_n int;
+begin
+  select count(*) into v_n from public.notifications
+   where type = 'stuck_help' and post_id = v_post and user_id = v_limited;
+  if v_n <> 0 then
+    raise exception 'STUCK_HELP_rate_limited REGRESSION: rate-limited helper got % stuck_help rows', v_n;
+  end if;
+  insert into tests_results values ('STUCK_HELP_rate_limited', true, 'ok');
+exception when others then
+  insert into tests_results values ('STUCK_HELP_rate_limited', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'stuck_author';
+do $$
+declare
+  v_post uuid := (select id from tests_fixture where key = 'stuck_post');
+  v_n int;
+begin
+  v_n := public.stuck_help_count(v_post);
+  if v_n <> 1 then
+    raise exception 'STUCK_HELP_count_author REGRESSION: author saw count %, expected 1', v_n;
+  end if;
+  insert into tests_results values ('STUCK_HELP_count_author', true, 'ok');
+exception when others then
+  insert into tests_results values ('STUCK_HELP_count_author', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'stuck_blocker';
+do $$
+declare
+  v_post uuid := (select id from tests_fixture where key = 'stuck_post');
+  v_n int;
+begin
+  v_n := public.stuck_help_count(v_post);
+  if v_n <> 0 then
+    raise exception 'STUCK_HELP_count_non_author REGRESSION: non-author saw count %, expected 0', v_n;
+  end if;
+  insert into tests_results values ('STUCK_HELP_count_non_author', true, 'ok');
+exception when others then
+  insert into tests_results values ('STUCK_HELP_count_non_author', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'stuck_author';
+do $$
+declare
+  v_post uuid := (select id from tests_fixture where key = 'stuck_post');
+  v_resolved timestamptz;
+begin
+  update public.posts set resolved_at = now() where id = v_post;
+  select resolved_at into v_resolved from public.posts where id = v_post;
+  if v_resolved is not null then
+    raise exception 'STUCK_direct_update_ignored REGRESSION: author set resolved_at with a direct update';
+  end if;
+  insert into tests_results values ('STUCK_direct_update_ignored', true, 'ok');
+exception when others then
+  insert into tests_results values ('STUCK_direct_update_ignored', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'stuck_helper';
+do $$
+declare
+  v_post uuid := (select id from tests_fixture where key = 'stuck_post');
+  v_raised boolean;
+  v_resolved timestamptz;
+begin
+  begin
+    perform public.mark_stuck_resolved(v_post, null);
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+  end;
+  if not v_raised then
+    raise exception 'STUCK_resolve_non_author_denied REGRESSION: non-author mark_stuck_resolved did not raise';
+  end if;
+  select resolved_at into v_resolved from public.posts where id = v_post;
+  if v_resolved is not null then
+    raise exception 'STUCK_resolve_non_author_denied REGRESSION: resolved_at set by a non-author';
+  end if;
+  insert into tests_results values ('STUCK_resolve_non_author_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('STUCK_resolve_non_author_denied', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'stuck_author';
+do $$
+declare
+  v_post uuid := (select id from tests_fixture where key = 'stuck_post');
+  v_foreign uuid := (select id from tests_fixture where key = 'stuck_foreign_comment');
+  v_raised boolean;
+begin
+  begin
+    perform public.mark_stuck_resolved(v_post, v_foreign);
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+  end;
+  if not v_raised then
+    raise exception 'STUCK_resolve_foreign_comment_rejected REGRESSION: a comment from another post was accepted';
+  end if;
+  insert into tests_results values ('STUCK_resolve_foreign_comment_rejected', true, 'ok');
+exception when others then
+  insert into tests_results values ('STUCK_resolve_foreign_comment_rejected', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'stuck_author';
+do $$
+declare
+  v_post uuid := (select id from tests_fixture where key = 'stuck_post');
+  v_comment uuid := (select id from tests_fixture where key = 'stuck_comment');
+  v_resolved timestamptz;
+  v_accepted uuid;
+begin
+  perform public.mark_stuck_resolved(v_post, v_comment);
+  select resolved_at, resolved_comment_id into v_resolved, v_accepted from public.posts where id = v_post;
+  if v_resolved is null or v_accepted is distinct from v_comment then
+    raise exception 'STUCK_resolve_author_ok REGRESSION: author resolve did not stick (resolved_at=%, comment=%)', v_resolved, v_accepted;
+  end if;
+  insert into tests_results values ('STUCK_resolve_author_ok', true, 'ok');
+exception when others then
+  insert into tests_results values ('STUCK_resolve_author_ok', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'stuck_helper';
+do $$
+declare
+  v_post uuid := (select id from tests_fixture where key = 'stuck_post');
+  v_comment uuid := (select id from tests_fixture where key = 'stuck_comment');
+  v_deleted int;
+  v_resolved timestamptz;
+  v_accepted uuid;
+begin
+  delete from public.comments where id = v_comment;
+  get diagnostics v_deleted = row_count;
+  if v_deleted <> 1 then
+    raise exception 'STUCK_accepted_comment_delete_sets_null SETUP: helper deleted % rows, expected 1', v_deleted;
+  end if;
+  select resolved_at, resolved_comment_id into v_resolved, v_accepted from public.posts where id = v_post;
+  if v_accepted is not null or v_resolved is null then
+    raise exception 'STUCK_accepted_comment_delete_sets_null REGRESSION: resolved_at=%, resolved_comment_id=%', v_resolved, v_accepted;
+  end if;
+  insert into tests_results values ('STUCK_accepted_comment_delete_sets_null', true, 'ok');
+exception when others then
+  insert into tests_results values ('STUCK_accepted_comment_delete_sets_null', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'stuck_author';
+do $$
+declare
+  v_post uuid := (select id from tests_fixture where key = 'stuck_post');
+  v_resolved timestamptz;
+begin
+  perform public.reopen_stuck(v_post);
+  select resolved_at into v_resolved from public.posts where id = v_post;
+  if v_resolved is not null then
+    raise exception 'STUCK_reopen_author REGRESSION: resolved_at still set after reopen';
+  end if;
+  insert into tests_results values ('STUCK_reopen_author', true, 'ok');
+exception when others then
+  insert into tests_results values ('STUCK_reopen_author', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_anon();
+do $$
+declare
+  v_post uuid := (select id from tests_fixture where key = 'stuck_post');
+  v_state text;
+  v_raised boolean;
+begin
+  begin
+    perform public.mark_stuck_resolved(v_post, null);
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state <> '42501' then
+    raise exception 'STUCK_rpc_anon_denied REGRESSION: anon mark_stuck_resolved did not fail with 42501 (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+  insert into tests_results values ('STUCK_rpc_anon_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('STUCK_rpc_anon_denied', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ P023: owner can set onboarded_at (the one-time /feed redirect depends on it) ============
+select tests.as_user(id) from tests_fixture where key = 'c';
+do $$
+declare
+  v_c uuid := (select id from tests_fixture where key = 'c');
+  v_at timestamptz;
+begin
+  update public.profiles set onboarded_at = null where id = v_c;
+  update public.profiles set onboarded_at = now() where id = v_c and onboarded_at is null;
+  select onboarded_at into v_at from public.profiles where id = v_c;
+  if v_at is null then
+    raise exception 'P023_owner_sets_onboarded_at REGRESSION: owner could not set onboarded_at, so /feed would redirect to onboarding on every visit';
+  end if;
+  insert into tests_results values ('P023_owner_sets_onboarded_at', true, 'ok');
+exception when others then
+  insert into tests_results values ('P023_owner_sets_onboarded_at', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ REF016: plan 016 (referral attribution by username + OAuth claim) ============
+-- Fresh users. v_owner's code differs from its username so only the username
+-- fallback can credit it; v_new is unconfirmed with ref_code = owner's username.
+set local role postgres;
+do $$
+declare
+  v_owner uuid := gen_random_uuid();
+  v_squat uuid := gen_random_uuid();
+  v_new   uuid := gen_random_uuid();
+  v_oauth uuid := gen_random_uuid();
+  v_old   uuid := gen_random_uuid();
+begin
+  insert into auth.users (
+    instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+    raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+    confirmation_token, recovery_token, email_change_token_new, email_change
+  ) values
+    ('00000000-0000-0000-0000-000000000000', v_owner, 'authenticated', 'authenticated',
+     'rls-ref-owner@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_ref_owner'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_squat, 'authenticated', 'authenticated',
+     'rls-ref-squat@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_ref_squat'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_new, 'authenticated', 'authenticated',
+     'rls-ref-new@school.edu', '', null, '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_ref_new', 'ref_code', 'rls_ref_owner'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_oauth, 'authenticated', 'authenticated',
+     'rls-ref-oauth@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_ref_oauth'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_old, 'authenticated', 'authenticated',
+     'rls-ref-old@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_ref_old'), now() - interval '2 days', now(), '', '', '', '');
+
+  update public.profiles set referral_code = 'rls_ref_custom' where id = v_owner;
+
+  insert into tests_fixture (key, id) values
+    ('ref_owner', v_owner), ('ref_squat', v_squat), ('ref_new', v_new),
+    ('ref_oauth', v_oauth), ('ref_old', v_old);
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare
+  v_owner uuid := (select id from tests_fixture where key = 'ref_owner');
+  v_new   uuid := (select id from tests_fixture where key = 'ref_new');
+  v_referrer uuid;
+  v_notes int;
+begin
+  update auth.users set email_confirmed_at = now() where id = v_new;
+  select referrer_id into v_referrer from public.referrals where referred_id = v_new;
+  select count(*) into v_notes from public.notifications
+   where user_id = v_owner and actor_id = v_new and type = 'referral_joined';
+  if v_referrer is distinct from v_owner or v_notes <> 1 then
+    raise exception 'REF016_confirm_username_fallback REGRESSION: referrer=%, expected=%, notifications=%', v_referrer, v_owner, v_notes;
+  end if;
+  insert into tests_results values ('REF016_confirm_username_fallback', true, 'ok');
+exception when others then
+  insert into tests_results values ('REF016_confirm_username_fallback', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_anon();
+do $$
+begin
+  if not public.check_invite_code('rls_ref_owner') or public.check_invite_code('rls_nobody_here') then
+    raise exception 'REF016_invite_code_username REGRESSION: username not accepted or unknown code accepted';
+  end if;
+  insert into tests_results values ('REF016_invite_code_username', true, 'ok');
+exception when others then
+  insert into tests_results values ('REF016_invite_code_username', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'ref_squat';
+do $$
+declare
+  v_raised boolean;
+  v_msg text;
+begin
+  begin
+    perform public.set_referral_code('rls_ref_owner');
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_msg := sqlerrm;
+  end;
+  if not v_raised or position('code_taken' in v_msg) = 0 then
+    raise exception 'REF016_set_code_rejects_username REGRESSION: another user''s username accepted as a code (raised=%, msg=%)', v_raised, v_msg;
+  end if;
+  insert into tests_results values ('REF016_set_code_rejects_username', true, 'ok');
+exception when others then
+  insert into tests_results values ('REF016_set_code_rejects_username', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'ref_oauth';
+do $$
+begin
+  if public.claim_signup_referral('rls_ref_oauth') then
+    raise exception 'REF016_claim_self_denied REGRESSION: self-referral claim returned true';
+  end if;
+  insert into tests_results values ('REF016_claim_self_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('REF016_claim_self_denied', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'ref_oauth';
+do $$
+declare
+  v_oauth uuid := (select id from tests_fixture where key = 'ref_oauth');
+  v_owner uuid := (select id from tests_fixture where key = 'ref_owner');
+  v_first boolean;
+  v_second boolean;
+  v_rows int;
+  v_referrer uuid;
+begin
+  v_first := public.claim_signup_referral('rls_ref_custom');
+  v_second := public.claim_signup_referral('rls_ref_custom');
+  select count(*) into v_rows from public.referrals where referred_id = v_oauth;
+  select referrer_id into v_referrer from public.referrals where referred_id = v_oauth;
+  if not v_first or v_second or v_rows <> 1 or v_referrer is distinct from v_owner then
+    raise exception 'REF016_claim_fresh_once REGRESSION: first=%, second=%, rows=%, referrer=%', v_first, v_second, v_rows, v_referrer;
+  end if;
+  insert into tests_results values ('REF016_claim_fresh_once', true, 'ok');
+exception when others then
+  insert into tests_results values ('REF016_claim_fresh_once', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'ref_old';
+do $$
+declare
+  v_old uuid := (select id from tests_fixture where key = 'ref_old');
+  v_claimed boolean;
+begin
+  v_claimed := public.claim_signup_referral('rls_ref_custom');
+  if v_claimed or exists (select 1 from public.referrals where referred_id = v_old) then
+    raise exception 'REF016_claim_old_denied REGRESSION: a 2-day-old account claimed a referral (returned=%)', v_claimed;
+  end if;
+  insert into tests_results values ('REF016_claim_old_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('REF016_claim_old_denied', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_anon();
+do $$
+declare
+  v_state text;
+  v_raised boolean;
+begin
+  begin
+    perform public.claim_signup_referral('rls_ref_custom');
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state <> '42501' then
+    raise exception 'REF016_claim_anon_denied REGRESSION: anon claim_signup_referral did not fail with 42501 (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+  insert into tests_results values ('REF016_claim_anon_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('REF016_claim_anon_denied', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ DIGEST018: plan 018 (weekly digest privacy) ============
+-- Fresh users. Stage 'job_search' and focus 'hardware' are used by no other
+-- fixture, so the only candidates list_weekly_digest can pick are these.
+set local role postgres;
+do $$
+declare
+  v_rcpt       uuid := gen_random_uuid();
+  v_peer       uuid := gen_random_uuid();
+  v_priv       uuid := gen_random_uuid();
+  v_blk        uuid := gen_random_uuid();
+  v_fol        uuid := gen_random_uuid();
+  v_bot        uuid := gen_random_uuid();
+  v_asker      uuid := gen_random_uuid();
+  v_privasker  uuid := gen_random_uuid();
+  v_optout     uuid := gen_random_uuid();
+  v_open uuid;
+  v_solved uuid;
+begin
+  insert into auth.users (
+    instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+    raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+    confirmation_token, recovery_token, email_change_token_new, email_change
+  )
+  select '00000000-0000-0000-0000-000000000000', v.id, 'authenticated', 'authenticated',
+         'rls-dg-' || v.name || '@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+         jsonb_build_object('username', 'rls_dg_' || v.name), now(), now(), '', '', '', ''
+    from (values
+      (v_rcpt, 'rcpt'), (v_peer, 'peer'), (v_priv, 'priv'), (v_blk, 'blk'), (v_fol, 'fol'),
+      (v_bot, 'bot'), (v_asker, 'asker'), (v_privasker, 'privasker'), (v_optout, 'optout')
+    ) as v(id, name);
+
+  update public.profiles
+     set stage = 'job_search', focus_areas = '{hardware}',
+         is_pro = true, pro_source = 'one_time', pro_until = now() + interval '30 days'
+   where id = v_rcpt;
+  insert into public.portfolio_daily_metrics (owner_id, project_id, metric_date, view_count)
+  values (v_rcpt, null, current_date, 5);
+
+  update public.profiles set stage = 'job_search' where id in (v_peer, v_blk, v_fol);
+  update public.profiles set stage = 'job_search', is_private = true where id = v_priv;
+  update public.profiles set stage = 'job_search', is_bot = true where id = v_bot;
+  insert into public.blocks (blocker_id, blocked_id) values (v_blk, v_rcpt);
+  insert into public.follows (follower_id, following_id, status) values (v_rcpt, v_fol, 'accepted');
+
+  update public.profiles set focus_areas = '{hardware}' where id = v_asker;
+  update public.profiles set focus_areas = '{hardware}', is_private = true where id = v_privasker;
+  update public.profiles set email_digest_opt_out = true where id = v_optout;
+
+  insert into public.posts (user_id, content, context_label)
+  values (v_asker, 'rls digest open', 'stuck') returning id into v_open;
+  insert into public.posts (user_id, content, context_label)
+  values (v_asker, 'rls digest solved', 'stuck') returning id into v_solved;
+  update public.posts set resolved_at = now() where id = v_solved;
+  insert into public.posts (user_id, content, context_label)
+  values (v_privasker, 'rls digest private', 'stuck');
+
+  insert into tests_fixture (key, id) values
+    ('dg_rcpt', v_rcpt), ('dg_peer', v_peer), ('dg_priv', v_priv), ('dg_blk', v_blk),
+    ('dg_fol', v_fol), ('dg_bot', v_bot), ('dg_asker', v_asker), ('dg_privasker', v_privasker),
+    ('dg_optout', v_optout), ('dg_open_post', v_open);
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare
+  v_rcpt uuid := (select id from tests_fixture where key = 'dg_rcpt');
+  v_names text[];
+begin
+  select coalesce(array_agg(e->>'username' order by e->>'username'), '{}') into v_names
+    from public.list_weekly_digest() d, jsonb_array_elements(d.people) e
+   where d.user_id = v_rcpt;
+  if v_names is distinct from array['rls_dg_peer'] then
+    raise exception 'DIGEST018_people_filtered REGRESSION: people were %, expected {rls_dg_peer}', v_names;
+  end if;
+  insert into tests_results values ('DIGEST018_people_filtered', true, 'ok');
+exception when others then
+  insert into tests_results values ('DIGEST018_people_filtered', false, sqlerrm);
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare
+  v_rcpt uuid := (select id from tests_fixture where key = 'dg_rcpt');
+  v_open uuid := (select id from tests_fixture where key = 'dg_open_post');
+  v_q jsonb;
+begin
+  select questions into v_q from public.list_weekly_digest() where user_id = v_rcpt;
+  if jsonb_array_length(v_q) <> 1 or (v_q->0->>'id')::uuid <> v_open then
+    raise exception 'DIGEST018_questions_filtered REGRESSION: questions were %, expected only the open post', v_q;
+  end if;
+  insert into tests_results values ('DIGEST018_questions_filtered', true, 'ok');
+exception when others then
+  insert into tests_results values ('DIGEST018_questions_filtered', false, sqlerrm);
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare
+  v_rcpt uuid := (select id from tests_fixture where key = 'dg_rcpt');
+  v_peer uuid := (select id from tests_fixture where key = 'dg_peer');
+  v_rcpt_views int;
+  v_peer_views int;
+begin
+  select views_7d into v_rcpt_views from public.list_weekly_digest() where user_id = v_rcpt;
+  select views_7d into v_peer_views from public.list_weekly_digest() where user_id = v_peer;
+  if v_rcpt_views is distinct from 5 or v_peer_views is not null then
+    raise exception 'DIGEST018_views_pro_only REGRESSION: Pro views %, free views % (expected 5 and null)', v_rcpt_views, v_peer_views;
+  end if;
+  insert into tests_results values ('DIGEST018_views_pro_only', true, 'ok');
+exception when others then
+  insert into tests_results values ('DIGEST018_views_pro_only', false, sqlerrm);
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare
+  v_optout uuid := (select id from tests_fixture where key = 'dg_optout');
+begin
+  if exists (select 1 from public.list_weekly_digest() where user_id = v_optout) then
+    raise exception 'DIGEST018_opt_out_excluded REGRESSION: opted-out user got a digest row';
+  end if;
+  insert into tests_results values ('DIGEST018_opt_out_excluded', true, 'ok');
+exception when others then
+  insert into tests_results values ('DIGEST018_opt_out_excluded', false, sqlerrm);
+end $$;
+reset role;
+
+-- Two blocks (authenticated, then anon) sharing one result row: the first only
+-- records a failure; the second records PASS unless a failure is already there.
+select tests.as_user(id) from tests_fixture where key = 'dg_peer';
+do $$
+declare
+  v_state text;
+  v_raised boolean;
+begin
+  begin
+    perform public.list_weekly_digest();
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state <> '42501' then
+    raise exception 'DIGEST018_rpc_client_denied REGRESSION: authenticated list_weekly_digest did not fail with 42501 (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+exception when others then
+  insert into tests_results values ('DIGEST018_rpc_client_denied', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_anon();
+do $$
+declare
+  v_state text;
+  v_raised boolean;
+begin
+  begin
+    perform public.list_weekly_digest();
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state <> '42501' then
+    raise exception 'DIGEST018_rpc_client_denied REGRESSION: anon list_weekly_digest did not fail with 42501 (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+  insert into tests_results values ('DIGEST018_rpc_client_denied', true, 'ok') on conflict (finding) do nothing;
+exception when others then
+  insert into tests_results values ('DIGEST018_rpc_client_denied', false, sqlerrm) on conflict (finding) do nothing;
+end $$;
+reset role;
+
+-- ============ HELPED: plan 019 (helped_students_count) ============
+-- helper answers: a1 twice (counts once), a2 once, a3 on a hidden post (never),
+-- own post (never). susp has one accepted answer, then is suspended (0).
+set local role postgres;
+do $$
+declare
+  v_helper uuid := gen_random_uuid();
+  v_a1     uuid := gen_random_uuid();
+  v_a2     uuid := gen_random_uuid();
+  v_a3     uuid := gen_random_uuid();
+  v_susp   uuid := gen_random_uuid();
+  v_author uuid;
+  v_answer uuid;
+  v_hidden boolean;
+  v_p uuid;
+  v_c uuid;
+begin
+  insert into auth.users (
+    instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+    raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+    confirmation_token, recovery_token, email_change_token_new, email_change
+  ) values
+    ('00000000-0000-0000-0000-000000000000', v_helper, 'authenticated', 'authenticated',
+     'rls-helped-helper@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_helped_helper'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_a1, 'authenticated', 'authenticated',
+     'rls-helped-a1@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_helped_a1'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_a2, 'authenticated', 'authenticated',
+     'rls-helped-a2@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_helped_a2'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_a3, 'authenticated', 'authenticated',
+     'rls-helped-a3@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_helped_a3'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_susp, 'authenticated', 'authenticated',
+     'rls-helped-susp@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_helped_susp'), now(), now(), '', '', '', '');
+
+  -- (author, answerer, hidden)
+  for v_author, v_answer, v_hidden in
+    select * from (values
+      (v_a1, v_helper, false),
+      (v_a1, v_helper, false),
+      (v_a2, v_helper, false),
+      (v_a3, v_helper, true),
+      (v_helper, v_helper, false),
+      (v_a1, v_susp, false)
+    ) as t(author, answer, hidden)
+  loop
+    insert into public.posts (user_id, content, context_label, hidden)
+    values (v_author, 'stuck for helped test', 'stuck', v_hidden) returning id into v_p;
+    insert into public.comments (post_id, user_id, content)
+    values (v_p, v_answer, 'try this') returning id into v_c;
+    update public.posts set resolved_at = now(), resolved_comment_id = v_c where id = v_p;
+  end loop;
+
+  update public.profiles set is_suspended = true where id = v_susp;
+
+  insert into tests_fixture (key, id) values ('helped_helper', v_helper), ('helped_susp', v_susp);
+end $$;
+reset role;
+
+select tests.as_anon();
+do $$
+declare
+  v_n int;
+begin
+  v_n := public.helped_students_count((select id from tests_fixture where key = 'helped_helper'));
+  if v_n <> 2 then
+    raise exception 'HELPED_count_distinct_authors REGRESSION: got %, expected 2 (a1 once, a2; not hidden a3, not self)', v_n;
+  end if;
+  insert into tests_results values ('HELPED_count_distinct_authors', true, 'ok');
+exception when others then
+  insert into tests_results values ('HELPED_count_distinct_authors', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_anon();
+do $$
+declare
+  v_n int;
+begin
+  v_n := public.helped_students_count((select id from tests_fixture where key = 'helped_susp'));
+  if v_n <> 0 then
+    raise exception 'HELPED_suspended_helper_zero REGRESSION: suspended helper got %, expected 0', v_n;
+  end if;
+  insert into tests_results values ('HELPED_suspended_helper_zero', true, 'ok');
+exception when others then
+  insert into tests_results values ('HELPED_suspended_helper_zero', false, sqlerrm);
+end $$;
+reset role;
+
+-- ============ REWARD017: plan 017 (referral stage reward) ============
+-- Fresh users. v_ref (never Pro) invited f1..f3. v_sub (active subscriber)
+-- invited g1..g3. v_unc invited k1, k2 (confirmed) and k3 (unconfirmed).
+-- Referral rows are inserted directly: the confirm trigger does not fire for
+-- users inserted already confirmed. A setup block that errors records a
+-- REWARD017_setup_* FAIL row so the gate still trips.
+set local role postgres;
+do $$
+declare
+  v_ref uuid := gen_random_uuid();
+  v_f1  uuid := gen_random_uuid();
+  v_f2  uuid := gen_random_uuid();
+  v_f3  uuid := gen_random_uuid();
+  v_sub uuid := gen_random_uuid();
+  v_g1  uuid := gen_random_uuid();
+  v_g2  uuid := gen_random_uuid();
+  v_g3  uuid := gen_random_uuid();
+  v_unc uuid := gen_random_uuid();
+  v_k1  uuid := gen_random_uuid();
+  v_k2  uuid := gen_random_uuid();
+  v_k3  uuid := gen_random_uuid();
+begin
+  insert into auth.users (
+    instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+    raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+    confirmation_token, recovery_token, email_change_token_new, email_change
+  ) values
+    ('00000000-0000-0000-0000-000000000000', v_ref, 'authenticated', 'authenticated',
+     'rls-rw-ref@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_rw_ref'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_f1, 'authenticated', 'authenticated',
+     'rls-rw-f1@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_rw_f1'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_f2, 'authenticated', 'authenticated',
+     'rls-rw-f2@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_rw_f2'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_f3, 'authenticated', 'authenticated',
+     'rls-rw-f3@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_rw_f3'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_sub, 'authenticated', 'authenticated',
+     'rls-rw-sub@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_rw_sub'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_g1, 'authenticated', 'authenticated',
+     'rls-rw-g1@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_rw_g1'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_g2, 'authenticated', 'authenticated',
+     'rls-rw-g2@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_rw_g2'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_g3, 'authenticated', 'authenticated',
+     'rls-rw-g3@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_rw_g3'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_unc, 'authenticated', 'authenticated',
+     'rls-rw-unc@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_rw_unc'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_k1, 'authenticated', 'authenticated',
+     'rls-rw-k1@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_rw_k1'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_k2, 'authenticated', 'authenticated',
+     'rls-rw-k2@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_rw_k2'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_k3, 'authenticated', 'authenticated',
+     'rls-rw-k3@school.edu', '', null, '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_rw_k3'), now(), now(), '', '', '', '');
+
+  update public.profiles
+     set is_pro = true, pro_source = 'subscription', pro_until = now() + interval '10 days'
+   where id = v_sub;
+
+  insert into public.referrals (referred_id, referrer_id) values
+    (v_f1, v_ref), (v_f2, v_ref), (v_f3, v_ref),
+    (v_g1, v_sub), (v_g2, v_sub), (v_g3, v_sub),
+    (v_k1, v_unc), (v_k2, v_unc), (v_k3, v_unc);
+
+  insert into tests_fixture (key, id) values
+    ('rw_ref', v_ref), ('rw_f1', v_f1), ('rw_f2', v_f2), ('rw_f3', v_f3),
+    ('rw_sub', v_sub), ('rw_g1', v_g1), ('rw_g2', v_g2), ('rw_g3', v_g3),
+    ('rw_unc', v_unc), ('rw_k1', v_k1), ('rw_k2', v_k2), ('rw_k3', v_k3);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'rw_f1';
+do $$
+begin
+  update public.profiles set stage = 'interning' where id = (select id from tests_fixture where key = 'rw_f1');
+exception when others then
+  insert into tests_results values ('REWARD017_setup_f1_stage', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'rw_f2';
+do $$
+begin
+  update public.profiles set stage = 'interning' where id = (select id from tests_fixture where key = 'rw_f2');
+exception when others then
+  insert into tests_results values ('REWARD017_setup_f2_stage', false, sqlerrm);
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare
+  v_ref uuid := (select id from tests_fixture where key = 'rw_ref');
+  v_staged int;
+  v_is_pro boolean;
+  v_spent int;
+begin
+  select count(*) into v_staged from public.profiles
+   where stage = 'interning'
+     and id in (select id from tests_fixture where key in ('rw_f1', 'rw_f2'));
+  select is_pro into v_is_pro from public.profiles where id = v_ref;
+  select count(*) into v_spent from public.referrals
+   where referrer_id = v_ref and reward_granted_at is not null;
+  if v_staged <> 2 or v_is_pro or v_spent <> 0 then
+    raise exception 'REWARD017_two_stages_no_grant REGRESSION: staged=%, is_pro=%, spent=%', v_staged, v_is_pro, v_spent;
+  end if;
+  insert into tests_results values ('REWARD017_two_stages_no_grant', true, 'ok');
+exception when others then
+  insert into tests_results values ('REWARD017_two_stages_no_grant', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'rw_f3';
+do $$
+begin
+  update public.profiles set stage = 'interning' where id = (select id from tests_fixture where key = 'rw_f3');
+exception when others then
+  insert into tests_results values ('REWARD017_setup_f3_stage', false, sqlerrm);
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare
+  v_ref uuid := (select id from tests_fixture where key = 'rw_ref');
+  v_f3  uuid := (select id from tests_fixture where key = 'rw_f3');
+  v_p record;
+  v_spent int;
+  v_notes int;
+begin
+  select is_pro, pro_until, pro_source into v_p from public.profiles where id = v_ref;
+  select count(*) into v_spent from public.referrals
+   where referrer_id = v_ref and reward_granted_at is not null;
+  select count(*) into v_notes from public.notifications
+   where user_id = v_ref and type = 'referral_reward' and actor_id = v_f3;
+  if not v_p.is_pro or v_p.pro_source is distinct from 'referral'
+     or v_p.pro_until is distinct from now() + interval '1 month'
+     or v_spent <> 3 or v_notes <> 1 then
+    raise exception 'REWARD017_third_stage_grants REGRESSION: is_pro=%, source=%, until=%, spent=%, notifications=%',
+      v_p.is_pro, v_p.pro_source, v_p.pro_until, v_spent, v_notes;
+  end if;
+  insert into tests_results values ('REWARD017_third_stage_grants', true, 'ok');
+exception when others then
+  insert into tests_results values ('REWARD017_third_stage_grants', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'rw_f1';
+do $$
+begin
+  update public.profiles set stage = null where id = (select id from tests_fixture where key = 'rw_f1');
+  update public.profiles set stage = 'interning' where id = (select id from tests_fixture where key = 'rw_f1');
+exception when others then
+  insert into tests_results values ('REWARD017_setup_f1_restage', false, sqlerrm);
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare
+  v_ref uuid := (select id from tests_fixture where key = 'rw_ref');
+  v_until timestamptz;
+  v_notes int;
+begin
+  select pro_until into v_until from public.profiles where id = v_ref;
+  select count(*) into v_notes from public.notifications
+   where user_id = v_ref and type = 'referral_reward';
+  if v_until is distinct from now() + interval '1 month' or v_notes <> 1 then
+    raise exception 'REWARD017_idempotent REGRESSION: until=%, notifications=%', v_until, v_notes;
+  end if;
+  insert into tests_results values ('REWARD017_idempotent', true, 'ok');
+exception when others then
+  insert into tests_results values ('REWARD017_idempotent', false, sqlerrm);
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare
+  v_sub uuid := (select id from tests_fixture where key = 'rw_sub');
+  v_p record;
+  v_spent int;
+begin
+  update public.profiles set stage = 'interning'
+   where id in (select id from tests_fixture where key in ('rw_g1', 'rw_g2', 'rw_g3'));
+  select pro_source, pro_until into v_p from public.profiles where id = v_sub;
+  select count(*) into v_spent from public.referrals
+   where referrer_id = v_sub and reward_granted_at is not null;
+  if v_p.pro_source is distinct from 'subscription'
+     or v_p.pro_until is distinct from now() + interval '10 days'
+     or v_spent <> 0 then
+    raise exception 'REWARD017_subscriber_untouched REGRESSION: source=%, until=%, spent=%', v_p.pro_source, v_p.pro_until, v_spent;
+  end if;
+  insert into tests_results values ('REWARD017_subscriber_untouched', true, 'ok');
+exception when others then
+  insert into tests_results values ('REWARD017_subscriber_untouched', false, sqlerrm);
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare
+  v_unc uuid := (select id from tests_fixture where key = 'rw_unc');
+  v_is_pro boolean;
+begin
+  update public.profiles set stage = 'interning'
+   where id in (select id from tests_fixture where key in ('rw_k1', 'rw_k2', 'rw_k3'));
+  select is_pro into v_is_pro from public.profiles where id = v_unc;
+  if v_is_pro then
+    raise exception 'REWARD017_unconfirmed_not_counted REGRESSION: an unconfirmed invitee completed a batch';
+  end if;
+  insert into tests_results values ('REWARD017_unconfirmed_not_counted', true, 'ok');
+exception when others then
+  insert into tests_results values ('REWARD017_unconfirmed_not_counted', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'rw_unc';
+do $$
+begin
+  begin
+    update public.referrals set reward_granted_at = now()
+     where referrer_id = (select id from tests_fixture where key = 'rw_unc');
+  exception when others then
+    null;
+  end;
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare
+  v_unc uuid := (select id from tests_fixture where key = 'rw_unc');
+  v_spent int;
+begin
+  select count(*) into v_spent from public.referrals
+   where referrer_id = v_unc and reward_granted_at is not null;
+  if v_spent <> 0 then
+    raise exception 'REWARD017_client_cannot_spend REGRESSION: a client marked % referrals spent', v_spent;
+  end if;
+  insert into tests_results values ('REWARD017_client_cannot_spend', true, 'ok');
+exception when others then
+  insert into tests_results values ('REWARD017_client_cannot_spend', false, sqlerrm);
+end $$;
+reset role;
+
+-- Two impersonated reads, one finding: the v_unc block records only a failure,
+-- the v_ref block records the result unless a failure is already there.
+select tests.as_user(id) from tests_fixture where key = 'rw_unc';
+do $$
+declare
+  v_row record;
+begin
+  select ready, rewards into v_row from public.get_referral_reward_progress();
+  if v_row.ready is distinct from 2 or v_row.rewards is distinct from 0 then
+    raise exception 'REWARD017_progress_rpc REGRESSION: v_unc got (%, %), expected (2, 0)', v_row.ready, v_row.rewards;
+  end if;
+exception when others then
+  insert into tests_results values ('REWARD017_progress_rpc', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'rw_ref';
+do $$
+declare
+  v_row record;
+begin
+  select ready, rewards into v_row from public.get_referral_reward_progress();
+  if v_row.ready is distinct from 0 or v_row.rewards is distinct from 1 then
+    raise exception 'REWARD017_progress_rpc REGRESSION: v_ref got (%, %), expected (0, 1)', v_row.ready, v_row.rewards;
+  end if;
+  insert into tests_results values ('REWARD017_progress_rpc', true, 'ok') on conflict (finding) do nothing;
+exception when others then
+  insert into tests_results values ('REWARD017_progress_rpc', false, sqlerrm) on conflict (finding) do nothing;
+end $$;
+reset role;
+
+select tests.as_anon();
+do $$
+declare
+  v_state text;
+  v_raised boolean;
+begin
+  begin
+    perform public.get_referral_reward_progress();
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state <> '42501' then
+    raise exception 'REWARD017_progress_anon_denied REGRESSION: anon get_referral_reward_progress did not fail with 42501 (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+  insert into tests_results values ('REWARD017_progress_anon_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('REWARD017_progress_anon_denied', false, sqlerrm);
+end $$;
+reset role;
+
 -- ============ report ============
 -- Print the PASS/FAIL table FIRST so the operator sees exactly which assertions
 -- failed, then raise so psql exits non-zero and the harness actually gates.
@@ -2546,7 +4022,7 @@ declare v_failed int;
 begin
   select count(*) into v_failed from tests_results where not passed;
   if v_failed > 0 then
-    raise exception '% assertion(s) failed — see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view_denied, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, CLUBS_V2_1, CLUBS_V2_2, CLUBS_V2_3, CLUBS_V2_7a, CLUBS_V2_4, CLUBS_V2_7b, CLUBS_V2_5_officer_denied, CLUBS_V2_5_owner_allowed, CLUBS_V2_6_outsider, CLUBS_V2_6_pending, CLUBS_V2_8, CLUBS_V2_9, H1_suggested_profiles, CLUBS_V2_12_outsider, CLUBS_V2_12_anon, SIGNUP_RL_anon_execute, SIGNUP_RL_no_table_access_anon, SIGNUP_RL_no_table_access_authenticated, EXPERIENCES_owner_insert, EXPERIENCES_owner_select, EXPERIENCES_owner_update, EXPERIENCES_b_select_a, EXPERIENCES_b_update_denied, EXPERIENCES_b_delete_denied, EXPERIENCES_anon_select_denied, EXPERIENCES_owner_delete, EXPERIENCES_cap, JOB_LISTINGS_authenticated_select, JOB_LISTINGS_authenticated_insert_denied, JOB_LISTINGS_anon_select_denied, JOB_FIT_owner_insert_select, JOB_FIT_b_select_a_denied, JOB_PITCHES_owner_insert_select, JOB_PITCHES_b_select_a_denied, JOB_SAVES_owner_insert_select, JOB_SAVES_b_select_a_denied, JOB_SAVES_b_delete_a_denied, JOB_SAVES_owner_delete, JOB_SAVES_anon_select_denied, REFERRAL_JOINED_owner_select, REFERRAL_JOINED_b_select_denied.', v_failed;
+    raise exception '% assertion(s) failed, see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view_denied, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, CLUBS_V2_1, CLUBS_V2_2, CLUBS_V2_3, CLUBS_V2_7a, CLUBS_V2_4, CLUBS_V2_7b, CLUBS_V2_5_officer_denied, CLUBS_V2_5_owner_allowed, CLUBS_V2_6_outsider, CLUBS_V2_6_pending, CLUBS_V2_8, CLUBS_V2_9, H1_suggested_profiles, CLUBS_V2_12_outsider, CLUBS_V2_12_anon, SIGNUP_RL_anon_execute, SIGNUP_RL_no_table_access_anon, SIGNUP_RL_no_table_access_authenticated, EXPERIENCES_owner_insert, EXPERIENCES_owner_select, EXPERIENCES_owner_update, EXPERIENCES_b_select_a, EXPERIENCES_b_update_denied, EXPERIENCES_b_delete_denied, EXPERIENCES_anon_select_denied, EXPERIENCES_owner_delete, EXPERIENCES_cap, JOB_LISTINGS_authenticated_select, JOB_LISTINGS_authenticated_insert_denied, JOB_LISTINGS_anon_select_denied, JOB_FIT_owner_insert_select, JOB_FIT_b_select_a_denied, JOB_PITCHES_owner_insert_select, JOB_PITCHES_b_select_a_denied, JOB_SAVES_owner_insert_select, JOB_SAVES_b_select_a_denied, JOB_SAVES_b_delete_a_denied, JOB_SAVES_owner_delete, JOB_SAVES_anon_select_denied, REFERRAL_JOINED_owner_select, REFERRAL_JOINED_b_select_denied, P001_guard_sub_event_frozen, P001_guard_is_bot_frozen, P001_suggested_private_masked, P001_suggested_limit_clamped, P001_suggested_suspended_hidden, P001_group_add_requires_member_follow, P001_group_readd_after_leave_denied, P001_post_hidden_by_suspension_frozen, RESUME_FIELDS_private_nulled, RESUME_FIELDS_anon_public_read, P004_stage_check, P004_owner_can_set_stage, P004_search_people_private, P004_suggested_private, P004_public_profile_stage, STUCK_HELP_matched, STUCK_HELP_private_skipped, STUCK_HELP_blocked_skipped, STUCK_HELP_rate_limited, STUCK_HELP_count_author, STUCK_HELP_count_non_author, STUCK_direct_update_ignored, STUCK_resolve_non_author_denied, STUCK_resolve_foreign_comment_rejected, STUCK_resolve_author_ok, STUCK_accepted_comment_delete_sets_null, STUCK_reopen_author, STUCK_rpc_anon_denied, P023_owner_sets_onboarded_at, REF016_confirm_username_fallback, REF016_invite_code_username, REF016_set_code_rejects_username, REF016_claim_self_denied, REF016_claim_fresh_once, REF016_claim_old_denied, REF016_claim_anon_denied, DIGEST018_people_filtered, DIGEST018_questions_filtered, DIGEST018_views_pro_only, DIGEST018_opt_out_excluded, DIGEST018_rpc_client_denied, HELPED_count_distinct_authors, HELPED_suspended_helper_zero, REWARD017_two_stages_no_grant, REWARD017_third_stage_grants, REWARD017_idempotent, REWARD017_subscriber_untouched, REWARD017_unconfirmed_not_counted, REWARD017_client_cannot_spend, REWARD017_progress_rpc, REWARD017_progress_anon_denied.', v_failed;
 
   end if;
 end $$;

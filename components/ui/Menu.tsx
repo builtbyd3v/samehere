@@ -30,6 +30,7 @@ export default function Menu({
   customTrigger = false,
   fullWidth = false,
   label,
+  triggerClassName,
 }: {
   trigger: React.ReactNode;
   children: React.ReactNode;
@@ -46,6 +47,8 @@ export default function Menu({
   fullWidth?: boolean;
   /** Accessible name for the default trigger button (icon-only menus). */
   label?: string;
+  /** Overrides the default trigger button classes. */
+  triggerClassName?: string;
 }) {
   const [internalOpen, setInternalOpen] = useState(false);
   const open = openProp ?? internalOpen;
@@ -113,9 +116,10 @@ export default function Menu({
               aria-expanded={open}
               aria-label={label}
               className={
-                variant === "avatar"
+                triggerClassName ??
+                (variant === "avatar"
                   ? "h-8 w-8 shrink-0 overflow-hidden rounded-full border border-[var(--border)] transition hover:opacity-90 hover:border-[var(--border-strong)]"
-                  : "grid h-7 w-7 place-items-center rounded-full text-[var(--ink-muted)] transition hover:bg-[var(--featured-surface)] hover:text-[var(--ink)]"
+                  : "grid h-7 w-7 place-items-center rounded-full text-[var(--ink-muted)] transition hover:bg-[var(--featured-surface)] hover:text-[var(--ink)]")
               }
             >
               {trigger}

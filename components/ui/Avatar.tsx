@@ -1,10 +1,10 @@
 import type { CSSProperties } from "react";
 import AvatarImage from "./AvatarImage";
-import { avatarColor, avatarInitial } from "@/lib/avatar";
+import { avatarInitials, avatarTintClass } from "@/lib/avatar";
 
 /**
  * One avatar for the whole app. Renders the photo when there is one, else a
- * solid disc colored deterministically from `seed` with the name's initial.
+ * muted gradient seeded from `seed` with up to two initials from `name`.
  *
  * `className` carries geometry + shape (h-N w-N, rounded-full/-lg, border) and
  * applies to both branches. Include a text-size class there too — it only
@@ -37,8 +37,8 @@ export default function Avatar({
     );
   }
   return (
-    <div className={`${className} grid place-items-center font-semibold text-white`} style={{ ...style, backgroundColor: avatarColor(seed) }}>
-      {avatarInitial(name || seed)}
+    <div className={`${className} grid place-items-center font-semibold text-white ${avatarTintClass(seed)}`} style={style}>
+      {avatarInitials(name || seed)}
     </div>
   );
 }

@@ -37,8 +37,18 @@ export async function OwnerAnalyticsSection({
 }
 
 export default function PortfolioAnalytics({ state }: { state: AnalyticsState }) {
+  if (state.status === "locked") {
+    return (
+      <p className="mt-10 text-small text-[var(--muted)]">
+        30-day views and link clicks are a Pro perk. Your projects stay public.{" "}
+        <Link href="/pro" className="text-[var(--ink)] underline underline-offset-2">
+          View Pro
+        </Link>
+      </p>
+    );
+  }
   return (
-    <section className="card mt-4 p-5 sm:p-6">
+    <section className="mt-10 rounded-[20px] border border-[var(--border)] bg-[var(--surface-3)] p-5 sm:p-6">
       <div className="flex items-center gap-2">
         <BarChart3 className="h-4 w-4 text-[var(--blue)]" strokeWidth={1.75} aria-hidden />
         <h2 className="text-sm font-semibold text-[var(--ink)]">Portfolio analytics</h2>
@@ -53,14 +63,6 @@ export default function PortfolioAnalytics({ state }: { state: AnalyticsState })
       {state.status === "unavailable" && (
         <p role="status" className="mt-4 text-sm text-[var(--ink-muted)]">
           Analytics are unavailable right now.
-        </p>
-      )}
-      {state.status === "locked" && (
-        <p className="mt-4 text-sm text-[var(--ink-muted)]">
-          30-day views and link clicks are a Pro perk. Your projects stay public.{" "}
-          <Link href="/pro" className="text-[var(--blue)] underline-offset-2 hover:underline">
-            View Pro
-          </Link>
         </p>
       )}
       {state.status === "empty" && (

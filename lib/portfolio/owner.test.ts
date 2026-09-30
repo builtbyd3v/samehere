@@ -3,6 +3,8 @@ import { PORTFOLIO_UNAVAILABLE, type PortfolioQueryError } from "./errors";
 import {
   createProject,
   parseProjectWrite,
+  parseResumeFields,
+  publishedSections,
   reorderProjects,
   saveOwnerSettings,
   setProjectStatus,
@@ -392,5 +394,84 @@ describe("missing migration", () => {
     });
     const result = await createProject(client, "o", draftWrite);
     expect(result).toEqual({ ok: false, unavailable: true, message: PORTFOLIO_UNAVAILABLE });
+  });
+});
+
+describe("publishedSections", () => {
+  const off = {
+    publish_intro: false,
+    publish_projects: false,
+    publish_activity: false,
+    publish_experience: false,
+    publish_education: false,
+    publish_posts: false,
+    allow_indexing: false,
+  };
+
+  it("returns nothing when every flag is off", () => {
+    expect(publishedSections(off)).toEqual([]);
+  });
+
+  it("returns the on sections in canonical order", () => {
+    expect(publishedSections({ ...off, publish_posts: true, publish_intro: true })).toEqual(["intro", "posts"]);
+  });
+
+  it("does not count allow_indexing as a section", () => {
+    expect(publishedSections({ ...off, allow_indexing: true })).toEqual([]);
+  });
+});
+
+describe("parseResumeFields", () => {
+  const empty = { headline: "", github_url: "", linkedin_url: "", website_url: "" };
+
+  it("maps all empty strings to null", () => {
+    expect(parseResumeFields(empty)).toEqual({
+      ok: true,
+      data: { headline: null, github_url: null, linkedin_url: null, website_url: null },
+    });
+  });
+
+  it("echoes a valid set", () => {
+    const valid = {
+      headline: "CS junior building dev tools",
+      github_url: "https://github.com/ada",
+      linkedin_url: "https://www.linkedin.com/in/ada",
+      website_url: "https://ada.dev",
+    };
+    expect(parseResumeFields(valid)).toEqual({ ok: true, data: valid });
+  });
+
+  it("accepts the bare linkedin.com host", () => {
+    const result = parseResumeFields({ ...empty, linkedin_url: "https://linkedin.com/in/ada" });
+    expect(result.ok && result.data.linkedin_url).toBe("https://linkedin.com/in/ada");
+  });
+
+  it("rejects a headline over 120 characters", () => {
+    const result = parseResumeFields({ ...empty, headline: "x".repeat(121) });
+    expect(result.ok).toBe(false);
+    expect(!result.ok && !result.unavailable && result.error).toContain("120");
+  });
+
+  it("rejects a non-GitHub host for the GitHub link", () => {
+    const result = parseResumeFields({ ...empty, github_url: "https://gitlab.com/ada" });
+    expect(result.ok).toBe(false);
+    expect(!result.ok && !result.unavailable && result.error).toBe("GitHub link must be a github.com URL.");
+  });
+
+  it("rejects a lookalike LinkedIn host", () => {
+    expect(parseResumeFields({ ...empty, linkedin_url: "https://linkedin.com.evil.io/x" }).ok).toBe(false);
+  });
+
+  it("rejects a javascript: website", () => {
+    expect(parseResumeFields({ ...empty, website_url: "javascript:alert(1)" }).ok).toBe(false);
+  });
+
+  it("rejects userinfo in a link", () => {
+    expect(parseResumeFields({ ...empty, github_url: "https://user:pw@github.com/ada" }).ok).toBe(false);
+  });
+
+  it("trims surrounding whitespace", () => {
+    const result = parseResumeFields({ ...empty, website_url: "  https://ada.dev  " });
+    expect(result.ok && result.data.website_url).toBe("https://ada.dev");
   });
 });

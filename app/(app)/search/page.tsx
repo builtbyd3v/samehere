@@ -16,7 +16,14 @@ import {
   searchHref,
   nextSearchOffset,
 } from "@/lib/search";
-import { hasDiscoveryFilters, hasPeopleFilters, parseDiscoveryFilters, postsDiscoveryHref } from "@/lib/discovery";
+import {
+  activeFacets,
+  hasDiscoveryFilters,
+  hasPeopleFilters,
+  parseDiscoveryFilters,
+  postsDiscoveryHref,
+} from "@/lib/discovery";
+import { getPostHogServerClient } from "@/lib/posthog-server";
 
 const POSTS_PREVIEW = 3;
 
@@ -32,6 +39,8 @@ export default async function SearchPage({
     major?: string;
     mode?: string;
     label?: string;
+    stage?: string;
+    focus?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -49,6 +58,15 @@ export default async function SearchPage({
     data: { user },
   } = await supabase.auth.getUser();
   const viewerId = user?.id ?? null;
+  // First page only, so paging through results is not counted as a new filter use.
+  // ponytail: fires on every render of a filtered first page (refresh counts again); dedupe in PostHog if noisy.
+  if (user && peoplePage === 1 && projectPage === 1 && hasDiscoveryFilters(filters)) {
+    getPostHogServerClient()?.capture({
+      distinctId: user.id,
+      event: "search_filtered",
+      properties: { facets: activeFacets(filters), has_query: hasQuery },
+    });
+  }
   const { data: viewer } = user
     ? await supabase.from("profiles").select("major").eq("id", user.id).maybeSingle()
     : { data: null };
@@ -59,6 +77,8 @@ export default async function SearchPage({
     major: filters.major,
     mode: filters.mode,
     label: filters.label,
+    stage: filters.stage,
+    focus: filters.focus,
   };
 
   if (!hasQuery && !browsing) {

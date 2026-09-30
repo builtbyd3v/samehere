@@ -9,6 +9,7 @@ import { isPro } from "@/lib/pro";
 import { PROFILE_THEME_KEYS, PROFILE_THEMES, isProfileTheme, type ProfileTheme } from "@/lib/themes";
 import { OPEN_TO_TAGS, STUDY_MODES } from "@/lib/portfolio/validation";
 import { OPEN_TO_LABELS, STUDY_MODE_LABELS } from "@/lib/portfolio/labels";
+import { FOCUS_AREAS, FOCUS_LABELS, MAX_FOCUS_AREAS, STAGES, STAGE_LABELS, parseStage, type FocusArea } from "@/lib/stage";
 import type { StudyMode } from "@/types/portfolio";
 import AvatarBase from "@/components/ui/Avatar";
 
@@ -25,12 +26,18 @@ export type EditInitial = {
   goals: string | null;
   open_to: string[];
   study_mode: string | null;
+  stage: string | null;
+  focus_areas: string[];
   is_private: boolean;
   hide_school: boolean;
   heatmap_visibility: string;
   is_pro: boolean;
   pro_until: string | null;
   profile_theme: string | null;
+  headline: string | null;
+  github_url: string | null;
+  linkedin_url: string | null;
+  website_url: string | null;
 };
 
 const label = "block text-sm font-medium text-[var(--ink)]";
@@ -51,6 +58,7 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
     STUDY_MODES.includes(initial.study_mode as StudyMode) ? (initial.study_mode as StudyMode) : ""
   );
   const suggestStudyTogether = studyMode === "online" || studyMode === "self_taught";
+  const [focus, setFocus] = useState<FocusArea[]>(FOCUS_AREAS.filter((a) => initial.focus_areas.includes(a)));
 
   function onAvatar(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -73,7 +81,7 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
   return (
     <main className="mx-auto max-w-xl px-5 py-10">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-[-0.02em]">Edit profile</h1>
+        <h1 className="text-title font-semibold">Edit profile</h1>
         <Link href={`/profile/${initial.username}`} className="text-sm text-[var(--ink-muted)] underline">
           Cancel
         </Link>
@@ -151,6 +159,13 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
           </div>
 
           <div>
+            <label htmlFor="headline" className={label}>Headline</label>
+            <input id="headline" name="headline" type="text" maxLength={120}
+              defaultValue={initial.headline ?? ""} placeholder="CS junior building developer tools" className={field} />
+            <p className={hint}>One line under your name on your portfolio.</p>
+          </div>
+
+          <div>
             <label htmlFor="bio" className={label}>Bio</label>
             <textarea id="bio" name="bio" rows={3} maxLength={500}
               defaultValue={initial.bio ?? ""} placeholder="A few lines about you." className={field} />
@@ -161,6 +176,64 @@ export default function EditProfileForm({ initial }: { initial: EditInitial }) {
             <textarea id="goals" name="goals" rows={2} maxLength={500}
               defaultValue={initial.goals ?? ""} placeholder="What are you working toward?" className={field} />
           </div>
+
+          <fieldset className="flex flex-col gap-3">
+            <legend className={label}>Links</legend>
+            <div>
+              <label htmlFor="github_url" className={label}>GitHub</label>
+              <input id="github_url" name="github_url" type="url" maxLength={2048}
+                defaultValue={initial.github_url ?? ""} placeholder="https://github.com/you" className={field} />
+            </div>
+            <div>
+              <label htmlFor="linkedin_url" className={label}>LinkedIn</label>
+              <input id="linkedin_url" name="linkedin_url" type="url" maxLength={2048}
+                defaultValue={initial.linkedin_url ?? ""} placeholder="https://www.linkedin.com/in/you" className={field} />
+            </div>
+            <div>
+              <label htmlFor="website_url" className={label}>Website</label>
+              <input id="website_url" name="website_url" type="url" maxLength={2048}
+                defaultValue={initial.website_url ?? ""} placeholder="https://yoursite.dev" className={field} />
+            </div>
+          </fieldset>
+
+          <input type="hidden" name="has_stage_fields" value="1" />
+          <div>
+            <label htmlFor="stage" className={label}>Stage</label>
+            <select id="stage" name="stage" defaultValue={parseStage(initial.stage) ?? ""} className={field}>
+              <option value="">Not set</option>
+              {STAGES.map((s) => (
+                <option key={s} value={s}>
+                  {STAGE_LABELS[s]}
+                </option>
+              ))}
+            </select>
+            <p className={hint}>Where you are right now. Used to find people at the same stage.</p>
+          </div>
+
+          <fieldset>
+            <legend className={label}>Focus</legend>
+            <p className={hint}>Up to 3.</p>
+            <ul className="mt-2 flex flex-col gap-2">
+              {FOCUS_AREAS.map((a) => (
+                <li key={a}>
+                  <label className="flex items-center gap-2.5 text-sm text-[var(--ink)]">
+                    <input
+                      type="checkbox"
+                      name="focus_areas"
+                      value={a}
+                      checked={focus.includes(a)}
+                      disabled={!focus.includes(a) && focus.length >= MAX_FOCUS_AREAS}
+                      onChange={() =>
+                        setFocus((cur) => (cur.includes(a) ? cur.filter((x) => x !== a) : [...cur, a]))
+                      }
+                      className="h-4 w-4 accent-[var(--ink)]"
+                    />
+                    {FOCUS_LABELS[a]}
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </fieldset>
 
           <div>
             <label htmlFor="study_mode" className={label}>Study mode</label>

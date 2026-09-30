@@ -35,7 +35,7 @@ function TypeBadge({ type }: { type: NotificationRow["type"] }) {
       </span>
     );
   }
-  if (type === "referral_joined") {
+  if (type === "referral_joined" || type === "referral_reward") {
     return (
       <span className="grid h-[18px] w-[18px] place-items-center rounded-full border border-[var(--surface-card)] bg-[var(--blue)] text-[var(--canvas)]">
         <IconUserPlus />
@@ -46,6 +46,13 @@ function TypeBadge({ type }: { type: NotificationRow["type"] }) {
     return (
       <span className="grid h-[18px] w-[18px] place-items-center rounded-full border border-[var(--surface-card)] bg-[var(--ink)] text-[var(--canvas)] [&_svg]:h-2.5 [&_svg]:w-2.5">
         <IconAt />
+      </span>
+    );
+  }
+  if (type === "stuck_help") {
+    return (
+      <span className="grid h-[18px] w-[18px] place-items-center rounded-full border border-[var(--surface-card)] bg-[var(--amber)] text-[var(--canvas)] [&_svg]:h-2.5 [&_svg]:w-2.5">
+        <IconComment />
       </span>
     );
   }
@@ -106,7 +113,7 @@ export default function NotificationList({ items }: { items: NotificationRow[] }
             >
               <Avatar url={n.actor_avatar_url} seed={n.actor_username} name={actorName} type={n.type} isPro={n.actor_is_pro} />
               <div className="min-w-0 flex-1">
-                <p className={`text-[15px] leading-snug text-[var(--ink)] ${!n.read ? "font-medium" : ""}`}>
+                <p className={`text-body leading-snug text-[var(--ink)] ${!n.read ? "font-medium" : ""}`}>
                   {notificationLabel(n.type, actorName, n.reaction_type)}
                 </p>
                 <LocalTime iso={n.created_at} variant="notification" className="mt-0.5 block text-xs text-[var(--ink-faint)]" />

@@ -4,12 +4,19 @@ export function isAnimatedAvatarUrl(src: string): boolean {
   return path.endsWith(".gif") || path.endsWith(".webp");
 }
 
-// Curated hues for the no-photo fallback disc. Skips muddy yellow/green bands
-// so white text stays legible at 58% sat / 48% light on every one.
-const AVATAR_HUES = [214, 262, 292, 330, 12, 152, 190, 240];
+// Muted two-stop tints for the no-photo fallback (DESIGN.md, Avatar). Literal
+// class strings so Tailwind generates them. White initials stay legible on all.
+export const AVATAR_TINTS = [
+  "bg-[linear-gradient(145deg,#3b77b8,#1e3a5f)]",
+  "bg-[linear-gradient(145deg,#a0683c,#5a3820)]",
+  "bg-[linear-gradient(145deg,#4f8a64,#24422f)]",
+  "bg-[linear-gradient(145deg,#5a6d8a,#2c3648)]",
+  "bg-[linear-gradient(145deg,#3f8a86,#1f4442)]",
+  "bg-[linear-gradient(145deg,#8a4a5a,#44242c)]",
+] as const;
 
 // FNV-1a: stable across runs and platforms, unlike hashing via charCodeAt sums.
-function hashSeed(seed: string): number {
+export function hashSeed(seed: string): number {
   let h = 2166136261;
   for (let i = 0; i < seed.length; i++) {
     h ^= seed.charCodeAt(i);
@@ -18,13 +25,13 @@ function hashSeed(seed: string): number {
   return h >>> 0;
 }
 
-/** Solid fallback color derived from a stable seed (username/slug/org name). */
-export function avatarColor(seed: string): string {
-  const hue = AVATAR_HUES[hashSeed(seed) % AVATAR_HUES.length];
-  return `hsl(${hue} 58% 48%)`;
+/** Tint class derived from a stable seed (username/slug/org name). */
+export function avatarTintClass(seed: string): string {
+  return AVATAR_TINTS[hashSeed(seed) % AVATAR_TINTS.length];
 }
 
-/** First alphanumeric of a name, uppercased. "?" when there is none. */
-export function avatarInitial(name: string): string {
-  return name.replace(/[^a-zA-Z0-9]/g, "").charAt(0).toUpperCase() || "?";
+/** Up to two initials from the first two words, uppercased. "?" when there are none. */
+export function avatarInitials(name: string): string {
+  const words = name.match(/[\p{L}\p{N}]+/gu) ?? [];
+  return words.slice(0, 2).map((w) => Array.from(w)[0].toUpperCase()).join("") || "?";
 }

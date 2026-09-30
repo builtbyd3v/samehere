@@ -1,7 +1,8 @@
 import { Suspense } from "react";
+import AppBrand from "@/components/brand/AppBrand";
 import { getViewer, getViewerProfile } from "@/lib/viewer";
 import Navbar from "@/components/layout/Navbar";
-import LeftNav from "@/components/layout/LeftNav";
+import LeftNav, { type ShellUser } from "@/components/layout/LeftNav";
 import LeftNavUnread from "@/components/layout/LeftNavUnread";
 import MobileNav from "@/components/layout/MobileNav";
 import MobileNavUnread from "@/components/layout/MobileNavUnread";
@@ -35,9 +36,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     ? await Promise.all([supabase.rpc("current_is_admin"), supabase.rpc("current_is_suspended")])
     : [{ data: false }, { data: false }];
 
-  const navbarProps = {
+  const shellUser: ShellUser = {
     username: profile?.username ?? null,
+    displayName: profile?.display_name ?? null,
     avatarUrl: profile?.avatar_url ?? null,
+    stage: profile?.stage ?? null,
     isPro: profile ? isPro(profile) : false,
     isAdmin: isAdmin ?? false,
   };
@@ -57,33 +60,42 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       >
         Skip to content
       </a>
-      <Navbar {...navbarProps} />
+      <Navbar user={shellUser} />
       {isSuspended && <SuspendedBanner />}
       {user && (
         <Suspense fallback={null}>
           <TabTitleUnread userId={user.id} />
         </Suspense>
       )}
-      <div className="app-shell mx-auto flex w-full max-w-[1384px] justify-center gap-7 px-4 pb-20 sm:px-6 lg:pb-0">
-        <aside className="shell-aside-enter hidden w-60 shrink-0 pt-6 lg:block lg:pt-8">
-          <div className="sticky top-[72px]">
-            {/* Nav badges are decoration — stream them so a slow unread RPC never
-                blocks the nav from rendering. Fallback is the nav with no badges. */}
-            <Suspense fallback={<LeftNav username={navbarProps.username} isPro={navbarProps.isPro} />}>
-              <LeftNavUnread username={navbarProps.username} isPro={navbarProps.isPro} />
-            </Suspense>
-          </div>
-        </aside>
-        <div id="main" className="min-w-0 flex-1">{children}</div>
-        {/* Balances the left nav so page content centers on the viewport.
-            The feed opts out via .app-shell:has([data-feed-page]) in
-            globals.css and centers its post column with a left offset
-            instead (the 340px rail outweighs the 240px nav). */}
-        <div className="shell-rspacer hidden shrink-0 lg:block lg:w-60" aria-hidden />
+      <div className={`app-shell min-h-dvh ${user ? "lg:grid lg:grid-cols-[240px_minmax(0,1fr)]" : ""}`}>
+        {user && (
+          <aside className="hidden border-r border-[var(--hairline)] lg:block">
+            <div className="sticky top-0 flex h-dvh flex-col px-3 py-5">
+              <div className="px-2.5 pb-[22px] pt-1.5">
+                <AppBrand href="/feed" />
+              </div>
+              {/* Nav badges are decoration: stream them so a slow unread RPC never
+                  blocks the nav from rendering. Fallback is the nav with no badges. */}
+              <Suspense fallback={<LeftNav user={shellUser} />}>
+                <LeftNavUnread user={shellUser} />
+              </Suspense>
+            </div>
+          </aside>
+        )}
+        {/* 848px = the old 800px content column plus 24px padding each side, so
+            non-feed pages keep their width. The feed opts out via has-[[data-feed-page]]. */}
+        <div
+          id="main"
+          className="mx-auto w-full min-w-0 max-w-[848px] px-4 pb-[calc(5rem+env(safe-area-inset-bottom))] sm:px-6 lg:pb-0 lg:has-[[data-feed-page]]:max-w-none lg:has-[[data-feed-page]]:px-0"
+        >
+          {children}
+        </div>
       </div>
-      <Suspense fallback={<MobileNav username={navbarProps.username} />}>
-        <MobileNavUnread username={navbarProps.username} />
-      </Suspense>
+      {user && (
+        <Suspense fallback={<MobileNav username={shellUser.username} />}>
+          <MobileNavUnread username={shellUser.username} />
+        </Suspense>
+      )}
     </>
   );
 }
