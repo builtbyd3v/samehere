@@ -385,31 +385,28 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
         )}
 
         {step === 2 && (
-          <form onSubmit={onSubmitBasics}>
-            {basicsError && (
-              <p role="alert" className="mb-5 rounded-md border border-[var(--border-strong)] bg-[var(--featured-surface)] px-3 py-2 text-sm text-[var(--ink)]">
-                {basicsError}
-              </p>
-            )}
-            <div className="mb-6 flex items-center gap-4 border-b border-[var(--border)] pb-6">
-              <AvatarBase
-                src={avatarUrl}
-                seed={profile.username}
-                name={profile.display_name ?? profile.username}
-                className="h-16 w-16 shrink-0 rounded-full border border-[var(--border)] text-xl"
-              />
-              <div>
-                <label className="btn-ghost inline-flex cursor-pointer !py-1.5 text-sm">
-                  <input type="file" accept="image/*" onChange={onAvatar} disabled={avatarBusy} className="hidden" />
-                  {avatarBusy ? "Uploading…" : "Add a photo"}
-                </label>
-                <p className={avatarState.error ? "mt-1.5 text-xs text-[var(--danger)]" : "mt-1 text-xs text-[var(--ink-muted)]"}>
-                  {avatarState.error ?? "JPG, PNG, or WebP. Max 2 MB."}
-                </p>
+          <>
+          <StepIntro step={2} title="Set up your" accent="profile" sub="A photo, your name, and one line about you." />
+          <form onSubmit={onSubmitBasics} className={formClass}>
+            <div className="flex max-w-xl flex-col gap-4">
+              {basicsError && <p role="alert" className={alertClass}>{basicsError}</p>}
+              <div className="flex items-center gap-4 border-b border-[var(--hairline)] pb-6">
+                <AvatarBase
+                  src={avatarUrl}
+                  seed={profile.username}
+                  name={profile.display_name ?? profile.username}
+                  className="h-16 w-16 shrink-0 rounded-full border border-[var(--border)] text-xl"
+                />
+                <div>
+                  <label className="inline-flex min-h-11 cursor-pointer items-center rounded-full border border-[var(--hairline-strong)] px-4 text-sm text-[var(--ink)] transition-transform active:scale-[0.96] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[var(--accent)] has-[:disabled]:opacity-50 motion-reduce:transition-none md:min-h-9">
+                    <input type="file" accept="image/*" onChange={onAvatar} disabled={avatarBusy} className="sr-only" />
+                    {avatarBusy ? "Uploading…" : "Add a photo"}
+                  </label>
+                  <p className={avatarState.error ? "mt-1.5 text-xs text-[var(--danger)]" : "mt-1.5 text-xs text-[var(--muted)]"}>
+                    {avatarState.error ?? "JPG, PNG, or WebP. Max 2 MB."}
+                  </p>
+                </div>
               </div>
-            </div>
-
-            <div className="flex flex-col gap-4">
               <div>
                 <label htmlFor="display_name" className={label}>Display name</label>
                 <input id="display_name" name="display_name" type="text" maxLength={50}
@@ -421,54 +418,57 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
                   defaultValue={profile.bio ?? ""} placeholder="What are you into?" className={field} />
               </div>
             </div>
-
-            <div className="mt-6 flex items-center justify-between">
-              <button type="button" onClick={() => setStep(3)} className="text-sm text-[var(--ink-muted)] underline">
+            <StepFooter>
+              <Button variant="ghost" size="lg" onClick={() => setStep(3)}>
                 Skip for now
-              </button>
-              <button type="submit" disabled={basicsPending} className="btn-primary !py-2.5">
+              </Button>
+              <Button type="submit" variant="primary" size="lg" disabled={basicsPending} className="max-md:flex-1">
                 {basicsPending ? "Saving…" : "Continue"}
-              </button>
-            </div>
+              </Button>
+            </StepFooter>
           </form>
+          </>
         )}
 
         {step === 3 && (
-          <form onSubmit={onSubmitPost}>
-            <h2 className="mb-1 text-lg font-semibold">Post something real</h2>
-            <p className="mb-4 text-sm text-[var(--ink-muted)]">Optional. What are you building or figuring out?</p>
-            {postError && <p role="alert" className="mb-3 text-sm text-[var(--danger)]">{postError}</p>}
-            <textarea
-              value={postContent}
-              onChange={(e) => setPostContent(e.target.value)}
-              rows={4}
-              maxLength={280}
-              placeholder="Share what you're building…"
-              className="input-base w-full resize-y p-3 text-[15px] leading-[1.55]"
-            />
-            <div className="mt-6 flex items-center justify-between">
-              <button type="button" onClick={() => setStep(4)} disabled={postPending} className="text-sm text-[var(--ink-muted)] underline disabled:opacity-50">
-                Skip
-              </button>
-              <button type="submit" disabled={postPending || postContent.trim().length === 0} className="btn-primary !py-2.5">
-                {postPending ? "Posting…" : "Post & continue"}
-              </button>
+          <>
+          <StepIntro step={3} title="Post something" accent="real" sub="Optional. What are you building or figuring out?" />
+          <form onSubmit={onSubmitPost} className={formClass}>
+            <div className="flex max-w-xl flex-col gap-4">
+              {postError && <p role="alert" className={alertClass}>{postError}</p>}
+              <textarea
+                value={postContent}
+                onChange={(e) => setPostContent(e.target.value)}
+                rows={4}
+                maxLength={280}
+                placeholder="Share what you're building…"
+                className="input-base w-full resize-y !rounded-2xl p-3 text-[15px] leading-[1.55]"
+              />
             </div>
+            <StepFooter>
+              <Button variant="ghost" size="lg" onClick={() => setStep(4)} disabled={postPending}>
+                Skip
+              </Button>
+              <Button type="submit" variant="primary" size="lg" disabled={postPending || postContent.trim().length === 0} className="max-md:flex-1">
+                {postPending ? "Posting…" : "Post & continue"}
+              </Button>
+            </StepFooter>
           </form>
+          </>
         )}
 
         {step === 4 && (
-          <form onSubmit={onSubmitEducation}>
-            <h2 className="mb-1 text-lg font-semibold">Add your education</h2>
-            <p className="mb-4 text-sm text-[var(--ink-muted)]">Where do you study? Optional.</p>
-            {eduError && <p role="alert" className="mb-3 text-sm text-[var(--danger)]">{eduError}</p>}
-            <div className="flex flex-col gap-4">
+          <>
+          <StepIntro step={4} title="Add your" accent="education" sub="Where do you study? Optional." />
+          <form onSubmit={onSubmitEducation} className={formClass}>
+            <div className="flex max-w-xl flex-col gap-4">
+              {eduError && <p role="alert" className={alertClass}>{eduError}</p>}
               <div>
                 <label htmlFor="edu-school" className={label}>School</label>
                 <SchoolAutocomplete id="edu-school" name="school" domainName="school_domain" maxLength={100}
                   placeholder="Your university" className={field} />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label className={label}>Degree</label>
                   <Select
@@ -487,23 +487,24 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
               </div>
               <DateRangePicker currentYear={currentYear} />
             </div>
-            <div className="mt-6 flex items-center justify-between">
-              <button type="button" onClick={() => setStep(5)} disabled={eduPending} className="text-sm text-[var(--ink-muted)] underline disabled:opacity-50">
+            <StepFooter>
+              <Button variant="ghost" size="lg" onClick={() => setStep(5)} disabled={eduPending}>
                 Skip
-              </button>
-              <button type="submit" disabled={eduPending} className="btn-primary !py-2.5">
+              </Button>
+              <Button type="submit" variant="primary" size="lg" disabled={eduPending} className="max-md:flex-1">
                 {eduPending ? "Saving…" : "Add & continue"}
-              </button>
-            </div>
+              </Button>
+            </StepFooter>
           </form>
+          </>
         )}
 
         {step === 5 && (
-          <form onSubmit={onSubmitExperience}>
-            <h2 className="mb-1 text-lg font-semibold">Add an experience</h2>
-            <p className="mb-4 text-sm text-[var(--ink-muted)]">Interned somewhere? Led a club? Optional.</p>
-            {expError && <p role="alert" className="mb-3 text-sm text-[var(--danger)]">{expError}</p>}
-            <div className="flex flex-col gap-4">
+          <>
+          <StepIntro step={5} title="Add an" accent="experience" sub="Interned somewhere? Led a club? Optional." />
+          <form onSubmit={onSubmitExperience} className={formClass}>
+            <div className="flex max-w-xl flex-col gap-4">
+              {expError && <p role="alert" className={alertClass}>{expError}</p>}
               <div>
                 <label className={label}>Type</label>
                 <Select
@@ -528,35 +529,46 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
                 <input id="note" name="note" type="text" maxLength={600} placeholder="One line about what you did" className={field} />
               </div>
             </div>
-            <div className="mt-6 flex items-center justify-between">
-              <button type="button" onClick={() => setStep(6)} disabled={expPending || finishing} className="text-sm text-[var(--ink-muted)] underline disabled:opacity-50">
+            <StepFooter>
+              <Button variant="ghost" size="lg" onClick={() => setStep(6)} disabled={expPending || finishing}>
                 Skip
-              </button>
-              <button type="submit" disabled={expPending || finishing} className="btn-primary !py-2.5">
+              </Button>
+              <Button type="submit" variant="primary" size="lg" disabled={expPending || finishing} className="max-md:flex-1">
                 {expPending || finishing ? "Saving…" : "Add & continue"}
-              </button>
-            </div>
+              </Button>
+            </StepFooter>
           </form>
+          </>
         )}
 
         {step === 6 && (
-          <form onSubmit={onSubmitPublish}>
-            <h2 className="mb-1 text-lg font-semibold">Make your portfolio public</h2>
-            <p className="mb-4 text-sm text-[var(--ink-muted)]">
-              Your link samehere.dev/profile/{profile.username} shows your intro, projects, experience, and education.
-              Activity and posts stay private. You can change this anytime in Edit profile.
-            </p>
-            {publishError && <p role="alert" className="mb-3 text-sm text-[var(--danger)]">{publishError}</p>}
-            <label className="flex items-center gap-2.5 text-sm text-[var(--ink)]">
-              <input type="checkbox" name="publish_portfolio" defaultChecked className="h-4 w-4 accent-[var(--ink)]" />
-              Make my portfolio public
-            </label>
-            <div className="mt-6 flex items-center justify-end">
-              <button type="submit" disabled={publishPending || finishing} className="btn-primary !py-2.5">
-                {publishPending || finishing ? "Saving…" : "Finish"}
-              </button>
+          <>
+          <StepIntro
+            step={6}
+            title="Make your portfolio"
+            accent="public"
+            sub={
+              <>
+                Your link samehere.dev/profile/{profile.username} shows your intro, projects, experience, and education.
+                Activity and posts stay private. You can change this anytime in Edit profile.
+              </>
+            }
+          />
+          <form onSubmit={onSubmitPublish} className={formClass}>
+            <div className="flex max-w-xl flex-col gap-4">
+              {publishError && <p role="alert" className={alertClass}>{publishError}</p>}
+              <label className="flex min-h-14 cursor-pointer items-center gap-3 rounded-2xl border border-[var(--hairline)] bg-[var(--surface-2)] px-4 text-[15px] text-[var(--ink)] has-[:checked]:border-[rgba(79,159,232,0.55)] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[var(--accent)]">
+                <input type="checkbox" name="publish_portfolio" defaultChecked className="size-4 accent-[var(--accent)]" />
+                Make my portfolio public
+              </label>
             </div>
+            <StepFooter>
+              <Button type="submit" variant="primary" size="lg" disabled={publishPending || finishing} className="max-md:flex-1">
+                {publishPending || finishing ? "Saving…" : "Finish"}
+              </Button>
+            </StepFooter>
           </form>
+          </>
         )}
         </motion.div>
       </AnimatePresence>
