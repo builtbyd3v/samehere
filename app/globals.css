@@ -351,21 +351,6 @@ summary {
   }
 }
 
-/* Ultra-subtle grain over the hero — cheap static SVG noise, near-invisible,
- * kills any banding in the glow/gradient without costing a real texture asset. */
-.hero-grain::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  opacity: 0.025;
-  mix-blend-mode: overlay;
-  pointer-events: none;
-}
-.dark .hero-grain::before {
-  opacity: 0.04;
-}
-
 /* ---------------------------------------------------------------------
  * Wave-1 shared utilities (see DESIGN.md). Component classes below are
  * self-contained — apply one class, no need to stack Tailwind utilities
@@ -400,12 +385,6 @@ summary {
 @keyframes menu-pop {
   from { opacity: 0; transform: scale(0.96) translateY(-2px); }
   to   { opacity: 1; transform: none; }
-}
-
-@keyframes badge-pop {
-  0%   { transform: scale(0.6); opacity: 0; }
-  60%  { transform: scale(1.15); opacity: 1; }
-  100% { transform: scale(1); }
 }
 
 /* Soft focus-visible within the x.ai blue palette — no harsh outlines. */
@@ -521,32 +500,6 @@ summary {
   cursor: not-allowed;
 }
 
-/* Accent pill: the blue "Tailor my pitch" / Pro / AI actions. Full-pill. */
-.btn-accent {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.375rem;
-  border-radius: 9999px;
-  padding: 6px 14px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  background: var(--blue-glow);
-  color: var(--blue);
-  border: none;
-}
-.btn-accent:hover:not(:disabled) {
-  opacity: 0.85;
-}
-.btn-accent:active:not(:disabled) {
-  opacity: 0.7;
-  transform: scale(0.98);
-}
-.btn-accent:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
 /* Destructive: delete / remove / block confirmations. */
 .btn-danger {
   display: inline-flex;
@@ -571,15 +524,6 @@ summary {
 .btn-danger:disabled {
   opacity: 0.4;
   cursor: not-allowed;
-}
-
-/* Tap feedback for icon/reaction buttons — CSS :active replaces a JS
-   whileTap scale; the existing scoped transition (above) animates it, and
-   this stays out of the DOM entirely under reduced motion. */
-@media (prefers-reduced-motion: no-preference) {
-  .btn-tap:active:not(:disabled) {
-    transform: scale(0.9);
-  }
 }
 
 /* Inputs -------------------------------------------------------------- */
@@ -627,21 +571,16 @@ summary {
   background: var(--surface-raised);
   box-shadow: var(--elev-raised);
 }
-.card-hover,
-.card-hover-raise {
+.card-hover {
   transition:
     transform var(--dur-short) var(--ease-out),
     border-color var(--dur-short) var(--ease-out),
     box-shadow var(--dur-short) var(--ease-out);
 }
 @media (prefers-reduced-motion: no-preference) {
-  .card-raised.card-hover:hover,
-  .card-hover-raise:hover {
+  .card-raised.card-hover:hover {
     border-color: color-mix(in srgb, var(--ink) 16%, transparent);
     transform: translateY(-1px);
-  }
-  .card-hover-raise:active {
-    transform: scale(0.995);
   }
 }
 .card-hover:hover {
@@ -816,11 +755,6 @@ summary {
   75% { transform: translateX(2px); }
 }
 
-@keyframes feed-enter {
-  from { opacity: 0; transform: translateY(var(--rise-3)); }
-  to   { opacity: 1; transform: none; }
-}
-
 @keyframes new-posts-in {
   0% { opacity: 0; transform: translateY(-8px) scale(1); }
   70% { opacity: 1; transform: translateY(0) scale(1.04); }
@@ -930,22 +864,6 @@ summary {
   color: var(--ink-faint);
 }
 
-.surface-grain {
-  position: relative;
-  isolation: isolate;
-}
-
-.surface-grain::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  opacity: 0.035;
-  mix-blend-mode: overlay;
-  pointer-events: none;
-}
-
 .share-copied {
   background: var(--accent-blue-soft) !important;
 }
@@ -971,20 +889,6 @@ summary {
   flex-direction: column;
   gap: 1rem;
   margin-top: 1.5rem;
-}
-
-.portfolio-divided > li {
-  border-top: 1px solid var(--border);
-  padding-block: 0.75rem;
-}
-
-.portfolio-divided > li:first-child {
-  border-top: 0;
-  padding-top: 0;
-}
-
-.portfolio-divided > li:last-child {
-  padding-bottom: 0;
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -1019,45 +923,27 @@ summary {
     animation: auth-shake 240ms var(--ease-out);
   }
 
-  .feed-enter {
-    animation: feed-enter var(--dur-med) var(--ease-out) both;
-    animation-delay: calc(var(--stagger-i, 0) * var(--stagger));
-  }
-
   .empty-enter {
     animation: page-enter var(--dur-med) var(--ease-out) both;
   }
 
-  .profile-stat-enter {
-    animation: page-enter var(--dur-med) var(--ease-out) 640ms both;
-  }
-
   .label-glyph-draw[data-label="stuck"] .label-glyph-stroke,
   .label-glyph-draw[data-label="building"] .label-glyph-stroke,
-  .label-glyph-draw[data-label="looking_for_team"] .label-glyph-stroke,
-  .feed-enter .label-glyph[data-label="stuck"] .label-glyph-stroke,
-  .feed-enter .label-glyph[data-label="building"] .label-glyph-stroke,
-  .feed-enter .label-glyph[data-label="looking_for_team"] .label-glyph-stroke {
+  .label-glyph-draw[data-label="looking_for_team"] .label-glyph-stroke {
     stroke-dasharray: 32;
     animation: label-glyph-draw 220ms var(--ease-out) both;
   }
 
-  .label-glyph-draw[data-label="learning"] .label-glyph-stroke,
-  .feed-enter .label-glyph[data-label="learning"] .label-glyph-stroke {
+  .label-glyph-draw[data-label="learning"] .label-glyph-stroke {
     animation: label-glyph-draw 220ms var(--ease-out) both;
   }
 
-  .label-glyph-draw .label-glyph-fill,
-  .feed-enter .label-glyph-fill {
+  .label-glyph-draw .label-glyph-fill {
     animation: label-glyph-fill 220ms var(--ease-out) both;
   }
 
   .new-posts-pill {
     animation: new-posts-in var(--dur-short) var(--ease-out) both;
-  }
-
-  .portfolio-enter-header {
-    animation: page-enter var(--dur-long) var(--ease-out) 480ms both;
   }
 
   .portfolio-stack > * {
@@ -1092,7 +978,7 @@ summary {
   .stage-dot[data-stage="job_search"] { background-color: var(--stage-job-search); }
   .stage-dot[data-stage="working"] { background-color: var(--stage-working); }
 
-  /* <GrainOverlay>: same noise as .surface-grain. */
+  /* <GrainOverlay>: static SVG fractal noise. */
   .grain {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
