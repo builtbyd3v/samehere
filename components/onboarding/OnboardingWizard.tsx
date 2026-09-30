@@ -247,8 +247,9 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
 
   return (
     <main className="relative isolate mx-auto w-full max-w-[880px] pb-6 md:pb-12">
-      {/* Clips the wide pool sideways only, so it never scrolls the page and the sticky footer can still bleed to the screen edges. */}
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 overflow-x-clip">
+      {/* Clips the wide pool sideways only, at the screen edges (the negative inset cancels the shell gutter),
+          so it never scrolls the page and the sticky footer can still bleed to the edges. */}
+      <div aria-hidden className="pointer-events-none absolute -inset-x-4 top-0 -z-10 overflow-x-clip sm:-inset-x-6">
         <LightPool className="-top-[240px] left-1/2 h-[480px] w-[600px] -translate-x-1/2 md:-top-[360px] md:h-[700px] md:w-[1100px]" />
       </div>
       <header className="flex h-14 items-center justify-between md:h-16">
@@ -303,7 +304,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
                 {STAGES.map((s) => (
                   <label
                     key={s}
-                    className="group flex min-h-14 cursor-pointer items-center gap-3 rounded-[14px] border border-[var(--border)] bg-[var(--surface-2)] px-3.5 transition-[transform,border-color,background-color] duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-white/15 active:scale-[0.98] has-[:checked]:border-[rgba(79,159,232,0.55)] has-[:checked]:bg-[rgba(79,159,232,0.08)] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[var(--accent)] motion-reduce:transition-none motion-reduce:active:scale-100 sm:grid sm:grid-cols-[1fr_auto] sm:items-start sm:gap-2 sm:rounded-[18px] sm:p-[18px] sm:active:scale-[0.97]"
+                    className="group flex min-h-14 cursor-pointer items-center gap-3 rounded-[14px] border border-[var(--border)] bg-[var(--surface-2)] px-3.5 transition-[transform,border-color,background-color] duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-white/15 active:scale-[0.98] has-[:checked]:border-[rgba(79,159,232,0.55)] has-[:checked]:bg-[rgba(79,159,232,0.08)] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[var(--accent)] motion-reduce:transition-none motion-reduce:active:scale-100 sm:grid sm:grid-cols-[1fr_auto] sm:content-start sm:items-start sm:gap-2 sm:rounded-[18px] sm:p-[18px] sm:active:scale-[0.97]"
                   >
                     <input
                       type="radio"
