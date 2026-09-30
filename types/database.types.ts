@@ -2510,6 +2510,16 @@ export type Database = {
           user_id: string
         }[]
       }
+      list_weekly_digest: {
+        Args: never
+        Returns: {
+          email: string
+          people: Json
+          questions: Json
+          user_id: string
+          views_7d: number | null
+        }[]
+      }
       list_weekly_match_recipients: {
         Args: never
         Returns: {
