@@ -7,8 +7,9 @@
 // the cards keep the old colours, silently, until someone shares a link. This is
 // the link.
 //
-// ponytail: string compare, not a CSS parser. Values are hand-written literals in
-// both files; if either ever holds a computed value, reach for a real parser.
+// ponytail: string compare, not a CSS parser. A `var(--x)` value is followed to
+// the literal it names inside the same `.dark` block (plan 024 aliases legacy
+// tokens that way); anything more computed than that needs a real parser.
 
 import { readFile } from "node:fs/promises";
 
@@ -28,11 +29,17 @@ const tsBody = ts.slice(ts.indexOf("export const DARK"), ts.indexOf("} as const;
 const tsVars = [...tsBody.matchAll(/"(--[a-z0-9-]+)":\s*"([^"]+)"/g)];
 if (tsVars.length === 0) throw new Error("check-og-tokens: no tokens found in lib/og-tokens.ts");
 
+const resolve = (value, hops = 0) => {
+  const ref = /^var\((--[a-z0-9-]+)\)$/.exec(value.trim());
+  if (!ref || hops > 5 || !cssVars.has(ref[1])) return value;
+  return resolve(cssVars.get(ref[1]), hops + 1);
+};
+
 const norm = (v) => v.trim().toLowerCase().replace(/\s+/g, "");
 
 const drift = [];
 for (const [, name, mirrored] of tsVars) {
-  const source = cssVars.get(name);
+  const source = cssVars.has(name) ? resolve(cssVars.get(name)) : undefined;
   if (source === undefined) drift.push(`${name}: not defined in globals.css .dark`);
   else if (norm(source) !== norm(mirrored)) drift.push(`${name}: globals.css has ${source.trim()}, og-tokens.ts has ${mirrored}`);
 }

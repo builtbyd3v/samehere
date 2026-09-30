@@ -19,17 +19,17 @@ body {
 
 :root {
   color-scheme: dark;
-  --canvas: #0a0a0a;
-  --surface: #161616;
-  --surface-raised: #1f2228;
-  --surface-post: #1f2228;
-  --surface-card: #161616;
+  --canvas: var(--bg);
+  --surface: var(--surface-3);
+  --surface-raised: var(--surface-4);
+  --surface-post: var(--surface-4);
+  --surface-card: var(--surface-2);
   --border: rgba(255, 255, 255, 0.08);
   --border-strong: rgba(255, 255, 255, 0.22);
   --ink: #f4f4f5;
-  --ink-muted: #a1a5ab;
+  --ink-muted: var(--muted);
   --ink-faint: rgba(245, 245, 245, 0.68);
-  --featured-surface: rgba(255, 255, 255, 0.05);
+  --featured-surface: var(--fill-2);
   --blue: #4f9fe8;
   --blue-2: #7ec4ff;
   --founder: #ecc94b;
@@ -62,8 +62,9 @@ body {
   --label-learning: #5fce8f;
   --label-team: #e07a5f;
 
-  /* Midnight editorial tokens (DESIGN.md). Legacy names above keep their
-     values so pages not yet redesigned look the same. */
+  /* Midnight editorial tokens (DESIGN.md). Legacy names above alias these
+     (plan 024), so pages not yet redesigned render in the same system. Do not
+     use the legacy names in new code. */
   --bg: #08090a;
   --surface-1: #0c0d0f;
   --surface-2: #0d0f11;
@@ -78,6 +79,11 @@ body {
   --accent-2: #9ecbf5;
   --accent-ink: #cfe6ff;
   --accent-soft: rgba(79, 159, 232, 0.16);
+  --fill-1: rgba(255, 255, 255, 0.03);
+  --fill-2: rgba(255, 255, 255, 0.05);
+  --fill-3: rgba(255, 255, 255, 0.07);
+  --edge-top: rgba(255, 255, 255, 0.12);
+  --on-accent: #08090a;
   --amber: var(--label-stuck);
   --green: var(--label-learning);
   --coral: var(--label-team);
@@ -91,17 +97,17 @@ body {
 
 .dark {
   color-scheme: dark;
-  --canvas: #0a0a0a;
-  --surface: #161616;
-  --surface-raised: #1f2228;
-  --surface-post: #1f2228;
-  --surface-card: #161616;
+  --canvas: var(--bg);
+  --surface: var(--surface-3);
+  --surface-raised: var(--surface-4);
+  --surface-post: var(--surface-4);
+  --surface-card: var(--surface-2);
   --border: rgba(255, 255, 255, 0.08);
   --border-strong: rgba(255, 255, 255, 0.22);
   --ink: #f4f4f5;
-  --ink-muted: #a1a5ab;
+  --ink-muted: var(--muted);
   --ink-faint: rgba(245, 245, 245, 0.68);
-  --featured-surface: rgba(255, 255, 255, 0.05);
+  --featured-surface: var(--fill-2);
   --blue: #4f9fe8;
   --blue-2: #7ec4ff;
   --founder: #ecc94b;
@@ -136,6 +142,11 @@ body {
   --accent-2: #9ecbf5;
   --accent-ink: #cfe6ff;
   --accent-soft: rgba(79, 159, 232, 0.16);
+  --fill-1: rgba(255, 255, 255, 0.03);
+  --fill-2: rgba(255, 255, 255, 0.05);
+  --fill-3: rgba(255, 255, 255, 0.07);
+  --edge-top: rgba(255, 255, 255, 0.12);
+  --on-accent: #08090a;
   --amber: var(--label-stuck);
   --green: var(--label-learning);
   --coral: var(--label-team);
@@ -149,23 +160,23 @@ body {
 
 .light {
   color-scheme: light;
-  --canvas: #f4f4f5;
-  --surface: #ffffff;
-  --surface-raised: #ffffff;
-  --surface-post: #ffffff;
-  --surface-card: #ffffff;
+  --canvas: var(--bg);
+  --surface: var(--surface-3);
+  --surface-raised: var(--surface-3);
+  --surface-post: var(--surface-3);
+  --surface-card: var(--surface-2);
   --border: rgba(10, 10, 10, 0.08);
   --elev-hairline: inset 0 1px 0 rgba(255, 255, 255, 0.9);
   --elev-raised: inset 0 1px 0 rgba(255, 255, 255, 1), 0 1px 1px rgba(0, 0, 0, 0.04), 0 12px 28px -8px rgba(0, 0, 0, 0.12);
   --border-strong: rgba(10, 10, 10, 0.22);
   --ink: #0a0a0a;
-  --ink-muted: #52525b;
+  --ink-muted: var(--muted);
   --ink-faint: rgba(10, 10, 10, 0.58);
-  --featured-surface: rgba(10, 10, 10, 0.04);
+  --featured-surface: var(--fill-2);
   --blue: #0075de;
   --blue-2: #2f9bff;
-  --founder: #a67c00;
-  --campus-founder: #1f8a4d;
+  --founder: #86660a;
+  --campus-founder: #18703e;
   --danger: #c0392b;
   --hm0: rgba(10, 10, 10, 0.06); --hm1: #bcd8f5; --hm2: #5fa0e8; --hm3: #0075de;
   --accent: #0075de;
@@ -175,10 +186,10 @@ body {
   --accent-blue-strong: #005bb3;
   --accent-blue-soft: rgba(0, 117, 222, 0.10);
   --nav-muted: rgba(10, 10, 10, 0.62);
-  --label-stuck: #e0a83a;
+  --label-stuck: #805800;
   --label-building: #0075de;
-  --label-learning: #5fce8f;
-  --label-team: #c45c42;
+  --label-learning: #18703e;
+  --label-team: #9c4833;
   /* New tokens, light values (best effort; the redesign is dark first). */
   --bg: #f4f4f5;
   --surface-1: #ffffff;
@@ -190,32 +201,37 @@ body {
   --ink-2: #27272a;
   --ink-3: #3f3f46;
   --muted: #52525b;
-  --faint: #71717a;
+  --faint: #6a6a73;
   --accent-2: #005bb3;
   --accent-ink: #005bb3;
   --accent-soft: rgba(0, 117, 222, 0.10);
+  --fill-1: rgba(10, 10, 10, 0.03);
+  --fill-2: rgba(10, 10, 10, 0.05);
+  --fill-3: rgba(10, 10, 10, 0.08);
+  --edge-top: rgba(10, 10, 10, 0.10);
+  --on-accent: #ffffff;
 }
 
 @media (prefers-color-scheme: light) {
   :root:not(.dark) {
     color-scheme: light;
-    --canvas: #f4f4f5;
-    --surface: #ffffff;
-    --surface-raised: #ffffff;
-    --surface-post: #ffffff;
-    --surface-card: #ffffff;
+    --canvas: var(--bg);
+    --surface: var(--surface-3);
+    --surface-raised: var(--surface-3);
+    --surface-post: var(--surface-3);
+    --surface-card: var(--surface-2);
     --border: rgba(10, 10, 10, 0.08);
     --elev-hairline: inset 0 1px 0 rgba(255, 255, 255, 0.9);
     --elev-raised: inset 0 1px 0 rgba(255, 255, 255, 1), 0 1px 1px rgba(0, 0, 0, 0.04), 0 12px 28px -8px rgba(0, 0, 0, 0.12);
     --border-strong: rgba(10, 10, 10, 0.22);
     --ink: #0a0a0a;
-    --ink-muted: #52525b;
+    --ink-muted: var(--muted);
     --ink-faint: rgba(10, 10, 10, 0.58);
-    --featured-surface: rgba(10, 10, 10, 0.04);
+    --featured-surface: var(--fill-2);
     --blue: #0075de;
     --blue-2: #2f9bff;
-    --founder: #a67c00;
-    --campus-founder: #1f8a4d;
+    --founder: #86660a;
+    --campus-founder: #18703e;
     --danger: #c0392b;
     --hm0: rgba(10, 10, 10, 0.06); --hm1: #bcd8f5; --hm2: #5fa0e8; --hm3: #0075de;
     --accent: #0075de;
@@ -225,10 +241,10 @@ body {
     --accent-blue-strong: #005bb3;
     --accent-blue-soft: rgba(0, 117, 222, 0.10);
     --nav-muted: rgba(10, 10, 10, 0.62);
-    --label-stuck: #e0a83a;
+    --label-stuck: #805800;
     --label-building: #0075de;
-    --label-learning: #5fce8f;
-    --label-team: #c45c42;
+    --label-learning: #18703e;
+    --label-team: #9c4833;
     /* New tokens, light values (best effort; the redesign is dark first). */
     --bg: #f4f4f5;
     --surface-1: #ffffff;
@@ -240,10 +256,15 @@ body {
     --ink-2: #27272a;
     --ink-3: #3f3f46;
     --muted: #52525b;
-    --faint: #71717a;
+    --faint: #6a6a73;
     --accent-2: #005bb3;
     --accent-ink: #005bb3;
     --accent-soft: rgba(0, 117, 222, 0.10);
+    --fill-1: rgba(10, 10, 10, 0.03);
+    --fill-2: rgba(10, 10, 10, 0.05);
+    --fill-3: rgba(10, 10, 10, 0.08);
+    --edge-top: rgba(10, 10, 10, 0.10);
+    --on-accent: #ffffff;
   }
 }
 

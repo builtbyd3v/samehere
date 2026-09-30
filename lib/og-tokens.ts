@@ -15,12 +15,12 @@
  * Change a colour in globals.css and forget this file, and the build tells you.
  */
 export const DARK = {
-  "--canvas": "#0a0a0a",
-  "--surface": "#161616",
-  "--surface-post": "#1f2228",
+  "--canvas": "#08090a",
+  "--surface": "#0f1012",
+  "--surface-post": "#17191c",
   "--border": "rgba(255, 255, 255, 0.08)",
   "--ink": "#f4f4f5",
-  "--ink-muted": "#a1a5ab",
+  "--ink-muted": "#9a9ea6",
   "--ink-faint": "rgba(245, 245, 245, 0.68)",
   "--featured-surface": "rgba(255, 255, 255, 0.05)",
   "--blue": "#4f9fe8",
