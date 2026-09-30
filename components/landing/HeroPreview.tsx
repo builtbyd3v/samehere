@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { StuckQuestion } from "@/components/feed/PostCard";
+import PostCard, { type FeedPost } from "@/components/feed/PostCard";
 import IdentityPanel from "@/components/portfolio/IdentityPanel";
 import ProjectCard from "@/components/portfolio/ProjectCard";
 import { Button } from "@/components/ui/Button";
@@ -7,7 +7,7 @@ import { HairlineCard } from "@/components/ui/HairlineCard";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import type { LandingExample } from "@/lib/landing/examples";
 import { CARD_SIZES, cardPath } from "@/lib/portfolio/card-format";
-import { EXAMPLE_PORTFOLIO, EXAMPLE_STUCK_OPEN } from "./example-content";
+import { EXAMPLE_PORTFOLIO, EXAMPLE_VIEWER_ID, examplePost } from "./example-content";
 
 const FLOAT_SHADOW = "shadow-[0_40px_80px_-20px_rgba(0,0,0,0.8)]";
 const THUMB = "h-40 w-auto rounded-xl border border-[var(--hairline)] md:h-48";
@@ -34,15 +34,17 @@ export function ExportImage({ username, displayName, format, className }: {
   );
 }
 
-// Zero-JS example: the real StuckQuestion block, unlinked, captioned as an example.
-function ExamplePost() {
+function ExamplePost({ post }: { post: FeedPost }) {
   return (
-    <HairlineCard radius={20} className={FLOAT_SHADOW} innerClassName="p-4">
-      <figure aria-label="Example post" className="flex flex-col gap-3">
-        <figcaption>
+    <HairlineCard radius={20} className={FLOAT_SHADOW} innerClassName="px-4">
+      <figure aria-label="Example post">
+        <figcaption className="pt-3.5">
           <SectionLabel>Example post</SectionLabel>
         </figcaption>
-        <StuckQuestion content={EXAMPLE_STUCK_OPEN} postId="example" linked={false} />
+        {/* inert: an illustration, not a live post. Nothing inside is focusable, clickable, or read out. */}
+        <div inert>
+          <PostCard post={post} viewerId={EXAMPLE_VIEWER_ID} />
+        </div>
       </figure>
     </HairlineCard>
   );
@@ -79,7 +81,8 @@ function ExamplePanels({ e, action }: { e: LandingExample; action: boolean }) {
   );
 }
 
-export default function HeroPreview({ example }: { example: LandingExample | null }) {
+export default function HeroPreview({ example, postCreatedAt }: { example: LandingExample | null; postCreatedAt: string }) {
+  const post = examplePost(postCreatedAt);
   return (
     <div id={example ? "examples" : undefined} className="relative mx-auto mt-11 max-w-[1440px] scroll-mt-6 px-4 md:mt-[72px] md:px-8 xl:px-16">
       <div className="relative mx-auto max-w-[720px]">
@@ -107,7 +110,7 @@ export default function HeroPreview({ example }: { example: LandingExample | nul
           </div>
         </HairlineCard>
         <div className={`landing-loop absolute left-[calc(100%-72px)] top-[120px] z-20 hidden w-[340px] rotate-[5deg] motion-safe:animate-[landing-float-alt_8s_ease-in-out_infinite] xl:block`}>
-          <ExamplePost />
+          <ExamplePost post={post} />
         </div>
       </div>
       {/* Below xl: same pieces, stacked, no tilt, no motion. */}
@@ -119,7 +122,7 @@ export default function HeroPreview({ example }: { example: LandingExample | nul
           </div>
         ) : null}
         <div className="hidden md:block">
-          <ExamplePost />
+          <ExamplePost post={post} />
         </div>
       </div>
     </div>

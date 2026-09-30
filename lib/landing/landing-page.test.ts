@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import Features from "@/components/landing/Features";
 import FinaleCta from "@/components/landing/FinaleCta";
 import Hero from "@/components/landing/Hero";
@@ -9,6 +9,11 @@ import { MoreExamples } from "@/components/landing/HeroPreview";
 import StageMarquee from "@/components/landing/StageMarquee";
 import type { LandingExample } from "@/lib/landing/examples";
 import { STAGE_LABELS } from "@/lib/stage";
+
+// The hero renders the real PostCard; stub its browser-only dependencies (vitest hoists vi.mock).
+vi.mock("@/lib/supabase/client", () => ({ getBrowserClient: () => ({}) }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push() {}, refresh() {}, prefetch() {} }), usePathname: () => "/" }));
+vi.mock("@/components/feed/PostMenu", () => ({ default: () => null }));
 
 const ada: LandingExample = {
   username: "ada",
@@ -39,7 +44,7 @@ const ada: LandingExample = {
 
 describe("landing page", () => {
   it("hero fallback shows the real components with example content and no export images", () => {
-    const html = renderToString(createElement(Hero, { example: null }));
+    const html = renderToString(createElement(Hero, { example: null, postCreatedAt: new Date().toISOString() }));
     for (const text of [
       "Find the people at your exact stage.",
       'id="main-content"',
@@ -47,7 +52,9 @@ describe("landing page", () => {
       "Example portfolio",
       "Your name",
       "Example post",
-      "Stuck · open",
+      'aria-label="Same here, 1"',
+      'aria-pressed="true"',
+      "inert",
     ]) {
       expect(html).toContain(text);
     }
@@ -60,7 +67,7 @@ describe("landing page", () => {
   });
 
   it("hero with a real example shows its portfolio and export images", () => {
-    const html = renderToString(createElement(Hero, { example: ada }));
+    const html = renderToString(createElement(Hero, { example: ada, postCreatedAt: new Date().toISOString() }));
     for (const text of [
       "Live portfolio",
       'id="examples"',

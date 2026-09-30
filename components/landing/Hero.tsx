@@ -5,7 +5,7 @@ import { SectionLabel } from "@/components/ui/SectionLabel";
 import type { LandingExample } from "@/lib/landing/examples";
 import HeroPreview from "./HeroPreview";
 
-export default function Hero({ example = null }: { example?: LandingExample | null }) {
+export default function Hero({ example = null, postCreatedAt }: { example?: LandingExample | null; postCreatedAt: string }) {
   return (
     <section id="main-content" tabIndex={-1} className="relative outline-none">
       <div className="mx-auto flex max-w-[1440px] flex-col gap-5 px-4 pt-12 md:items-center md:gap-0 md:px-8 md:pt-20 md:text-center xl:px-16 xl:pt-28">
@@ -40,7 +40,7 @@ export default function Hero({ example = null }: { example?: LandingExample | nu
           </SectionLabel>
         </Reveal>
       </div>
-      <HeroPreview example={example} />
+      <HeroPreview example={example} postCreatedAt={postCreatedAt} />
     </section>
   );
 }

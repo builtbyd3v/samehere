@@ -4,6 +4,7 @@ import { loadLandingExamples } from "@/lib/landing/examples";
 import { createAnonPortfolioClient } from "@/lib/portfolio/client";
 import Features from "./Features";
 import FinaleCta from "./FinaleCta";
+import { twoHoursAgo } from "./example-content";
 import Hero from "./Hero";
 import { MoreExamples } from "./HeroPreview";
 import LandingFooter from "./LandingFooter";
@@ -13,6 +14,8 @@ import StageMarquee from "./StageMarquee";
 export default async function LandingPage() {
   const examples = await loadLandingExamples(createAnonPortfolioClient());
   const featured = examples[0] ?? null;
+  // ISR renders every 5 minutes, so the example post always reads "2h".
+  const postCreatedAt = twoHoursAgo();
   return (
     <main id="top" className="dark relative min-h-dvh overflow-x-clip bg-[var(--bg)] text-[var(--ink)]">
       <a href="#main-content" className="landing-skip-link">
@@ -22,7 +25,7 @@ export default async function LandingPage() {
       <LightPool className="left-1/2 top-[-260px] h-[600px] w-[700px] -translate-x-1/2 md:top-[-420px] md:h-[900px] md:w-[1400px]" />
       <div aria-hidden className="grain pointer-events-none absolute inset-0 select-none opacity-[0.08] mix-blend-overlay" />
       <PublicHeader showExamples={featured !== null} />
-      <Hero example={featured} />
+      <Hero example={featured} postCreatedAt={postCreatedAt} />
       <MoreExamples examples={examples.slice(1)} />
       <StageMarquee />
       <Features example={featured} />
