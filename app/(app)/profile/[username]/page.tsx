@@ -33,6 +33,7 @@ import { PORTFOLIO_SECTIONS } from "@/lib/portfolio/validation";
 import TrackPortfolioView from "@/components/portfolio/TrackPortfolioView";
 import { OwnerAnalyticsSection, PortfolioAnalyticsFallback } from "@/components/portfolio/PortfolioAnalytics";
 import SharePortfolioButton from "@/components/portfolio/SharePortfolioButton";
+import ExportPortfolioButton from "@/components/portfolio/ExportPortfolioButton";
 import PortfolioBanner from "@/components/portfolio/PortfolioBanner";
 import ResumeLinks from "@/components/portfolio/ResumeLinks";
 import UnavailableNotice from "@/components/portfolio/UnavailableNotice";
@@ -701,7 +702,10 @@ export default async function ProfilePage({
                 className="relative z-10 -mt-12 h-24 w-24 shrink-0 rounded-full border-2 border-[var(--surface-raised)] text-3xl sm:-mt-14 sm:h-28 sm:w-28"
               />
               {isOwner ? (
-                <SharePortfolioButton username={profile.username} displayName={displayName} />
+                <div className="flex items-center gap-2">
+                  <SharePortfolioButton username={profile.username} displayName={displayName} />
+                  <ExportPortfolioButton username={profile.username} />
+                </div>
               ) : (
                 <div className="flex w-full shrink-0 flex-col items-stretch gap-2 min-[391px]:w-auto min-[391px]:items-end">
                   <ProfileActions
