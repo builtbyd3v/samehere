@@ -68,6 +68,10 @@ describe("updateSession missing-user owner APIs", () => {
     expect(cron.status).not.toBe(401);
     expect(cron.status).not.toBe(307);
 
+    const digest = await updateSession(request("/api/cron/weekly-digest"));
+    expect(digest.status).not.toBe(401);
+    expect(digest.status).not.toBe(307);
+
     const oauth = await updateSession(request("/api/integrations/github"));
     expect(oauth.status).not.toBe(401);
     expect(oauth.status).not.toBe(307);

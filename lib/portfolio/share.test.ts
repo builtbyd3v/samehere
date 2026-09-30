@@ -9,6 +9,7 @@ describe("portfolio share URL", () => {
     expect(profileShareUrl("ada")).toBe(`${SITE_URL}/profile/ada`);
     expect(profileShareUrl("ada")).toMatch(/^https:\/\//);
     expect(profileShareUrl("ada")).not.toBe(profileSharePath("ada"));
+    expect(profileShareUrl("ada", "ada")).toBe(`${SITE_URL}/profile/ada?ref=ada`);
   });
 
   it("SharePortfolioButton native share uses profileShareUrl", () => {
@@ -20,6 +21,7 @@ describe("portfolio share URL", () => {
     expect(src).not.toMatch(/url:\s*profileSharePath/);
     expect(src).toMatch(/navigator\.share\(\{ title: `\$\{displayName\} on samehere`, url, text: `@\$\{username\}` \}\)/);
     expect(src).toMatch(/navigator\.clipboard\.writeText\(url\)/);
+    expect(src).toMatch(/profileShareUrl\(username, username\)/);
   });
 
   it("profile page still renders SharePortfolioButton", () => {

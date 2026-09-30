@@ -2133,6 +2133,7 @@ export type Database = {
       block_user: { Args: { target: string }; Returns: undefined }
       can_read_channel: { Args: { p_conversation: string }; Returns: boolean }
       check_invite_code: { Args: { p_code: string }; Returns: boolean }
+      claim_signup_referral: { Args: { p_ref: string }; Returns: boolean }
       club_approve: {
         Args: { p_club: string; p_user: string }
         Returns: undefined
@@ -2508,6 +2509,16 @@ export type Database = {
           email: string
           notif_unread: number
           user_id: string
+        }[]
+      }
+      list_weekly_digest: {
+        Args: never
+        Returns: {
+          email: string
+          people: Json
+          questions: Json
+          user_id: string
+          views_7d: number | null
         }[]
       }
       list_weekly_match_recipients: {

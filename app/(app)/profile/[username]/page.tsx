@@ -32,6 +32,7 @@ import { profileShareTitle } from "@/lib/og/copy";
 import { hasPublishedSection, metadataDescription, publicSectionVisible, robotsForProjection } from "@/lib/portfolio/projection";
 import { eligiblePublicView } from "@/lib/portfolio/metrics";
 import TrackPortfolioView from "@/components/portfolio/TrackPortfolioView";
+import RefLanding from "@/components/portfolio/RefLanding";
 import { OwnerAnalyticsSection, PortfolioAnalyticsFallback } from "@/components/portfolio/PortfolioAnalytics";
 import SharePortfolioButton from "@/components/portfolio/SharePortfolioButton";
 import ExportPortfolioButton from "@/components/portfolio/ExportPortfolioButton";
@@ -49,6 +50,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Reveal } from "@/components/ui/Reveal";
+import { parseRef } from "@/lib/referrals";
 const getProfileByUsername = cache(async (username: string) => fetchProfileByUsername(await createClient(), username));
 
 const loadViewerPublicMeta = cache(async (username: string, hasAuth: boolean) => {
@@ -273,7 +275,7 @@ async function PublicPortfolioBelow({
         <Button href="/login" variant="ghost" size="sm">
           Log in
         </Button>
-        <Button href="/signup" variant="primary" size="sm">
+        <Button href={`/signup?ref=${encodeURIComponent(username)}`} variant="primary" size="sm">
           Join free
         </Button>
       </p>
@@ -379,7 +381,7 @@ function NothingPublished({ owner, username, isPrivate }: { owner: boolean; user
   );
 }
 
-async function PublicProfileView({ username }: { username: string }) {
+async function PublicProfileView({ username, landingRef }: { username: string; landingRef: string | null }) {
   const client = createAnonPortfolioClient();
   const data = await loadPublicProfilePage(client, username);
   if (!data) notFound();
@@ -395,6 +397,7 @@ async function PublicProfileView({ username }: { username: string }) {
       className={PAGE_MAIN}
       style={accentColor ? ({ "--profile-accent": accentColor } as CSSProperties) : undefined}
     >
+      {landingRef && <RefLanding refCode={landingRef} />}
       <ProfileBackdrop bannerUrl={bannerUrl} accent={Boolean(accentColor)} />
       <ProfileGrid
         panel={
@@ -444,6 +447,15 @@ async function PublicProfileView({ username }: { username: string }) {
           </Suspense>
         )}
       </ProfileGrid>
+      {/* Matches the single 440px column when nothing is published, otherwise spans both columns. */}
+      <div
+        className={`mt-12 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--hairline)] pt-6${nothingPublished ? " mx-auto w-full max-w-[440px]" : ""}`}
+      >
+        <p className="text-small text-[var(--muted)]">This portfolio is built on samehere. Free for CS students.</p>
+        <Button href={`/signup?ref=${encodeURIComponent(profile.username)}`} variant="secondary" size="sm">
+          Make yours
+        </Button>
+      </div>
     </main>
   );
 }
@@ -453,18 +465,20 @@ export default async function ProfilePage({
   searchParams,
 }: {
   params: Promise<{ username: string }>;
-  searchParams?: Promise<{ preview?: string }>;
+  searchParams?: Promise<{ preview?: string; ref?: string | string[] }>;
 }) {
   const { username } = await params;
-  const previewPublic = (await searchParams)?.preview === "public";
-  if (!(await hasPortfolioAuthCookie())) return <PublicProfileView username={username} />;
+  const sp = await searchParams;
+  const previewPublic = sp?.preview === "public";
+  const landingRef = parseRef(sp?.ref);
+  if (!(await hasPortfolioAuthCookie())) return <PublicProfileView username={username} landingRef={landingRef} />;
 
   const supabase = await createClient();
   const [{ data: { user } }, profile] = await Promise.all([
     supabase.auth.getUser(),
     getProfileByUsername(username),
   ]);
-  if (!user) return <PublicProfileView username={username} />;
+  if (!user) return <PublicProfileView username={username} landingRef={landingRef} />;
   if (!profile) notFound();
 
   const isOwner = user.id === profile.id;

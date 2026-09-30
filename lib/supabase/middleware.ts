@@ -82,7 +82,7 @@ export async function updateSession(request: NextRequest) {
     path.startsWith('/auth/') ||
     path === '/api/stripe/webhook' ||
     // Both do their own auth: cron via secret header, unsubscribe via HMAC token.
-    path === '/api/cron/unread-digest' ||
+    path === '/api/cron/weekly-digest' ||
     path === '/api/cron/github-sync' ||
     // GitHub OAuth start/callback do their own login/state redirects.
     (path === GITHUB_CONNECT_PATH && request.method === 'GET') ||
