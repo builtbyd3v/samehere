@@ -2133,6 +2133,7 @@ export type Database = {
       block_user: { Args: { target: string }; Returns: undefined }
       can_read_channel: { Args: { p_conversation: string }; Returns: boolean }
       check_invite_code: { Args: { p_code: string }; Returns: boolean }
+      claim_signup_referral: { Args: { p_ref: string }; Returns: boolean }
       club_approve: {
         Args: { p_club: string; p_user: string }
         Returns: undefined

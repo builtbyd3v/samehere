@@ -5,6 +5,7 @@ import { useActionState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import posthog from "posthog-js";
 import { signUp, type AuthState } from "@/app/(auth)/actions";
+import { parseRef } from "@/lib/referrals";
 import AuthAlert from "./AuthAlert";
 import AuthCard from "./AuthCard";
 import AuthSubmitButton from "./AuthSubmitButton";
@@ -21,6 +22,7 @@ export default function SignupForm({ inviteOnly = false }: SignupFormProps) {
   const [state, formAction, pending] = useActionState<AuthState, FormData>(signUp, {});
   const hasError = !!state.error;
   const refFromLink = useSearchParams().get("ref") ?? "";
+  const ref = parseRef(refFromLink);
 
   // Fire once when the form transitions to success. Ref guard so a re-render of
   // the success branch can't re-capture. Declared above the early-return so the
@@ -29,16 +31,16 @@ export default function SignupForm({ inviteOnly = false }: SignupFormProps) {
   useEffect(() => {
     if (state.ok && !capturedRef.current) {
       capturedRef.current = true;
-      posthog.capture("signup_submitted", { has_ref: !!refFromLink, method: "password" });
+      posthog.capture("signup_submitted", { has_ref: !!ref, ref, method: "password" });
     }
-  }, [state.ok, refFromLink]);
+  }, [state.ok, ref]);
 
   // signup_started: first interaction with any field, ref-guarded to fire once.
   const startedRef = useRef(false);
   function handleFormFocus() {
     if (!startedRef.current) {
       startedRef.current = true;
-      posthog.capture("signup_started");
+      posthog.capture("signup_started", { ref });
     }
   }
 
