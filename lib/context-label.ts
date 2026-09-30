@@ -25,6 +25,14 @@ export const CONTEXT_LABEL_COLOR: Record<ContextLabel, string> = {
   looking_for_team: "var(--label-team)",
 };
 
+/** Dot color per label (full literal classes so Tailwind sees them). Tokens from plan 010. */
+export const CONTEXT_LABEL_DOT: Record<ContextLabel, string> = {
+  building: "bg-[var(--accent)]",
+  learning: "bg-[var(--green)]",
+  stuck: "bg-[var(--amber)]",
+  looking_for_team: "bg-[var(--coral)]",
+};
+
 export const COMPOSER_LABELS: readonly ContextLabel[] = ["stuck", "building", "learning", "looking_for_team"];
 
 export function parseContextLabel(raw: unknown): ContextLabel | null {

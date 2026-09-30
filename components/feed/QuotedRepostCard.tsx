@@ -49,8 +49,8 @@ export default function QuotedRepostCard({
 
   return (
     <article
-      className={`rounded-2xl border border-[var(--border)] bg-[var(--surface-post)] p-4 sm:p-5${
-        detail ? "" : " transition-colors duration-200 hover:border-[var(--border-strong)]"
+      className={`flex flex-col gap-2 border-b border-[var(--hairline)] py-4 transition-colors duration-[180ms] lg:py-[22px]${
+        detail ? "" : " hover:bg-white/[0.015]"
       }`}
     >
       <div className="flex gap-3">
@@ -98,7 +98,7 @@ export default function QuotedRepostCard({
             </p>
           )}
 
-          <div className="mt-3">
+          <div className="my-3">
             <PostCard post={original} viewerId={viewerId} variant="embedded" embeddedLinked />
           </div>
 

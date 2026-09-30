@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { countNewerPosts } from "./actions";
+import { buttonClass } from "@/components/ui/Button";
 
 export default function NewPostsPill({ since, label }: { since: string; label?: string }) {
   const router = useRouter();
@@ -44,7 +45,7 @@ export default function NewPostsPill({ since, label }: { since: string; label?: 
   if (count <= 0) return null;
 
   return (
-    <div className="sticky top-16 z-20 flex justify-center">
+    <div className="sticky top-[108px] z-20 flex justify-center py-2 lg:top-[76px]">
       <button
         type="button"
         onClick={() => {
@@ -52,7 +53,7 @@ export default function NewPostsPill({ since, label }: { since: string; label?: 
           window.scrollTo({ top: 0, behavior: "smooth" });
           router.refresh();
         }}
-        className="new-posts-pill btn-tap rounded-full border border-[var(--border)] bg-[var(--surface-raised)] px-4 py-1.5 text-sm font-medium text-[var(--blue)] shadow-paper transition hover:brightness-105 active:translate-y-[1px]"
+        className={`new-posts-pill ${buttonClass("primary", "sm")}`}
       >
         {count} new post{count === 1 ? "" : "s"}
       </button>

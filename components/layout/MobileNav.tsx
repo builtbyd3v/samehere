@@ -2,69 +2,45 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion, useReducedMotion } from "motion/react";
-import { House, User } from "lucide-react";
-import { IconBell, IconMail, IconSearch } from "@/components/icons";
+import { Bookmark, House, MessageCircle, Search, User } from "lucide-react";
 
-export default function MobileNav({
-  username,
-  dmUnread = 0,
-  notifUnread = 0,
-}: {
-  username: string | null;
-  dmUnread?: number;
-  notifUnread?: number;
-}) {
+const ICON = { size: 22, strokeWidth: 1.6, "aria-hidden": true } as const;
+
+export default function MobileNav({ username, dmUnread = 0 }: { username: string | null; dmUnread?: number }) {
   const pathname = usePathname();
-  const reduceMotion = useReducedMotion();
 
   const items = [
-    {
-      label: "Feed",
-      href: "/feed",
-      icon: <House size={22} strokeWidth={1.5} aria-hidden />,
-    },
-    { label: "Search", href: "/search", icon: <IconSearch /> },
-    { label: "Messages", href: "/messages", icon: <IconMail />, dot: dmUnread > 0 },
-    { label: "Notifications", href: "/notifications", icon: <IconBell />, dot: notifUnread > 0 },
-    {
-      label: "Profile",
-      href: username ? `/profile/${username}` : "#",
-      icon: <User size={22} strokeWidth={1.5} aria-hidden />,
-    },
+    { label: "Home", href: "/feed", icon: <House {...ICON} /> },
+    { label: "Search", href: "/search", icon: <Search {...ICON} /> },
+    { label: "Messages", href: "/messages", icon: <MessageCircle {...ICON} />, dot: dmUnread > 0 },
+    { label: "Saved", href: "/saved", icon: <Bookmark {...ICON} /> },
+    { label: "Profile", href: username ? `/profile/${username}` : "#", icon: <User {...ICON} /> },
   ].map((item) => ({
     ...item,
     active:
-      item.label === "Feed"
+      item.label === "Home"
         ? pathname === "/feed" || pathname.startsWith("/feed/")
-        : pathname === item.href || pathname.startsWith(item.href + "/"),
+        : item.href !== "#" && (pathname === item.href || pathname.startsWith(item.href + "/")),
   }));
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t border-[var(--border)] bg-[var(--canvas)]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden" aria-label="Primary">
+    <nav
+      aria-label="Primary"
+      className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-[var(--hairline)] bg-[var(--bg)]/92 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
+    >
       {items.map((item) => (
         <Link
           key={item.label}
           href={item.href}
-          aria-label={item.label}
           aria-current={item.active ? "page" : undefined}
-          className={`relative flex min-h-11 flex-1 items-center justify-center py-3 transition-colors duration-[var(--dur-micro)] ease-out ${item.active ? "text-[var(--blue)]" : "text-[var(--ink-muted)]"}`}
+          className={`relative flex min-h-[60px] flex-col items-center justify-center gap-1 text-[10px] ${item.active ? "text-[var(--ink)]" : "text-[var(--faint)]"}`}
         >
-          {item.active ? (
-            reduceMotion ? (
-              <span className="shell-mobile-mark" aria-hidden />
-            ) : (
-              <motion.span
-                layoutId="shell-mobile-active"
-                className="shell-mobile-mark"
-                transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-                aria-hidden
-              />
-            )
-          ) : null}
-          <span className="relative">{item.icon}</span>
-          {"dot" in item && item.dot ? (
-            <span className="absolute right-[calc(50%-16px)] top-2 h-2 w-2 rounded-full bg-[var(--blue)] ring-2 ring-[var(--canvas)]" />
+          {item.icon}
+          {item.label}
+          {item.dot ? (
+            <span className="absolute right-[calc(50%-15px)] top-2.5 size-2 rounded-full bg-[var(--accent)]">
+              <span className="sr-only">, unread</span>
+            </span>
           ) : null}
         </Link>
       ))}

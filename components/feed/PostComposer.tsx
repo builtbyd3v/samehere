@@ -111,9 +111,11 @@ function ComposerLabelPicker({
 
 export default function PostComposer({
   autoFocus = false,
+  initialLabel = null,
 }: {
   isPro?: boolean;
   autoFocus?: boolean;
+  initialLabel?: ContextLabel | null;
 }) {
   const [state, formAction, pending] = useActionState<ComposerState, FormData>(createPost, {});
   const ref = useRef<HTMLFormElement>(null);
@@ -125,7 +127,7 @@ export default function PostComposer({
   const [uploading, setUploading] = useState(false);
   const [supabase] = useState(getBrowserClient);
   const [shortcutLabel, setShortcutLabel] = useState("");
-  const [label, setLabel] = useState<ContextLabel | null>(null);
+  const [label, setLabel] = useState<ContextLabel | null>(initialLabel ?? null);
   const [eventName, setEventName] = useState("");
   const [eventDate, setEventDate] = useState("");
   const [eventMode, setEventMode] = useState<TeamEventMode | null>(null);
@@ -265,7 +267,7 @@ export default function PostComposer({
     <form
       ref={ref}
       onSubmit={onSubmit}
-      className="card-raised p-4 transition-[border-color,box-shadow] duration-300 focus-within:border-[var(--border-strong)] focus-within:shadow-[0_0_0_4px_var(--blue-glow)] sm:p-5"
+      className="rounded-2xl border border-[var(--hairline)] bg-[var(--surface-1)] p-4 transition-[border-color] duration-200 focus-within:border-[var(--hairline-strong)]"
     >
       <input type="hidden" name="context_label" value={label ?? ""} />
       <input type="hidden" name="team_event_name" value={label === LOOKING_FOR_TEAM ? eventName : ""} />
