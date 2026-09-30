@@ -57,6 +57,11 @@ export function hasPeopleFilters(filters: DiscoveryFilters): boolean {
   return Boolean(filters.tag || filters.year || filters.major || filters.mode);
 }
 
+/** Names of the facets that are set. Never values: major is free text. */
+export function activeFacets(filters: DiscoveryFilters): (keyof DiscoveryFilters)[] {
+  return (["tag", "year", "major", "mode", "label"] as const).filter((key) => filters[key] !== null);
+}
+
 export type DiscoveryHrefOpts = {
   q?: string;
   filters?: Partial<DiscoveryFilters>;
