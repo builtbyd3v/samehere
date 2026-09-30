@@ -16,6 +16,7 @@ import {
   saveOnboardingStage,
   finishOnboarding,
   savePortfolioConsent,
+  startOnboarding,
 } from "@/app/(app)/onboarding/actions";
 import AvatarBase from "@/components/ui/Avatar";
 import { LightPool } from "@/components/ui/Backdrop";
@@ -26,7 +27,7 @@ import SchoolAutocomplete from "@/components/profile/SchoolAutocomplete";
 import DateRangePicker from "@/components/profile/DateRangePicker";
 import Select from "@/components/ui/Select";
 import { DEGREE_OPTIONS } from "@/lib/education-options";
-import type { OnboardingStep } from "@/lib/onboarding";
+import type { OnboardingPrefill, OnboardingSource, OnboardingStep } from "@/lib/onboarding";
 import { FOCUS_AREAS, FOCUS_LABELS, MAX_FOCUS_AREAS, STAGES, STAGE_LABELS, type FocusArea, type Stage } from "@/lib/stage";
 import { OPEN_TO_TAGS } from "@/lib/portfolio/validation";
 import { OPEN_TO_LABELS } from "@/lib/portfolio/labels";
@@ -110,10 +111,25 @@ function StepFooter({ hint, children }: StepFooterProps) {
   );
 }
 
-export default function OnboardingWizard({ profile }: { profile: OnboardingProfile }) {
+export default function OnboardingWizard({
+  profile,
+  prefill,
+  source,
+}: {
+  profile: OnboardingProfile;
+  prefill: OnboardingPrefill;
+  source: OnboardingSource;
+}) {
   const [step, setStep] = useState<1 | 2 | 3 | 4 | 5 | 6>(1);
   const [stepsDone, setStepsDone] = useState<OnboardingStep[]>([]);
   const markDone = (s: OnboardingStep) => setStepsDone((prev) => (prev.includes(s) ? prev : [...prev, s]));
+  const started = useRef(false);
+  // Sync with the server once per mount: marks the one-time redirect used and logs onboarding_started.
+  useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+    void startOnboarding(source);
+  }, [source]);
   const reduce = useReducedMotion();
   const currentYear = new Date().getFullYear();
 

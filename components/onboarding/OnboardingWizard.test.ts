@@ -8,6 +8,7 @@ vi.mock("@/app/(app)/onboarding/actions", () => ({
   saveOnboardingStage: vi.fn(),
   finishOnboarding: vi.fn(),
   savePortfolioConsent: vi.fn(),
+  startOnboarding: vi.fn(),
 }));
 vi.mock("@/app/(app)/profile/edit/actions", () => ({ uploadAvatar: vi.fn(), addExperience: vi.fn(), addEducation: vi.fn() }));
 vi.mock("@/app/(app)/feed/actions", () => ({ createPost: vi.fn() }));
@@ -15,7 +16,13 @@ vi.mock("@/app/(app)/feed/actions", () => ({ createPost: vi.fn() }));
 import OnboardingWizard from "./OnboardingWizard";
 
 const profile = { username: "ada", display_name: "Ada", avatar_url: null, school: "", year: null, major: null, bio: null };
-const html = renderToStaticMarkup(createElement(OnboardingWizard, { profile }));
+const html = renderToStaticMarkup(
+  createElement(OnboardingWizard, {
+    profile,
+    prefill: { stage: "", focus: [], openTo: [], publishChecked: true },
+    source: "link",
+  }),
+);
 const count = (re: RegExp) => (html.match(re) ?? []).length;
 
 describe("OnboardingWizard stage step", () => {

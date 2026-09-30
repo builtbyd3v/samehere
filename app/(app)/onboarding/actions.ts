@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { updateProfile, type EditState } from "@/app/(app)/profile/edit/actions";
-import { parseStepsDone } from "@/lib/onboarding";
+import { parseOnboardingSource, parseStepsDone } from "@/lib/onboarding";
 import { getPostHogServerClient } from "@/lib/posthog-server";
 import { getOwnerSettings, parseOpenTo, parsePublishFlags, saveOwnerSettings } from "@/lib/portfolio/owner";
 import { parseFocusAreas, parseStage } from "@/lib/stage";
@@ -103,4 +103,21 @@ export async function finishOnboarding(stepsDoneRaw: unknown = []): Promise<void
     properties: { steps_done: parseStepsDone(stepsDoneRaw) },
   });
   redirect("/feed");
+}
+
+// Called once when the wizard mounts. Marks the one-time /feed redirect as used
+// (only while onboarded_at is null) and records how the user got here.
+export async function startOnboarding(sourceRaw: unknown): Promise<void> {
+  const source = parseOnboardingSource(sourceRaw);
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+  await supabase
+    .from("profiles")
+    .update({ onboarded_at: new Date().toISOString() })
+    .eq("id", user.id)
+    .is("onboarded_at", null);
+  getPostHogServerClient()?.capture({ distinctId: user.id, event: "onboarding_started", properties: { source } });
 }

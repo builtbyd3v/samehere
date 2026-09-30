@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getViewer, getViewerProfile, getViewerProfileCounts } from "@/lib/viewer";
+import { shouldRedirectToOnboarding } from "@/lib/onboarding";
 import { POST_SELECT, PAGE, withEngagement, type PostRow } from "@/components/feed/PostCard";
 import FeedTimeline from "@/components/feed/FeedTimeline";
 import FeedLoadMore from "@/components/feed/FeedLoadMore";
@@ -51,6 +53,8 @@ export default async function FeedPage({
   const { tab, label } = parseFeedView(params);
   const openOnly = stuckOpenOnly(label, params.open);
   const { user } = await getViewer();
+  // New accounts see onboarding once; the wizard marks onboarded_at on first mount (plan 023).
+  if (user && shouldRedirectToOnboarding(await getViewerProfile())) redirect("/onboarding?from=redirect");
   const viewerId = user?.id ?? null;
 
   return (
