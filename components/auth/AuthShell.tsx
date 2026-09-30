@@ -38,7 +38,7 @@ export default function AuthShell({ variant, children, footer, aside, asideExtra
 
       <div className={asideExtra ? "auth-split" : "auth-focus"}>
         <div className="auth-copy">
-          <h2 className="auth-enter-headline">{headline}</h2>
+          <h1 className="auth-enter-headline text-balance text-display font-semibold">{headline}</h1>
           <p className="auth-sub">{sub}</p>
           {aside}
           {asideExtra ? <div className="auth-aside-desktop auth-enter-aside">{asideExtra}</div> : null}

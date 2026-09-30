@@ -689,13 +689,9 @@ summary {
   padding: 1.5rem 1.25rem 3rem;
 }
 
-.auth-split .auth-copy h2,
-.auth-focus .auth-copy h2 {
+.auth-split .auth-copy h1,
+.auth-focus .auth-copy h1 {
   max-width: 16ch;
-  font-size: clamp(2rem, 4vw, 3.25rem);
-  font-weight: 500;
-  line-height: 1.05;
-  letter-spacing: -0.03em;
 }
 
 .auth-sub {
@@ -764,7 +760,7 @@ summary {
     text-align: center;
   }
 
-  .auth-focus .auth-copy h2 {
+  .auth-focus .auth-copy h1 {
     max-width: 18ch;
     margin-inline: auto;
   }
@@ -814,7 +810,6 @@ summary {
 }
 
 .auth-card-panel {
-  border-radius: 0.75rem;
   padding: 1rem;
 }
 

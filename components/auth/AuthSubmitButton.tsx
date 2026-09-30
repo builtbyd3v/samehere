@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/Button";
+
 type Props = {
   pending: boolean;
   pendingLabel: string;
@@ -6,11 +8,7 @@ type Props = {
 
 export default function AuthSubmitButton({ pending, pendingLabel, children }: Props) {
   return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="btn-primary w-full py-2 text-body sm:py-2.5"
-    >
+    <Button type="submit" variant="primary" size="lg" className="w-full" disabled={pending}>
       {pending ? (
         <svg
           className="h-4 w-4 motion-safe:animate-spin"
@@ -27,6 +25,6 @@ export default function AuthSubmitButton({ pending, pendingLabel, children }: Pr
         </svg>
       ) : null}
       <span>{pending ? pendingLabel : children}</span>
-    </button>
+    </Button>
   );
 }
