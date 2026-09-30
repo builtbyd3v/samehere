@@ -95,11 +95,11 @@ function StepIntro({ step, title, accent, sub }: StepIntroProps) {
 
 type StepFooterProps = { hint?: ReactNode; children: ReactNode };
 
-// Sticky above the phone bottom nav (MobileNav, 47px tall plus the safe area);
+// Sticky above the phone bottom nav (MobileNav: 60px links + 1px border, plus the safe area);
 // the negative margins cancel the shell gutter (px-4, sm:px-6) so the bar spans the screen.
 function StepFooter({ hint, children }: StepFooterProps) {
   return (
-    <div className="z-10 mt-2 flex flex-col gap-2.5 max-md:sticky max-md:bottom-[calc(47px+env(safe-area-inset-bottom))] max-md:-mx-4 max-md:border-t max-md:border-[var(--hairline)] max-md:bg-[var(--bg)]/90 max-md:px-4 max-md:py-4 max-md:backdrop-blur-sm sm:max-md:-mx-6 sm:max-md:px-6 md:flex-row md:items-center md:justify-between md:pt-2">
+    <div className="z-10 mt-2 flex flex-col gap-2.5 max-md:sticky max-md:bottom-[calc(61px+env(safe-area-inset-bottom))] max-md:-mx-4 max-md:border-t max-md:border-[var(--hairline)] max-md:bg-[var(--bg)]/90 max-md:px-4 max-md:py-4 max-md:backdrop-blur-sm sm:max-md:-mx-6 sm:max-md:px-6 md:flex-row md:items-center md:justify-between md:pt-2">
       {hint ? (
         <p className="text-center text-[13px] text-[var(--muted)] text-pretty md:text-left md:text-sm">{hint}</p>
       ) : (
