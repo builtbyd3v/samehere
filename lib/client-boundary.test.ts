@@ -23,6 +23,7 @@ const SERVER_LEAVES = [
   "components/landing/LandingNav.tsx",
   "components/landing/LandingFooter.tsx",
   "components/landing/LandingPage.tsx",
+  "components/landing/LandingExamples.tsx",
   "components/messages/MessageTime.tsx",
   "components/portfolio/analysis/AnalysisStages.tsx",
   "app/(auth)/forgot-password/page.tsx",
@@ -35,6 +36,7 @@ const IMG_JUSTIFIED = [
   "components/ui/CompanyLogo.tsx",
   "components/portfolio/PortfolioBanner.tsx",
   "components/profile/EditProfileForm.tsx",
+  "components/landing/LandingExamples.tsx",
 ];
 
 describe("client boundary audit", () => {

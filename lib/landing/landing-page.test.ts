@@ -5,6 +5,8 @@ import { describe, expect, it } from "vitest";
 import Features from "@/components/landing/Features";
 import FinaleCta from "@/components/landing/FinaleCta";
 import Hero from "@/components/landing/Hero";
+import LandingExamples from "@/components/landing/LandingExamples";
+import type { LandingExample } from "@/lib/landing/examples";
 
 describe("landing page", () => {
   it("hero is server markup with the headline, an example-labeled preview, and no placeholder people", () => {
@@ -35,5 +37,47 @@ describe("landing page", () => {
     const html = renderToString(createElement(FinaleCta));
     expect(html).toContain("You&#x27;re not the only one.");
     expect(html).not.toMatch(/font-serif|radial-gradient/);
+  });
+
+  it("examples render nothing when empty and real portfolio links and card images otherwise", () => {
+    expect(renderToString(createElement(LandingExamples, { examples: [] }))).toBe("");
+    const example: LandingExample = {
+      username: "ada",
+      displayName: "Ada",
+      avatarUrl: null,
+      badges: { isPro: false, isFounder: false, isCampusFounder: false, isVerifiedStudent: false, isBot: false },
+      headline: "Builds tools",
+      stage: "building",
+      focusAreas: ["web"],
+      schoolLine: "State U · CS",
+      openTo: [],
+      links: { github: null, linkedin: null, website: null },
+      project: {
+        id: "p1",
+        owner_id: "o1",
+        title: "Bus tracker",
+        summary: null,
+        description: null,
+        personal_role: null,
+        technologies: [],
+        key_features: [],
+        repo_url: null,
+        demo_url: null,
+        published_at: "2026-09-01T00:00:00.000Z",
+        sort_order: 0,
+      },
+    };
+    const html = renderToString(createElement(LandingExamples, { examples: [example] }));
+    for (const text of [
+      'href="/profile/ada"',
+      "/profile/ada/card?format=story",
+      "/profile/ada/card?format=square",
+      'width="1080"',
+      'height="1920"',
+      "<h3",
+    ]) {
+      expect(html).toContain(text);
+    }
+    expect(html).not.toContain("<h1");
   });
 });

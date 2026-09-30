@@ -3,6 +3,7 @@ import { SITE_URL } from "@/lib/site";
 import {
   CARD_FORMATS,
   CARD_SIZES,
+  cardCacheControl,
   cardFilename,
   cardPath,
   cardUrlText,
@@ -56,5 +57,11 @@ describe("portfolio card format helpers", () => {
     expect(isCardUsername("")).toBe(false);
     expect(isCardUsername("a/b")).toBe(false);
     expect(isCardUsername("x".repeat(33))).toBe(false);
+  });
+
+  it("keeps signed-in renders private and lets a CDN cache anonymous ones", () => {
+    expect(cardCacheControl(true)).toBe("private, max-age=300");
+    expect(cardCacheControl(false).startsWith("public")).toBe(true);
+    expect(cardCacheControl(false)).toContain("s-maxage=300");
   });
 });

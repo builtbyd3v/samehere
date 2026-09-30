@@ -34,6 +34,8 @@ export function isCardUsername(value: string): boolean {
   return USERNAME_RE.test(value);
 }
 
-// Rendered with the viewer's session client (block context), so never a shared cache.
-// ponytail: every export re-renders; add a public CDN cache over anon-only reads if export volume ever shows up in function cost.
-export const CARD_CACHE_CONTROL = "private, max-age=300";
+// Signed-in renders carry block context, so they stay private. Anonymous renders read only
+// anon-safe RPCs, so a shared cache may keep them for 5 minutes (the landing embeds them).
+export function cardCacheControl(signedIn: boolean): string {
+  return signedIn ? "private, max-age=300" : "public, max-age=300, s-maxage=300";
+}
