@@ -47,7 +47,7 @@ export default function SharePortfolioButton({
       <motion.span
         key={copied ? "copied" : "share"}
         className="inline-flex"
-        initial={reduceMotion ? false : { scale: 0.8, opacity: 0 }}
+        initial={copied && !reduceMotion ? { scale: 0.8, opacity: 0 } : false}
         animate={{ scale: 1, opacity: 1 }}
         transition={reduceMotion ? { duration: 0.15 } : ICON_SPRING}
       >
