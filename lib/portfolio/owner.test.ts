@@ -3,6 +3,7 @@ import { PORTFOLIO_UNAVAILABLE, type PortfolioQueryError } from "./errors";
 import {
   createProject,
   parseProjectWrite,
+  publishedSections,
   reorderProjects,
   saveOwnerSettings,
   setProjectStatus,
@@ -392,5 +393,29 @@ describe("missing migration", () => {
     });
     const result = await createProject(client, "o", draftWrite);
     expect(result).toEqual({ ok: false, unavailable: true, message: PORTFOLIO_UNAVAILABLE });
+  });
+});
+
+describe("publishedSections", () => {
+  const off = {
+    publish_intro: false,
+    publish_projects: false,
+    publish_activity: false,
+    publish_experience: false,
+    publish_education: false,
+    publish_posts: false,
+    allow_indexing: false,
+  };
+
+  it("returns nothing when every flag is off", () => {
+    expect(publishedSections(off)).toEqual([]);
+  });
+
+  it("returns the on sections in canonical order", () => {
+    expect(publishedSections({ ...off, publish_posts: true, publish_intro: true })).toEqual(["intro", "posts"]);
+  });
+
+  it("does not count allow_indexing as a section", () => {
+    expect(publishedSections({ ...off, allow_indexing: true })).toEqual([]);
   });
 });
