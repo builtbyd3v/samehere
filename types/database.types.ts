@@ -1370,6 +1370,8 @@ export type Database = {
           id: string
           media: Json
           post_type: string | null
+          resolved_at: string | null
+          resolved_comment_id: string | null
           team_event_date: string | null
           team_event_mode: string | null
           team_event_name: string | null
@@ -1383,6 +1385,8 @@ export type Database = {
           id?: string
           media?: Json
           post_type?: string | null
+          resolved_at?: string | null
+          resolved_comment_id?: string | null
           team_event_date?: string | null
           team_event_mode?: string | null
           team_event_name?: string | null
@@ -1396,12 +1400,21 @@ export type Database = {
           id?: string
           media?: Json
           post_type?: string | null
+          resolved_at?: string | null
+          resolved_comment_id?: string | null
           team_event_date?: string | null
           team_event_mode?: string | null
           team_event_name?: string | null
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "posts_resolved_comment_id_fkey"
+            columns: ["resolved_comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "posts_user_id_fkey"
             columns: ["user_id"]
@@ -2513,6 +2526,10 @@ export type Database = {
       }
       mark_all_notifications_read: { Args: never; Returns: undefined }
       mark_dm_read: { Args: { p_conversation_id: string }; Returns: undefined }
+      mark_stuck_resolved: {
+        Args: { p_comment_id?: string; p_post_id: string }
+        Returns: undefined
+      }
       media_paths_owned: {
         Args: { p_media: Json; p_user: string }
         Returns: boolean
@@ -2524,6 +2541,7 @@ export type Database = {
         Args: { p_conversation_id: string; p_member_id: string }
         Returns: undefined
       }
+      reopen_stuck: { Args: { p_post_id: string }; Returns: undefined }
       request_follow: { Args: { p_target: string }; Returns: string }
       request_school_verification: {
         Args: { p_code_hash: string; p_email: string }
@@ -2535,6 +2553,7 @@ export type Database = {
       }
       rl_check_signup: { Args: { p_ip_hash: string }; Returns: boolean }
       set_referral_code: { Args: { p_code: string }; Returns: string }
+      stuck_help_count: { Args: { p_post_id: string }; Returns: number }
       sweep_unconfirmed_signups: { Args: never; Returns: number }
       acquire_repository_analysis_lease: {
         Args: { p_analysis_id: string; p_ttl_seconds?: number; p_worker_id: string }

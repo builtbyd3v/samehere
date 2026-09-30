@@ -19,7 +19,7 @@ import { CONTEXT_LABEL_COPY, CONTEXT_LABEL_DOT } from "@/lib/context-label";
 import { authorMetaLine, splitQuestion } from "@/lib/feed-view";
 
 export const POST_SELECT =
-  "id, content, created_at, user_id, media, hidden, context_label, team_event_name, team_event_date, team_event_mode, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, is_private, is_pro, is_founder, is_campus_founder, verified_student, is_bot, stage, profile_school(school)), reactions(count), reposts(count), comments(count)";
+  "id, content, created_at, user_id, media, hidden, context_label, team_event_name, team_event_date, team_event_mode, resolved_at, resolved_comment_id, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, is_private, is_pro, is_founder, is_campus_founder, verified_student, is_bot, stage, profile_school(school)), reactions(count), reposts(count), comments!comments_post_id_fkey(count)";
 
 // Same columns with the author embed as an inner join, so `.eq("author.<col>", v)`
 // filters posts instead of nulling the embed (used by the Your stage tab).
@@ -58,6 +58,8 @@ export type PostRow = {
   team_event_name: string | null;
   team_event_date: string | null;
   team_event_mode: string | null;
+  resolved_at: string | null;
+  resolved_comment_id: string | null;
   author: Author;
   reactions: { count: number }[];
   reposts: { count: number }[];
@@ -78,6 +80,8 @@ export type FeedPost = {
   team_event_name: string | null;
   team_event_date: string | null;
   team_event_mode: TeamEventMode | null;
+  resolved_at: string | null;
+  resolved_comment_id: string | null;
   author: Author;
   samehere_count: number;
   repost_count: number;
@@ -99,6 +103,8 @@ export function withEngagement(rows: PostRow[], mine: ViewerMineState): FeedPost
     team_event_name: r.team_event_name ?? null,
     team_event_date: r.team_event_date ?? null,
     team_event_mode: parseTeamEventMode(r.team_event_mode),
+    resolved_at: r.resolved_at ?? null,
+    resolved_comment_id: r.resolved_comment_id ?? null,
     author: r.author,
     samehere_count: r.reactions?.[0]?.count ?? 0,
     repost_count: r.reposts?.[0]?.count ?? 0,
@@ -298,7 +304,7 @@ export default function PostCard({
         )}
 
         {label === "stuck" && !embedded ? (
-          <StuckQuestion content={post.content} postId={post.id} linked={linked} />
+          <StuckQuestion content={post.content} postId={post.id} linked={linked} solved={Boolean(post.resolved_at)} />
         ) : (
           <PostBody content={post.content} linked={linked} postId={post.id} />
         )}

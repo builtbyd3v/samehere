@@ -2930,6 +2930,317 @@ exception when others then
 end $$;
 reset role;
 
+-- ============ STUCK: plan 009 (resolved state + stuck_help nudge) ============
+-- Fresh users so earlier blocks between fixture users a/b cannot interfere.
+-- Focus 'robotics' is used by no other fixture, so the only match is v_helper.
+set local role postgres;
+do $$
+declare
+  v_author  uuid := gen_random_uuid();
+  v_helper  uuid := gen_random_uuid();
+  v_private uuid := gen_random_uuid();
+  v_blocker uuid := gen_random_uuid();
+  v_limited uuid := gen_random_uuid();
+  v_post uuid;
+  v_comment uuid;
+  v_foreign uuid;
+begin
+  insert into auth.users (
+    instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+    raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+    confirmation_token, recovery_token, email_change_token_new, email_change
+  ) values
+    ('00000000-0000-0000-0000-000000000000', v_author, 'authenticated', 'authenticated',
+     'rls-stuck-author@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_stuck_author'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_helper, 'authenticated', 'authenticated',
+     'rls-stuck-helper@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_stuck_helper'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_private, 'authenticated', 'authenticated',
+     'rls-stuck-private@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_stuck_private'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_blocker, 'authenticated', 'authenticated',
+     'rls-stuck-blocker@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_stuck_blocker'), now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', v_limited, 'authenticated', 'authenticated',
+     'rls-stuck-limited@school.edu', '', now(), '{"provider":"email","providers":["email"]}',
+     jsonb_build_object('username', 'rls_stuck_limited'), now(), now(), '', '', '', '');
+
+  update public.profiles
+     set open_to = array['feedback'], focus_areas = array['robotics']
+   where id in (v_author, v_helper, v_private, v_blocker, v_limited);
+  update public.profiles set is_private = true where id = v_private;
+  insert into public.blocks (blocker_id, blocked_id) values (v_blocker, v_author);
+  -- v_limited already received 3 stuck_help in the last 24h.
+  insert into public.notifications (user_id, actor_id, type)
+  values (v_limited, v_helper, 'stuck_help'), (v_limited, v_helper, 'stuck_help'), (v_limited, v_helper, 'stuck_help');
+
+  insert into public.posts (user_id, content, context_label)
+  values (v_author, 'stuck on RLS', 'stuck') returning id into v_post;
+  insert into public.comments (post_id, user_id, content)
+  values (v_post, v_helper, 'try this') returning id into v_comment;
+  insert into public.comments (post_id, user_id, content)
+  values ((select id from tests_fixture where key = 'post_public'), v_helper, 'unrelated') returning id into v_foreign;
+
+  insert into tests_fixture (key, id) values
+    ('stuck_author', v_author), ('stuck_helper', v_helper), ('stuck_private', v_private),
+    ('stuck_blocker', v_blocker), ('stuck_limited', v_limited),
+    ('stuck_post', v_post), ('stuck_comment', v_comment), ('stuck_foreign_comment', v_foreign);
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare
+  v_post uuid := (select id from tests_fixture where key = 'stuck_post');
+  v_helper uuid := (select id from tests_fixture where key = 'stuck_helper');
+  v_n int;
+begin
+  select count(*) into v_n from public.notifications
+   where type = 'stuck_help' and post_id = v_post and user_id = v_helper;
+  if v_n <> 1 then
+    raise exception 'STUCK_HELP_matched REGRESSION: matched helper got % stuck_help rows, expected 1', v_n;
+  end if;
+  insert into tests_results values ('STUCK_HELP_matched', true, 'ok');
+exception when others then
+  insert into tests_results values ('STUCK_HELP_matched', false, sqlerrm);
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare
+  v_post uuid := (select id from tests_fixture where key = 'stuck_post');
+  v_private uuid := (select id from tests_fixture where key = 'stuck_private');
+  v_n int;
+begin
+  select count(*) into v_n from public.notifications
+   where type = 'stuck_help' and post_id = v_post and user_id = v_private;
+  if v_n <> 0 then
+    raise exception 'STUCK_HELP_private_skipped REGRESSION: private profile got % stuck_help rows', v_n;
+  end if;
+  insert into tests_results values ('STUCK_HELP_private_skipped', true, 'ok');
+exception when others then
+  insert into tests_results values ('STUCK_HELP_private_skipped', false, sqlerrm);
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare
+  v_post uuid := (select id from tests_fixture where key = 'stuck_post');
+  v_blocker uuid := (select id from tests_fixture where key = 'stuck_blocker');
+  v_n int;
+begin
+  select count(*) into v_n from public.notifications
+   where type = 'stuck_help' and post_id = v_post and user_id = v_blocker;
+  if v_n <> 0 then
+    raise exception 'STUCK_HELP_blocked_skipped REGRESSION: blocker got % stuck_help rows', v_n;
+  end if;
+  insert into tests_results values ('STUCK_HELP_blocked_skipped', true, 'ok');
+exception when others then
+  insert into tests_results values ('STUCK_HELP_blocked_skipped', false, sqlerrm);
+end $$;
+reset role;
+
+set local role postgres;
+do $$
+declare
+  v_post uuid := (select id from tests_fixture where key = 'stuck_post');
+  v_limited uuid := (select id from tests_fixture where key = 'stuck_limited');
+  v_n int;
+begin
+  select count(*) into v_n from public.notifications
+   where type = 'stuck_help' and post_id = v_post and user_id = v_limited;
+  if v_n <> 0 then
+    raise exception 'STUCK_HELP_rate_limited REGRESSION: rate-limited helper got % stuck_help rows', v_n;
+  end if;
+  insert into tests_results values ('STUCK_HELP_rate_limited', true, 'ok');
+exception when others then
+  insert into tests_results values ('STUCK_HELP_rate_limited', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'stuck_author';
+do $$
+declare
+  v_post uuid := (select id from tests_fixture where key = 'stuck_post');
+  v_n int;
+begin
+  v_n := public.stuck_help_count(v_post);
+  if v_n <> 1 then
+    raise exception 'STUCK_HELP_count_author REGRESSION: author saw count %, expected 1', v_n;
+  end if;
+  insert into tests_results values ('STUCK_HELP_count_author', true, 'ok');
+exception when others then
+  insert into tests_results values ('STUCK_HELP_count_author', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'stuck_blocker';
+do $$
+declare
+  v_post uuid := (select id from tests_fixture where key = 'stuck_post');
+  v_n int;
+begin
+  v_n := public.stuck_help_count(v_post);
+  if v_n <> 0 then
+    raise exception 'STUCK_HELP_count_non_author REGRESSION: non-author saw count %, expected 0', v_n;
+  end if;
+  insert into tests_results values ('STUCK_HELP_count_non_author', true, 'ok');
+exception when others then
+  insert into tests_results values ('STUCK_HELP_count_non_author', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'stuck_author';
+do $$
+declare
+  v_post uuid := (select id from tests_fixture where key = 'stuck_post');
+  v_resolved timestamptz;
+begin
+  update public.posts set resolved_at = now() where id = v_post;
+  select resolved_at into v_resolved from public.posts where id = v_post;
+  if v_resolved is not null then
+    raise exception 'STUCK_direct_update_ignored REGRESSION: author set resolved_at with a direct update';
+  end if;
+  insert into tests_results values ('STUCK_direct_update_ignored', true, 'ok');
+exception when others then
+  insert into tests_results values ('STUCK_direct_update_ignored', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'stuck_helper';
+do $$
+declare
+  v_post uuid := (select id from tests_fixture where key = 'stuck_post');
+  v_raised boolean;
+  v_resolved timestamptz;
+begin
+  begin
+    perform public.mark_stuck_resolved(v_post, null);
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+  end;
+  if not v_raised then
+    raise exception 'STUCK_resolve_non_author_denied REGRESSION: non-author mark_stuck_resolved did not raise';
+  end if;
+  select resolved_at into v_resolved from public.posts where id = v_post;
+  if v_resolved is not null then
+    raise exception 'STUCK_resolve_non_author_denied REGRESSION: resolved_at set by a non-author';
+  end if;
+  insert into tests_results values ('STUCK_resolve_non_author_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('STUCK_resolve_non_author_denied', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'stuck_author';
+do $$
+declare
+  v_post uuid := (select id from tests_fixture where key = 'stuck_post');
+  v_foreign uuid := (select id from tests_fixture where key = 'stuck_foreign_comment');
+  v_raised boolean;
+begin
+  begin
+    perform public.mark_stuck_resolved(v_post, v_foreign);
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+  end;
+  if not v_raised then
+    raise exception 'STUCK_resolve_foreign_comment_rejected REGRESSION: a comment from another post was accepted';
+  end if;
+  insert into tests_results values ('STUCK_resolve_foreign_comment_rejected', true, 'ok');
+exception when others then
+  insert into tests_results values ('STUCK_resolve_foreign_comment_rejected', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'stuck_author';
+do $$
+declare
+  v_post uuid := (select id from tests_fixture where key = 'stuck_post');
+  v_comment uuid := (select id from tests_fixture where key = 'stuck_comment');
+  v_resolved timestamptz;
+  v_accepted uuid;
+begin
+  perform public.mark_stuck_resolved(v_post, v_comment);
+  select resolved_at, resolved_comment_id into v_resolved, v_accepted from public.posts where id = v_post;
+  if v_resolved is null or v_accepted is distinct from v_comment then
+    raise exception 'STUCK_resolve_author_ok REGRESSION: author resolve did not stick (resolved_at=%, comment=%)', v_resolved, v_accepted;
+  end if;
+  insert into tests_results values ('STUCK_resolve_author_ok', true, 'ok');
+exception when others then
+  insert into tests_results values ('STUCK_resolve_author_ok', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'stuck_helper';
+do $$
+declare
+  v_post uuid := (select id from tests_fixture where key = 'stuck_post');
+  v_comment uuid := (select id from tests_fixture where key = 'stuck_comment');
+  v_deleted int;
+  v_resolved timestamptz;
+  v_accepted uuid;
+begin
+  delete from public.comments where id = v_comment;
+  get diagnostics v_deleted = row_count;
+  if v_deleted <> 1 then
+    raise exception 'STUCK_accepted_comment_delete_sets_null SETUP: helper deleted % rows, expected 1', v_deleted;
+  end if;
+  select resolved_at, resolved_comment_id into v_resolved, v_accepted from public.posts where id = v_post;
+  if v_accepted is not null or v_resolved is null then
+    raise exception 'STUCK_accepted_comment_delete_sets_null REGRESSION: resolved_at=%, resolved_comment_id=%', v_resolved, v_accepted;
+  end if;
+  insert into tests_results values ('STUCK_accepted_comment_delete_sets_null', true, 'ok');
+exception when others then
+  insert into tests_results values ('STUCK_accepted_comment_delete_sets_null', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_user(id) from tests_fixture where key = 'stuck_author';
+do $$
+declare
+  v_post uuid := (select id from tests_fixture where key = 'stuck_post');
+  v_resolved timestamptz;
+begin
+  perform public.reopen_stuck(v_post);
+  select resolved_at into v_resolved from public.posts where id = v_post;
+  if v_resolved is not null then
+    raise exception 'STUCK_reopen_author REGRESSION: resolved_at still set after reopen';
+  end if;
+  insert into tests_results values ('STUCK_reopen_author', true, 'ok');
+exception when others then
+  insert into tests_results values ('STUCK_reopen_author', false, sqlerrm);
+end $$;
+reset role;
+
+select tests.as_anon();
+do $$
+declare
+  v_post uuid := (select id from tests_fixture where key = 'stuck_post');
+  v_state text;
+  v_raised boolean;
+begin
+  begin
+    perform public.mark_stuck_resolved(v_post, null);
+    v_raised := false;
+  exception when others then
+    v_raised := true;
+    v_state := sqlstate;
+  end;
+  if not v_raised or v_state <> '42501' then
+    raise exception 'STUCK_rpc_anon_denied REGRESSION: anon mark_stuck_resolved did not fail with 42501 (raised=%, sqlstate=%)', v_raised, v_state;
+  end if;
+  insert into tests_results values ('STUCK_rpc_anon_denied', true, 'ok');
+exception when others then
+  insert into tests_results values ('STUCK_rpc_anon_denied', false, sqlerrm);
+end $$;
+reset role;
+
 -- ============ report ============
 -- Print the PASS/FAIL table FIRST so the operator sees exactly which assertions
 -- failed, then raise so psql exits non-zero and the harness actually gates.
@@ -2947,7 +3258,7 @@ declare v_failed int;
 begin
   select count(*) into v_failed from tests_results where not passed;
   if v_failed > 0 then
-    raise exception '% assertion(s) failed — see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view_denied, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, CLUBS_V2_1, CLUBS_V2_2, CLUBS_V2_3, CLUBS_V2_7a, CLUBS_V2_4, CLUBS_V2_7b, CLUBS_V2_5_officer_denied, CLUBS_V2_5_owner_allowed, CLUBS_V2_6_outsider, CLUBS_V2_6_pending, CLUBS_V2_8, CLUBS_V2_9, H1_suggested_profiles, CLUBS_V2_12_outsider, CLUBS_V2_12_anon, SIGNUP_RL_anon_execute, SIGNUP_RL_no_table_access_anon, SIGNUP_RL_no_table_access_authenticated, EXPERIENCES_owner_insert, EXPERIENCES_owner_select, EXPERIENCES_owner_update, EXPERIENCES_b_select_a, EXPERIENCES_b_update_denied, EXPERIENCES_b_delete_denied, EXPERIENCES_anon_select_denied, EXPERIENCES_owner_delete, EXPERIENCES_cap, JOB_LISTINGS_authenticated_select, JOB_LISTINGS_authenticated_insert_denied, JOB_LISTINGS_anon_select_denied, JOB_FIT_owner_insert_select, JOB_FIT_b_select_a_denied, JOB_PITCHES_owner_insert_select, JOB_PITCHES_b_select_a_denied, JOB_SAVES_owner_insert_select, JOB_SAVES_b_select_a_denied, JOB_SAVES_b_delete_a_denied, JOB_SAVES_owner_delete, JOB_SAVES_anon_select_denied, REFERRAL_JOINED_owner_select, REFERRAL_JOINED_b_select_denied, P001_guard_sub_event_frozen, P001_guard_is_bot_frozen, P001_suggested_private_masked, P001_suggested_limit_clamped, P001_suggested_suspended_hidden, P001_group_add_requires_member_follow, P001_group_readd_after_leave_denied, P001_post_hidden_by_suspension_frozen, RESUME_FIELDS_private_nulled, RESUME_FIELDS_anon_public_read, P004_stage_check, P004_owner_can_set_stage, P004_search_people_private, P004_suggested_private, P004_public_profile_stage.', v_failed;
+    raise exception '% assertion(s) failed, see table above. Every assertion in this file is expected to PASS: C1, C1_helper, H1, H1_positive, H2, C2, C2_forgery, M3_comments, M3_reactions, H5, H5_reverse, H5b, M8_multi_target, M8_snapshot, M8_no_column_privilege, M8_block_then_report, M8_evidence_survives, M4, M5_profile_view_denied, M5_profile_view, M5_write, anon_sees_no_posts, non_follower_sees_no_private_posts, public_surface, get_public_profile_privacy, storage_post_media_policy_count, CLUBS_1, CLUBS_2_non_member, CLUBS_2_member, CLUBS_3, CLUBS_4, CLUBS_4_unchanged, CLUBS_5, CLUBS_6, CLUBS_7a, CLUBS_7b, CLUBS_8, CLUBS_V2_1, CLUBS_V2_2, CLUBS_V2_3, CLUBS_V2_7a, CLUBS_V2_4, CLUBS_V2_7b, CLUBS_V2_5_officer_denied, CLUBS_V2_5_owner_allowed, CLUBS_V2_6_outsider, CLUBS_V2_6_pending, CLUBS_V2_8, CLUBS_V2_9, H1_suggested_profiles, CLUBS_V2_12_outsider, CLUBS_V2_12_anon, SIGNUP_RL_anon_execute, SIGNUP_RL_no_table_access_anon, SIGNUP_RL_no_table_access_authenticated, EXPERIENCES_owner_insert, EXPERIENCES_owner_select, EXPERIENCES_owner_update, EXPERIENCES_b_select_a, EXPERIENCES_b_update_denied, EXPERIENCES_b_delete_denied, EXPERIENCES_anon_select_denied, EXPERIENCES_owner_delete, EXPERIENCES_cap, JOB_LISTINGS_authenticated_select, JOB_LISTINGS_authenticated_insert_denied, JOB_LISTINGS_anon_select_denied, JOB_FIT_owner_insert_select, JOB_FIT_b_select_a_denied, JOB_PITCHES_owner_insert_select, JOB_PITCHES_b_select_a_denied, JOB_SAVES_owner_insert_select, JOB_SAVES_b_select_a_denied, JOB_SAVES_b_delete_a_denied, JOB_SAVES_owner_delete, JOB_SAVES_anon_select_denied, REFERRAL_JOINED_owner_select, REFERRAL_JOINED_b_select_denied, P001_guard_sub_event_frozen, P001_guard_is_bot_frozen, P001_suggested_private_masked, P001_suggested_limit_clamped, P001_suggested_suspended_hidden, P001_group_add_requires_member_follow, P001_group_readd_after_leave_denied, P001_post_hidden_by_suspension_frozen, RESUME_FIELDS_private_nulled, RESUME_FIELDS_anon_public_read, P004_stage_check, P004_owner_can_set_stage, P004_search_people_private, P004_suggested_private, P004_public_profile_stage, STUCK_HELP_matched, STUCK_HELP_private_skipped, STUCK_HELP_blocked_skipped, STUCK_HELP_rate_limited, STUCK_HELP_count_author, STUCK_HELP_count_non_author, STUCK_direct_update_ignored, STUCK_resolve_non_author_denied, STUCK_resolve_foreign_comment_rejected, STUCK_resolve_author_ok, STUCK_accepted_comment_delete_sets_null, STUCK_reopen_author, STUCK_rpc_anon_denied.', v_failed;
 
   end if;
 end $$;

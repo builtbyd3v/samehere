@@ -6,6 +6,7 @@ import { createClient as createAnonClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import PostCard, { POST_SELECT, withEngagement, type PostRow } from "@/components/feed/PostCard";
 import CommentThread from "@/components/feed/CommentThread";
+import StuckResolveButton from "@/components/feed/StuckResolveButton";
 import UserBadges from "@/components/profile/UserBadges";
 import AvatarBase from "@/components/ui/Avatar";
 import MentionText from "@/components/ui/MentionText";
@@ -218,6 +219,7 @@ export default async function PostPage({
   const viewerId = user?.id ?? null;
   const mine = await fetchViewerMineState(supabase, viewerId, [signed.id], []);
   const [post] = withEngagement([signed], mine);
+  const isStuckAuthor = post.context_label === "stuck" && viewerId === post.user_id;
 
   // Own profile, for the optimistic comment row's avatar/name/badges (the
   // real row won't have these until the server round-trip resolves).
@@ -250,6 +252,17 @@ export default async function PostPage({
         <PostCard post={post} viewerId={viewerId} variant="detail" />
       </div>
 
+      {isStuckAuthor && (
+        <div className="mt-3 flex justify-end">
+          <StuckResolveButton
+            postId={post.id}
+            reopen={Boolean(post.resolved_at)}
+            label={post.resolved_at ? "Reopen" : "Mark solved"}
+            variant="outline"
+          />
+        </div>
+      )}
+
       <section className="card mt-6 p-4 sm:p-5">
         <CommentThread
           postId={post.id}
@@ -257,6 +270,8 @@ export default async function PostPage({
           viewerId={viewerId}
           viewer={viewerAuthor}
           autoFocus={reply === "1"}
+          acceptedCommentId={post.resolved_comment_id}
+          canAccept={isStuckAuthor}
         />
       </section>
     </main>

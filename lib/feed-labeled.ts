@@ -15,6 +15,7 @@ export async function fetchLabeledPosts(
   opts: {
     viewerId: string | null;
     label?: ContextLabel | null;
+    openOnly?: boolean;
     cursor?: FeedCursor | null;
     limit?: number;
     excludeUserIds?: Iterable<string>;
@@ -35,6 +36,7 @@ export async function fetchLabeledPosts(
   } else if (!opts.authorStage) {
     query = query.not("context_label", "is", null);
   }
+  if (opts.openOnly) query = query.is("resolved_at", null);
 
   // Your stage: authors at the viewer's stage. Private authors are never matched
   // by stage (same rule as search_people / get_suggested_profiles in plan 004).

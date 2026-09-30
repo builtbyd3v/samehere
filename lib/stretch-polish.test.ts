@@ -7,7 +7,7 @@ const root = process.cwd();
 
 describe("stretch empty / a11y polish", () => {
   it("feed tabs are plain links in Tab order", () => {
-    expect(FEED_TABS.map((t) => t.href)).toEqual(["/feed", "/feed?tab=stage", "/feed?tab=following", "/feed?label=stuck"]);
+    expect(FEED_TABS.map((t) => t.href)).toEqual(["/feed", "/feed?tab=stage", "/feed?tab=following", "/feed?label=stuck&open=1"]);
     const page = readFileSync(join(root, "app/(app)/feed/page.tsx"), "utf8");
     expect(page).toMatch(/UnderlineTabs/);
     expect(page).not.toMatch(/tabIndex/);

@@ -6,6 +6,7 @@ import FeedTimeline from "@/components/feed/FeedTimeline";
 import FeedLoadMore from "@/components/feed/FeedLoadMore";
 import FollowingSeed from "@/components/feed/FollowingSeed";
 import EmptyState from "@/components/ui/EmptyState";
+import { Button } from "@/components/ui/Button";
 import { UnderlineTabs } from "@/components/ui/UnderlineTabs";
 import SearchBar from "@/components/search/SearchBar";
 import FollowRequests, { type FollowRequest } from "@/components/profile/FollowRequests";
@@ -25,6 +26,7 @@ import {
   feedPath,
   parseFeedView,
   shouldSeedFollowing,
+  stuckOpenOnly,
   type FeedTabKey,
 } from "@/lib/feed-label";
 import { fetchLabeledPosts } from "@/lib/feed-labeled";
@@ -43,9 +45,11 @@ import { Skeleton, PostCardSkeleton } from "@/components/ui/Skeleton";
 export default async function FeedPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; label?: string }>;
+  searchParams: Promise<{ tab?: string; label?: string; open?: string }>;
 }) {
-  const { tab, label } = parseFeedView(await searchParams);
+  const params = await searchParams;
+  const { tab, label } = parseFeedView(params);
+  const openOnly = stuckOpenOnly(label, params.open);
   const { user } = await getViewer();
   const viewerId = user?.id ?? null;
 
@@ -64,7 +68,7 @@ export default async function FeedPage({
             ) : tab === "stage" ? (
               <StageTab viewerId={viewerId} />
             ) : label ? (
-              <LabeledTab viewerId={viewerId} label={label} />
+              <LabeledTab viewerId={viewerId} label={label} openOnly={openOnly} />
             ) : (
               <LatestTab viewerId={viewerId} />
             )}
@@ -294,17 +298,42 @@ async function LatestTab({ viewerId }: { viewerId: string | null }) {
 
 // One label, network-wide, recency. Posts only — quotes/reposts have no
 // context_label of their own. Query-only; same RLS + block filter as Latest.
-async function LabeledTab({ viewerId, label }: { viewerId: string | null; label: ContextLabel }) {
+async function LabeledTab({
+  viewerId,
+  label,
+  openOnly,
+}: {
+  viewerId: string | null;
+  label: ContextLabel;
+  openOnly: boolean;
+}) {
   const { supabase } = await getViewer();
-  const posts = await fetchLabeledPosts(supabase, { viewerId, label, limit: PAGE });
+  const posts = await fetchLabeledPosts(supabase, { viewerId, label, openOnly, limit: PAGE });
+
+  const toggle =
+    label === "stuck" ? (
+      <div className="border-b border-[var(--hairline)] py-3">
+        <Button
+          variant={openOnly ? "secondary" : "outline"}
+          size="sm"
+          href={feedPath({ label: "stuck", open: !openOnly })}
+          aria-current={openOnly ? "page" : undefined}
+        >
+          Open only
+        </Button>
+      </div>
+    ) : null;
 
   if (posts.length === 0) {
     return (
-      <EmptyState
-        title={`No ${CONTEXT_LABEL_COPY[label]} posts yet`}
-        description="Be the first. Post what's getting you there."
-        action={{ label: "Back to Latest", href: "/feed" }}
-      />
+      <div className="flex flex-col gap-3">
+        {toggle}
+        <EmptyState
+          title={`No ${CONTEXT_LABEL_COPY[label]} posts yet`}
+          description="Be the first. Post what's getting you there."
+          action={{ label: "Back to Latest", href: "/feed" }}
+        />
+      </div>
     );
   }
 
@@ -313,15 +342,16 @@ async function LabeledTab({ viewerId, label }: { viewerId: string | null; label:
   const lastCursor = encodeCursor(last.created_at, itemId(last));
   return (
     <section className="flex flex-col">
+      {toggle}
       <NewPostsPill since={items[0].created_at} label={label} />
       <FeedTimeline items={items} viewerId={viewerId} />
       <FeedLoadMore
-        key={`${label}:${lastCursor}`}
+        key={`${label}:${openOnly ? "open" : "all"}:${lastCursor}`}
         auto
         cursor={lastCursor}
         hasMore={items.length === PAGE}
         viewerId={viewerId}
-        action={loadMoreLabeledPosts.bind(null, label)}
+        action={loadMoreLabeledPosts.bind(null, label, openOnly)}
       />
     </section>
   );

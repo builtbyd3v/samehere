@@ -11,8 +11,9 @@ export const FOLLOWING_SEED_MAX = 5;
 /** How many network labeled posts to show in the Following empty state. */
 export const LABELED_SEED_LIMIT = 8;
 
-export function feedPath(opts?: { tab?: FeedTab; label?: ContextLabel | null }): string {
+export function feedPath(opts?: { tab?: FeedTab; label?: ContextLabel | null; open?: boolean }): string {
   const label = opts?.label ?? null;
+  if (label === "stuck" && opts?.open) return "/feed?label=stuck&open=1";
   if (label) return `/feed?label=${label}`;
   if (opts?.tab === "following") return "/feed?tab=following";
   if (opts?.tab === "stage") return "/feed?tab=stage";
@@ -29,6 +30,11 @@ export function parseFeedView(params: { tab?: string; label?: string }): {
   return { tab, label: null };
 }
 
+/** `/feed?label=stuck&open=1`: only unresolved Stuck posts. Ignored on other labels. */
+export function stuckOpenOnly(label: ContextLabel | null, open: string | undefined): boolean {
+  return label === "stuck" && open === "1";
+}
+
 /** The underline tabs on /feed. "open" is the Stuck label filter, shown as "Open questions". */
 export type FeedTabKey = FeedTab | "open";
 
@@ -36,7 +42,7 @@ export const FEED_TABS: readonly { key: FeedTabKey; label: string; short?: strin
   { key: "latest", label: "Latest", href: feedPath() },
   { key: "stage", label: "Your stage", href: feedPath({ tab: "stage" }) },
   { key: "following", label: "Following", href: feedPath({ tab: "following" }) },
-  { key: "open", label: "Open questions", short: "Open", href: feedPath({ label: "stuck" }) },
+  { key: "open", label: "Open questions", short: "Open", href: feedPath({ label: "stuck", open: true }) },
 ];
 
 /** Which tab is underlined. Other label filters (learning, building, team) underline none. */
