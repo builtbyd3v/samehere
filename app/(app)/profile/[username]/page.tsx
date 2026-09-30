@@ -35,12 +35,13 @@ import ResumeLinks from "@/components/portfolio/ResumeLinks";
 import UnavailableNotice from "@/components/portfolio/UnavailableNotice";
 import {
   ActivitySection,
-  EducationList,
-  ExperienceList,
   IntroSection,
   OwnerProjects,
   PublicProjectList,
+  ResumeTimeline,
 } from "@/components/portfolio/ProfileSections";
+import { Button } from "@/components/ui/Button";
+import { MonoLabel } from "@/components/ui/MonoLabel";
 const getProfileByUsername = cache(async (username: string) => fetchProfileByUsername(await createClient(), username));
 
 const loadViewerPublicMeta = cache(async (username: string, hasAuth: boolean) => {
@@ -134,7 +135,6 @@ function PortfolioBody({
   posts,
   currentPro,
   intro,
-  username,
 }: {
   projection: PublicPortfolioProjection | null;
   unavailable: boolean;
@@ -156,7 +156,6 @@ function PortfolioBody({
     stage: string | null;
     focus_areas: string[];
   };
-  username: string;
 }) {
   if (unavailable) {
     return (
@@ -166,18 +165,13 @@ function PortfolioBody({
           <IntroSection
             bio={intro.bio}
             goals={intro.goals}
-            openTo={intro.open_to}
             studyMode={intro.study_mode}
-            stage={intro.stage}
-            focusAreas={intro.focus_areas}
-            username={username}
           />
         )}
         {posts}
       </>
     );
   }
-  const inviteDm = !isOwner || previewPublic;
   const order = effectiveSectionOrder(projection?.section_order ?? [], currentPro);
   const show = (section: (typeof order)[number]) => {
     if (isOwner && !previewPublic) return true;
@@ -193,12 +187,7 @@ function PortfolioBody({
               key="intro"
               bio={intro.bio}
               goals={intro.goals}
-              openTo={intro.open_to}
               studyMode={intro.study_mode}
-              stage={intro.stage}
-              focusAreas={intro.focus_areas}
-              username={username}
-              linkToDm={inviteDm}
             />
           );
         }
@@ -212,11 +201,17 @@ function PortfolioBody({
         if (section === "activity" && show("activity")) {
           return <div key="activity">{activity}</div>;
         }
-        if (section === "experience" && show("experience")) {
-          return <ExperienceList key="experience" items={experience} logos={logos} />;
-        }
-        if (section === "education" && show("education")) {
-          return <EducationList key="education" items={education} />;
+        if (section === "experience" || section === "education") {
+          // One timeline at the first of the two; each half keeps its own publish flag.
+          if (section !== order.find((s) => s === "experience" || s === "education")) return null;
+          return (
+            <ResumeTimeline
+              key="timeline"
+              experience={show("experience") ? experience : []}
+              education={show("education") ? education : []}
+              logos={logos}
+            />
+          );
         }
         if (section === "posts" && show("posts")) {
           return <div key="posts">{posts}</div>;
@@ -242,8 +237,8 @@ async function PublicHeatmapFallback({
   }));
   if (heatmap.length === 0) return null;
   return (
-    <section className="card-surface mt-3 p-5 sm:p-6">
-      <h2 className="eyebrow mb-4">Activity</h2>
+    <section className="flex flex-col gap-3.5">
+      <MonoLabel as="h2">Activity</MonoLabel>
       <ContributionHeatmap data={heatmap} />
     </section>
   );
@@ -303,15 +298,17 @@ async function PublicPortfolioBelow({
   });
   const posts = (
     <section className="mt-6">
-      <h2 className="eyebrow mb-3">Posts</h2>
-      <p className="flex flex-wrap items-center gap-2 text-sm text-[var(--ink-muted)]">
+      <MonoLabel as="h2" className="mb-3">
+        Posts
+      </MonoLabel>
+      <p className="flex flex-wrap items-center gap-2 text-sm text-[var(--muted)]">
         Sign in to see their posts
-        <Link href="/login" className="btn-ghost !rounded-full !px-3 !py-1 text-xs">
+        <Button href="/login" variant="ghost" size="sm">
           Sign in
-        </Link>
-        <Link href="/signup" className="btn-primary !rounded-full !px-3 !py-1 text-xs">
+        </Button>
+        <Button href="/signup" variant="primary" size="sm">
           Sign up
-        </Link>
+        </Button>
       </p>
     </section>
   );
@@ -351,7 +348,6 @@ async function PublicPortfolioBelow({
           }
           currentPro={profile.is_pro}
           intro={intro}
-          username={username}
           posts={posts}
         />
       )}
@@ -371,7 +367,7 @@ async function PublicProfileView({ username }: { username: string }) {
       style={accentColor ? ({ "--profile-accent": accentColor } as CSSProperties) : undefined}
     >
       <section className="card-raised portfolio-enter-header overflow-hidden">
-        <PortfolioBanner username={profile.username} src={bannerUrl} accent={accentColor} />
+        {bannerUrl ? <PortfolioBanner src={bannerUrl} /> : null}
         <div className="px-5 pb-5 sm:px-6 sm:pb-6">
           <div className="flex flex-col gap-3 min-[391px]:flex-row min-[391px]:items-end min-[391px]:justify-between">
             <AvatarBase
@@ -525,7 +521,7 @@ export default async function ProfilePage({
             ),
           }) && <TrackPortfolioView username={profile.username} />}
         <section className="card-raised portfolio-enter-header overflow-hidden">
-          <PortfolioBanner username={profile.username} src={bannerUrl} accent={accentColor} />
+          {bannerUrl ? <PortfolioBanner src={bannerUrl} /> : null}
           <div className="px-5 pb-5 sm:px-6 sm:pb-6">
             <div className="flex flex-col gap-3 min-[391px]:flex-row min-[391px]:items-end min-[391px]:justify-between">
               <AvatarBase
@@ -593,11 +589,7 @@ export default async function ProfilePage({
               <IntroSection
                 bio={intro.bio}
                 goals={intro.goals}
-                openTo={intro.open_to}
                 studyMode={intro.study_mode}
-                stage={intro.stage}
-                focusAreas={intro.focus_areas}
-                username={profile.username}
               />
             )}
             {canReadHeatmap && (
@@ -607,8 +599,7 @@ export default async function ProfilePage({
                 </Suspense>
               </div>
             )}
-            <ExperienceList items={experience} logos={logoByName} />
-            <EducationList items={education} />
+            <ResumeTimeline experience={experience} education={education} logos={logoByName} />
             {postsSection}
           </>
         )}
@@ -638,7 +629,6 @@ export default async function ProfilePage({
             activity={activitySection}
             currentPro={isOwner ? pro : Boolean(profile.is_pro)}
             intro={intro}
-            username={profile.username}
             posts={postsSection}
           />
         )}

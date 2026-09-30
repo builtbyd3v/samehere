@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import Link from "next/link";
+import { Button } from "@/components/ui/Button";
+import { MonoLabel } from "@/components/ui/MonoLabel";
 import { ChevronDown, ChevronUp, Plus } from "lucide-react";
 import type { PortfolioProject } from "@/types/portfolio";
 import { reorderProjectsAction } from "@/app/(app)/profile/projects/actions";
@@ -36,12 +37,12 @@ export default function OwnerProjectList({
   return (
     <section>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="eyebrow">Projects</h2>
+        <MonoLabel as="h2">Shipped</MonoLabel>
         {!previewPublic && (
-          <Link href="/profile/projects/new" className="btn-primary inline-flex items-center gap-1.5 !px-3 !py-1.5 text-sm">
-            <Plus strokeWidth={1.5} className="h-4 w-4" />
+          <Button href="/profile/projects/new" variant="secondary" size="sm">
+            <Plus strokeWidth={1.5} className="h-4 w-4" aria-hidden />
             Add project
-          </Link>
+          </Button>
         )}
       </div>
       {error && (
@@ -50,13 +51,13 @@ export default function OwnerProjectList({
         </p>
       )}
       {visible.length === 0 ? (
-        <div className="card px-5 py-8 text-sm text-[var(--ink-muted)]">
+        <div className="rounded-2xl border border-[var(--hairline)] px-5 py-8 text-sm text-[var(--muted)]">
           {previewPublic ? "No published projects." : "No projects yet. Add one to start your portfolio."}
         </div>
       ) : (
-        <ul className="flex flex-col gap-3">
+        <ul className="grid grid-cols-1 gap-3.5 md:grid-cols-2">
           {visible.map((project, index) => (
-            <li key={project.id} className="flex flex-col gap-2">
+            <li key={project.id} className="flex min-w-0 flex-col gap-2">
               {!previewPublic && (
                 <div className="flex gap-1">
                   <button
