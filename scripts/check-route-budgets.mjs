@@ -49,7 +49,7 @@ for (const [route, spec] of Object.entries(ROUTES)) {
   }
   console.log(`${route} first-load ${(raw / 1024).toFixed(1)} kB raw / ${(gzip / 1024).toFixed(1)} kB gzip (cap ${spec.gzip})`);
   if (gzip / 1024 > spec.gzip) fail.push(`${route} gzip ${(gzip / 1024).toFixed(1)}>${spec.gzip}`);
-  if (route !== "/" && /node_modules\/(?:three|@react-three)/.test(src)) fail.push(`${route} pulled Three.js into the client graph`);
+  if (/node_modules\/(?:three|@react-three)/.test(src)) fail.push(`${route} pulled Three.js into the client graph`);
   if (/node_modules\/(?:openai|stripe|sharp|posthog-node)\//.test(src)) fail.push(`${route} server SDK in client graph`);
 }
 

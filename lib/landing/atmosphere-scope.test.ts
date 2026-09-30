@@ -16,7 +16,6 @@ describe("landing atmosphere scope", () => {
   it("does not import three or r3f outside landing atmosphere files", () => {
     const files = ["app", "components", "lib"].flatMap((dir) => walk(dir));
     const offenders = files.filter((file) => {
-      if (file.includes("LandingAtmosphere")) return false;
       if (file.includes("atmosphere-scope.test")) return false;
       const src = readFileSync(file, "utf8");
       return /from ["']three["']|from ["']@react-three/.test(src);
