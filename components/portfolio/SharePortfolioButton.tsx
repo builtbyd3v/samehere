@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { Check, Share2 } from "lucide-react";
+import posthog from "posthog-js";
 import { ICON_SPRING } from "@/lib/motion/spring";
 import { profileShareUrl } from "@/lib/portfolio/share";
 
@@ -21,6 +22,7 @@ export default function SharePortfolioButton({
     if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
       try {
         await navigator.share({ title: `${displayName} on samehere`, url, text: `@${username}` });
+        posthog.capture("portfolio_shared", { method: "native" });
         return;
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") return;
@@ -28,6 +30,7 @@ export default function SharePortfolioButton({
     }
     try {
       await navigator.clipboard.writeText(url);
+      posthog.capture("portfolio_shared", { method: "copy" });
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1600);
     } catch {

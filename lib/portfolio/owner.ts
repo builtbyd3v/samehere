@@ -368,6 +368,11 @@ export function parsePublishFlags(body: unknown): PortfolioResult<PortfolioPubli
   return { ok: true, data: { ...flags, section_order } };
 }
 
+/** Section names whose publish flag is on, in canonical order. allow_indexing is not a section. */
+export function publishedSections(flags: PortfolioPublishFlags): PortfolioSection[] {
+  return PORTFOLIO_SECTIONS.filter((section) => flags[`publish_${section}`]);
+}
+
 export function parseOpenTo(values: unknown): PortfolioResult<OpenToTag[]> {
   const tags = Array.isArray(values) ? values.map(String) : [];
   const error = openToError(tags);

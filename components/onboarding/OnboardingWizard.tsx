@@ -17,6 +17,7 @@ import SchoolAutocomplete from "@/components/profile/SchoolAutocomplete";
 import DateRangePicker from "@/components/profile/DateRangePicker";
 import Select from "@/components/ui/Select";
 import { DEGREE_OPTIONS } from "@/lib/education-options";
+import type { OnboardingStep } from "@/lib/onboarding";
 
 export type OnboardingProfile = {
   username: string;
@@ -41,6 +42,8 @@ const field = "input-base mt-1.5";
 
 export default function OnboardingWizard({ profile }: { profile: OnboardingProfile }) {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const [stepsDone, setStepsDone] = useState<OnboardingStep[]>([]);
+  const markDone = (s: OnboardingStep) => setStepsDone((prev) => (prev.includes(s) ? prev : [...prev, s]));
   const reduce = useReducedMotion();
   const currentYear = new Date().getFullYear();
 
@@ -66,7 +69,10 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
     startBasics(async () => {
       const result = await saveOnboardingBasics({}, fd);
       if (result.error) setBasicsError(result.error);
-      else setStep(2);
+      else {
+        markDone("basics");
+        setStep(2);
+      }
     });
   }
 
@@ -77,7 +83,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
 
   function onFinish() {
     startFinish(async () => {
-      await finishOnboarding();
+      await finishOnboarding(stepsDone);
     });
   }
 
@@ -91,7 +97,10 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
     startPost(async () => {
       const result: ComposerState = await createPost({}, fd);
       if (result.error) setPostError(result.error);
-      else setStep(3);
+      else {
+        markDone("post");
+        setStep(3);
+      }
     });
   }
 
@@ -105,7 +114,10 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
     startEdu(async () => {
       const result: EducationState = await addEducation({}, fd);
       if (result.error) setEduError(result.error);
-      else setStep(4);
+      else {
+        markDone("education");
+        setStep(4);
+      }
     });
   }
 
@@ -119,7 +131,7 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
     startExp(async () => {
       const result: ExperienceState = await addExperience({}, fd);
       if (result.error) setExpError(result.error);
-      else await finishOnboarding();
+      else await finishOnboarding([...stepsDone, "experience"]);
     });
   }
 
