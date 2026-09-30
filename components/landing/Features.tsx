@@ -1,18 +1,15 @@
 import type { ReactNode } from "react";
 import { Chip, StageChip } from "@/components/ui/Chip";
-import { SectionLabel } from "@/components/ui/SectionLabel";
-import { STAGE_LABELS } from "@/lib/stage";
+import { STAGE_LABELS, STAGES } from "@/lib/stage";
 
-const THUMB = "rounded-lg border";
-
-const FEATURES: { id?: string; n: string; title: string; body: string; visual: ReactNode }[] = [
+const FEATURES: { id: string; title: string; body: string; visual: ReactNode }[] = [
   {
-    n: "01",
+    id: "stages",
     title: "Meet your stage",
     body: "Pick where you are and your focus. Suggestions and search start from there.",
     visual: (
       <div className="flex flex-wrap gap-1.5">
-        {(["internship_search", "building", "interning"] as const).map((stage) => (
+        {STAGES.map((stage) => (
           <StageChip key={stage} stage={stage} label={STAGE_LABELS[stage]} size="md" />
         ))}
       </div>
@@ -20,23 +17,12 @@ const FEATURES: { id?: string; n: string; title: string; body: string; visual: R
   },
   {
     id: "portfolio",
-    n: "02",
     title: "Your profile is your resume",
     body: "Projects, skills, experience. One link that works logged out, one tap to export as an image.",
-    visual: (
-      <div className="flex items-end gap-2.5">
-        <div className={`${THUMB} h-[46px] w-[88px] border-[var(--border)] bg-[var(--surface-4)]`} />
-        <div className={`${THUMB} size-[60px] border-[var(--border)] bg-[var(--surface-4)]`} />
-        <div
-          className={`${THUMB} h-[78px] w-11 border-[var(--hairline-strong)] bg-[linear-gradient(180deg,rgba(47,109,176,0.5),var(--surface-4))]`}
-        />
-        <SectionLabel className="ml-1.5">Link · Square · Story</SectionLabel>
-      </div>
-    ),
+    visual: null,
   },
   {
     id: "unstuck",
-    n: "03",
     title: "Stuck? Ask one step up",
     body: "Post what is blocking you with the Stuck label. Students at your stage, and one step ahead, can answer.",
     visual: (
@@ -68,15 +54,13 @@ export default function Features() {
       <div className="grid gap-3 lg:grid-cols-3 lg:gap-4">
         {FEATURES.map((f) => (
           <article
-            key={f.n}
+            key={f.id}
             id={f.id}
-            className="flex scroll-mt-6 flex-col gap-2.5 rounded-[20px] border border-[var(--border)] bg-[var(--surface-3)] p-[22px] transition-[translate,border-color] duration-[260ms] ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-white/15 motion-safe:hover:-translate-y-[3px] lg:h-[360px] lg:gap-3.5 lg:rounded-3xl lg:p-8"
+            className="flex scroll-mt-6 flex-col gap-2.5 rounded-[20px] border border-[var(--border)] bg-[var(--surface-3)] p-[22px] lg:gap-3.5 lg:rounded-3xl lg:p-8"
           >
-            <SectionLabel size="sm">{f.n}</SectionLabel>
-            <h3 className="text-[21px] font-semibold tracking-[-0.02em] lg:text-[26px]">{f.title}</h3>
-            <p className="text-[15px] leading-[1.55] text-[var(--muted)]">{f.body}</p>
-            <div className="grow" />
-            <div className="hidden md:flex">{f.visual}</div>
+            <h3 className="text-balance text-[21px] font-semibold tracking-[-0.02em] lg:text-[26px]">{f.title}</h3>
+            <p className="text-pretty text-[15px] leading-[1.55] text-[var(--muted)]">{f.body}</p>
+            {f.visual ? <div className="mt-auto hidden pt-3 md:flex">{f.visual}</div> : null}
           </article>
         ))}
       </div>

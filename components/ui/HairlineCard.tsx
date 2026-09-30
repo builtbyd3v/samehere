@@ -26,7 +26,6 @@ const INNER: Record<Radius, string> = {
 export function HairlineCard({
   as: Tag = "div",
   radius = 20,
-  glow = false,
   lift = false,
   className = "",
   innerClassName = "",
@@ -34,7 +33,6 @@ export function HairlineCard({
 }: {
   as?: CardTag;
   radius?: Radius;
-  glow?: boolean;
   lift?: boolean;
   className?: string;
   innerClassName?: string;
@@ -49,9 +47,7 @@ export function HairlineCard({
       } ${className}`.trim()}
     >
       <div
-        className={`h-full overflow-hidden bg-[color:var(--surface-2)] ${
-          glow ? "bg-[radial-gradient(80%_50%_at_20%_0%,rgba(47,109,176,0.55),transparent_70%)]" : ""
-        } ${INNER[radius]} ${innerClassName}`.trim()}
+        className={`h-full overflow-hidden bg-[color:var(--surface-2)] ${INNER[radius]} ${innerClassName}`.trim()}
       >
         {children}
       </div>

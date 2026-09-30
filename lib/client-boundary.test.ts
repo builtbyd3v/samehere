@@ -18,8 +18,6 @@ const SERVER_LEAVES = [
   "components/feed/QuotedRepostCard.tsx",
   "components/landing/LoadingState.tsx",
   "components/landing/Hero.tsx",
-  "components/landing/HeroPreview.tsx",
-  "components/landing/StageMarquee.tsx",
   "components/landing/Features.tsx",
   "components/landing/FinaleCta.tsx",
   "components/landing/LandingNav.tsx",

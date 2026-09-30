@@ -18,7 +18,6 @@ import {
   savePortfolioConsent,
 } from "@/app/(app)/onboarding/actions";
 import AvatarBase from "@/components/ui/Avatar";
-import { LightPool } from "@/components/ui/Backdrop";
 import { Button } from "@/components/ui/Button";
 import { StageDot } from "@/components/ui/Chip";
 import { SectionLabel } from "@/components/ui/SectionLabel";
@@ -247,11 +246,6 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
 
   return (
     <main className="relative isolate mx-auto w-full max-w-[880px] pb-6 md:pb-12">
-      {/* Clips the wide pool sideways only, at the screen edges (the negative inset cancels the shell gutter),
-          so it never scrolls the page and the sticky footer can still bleed to the edges. */}
-      <div aria-hidden className="pointer-events-none absolute -inset-x-4 top-0 -z-10 overflow-x-clip sm:-inset-x-6">
-        <LightPool className="-top-[240px] left-1/2 h-[480px] w-[600px] -translate-x-1/2 md:-top-[360px] md:h-[700px] md:w-[1100px]" />
-      </div>
       <header className="flex h-14 items-center justify-between md:h-16">
         <div
           role="progressbar"

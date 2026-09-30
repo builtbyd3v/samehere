@@ -1,11 +1,10 @@
 import type { ReactElement } from "react";
-import { DotGrid, GrainOverlay, LightPool } from "@/components/ui/Backdrop";
+import { LightPool } from "@/components/ui/Backdrop";
 import Features from "./Features";
 import FinaleCta from "./FinaleCta";
 import Hero from "./Hero";
 import LandingFooter from "./LandingFooter";
 import LandingNav from "./LandingNav";
-import StageMarquee from "./StageMarquee";
 
 const LandingPage: () => ReactElement = () => (
   <main id="top" className="dark relative min-h-dvh overflow-x-clip bg-[var(--bg)] text-[var(--ink)]">
@@ -14,11 +13,8 @@ const LandingPage: () => ReactElement = () => (
     </a>
     {/* Decorative, aria-hidden inside the primitives. Geometry from the artboards. */}
     <LightPool className="left-1/2 top-[-260px] h-[600px] w-[700px] -translate-x-1/2 md:top-[-420px] md:h-[900px] md:w-[1400px]" />
-    <DotGrid className="max-md:bg-[size:22px_22px] max-md:[mask-image:linear-gradient(to_bottom,black,transparent_600px)]" />
-    <GrainOverlay />
     <LandingNav />
     <Hero />
-    <StageMarquee />
     <Features />
     <FinaleCta />
     <LandingFooter />
