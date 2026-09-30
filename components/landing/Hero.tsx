@@ -1,6 +1,5 @@
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Reveal } from "@/components/ui/Reveal";
 
 export default function Hero() {
@@ -12,15 +11,8 @@ export default function Hero() {
           Find the people at your exact stage.
         </h1>
         <Reveal delay={160}>
-          <p className="text-pretty text-[17px] leading-normal text-[var(--muted)] md:mt-7 md:max-w-[640px] md:text-xl">
-            <span className="md:hidden">
-              For CS, SWE and engineering students. Meet people where you are right now, and turn your profile into a
-              resume you can share anywhere.
-            </span>
-            <span className="hidden md:inline">
-              samehere connects CS, SWE and engineering students by where they are right now: learning, building,
-              hunting internships. Your profile doubles as a resume you can share anywhere.
-            </span>
+          <p className="max-w-[46ch] text-pretty text-[17px] leading-normal text-[var(--muted)] md:mt-7 md:text-xl">
+            samehere connects CS, SWE and engineering students by where they are right now. Your profile doubles as a resume you can share anywhere.
           </p>
         </Reveal>
         <Reveal delay={240}>
@@ -34,9 +26,7 @@ export default function Hero() {
           </div>
         </Reveal>
         <Reveal delay={320}>
-          <SectionLabel as="p" className="text-center md:mt-4 md:text-xs">
-            Free for students · No endorsements · No leaderboards
-          </SectionLabel>
+          <p className="text-[13px] text-[var(--muted)] md:mt-4">Free for students. No leaderboards.</p>
         </Reveal>
       </div>
     </section>
