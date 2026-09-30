@@ -39,10 +39,10 @@ export async function fetchProfileByUsername(supabase: ServerClient, username: s
 
 type ViewerProfile = NonNullable<Awaited<ReturnType<typeof fetchProfileByUsername>>>;
 
-/** "School · Major" (either part alone when the other is missing). */
+/** "School · Major", or just the school. Null without a school (the row is labeled School). */
 export function schoolMajorLine(school: string | null, major: string | null): string | null {
-  const metaParts = [school, major].filter(Boolean);
-  return metaParts.length <= 1 ? metaParts[0] ?? null : `${metaParts[0]} · ${metaParts.slice(1).join(", ")}`;
+  if (!school) return null;
+  return major ? `${school} · ${major}` : school;
 }
 
 function currentNewestFirst<T extends { start_date: string | null; is_current: boolean }>(rows: T[]): T[] {

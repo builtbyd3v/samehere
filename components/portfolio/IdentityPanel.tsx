@@ -40,9 +40,12 @@ function Row({ label, className = "", children }: { label: string; className?: s
   );
 }
 
-function Count({ n }: { n: number }) {
-  // Pro accent colors the numbers, same as the old Stat.
-  return <span className="text-[color:var(--profile-accent,currentColor)]">{n.toLocaleString()}</span>;
+function Count({ n, one, many }: { n: number; one: string; many: string }) {
+  return (
+    <>
+      <span className="text-[var(--ink)]">{n.toLocaleString()}</span> {n === 1 ? one : many}
+    </>
+  );
 }
 
 /** Left column of the portfolio: who, where, how to reach them. */
@@ -141,14 +144,14 @@ export default function IdentityPanel({
       {counts && (
         <p className="text-small tabular-nums text-[var(--faint)]">
           <Link href={`/profile/${username}/followers`} className="hover:text-[var(--ink)]">
-            <Count n={counts.followers} /> followers
+            <Count n={counts.followers} one="follower" many="followers" />
           </Link>
           {" · "}
           <Link href={`/profile/${username}/following`} className="hover:text-[var(--ink)]">
-            <Count n={counts.following} /> following
+            <Count n={counts.following} one="following" many="following" />
           </Link>
           {" · "}
-          <Count n={counts.posts} /> posts
+          <Count n={counts.posts} one="post" many="posts" />
         </p>
       )}
     </div>

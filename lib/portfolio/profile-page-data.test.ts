@@ -55,7 +55,7 @@ describe("schoolMajorLine", () => {
   it("joins what is there", () => {
     expect(schoolMajorLine(null, null)).toBeNull();
     expect(schoolMajorLine("School", null)).toBe("School");
-    expect(schoolMajorLine(null, "Major")).toBe("Major");
+    expect(schoolMajorLine(null, "Major")).toBeNull();
     expect(schoolMajorLine("School", "Major")).toBe("School · Major");
   });
 });

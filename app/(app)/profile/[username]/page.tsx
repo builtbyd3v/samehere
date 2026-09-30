@@ -489,27 +489,37 @@ export default async function ProfilePage({
     </Suspense>
   ) : null;
 
-  const actions = isOwner ? (
-    <>
-      <Button href="/profile/edit" variant="primary" size="md" shape="rounded" className="flex-1">
+  const ownerActions = (
+    <div className="grid w-full grid-cols-2 gap-2">
+      <Button href="/profile/edit" variant="primary" size="md" shape="rounded" className="col-span-2">
         Edit profile
       </Button>
       <Button href="/profile/projects/new" variant="secondary" size="md" shape="rounded">
         Add project
       </Button>
-      <Button
-        href={previewPublic ? `/profile/${profile.username}` : `/profile/${profile.username}?preview=public`}
-        variant="ghost"
-        size="md"
-        shape="rounded"
-      >
-        {previewPublic ? "Owner view" : "Public preview"}
+      <Button href={`/profile/${profile.username}?preview=public`} variant="secondary" size="md" shape="rounded">
+        Public preview
       </Button>
+      <SharePortfolioButton username={profile.username} displayName={displayName} shape="rounded" fullWidth />
+      {/* plan 007: owner-only export */}
+      <ExportPortfolioButton username={profile.username} fullWidth />
+    </div>
+  );
+  // Public preview shows what a signed-in visitor sees. Follow and Message are inert here.
+  const previewActions = (
+    <>
+      <div className="flex w-full items-center gap-2">
+        <Button variant="primary" size="md" className="flex-1" disabled>
+          Follow
+        </Button>
+        <Button variant="secondary" size="md" className="flex-1" disabled>
+          Message
+        </Button>
+      </div>
       <SharePortfolioButton username={profile.username} displayName={displayName} />
-      {/* plan 007: ExportPortfolioButton renders here, after Share, owner only */}
-      <ExportPortfolioButton username={profile.username} />
     </>
-  ) : (
+  );
+  const actions = isOwner ? (previewPublic ? previewActions : ownerActions) : (
     <>
       <div className="w-full">
         <ProfileActions
@@ -533,16 +543,6 @@ export default async function ProfilePage({
     >
       <ProfileBackdrop bannerUrl={bannerUrl} accent={Boolean(theme)} />
       <div className="theme-zone">
-        {isOwner && !previewPublic && (
-          <Suspense fallback={<PortfolioAnalyticsFallback />}>
-            <OwnerAnalyticsSection
-              client={supabase}
-              ownerId={profile.id}
-              currentPro={pro}
-              titles={new Map((ownerProjects.ok ? ownerProjects.data : []).map((project) => [project.id, project.title]))}
-            />
-          </Suspense>
-        )}
         {!isOwner &&
           eligiblePublicView({
             isOwner: false,
@@ -554,6 +554,14 @@ export default async function ProfilePage({
               projection && PORTFOLIO_SECTIONS.some((section) => publicSectionVisible(projection, section))
             ),
           }) && <TrackPortfolioView username={profile.username} />}
+        {isOwner && previewPublic && (
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--border)] px-4 py-3">
+            <p className="text-small text-[var(--muted)]">You are previewing your portfolio as a visitor sees it.</p>
+            <Button href={`/profile/${profile.username}`} variant="secondary" size="sm" shape="rounded">
+              Back to owner view
+            </Button>
+          </div>
+        )}
         <ProfileGrid
           panel={
             <IdentityPanel
@@ -640,6 +648,16 @@ export default async function ProfilePage({
               intro={intro}
               posts={postsSection}
             />
+          )}
+          {isOwner && !previewPublic && (
+            <Suspense fallback={pro ? <PortfolioAnalyticsFallback /> : null}>
+              <OwnerAnalyticsSection
+                client={supabase}
+                ownerId={profile.id}
+                currentPro={pro}
+                titles={new Map((ownerProjects.ok ? ownerProjects.data : []).map((project) => [project.id, project.title]))}
+              />
+            </Suspense>
           )}
         </ProfileGrid>
 
