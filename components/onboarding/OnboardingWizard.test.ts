@@ -8,6 +8,7 @@ vi.mock("@/app/(app)/onboarding/actions", () => ({
   saveOnboardingStage: vi.fn(),
   finishOnboarding: vi.fn(),
   savePortfolioConsent: vi.fn(),
+  startOnboarding: vi.fn(),
 }));
 vi.mock("@/app/(app)/profile/edit/actions", () => ({ uploadAvatar: vi.fn(), addExperience: vi.fn(), addEducation: vi.fn() }));
 vi.mock("@/app/(app)/feed/actions", () => ({ createPost: vi.fn() }));
@@ -15,8 +16,21 @@ vi.mock("@/app/(app)/feed/actions", () => ({ createPost: vi.fn() }));
 import OnboardingWizard from "./OnboardingWizard";
 
 const profile = { username: "ada", display_name: "Ada", avatar_url: null, school: "", year: null, major: null, bio: null };
-const html = renderToStaticMarkup(createElement(OnboardingWizard, { profile }));
-const count = (re: RegExp) => (html.match(re) ?? []).length;
+const html = renderToStaticMarkup(
+  createElement(OnboardingWizard, {
+    profile,
+    prefill: { stage: "", focus: [], openTo: [], publishChecked: true },
+    source: "link",
+  }),
+);
+const prefilled = renderToStaticMarkup(
+  createElement(OnboardingWizard, {
+    profile,
+    prefill: { stage: "building", focus: ["web"], openTo: ["study"], publishChecked: true },
+    source: "redirect",
+  }),
+);
+const count = (re: RegExp, src = html) => (src.match(re) ?? []).length;
 
 describe("OnboardingWizard stage step", () => {
   it("renders the stage choice as a native radio group", () => {
@@ -50,9 +64,39 @@ describe("OnboardingWizard stage step", () => {
   });
 });
 
+describe("OnboardingWizard entry and safety", () => {
+  it("renders saved stage, focus, and open-to as checked", () => {
+    // React serializes checked before value.
+    expect(prefilled).toMatch(/checked="" value="building"/);
+    expect(prefilled).toMatch(/checked="" value="web"/);
+    expect(prefilled).toMatch(/checked="" value="study"/);
+    expect(count(/checked=""/g, prefilled)).toBe(3);
+    expect(count(/checked=""/g)).toBe(0);
+  });
+
+  it("enables Continue when a stage is prefilled", () => {
+    expect(prefilled).not.toMatch(/<button(?=[^>]*type="submit")(?=[^>]*disabled="")[^>]*>/);
+  });
+
+  it("has no Optional label and no Skip on step 1", () => {
+    expect(html).not.toContain("Optional");
+    expect(html).not.toMatch(/>Skip( for now)?</);
+  });
+
+  it("labels the header control Finish later", () => {
+    expect(html).toContain(">Finish later</button>");
+  });
+
+  it("renders stage hints on phones", () => {
+    expect(count(/id="stage-hint-/g)).toBe(6);
+    expect(html).not.toMatch(/id="stage-hint-[a-z_]+" class="hidden/);
+  });
+});
+
 describe("OnboardingWizard wiring", () => {
+  const src = readFileSync("components/onboarding/OnboardingWizard.tsx", "utf8");
+
   it("still calls every onboarding action", () => {
-    const src = readFileSync("components/onboarding/OnboardingWizard.tsx", "utf8");
     for (const call of [
       "saveOnboardingStage(",
       "saveOnboardingBasics(",
@@ -61,8 +105,15 @@ describe("OnboardingWizard wiring", () => {
       "addExperience(",
       "savePortfolioConsent(",
       "finishOnboarding(stepsDone)",
+      "startOnboarding(source)",
     ]) {
       expect(src).toContain(call);
     }
+  });
+
+  it("keeps the consent copy honest and the box prefilled from saved state", () => {
+    expect(src).toContain("make your account private in Settings");
+    expect(src).toContain("defaultChecked={prefill.publishChecked}");
+    expect(src).not.toContain("stay private");
   });
 });

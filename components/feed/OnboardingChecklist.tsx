@@ -11,6 +11,7 @@ type Props = {
   postCount: number;
   followingCount: number;
   verifiedStudent: boolean;
+  stage: string | null;
 };
 
 function openComposer() {
@@ -25,6 +26,7 @@ export default function OnboardingChecklist({
   postCount,
   followingCount,
   verifiedStudent,
+  stage,
 }: Props) {
   const [dismissed, setDismissed] = useState(true);
 
@@ -34,8 +36,9 @@ export default function OnboardingChecklist({
   }, []);
 
   const steps = [
-    { done: !!avatarUrl, label: "Upload an avatar", href: "/onboarding" },
-    { done: !!(bio && bio.trim().length > 10), label: "Write a short bio", href: "/onboarding" },
+    { done: !!stage, label: "Pick your stage", href: "/onboarding" },
+    { done: !!avatarUrl, label: "Upload an avatar", href: "/profile/edit" },
+    { done: !!(bio && bio.trim().length > 10), label: "Write a short bio", href: "/profile/edit" },
     { done: postCount > 0, label: "Publish your first post", href: "/feed" },
     { done: followingCount > 0, label: "Follow someone", href: "/search" },
     { done: verifiedStudent, label: "Verify your school email", href: "/settings" },
@@ -44,8 +47,9 @@ export default function OnboardingChecklist({
 
   const needsPost = postCount === 0;
   const needsFollow = followingCount === 0;
+  const needsStage = !stage;
 
-  if (dismissed || (!needsPost && !needsFollow)) return null;
+  if (dismissed || (!needsPost && !needsFollow && !needsStage)) return null;
 
   return (
     <section className="card mb-3 p-4 sm:p-5">
@@ -57,7 +61,9 @@ export default function OnboardingChecklist({
               ? "Post something and follow a few students to see your feed fill up."
               : needsPost
                 ? "Post something to see it land on your heatmap."
-                : "Follow a few students to see their posts here."}
+                : needsFollow
+                  ? "Follow a few students to see their posts here."
+                  : "Pick your stage to see students at the same point first."}
           </p>
         </div>
         <button
@@ -84,7 +90,7 @@ export default function OnboardingChecklist({
             Follow a few people
           </Link>
         )}
-        <Link href="/onboarding" className="btn-ghost">
+        <Link href="/profile/edit" className="btn-ghost">
           Edit profile
         </Link>
       </div>
