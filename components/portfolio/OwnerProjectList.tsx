@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/Button";
-import { MonoLabel } from "@/components/ui/MonoLabel";
+import { SectionLabel } from "@/components/ui/SectionLabel";
 import { ChevronDown, ChevronUp, Plus } from "lucide-react";
 import type { PortfolioProject } from "@/types/portfolio";
 import { reorderProjectsAction } from "@/app/(app)/profile/projects/actions";
@@ -37,7 +37,7 @@ export default function OwnerProjectList({
   return (
     <section>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <MonoLabel as="h2">Shipped</MonoLabel>
+        <SectionLabel as="h2">Shipped</SectionLabel>
         {!previewPublic && (
           <Button href="/profile/projects/new" variant="secondary" size="sm">
             <Plus strokeWidth={1.5} className="h-4 w-4" aria-hidden />

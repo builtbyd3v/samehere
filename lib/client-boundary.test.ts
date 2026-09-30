@@ -8,7 +8,7 @@ const SERVER_LEAVES = [
   "components/ui/MentionText.tsx",
   "components/ui/Button.tsx",
   "components/ui/Chip.tsx",
-  "components/ui/MonoLabel.tsx",
+  "components/ui/SectionLabel.tsx",
   "components/ui/HairlineCard.tsx",
   "components/ui/Backdrop.tsx",
   "components/ui/Reveal.tsx",
@@ -18,13 +18,12 @@ const SERVER_LEAVES = [
   "components/feed/QuotedRepostCard.tsx",
   "components/landing/LoadingState.tsx",
   "components/landing/Hero.tsx",
-  "components/landing/HeroPreview.tsx",
-  "components/landing/StageMarquee.tsx",
   "components/landing/Features.tsx",
   "components/landing/FinaleCta.tsx",
   "components/landing/LandingNav.tsx",
   "components/landing/LandingFooter.tsx",
   "components/landing/LandingPage.tsx",
+  "components/landing/LandingExamples.tsx",
   "components/messages/MessageTime.tsx",
   "components/portfolio/analysis/AnalysisStages.tsx",
   "app/(auth)/forgot-password/page.tsx",
@@ -37,6 +36,7 @@ const IMG_JUSTIFIED = [
   "components/ui/CompanyLogo.tsx",
   "components/portfolio/PortfolioBanner.tsx",
   "components/profile/EditProfileForm.tsx",
+  "components/landing/LandingExamples.tsx",
 ];
 
 describe("client boundary audit", () => {

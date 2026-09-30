@@ -4,13 +4,13 @@ import { avatarDataUri } from "@/lib/og/avatar";
 import { loadOgFonts } from "@/lib/og/fonts";
 import { BrandFallback, PortfolioExportCard } from "@/lib/og/portfolio-card";
 import {
-  CARD_CACHE_CONTROL,
   CARD_SIZES,
+  cardCacheControl,
   cardUrlText,
   isCardUsername,
   parseCardFormat,
 } from "@/lib/portfolio/card-format";
-import { portfolioViewerClient } from "@/lib/portfolio/client";
+import { hasPortfolioAuthCookie, portfolioReadClient } from "@/lib/portfolio/client";
 import { publicIntro } from "@/lib/portfolio/projection";
 import { loadPublicPortfolioBundle } from "@/lib/portfolio/public";
 import { deriveSkills } from "@/lib/portfolio/skills";
@@ -28,10 +28,11 @@ export async function GET(request: NextRequest, ctx: Ctx) {
   if (!format) return new Response("Unknown format", { status: 400 });
 
   const fonts = await loadOgFonts();
-  const options = { ...CARD_SIZES[format], fonts, headers: { "cache-control": CARD_CACHE_CONTROL } };
+  const signedIn = await hasPortfolioAuthCookie();
+  const options = { ...CARD_SIZES[format], fonts, headers: { "cache-control": cardCacheControl(signedIn) } };
   if (!isCardUsername(username)) return new ImageResponse(<BrandFallback />, { ...options, status: 404 });
 
-  const supabase = await portfolioViewerClient();
+  const supabase = await portfolioReadClient(signedIn);
   const { data: rows } = await supabase.rpc("get_public_profile", { p_username: username });
   const profile = rows?.[0] ?? null;
   if (!profile) return new ImageResponse(<BrandFallback />, { ...options, status: 404 });

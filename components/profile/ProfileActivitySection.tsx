@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import ContributionHeatmap, { type HeatmapDay } from "@/components/profile/ContributionHeatmap";
-import { MonoLabel } from "@/components/ui/MonoLabel";
+import { SectionLabel } from "@/components/ui/SectionLabel";
 
 // Heatmap + streak card — does its own fetch (get_heatmap + get_streak RPCs)
 // so it can stream in behind its own Suspense boundary instead of blocking
@@ -25,7 +25,7 @@ export default async function ProfileActivitySection({
   return (
     <section className="flex flex-col gap-3.5">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <MonoLabel as="h2">Activity</MonoLabel>
+        <SectionLabel as="h2">Activity</SectionLabel>
         {streak && (streak.current_streak > 0 || streak.longest_streak > 0) && (
           <p className="text-sm text-[var(--ink-muted)]">
             <b className="font-semibold text-[var(--blue)]">{streak.current_streak}-day streak</b>

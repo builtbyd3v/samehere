@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 import Avatar from "@/components/ui/Avatar";
 import { Chip, StageChip } from "@/components/ui/Chip";
-import { MonoLabel } from "@/components/ui/MonoLabel";
+import { SectionLabel } from "@/components/ui/SectionLabel";
 import UserBadges from "@/components/profile/UserBadges";
 import { FOCUS_AREAS, FOCUS_LABELS, STAGE_LABELS, parseStage } from "@/lib/stage";
 import OpenToTags from "./OpenToTags";
@@ -23,16 +23,17 @@ type IdentityPanelProps = {
   openTo: readonly string[];
   inviteDm: boolean;
   links: { github: string | null; linkedin: string | null; website: string | null } | null;
-  counts: { posts: number; followers: number; following: number };
+  counts?: { posts: number; followers: number; following: number };
+  nameAs?: "h1" | "h3"; // h3 when embedded in another page (landing examples)
   actions: ReactNode;
 };
 
 function Row({ label, className = "", children }: { label: string; className?: string; children: ReactNode }) {
   return (
     <div className={`flex items-baseline justify-between gap-4 text-[13px] ${className}`.trim()}>
-      <MonoLabel as="dt" className="shrink-0">
+      <SectionLabel as="dt" className="shrink-0">
         {label}
-      </MonoLabel>
+      </SectionLabel>
       <dd className="min-w-0 text-right text-[var(--ink)]">{children}</dd>
     </div>
   );
@@ -60,8 +61,10 @@ export default function IdentityPanel({
   inviteDm,
   links,
   counts,
+  nameAs = "h1",
   actions,
 }: IdentityPanelProps) {
+  const Name = nameAs;
   const s = parseStage(stage);
   const areas = FOCUS_AREAS.filter((a) => focusAreas.includes(a));
   const hasOpenTo = openTo.length > 0;
@@ -84,12 +87,12 @@ export default function IdentityPanel({
 
       <div className="flex flex-col gap-1.5 xl:gap-2">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <h1 className="text-balance text-[32px] font-semibold leading-[1.02] tracking-[-0.035em] xl:text-[44px] xl:leading-none xl:tracking-[-0.04em]">
+          <Name className="text-balance text-[32px] font-semibold leading-[1.02] tracking-[-0.035em] xl:text-[44px] xl:leading-none xl:tracking-[-0.04em]">
             {displayName}
-          </h1>
+          </Name>
           <UserBadges {...badges} />
         </div>
-        <p className="font-mono text-xs text-[var(--faint)]">@{username}</p>
+        <p className="text-[13px] text-[var(--faint)]">@{username}</p>
         {headline && <p className="text-pretty text-base leading-[1.4] text-[var(--ink-3)] xl:text-lg">{headline}</p>}
         {tagline && <p className="text-sm text-[var(--muted)]">{tagline}</p>}
       </div>
@@ -132,17 +135,19 @@ export default function IdentityPanel({
 
       {links && <ResumeLinks {...links} />}
 
-      <p className="font-mono text-[11px] uppercase tabular-nums tracking-[0.06em] text-[var(--faint)]">
-        <Link href={`/profile/${username}/followers`} className="hover:text-[var(--ink)]">
-          <Count n={counts.followers} /> followers
-        </Link>
-        {" · "}
-        <Link href={`/profile/${username}/following`} className="hover:text-[var(--ink)]">
-          <Count n={counts.following} /> following
-        </Link>
-        {" · "}
-        <Count n={counts.posts} /> posts
-      </p>
+      {counts && (
+        <p className="text-[13px] tabular-nums text-[var(--faint)]">
+          <Link href={`/profile/${username}/followers`} className="hover:text-[var(--ink)]">
+            <Count n={counts.followers} /> followers
+          </Link>
+          {" · "}
+          <Link href={`/profile/${username}/following`} className="hover:text-[var(--ink)]">
+            <Count n={counts.following} /> following
+          </Link>
+          {" · "}
+          <Count n={counts.posts} /> posts
+        </p>
+      )}
     </div>
   );
 }

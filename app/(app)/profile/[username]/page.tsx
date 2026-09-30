@@ -48,8 +48,7 @@ import {
   ResumeTimeline,
 } from "@/components/portfolio/ProfileSections";
 import { Button } from "@/components/ui/Button";
-import { MonoLabel } from "@/components/ui/MonoLabel";
-import { GrainOverlay, LightPool } from "@/components/ui/Backdrop";
+import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Reveal } from "@/components/ui/Reveal";
 const getProfileByUsername = cache(async (username: string) => fetchProfileByUsername(await createClient(), username));
 
@@ -98,20 +97,15 @@ export async function generateMetadata({
 }
 
 function ProfileBackdrop({ bannerUrl, accent }: { bannerUrl: string | null; accent: boolean }) {
+  if (!bannerUrl && !accent) return null;
   return (
     <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[300px] overflow-hidden mask-b-from-10% mask-x-from-70% xl:h-[420px]">
       {bannerUrl ? (
         <PortfolioBanner src={bannerUrl} />
-      ) : accent ? (
-        // ponytail: local accent pool because LightPool has no tint prop; move into LightPool if a second page needs it.
-        <div className="absolute inset-0 bg-[radial-gradient(90%_70%_at_20%_0%,color-mix(in_srgb,var(--profile-accent)_45%,transparent),transparent_70%)] xl:bg-[radial-gradient(45%_80%_at_22%_0%,color-mix(in_srgb,var(--profile-accent)_40%,transparent),transparent_70%)]" />
       ) : (
-        <>
-          <LightPool tone="deep" className="inset-0" />
-          <LightPool tone="accent" className="-top-[260px] left-[45%] hidden h-[520px] w-[720px] xl:block" />
-        </>
+        // ponytail: local accent tint because LightPool has no tint prop; it is the Pro theme color the owner picked, not decoration.
+        <div className="absolute inset-0 bg-[radial-gradient(90%_70%_at_20%_0%,color-mix(in_srgb,var(--profile-accent)_45%,transparent),transparent_70%)] xl:bg-[radial-gradient(45%_80%_at_22%_0%,color-mix(in_srgb,var(--profile-accent)_40%,transparent),transparent_70%)]" />
       )}
-      <GrainOverlay strength="strong" />
     </div>
   );
 }
@@ -236,7 +230,7 @@ async function PublicHeatmapFallback({
   if (heatmap.length === 0) return null;
   return (
     <section className="flex flex-col gap-3.5">
-      <MonoLabel as="h2">Activity</MonoLabel>
+      <SectionLabel as="h2">Activity</SectionLabel>
       <ContributionHeatmap data={heatmap} />
     </section>
   );
@@ -274,9 +268,9 @@ async function PublicPortfolioBelow({
   });
   const posts = (
     <section>
-      <MonoLabel as="h2" className="mb-3">
+      <SectionLabel as="h2" className="mb-3">
         Posts
-      </MonoLabel>
+      </SectionLabel>
       <p className="flex flex-wrap items-center gap-2 text-sm text-[var(--muted)]">
         Sign in to see their posts
         <Button href="/login" variant="ghost" size="sm">

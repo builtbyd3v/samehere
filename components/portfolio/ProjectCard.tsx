@@ -5,7 +5,7 @@ import { projectCoverClass } from "@/lib/portfolio/cover";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { HairlineCard } from "@/components/ui/HairlineCard";
-import { MonoLabel } from "@/components/ui/MonoLabel";
+import { SectionLabel } from "@/components/ui/SectionLabel";
 import SafeHttpLink from "./SafeHttpLink";
 
 type CardProject = PublicPortfolioProject | PortfolioProject;
@@ -46,9 +46,9 @@ export default function ProjectCard({
             </h3>
             <div className="flex shrink-0 items-center gap-2">
               {draft ? (
-                <MonoLabel>Draft</MonoLabel>
+                <SectionLabel>Draft</SectionLabel>
               ) : year ? (
-                <span className="font-mono text-[11px] tabular-nums text-[var(--faint)]">{year}</span>
+                <span className="text-xs tabular-nums text-[var(--faint)]">{year}</span>
               ) : null}
               {isOwner && isOwnerProject(project) && (
                 <Button href={`/profile/projects/${project.id}/edit`} variant="ghost" size="sm">
