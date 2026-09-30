@@ -28,7 +28,7 @@ body {
   --surface-card: #161616;
   --border: rgba(255, 255, 255, 0.08);
   --border-strong: rgba(255, 255, 255, 0.22);
-  --ink: #f5f5f5;
+  --ink: #f4f4f5;
   --ink-muted: #a1a5ab;
   --ink-faint: rgba(245, 245, 245, 0.68);
   --featured-surface: rgba(255, 255, 255, 0.05);
@@ -63,6 +63,32 @@ body {
   --label-building: #4f9fe8;
   --label-learning: #5fce8f;
   --label-team: #e07a5f;
+
+  /* Midnight editorial tokens (DESIGN.md). Legacy names above keep their
+     values so pages not yet redesigned look the same. */
+  --bg: #08090a;
+  --surface-1: #0c0d0f;
+  --surface-2: #0d0f11;
+  --surface-3: #0f1012;
+  --surface-4: #17191c;
+  --hairline: rgba(255, 255, 255, 0.06);
+  --hairline-strong: rgba(255, 255, 255, 0.12);
+  --ink-2: #e4e5e7;
+  --ink-3: #c4c7cc;
+  --muted: #9a9ea6;
+  --faint: #787c84;
+  --accent-2: #9ecbf5;
+  --accent-ink: #cfe6ff;
+  --accent-soft: rgba(79, 159, 232, 0.16);
+  --amber: var(--label-stuck);
+  --green: var(--label-learning);
+  --coral: var(--label-team);
+  --stage-learning: var(--green);
+  --stage-building: var(--accent);
+  --stage-internship-search: var(--amber);
+  --stage-interning: var(--accent-2);
+  --stage-job-search: var(--coral);
+  --stage-working: var(--ink-3);
 }
 
 .dark {
@@ -74,7 +100,7 @@ body {
   --surface-card: #161616;
   --border: rgba(255, 255, 255, 0.08);
   --border-strong: rgba(255, 255, 255, 0.22);
-  --ink: #f5f5f5;
+  --ink: #f4f4f5;
   --ink-muted: #a1a5ab;
   --ink-faint: rgba(245, 245, 245, 0.68);
   --featured-surface: rgba(255, 255, 255, 0.05);
@@ -129,6 +155,21 @@ body {
   --label-building: #0075de;
   --label-learning: #5fce8f;
   --label-team: #c45c42;
+  /* New tokens, light values (best effort; the redesign is dark first). */
+  --bg: #f4f4f5;
+  --surface-1: #ffffff;
+  --surface-2: #ffffff;
+  --surface-3: #ffffff;
+  --surface-4: #f4f4f5;
+  --hairline: rgba(10, 10, 10, 0.06);
+  --hairline-strong: rgba(10, 10, 10, 0.12);
+  --ink-2: #27272a;
+  --ink-3: #3f3f46;
+  --muted: #52525b;
+  --faint: #71717a;
+  --accent-2: #005bb3;
+  --accent-ink: #005bb3;
+  --accent-soft: rgba(0, 117, 222, 0.10);
 }
 
 @media (prefers-color-scheme: light) {
@@ -164,6 +205,21 @@ body {
     --label-building: #0075de;
     --label-learning: #5fce8f;
     --label-team: #c45c42;
+    /* New tokens, light values (best effort; the redesign is dark first). */
+    --bg: #f4f4f5;
+    --surface-1: #ffffff;
+    --surface-2: #ffffff;
+    --surface-3: #ffffff;
+    --surface-4: #f4f4f5;
+    --hairline: rgba(10, 10, 10, 0.06);
+    --hairline-strong: rgba(10, 10, 10, 0.12);
+    --ink-2: #27272a;
+    --ink-3: #3f3f46;
+    --muted: #52525b;
+    --faint: #71717a;
+    --accent-2: #005bb3;
+    --accent-ink: #005bb3;
+    --accent-soft: rgba(0, 117, 222, 0.10);
   }
 }
 
