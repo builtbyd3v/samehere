@@ -2,7 +2,7 @@ import FeedStagger from "@/components/feed/FeedStagger";
 import PostCard, { type FeedPost } from "@/components/feed/PostCard";
 import QuotedRepostCard, { type QuotedRepost } from "@/components/feed/QuotedRepostCard";
 import ProfileHoverLink from "@/components/profile/ProfileHoverLink";
-import { IconRepost } from "@/components/icons";
+import { Repeat2 } from "lucide-react";
 import type { PlainRepost } from "@/lib/feed-reposts";
 import type { FeedTimelineItem } from "@/lib/feed-timeline";
 
@@ -25,16 +25,13 @@ export default function FeedTimeline({
         const reposter = item.repost.reposter;
         const name = reposter.display_name ?? reposter.username;
         return (
-          <div
-            key={`repost-${item.repost.id}`}
-            className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-2"
-          >
+          <div key={`repost-${item.repost.id}`}>
             <ProfileHoverLink
               href={`/profile/${reposter.username}`}
               username={reposter.username}
-              className="flex items-center gap-1.5 px-2 py-1.5 text-[13px] font-medium text-[var(--ink-muted)] transition-colors hover:text-[var(--ink)]"
+              className="flex items-center gap-1.5 pl-[46px] pt-3 text-xs text-[var(--muted)] hover:text-[var(--ink)] lg:pl-[50px]"
             >
-              <IconRepost />
+              <Repeat2 size={13} strokeWidth={1.7} aria-hidden />
               <span>{name} reposted</span>
             </ProfileHoverLink>
             <PostCard post={item.repost.original} viewerId={viewerId} />
