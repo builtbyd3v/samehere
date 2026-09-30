@@ -4,6 +4,7 @@ import Avatar from "@/components/ui/Avatar";
 import { Chip, StageChip } from "@/components/ui/Chip";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import UserBadges from "@/components/profile/UserBadges";
+import { activeBadges } from "@/lib/badges";
 import { FOCUS_AREAS, FOCUS_LABELS, STAGE_LABELS, parseStage } from "@/lib/stage";
 import OpenToTags from "./OpenToTags";
 import ResumeLinks from "./ResumeLinks";
@@ -69,7 +70,8 @@ export default function IdentityPanel({
   const areas = FOCUS_AREAS.filter((a) => focusAreas.includes(a));
   const hasOpenTo = openTo.length > 0;
   // Stage and focus rows are desktop only (chips replace them below xl).
-  const hasPhoneRows = Boolean(schoolLine || hasOpenTo);
+  const badgeText = activeBadges(badges).map((b) => b.label).join(" · ");
+  const hasPhoneRows = Boolean(schoolLine || hasOpenTo || badgeText);
   const hasTable = hasPhoneRows || Boolean(s || areas.length > 0);
 
   return (
@@ -123,6 +125,7 @@ export default function IdentityPanel({
             </Row>
           )}
           {schoolLine && <Row label="School">{schoolLine}</Row>}
+          {badgeText && <Row label="Badges">{badgeText}</Row>}
           {hasOpenTo && (
             <Row label="Open to">
               <OpenToTags tags={openTo} username={username} linkToDm={inviteDm} className="text-right" />

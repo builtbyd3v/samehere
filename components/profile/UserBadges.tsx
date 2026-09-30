@@ -1,22 +1,25 @@
+import type { ComponentType } from "react";
 import { IconBolt, IconButterfly, IconCrown, IconGraduationCap } from "@/components/icons";
+import { activeBadges, type BadgeFlags, type BadgeKey } from "@/lib/badges";
 
-// ponytail: one badge component, all surfaces import it
+const ICON: Record<BadgeKey, ComponentType<{ className?: string }>> = {
+  isVerifiedStudent: IconGraduationCap,
+  isFounder: IconCrown,
+  isCampusFounder: IconButterfly,
+  isPro: IconBolt,
+};
+
+// ponytail: one badge component, all surfaces import it. One monochrome mark (highest
+// priority); the full list is its label and the "Badges" row on the portfolio.
 export default function UserBadges({
-  isPro,
-  isFounder,
-  isCampusFounder,
-  isVerifiedStudent,
   isBot,
   className = "h-4 w-4",
-}: {
-  isPro?: boolean;
-  isFounder?: boolean;
-  isCampusFounder?: boolean;
-  isVerifiedStudent?: boolean;
-  isBot?: boolean;
-  className?: string;
-}) {
-  if (!isPro && !isFounder && !isCampusFounder && !isVerifiedStudent && !isBot) return null;
+  ...flags
+}: BadgeFlags & { isBot?: boolean; className?: string }) {
+  const badges = activeBadges(flags);
+  if (!isBot && badges.length === 0) return null;
+  const Icon = badges.length > 0 ? ICON[badges[0].key] : null;
+  const label = badges.map((badge) => badge.label).join(", ");
   return (
     <span className="inline-flex shrink-0 items-center gap-1">
       {isBot && (
@@ -31,24 +34,9 @@ export default function UserBadges({
           Bot
         </span>
       )}
-      {isFounder && (
-        <span title="Founder" className="text-[var(--founder)]">
-          <IconCrown className={className} />
-        </span>
-      )}
-      {isCampusFounder && (
-        <span role="img" aria-label="Social Butterfly" title="Social Butterfly" className="text-[var(--campus-founder)]">
-          <IconButterfly className={className} />
-        </span>
-      )}
-      {isVerifiedStudent && (
-        <span title="Verified Student" className="text-[var(--ink-muted)]">
-          <IconGraduationCap className={className} />
-        </span>
-      )}
-      {isPro && (
-        <span title="Pro" className="text-[var(--blue)]">
-          <IconBolt className={className} />
+      {Icon && (
+        <span role="img" aria-label={label} title={label} className="text-[var(--muted)]">
+          <Icon className={className} />
         </span>
       )}
     </span>

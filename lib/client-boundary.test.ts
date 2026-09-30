@@ -16,6 +16,7 @@ const SERVER_LEAVES = [
   "components/ui/EmptyState.tsx",
   "components/auth/AuthShell.tsx",
   "components/profile/ProfileHoverLink.tsx",
+  "components/profile/UserBadges.tsx",
   "components/feed/QuotedRepostCard.tsx",
   "components/landing/LoadingState.tsx",
   "components/landing/Hero.tsx",
