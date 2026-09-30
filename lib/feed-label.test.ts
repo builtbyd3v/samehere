@@ -7,6 +7,7 @@ import {
   feedPath,
   parseFeedView,
   shouldSeedFollowing,
+  stuckOpenOnly,
   stuckReplyPath,
 } from "./feed-label";
 
@@ -106,7 +107,23 @@ describe("activeFeedTab", () => {
 
 describe("FEED_TABS", () => {
   it("lists Latest, Your stage, Following, Open questions", () => {
-    expect(FEED_TABS.map((t) => t.href)).toEqual(["/feed", "/feed?tab=stage", "/feed?tab=following", "/feed?label=stuck"]);
+    expect(FEED_TABS.map((t) => t.href)).toEqual(["/feed", "/feed?tab=stage", "/feed?tab=following", "/feed?label=stuck&open=1"]);
     expect(FEED_TABS.map((t) => t.key)).toEqual(["latest", "stage", "following", "open"]);
+  });
+});
+
+describe("Open-only Stuck filter", () => {
+  it("adds open=1 only on the Stuck label", () => {
+    expect(feedPath({ label: "stuck", open: true })).toBe("/feed?label=stuck&open=1");
+    expect(feedPath({ label: "stuck", open: false })).toBe("/feed?label=stuck");
+    expect(feedPath({ label: "learning", open: true })).toBe("/feed?label=learning");
+  });
+
+  it("reads open=1 by exact match on Stuck only", () => {
+    expect(stuckOpenOnly("stuck", "1")).toBe(true);
+    expect(stuckOpenOnly("stuck", undefined)).toBe(false);
+    expect(stuckOpenOnly("stuck", "true")).toBe(false);
+    expect(stuckOpenOnly("learning", "1")).toBe(false);
+    expect(stuckOpenOnly(null, "1")).toBe(false);
   });
 });
