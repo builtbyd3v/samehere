@@ -11,7 +11,7 @@ import {
   type EducationState,
 } from "@/app/(app)/profile/edit/actions";
 import { createPost, type ComposerState } from "@/app/(app)/feed/actions";
-import { saveOnboardingBasics, finishOnboarding } from "@/app/(app)/onboarding/actions";
+import { saveOnboardingBasics, finishOnboarding, savePortfolioConsent } from "@/app/(app)/onboarding/actions";
 import AvatarBase from "@/components/ui/Avatar";
 import SchoolAutocomplete from "@/components/profile/SchoolAutocomplete";
 import DateRangePicker from "@/components/profile/DateRangePicker";
@@ -41,7 +41,7 @@ const label = "block text-sm font-medium text-[var(--ink)]";
 const field = "input-base mt-1.5";
 
 export default function OnboardingWizard({ profile }: { profile: OnboardingProfile }) {
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [stepsDone, setStepsDone] = useState<OnboardingStep[]>([]);
   const markDone = (s: OnboardingStep) => setStepsDone((prev) => (prev.includes(s) ? prev : [...prev, s]));
   const reduce = useReducedMotion();
@@ -131,7 +131,24 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
     startExp(async () => {
       const result: ExperienceState = await addExperience({}, fd);
       if (result.error) setExpError(result.error);
-      else await finishOnboarding([...stepsDone, "experience"]);
+      else {
+        markDone("experience");
+        setStep(5);
+      }
+    });
+  }
+
+  const [publishPending, startPublish] = useTransition();
+  const [publishError, setPublishError] = useState<string | undefined>();
+
+  function onSubmitPublish(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    setPublishError(undefined);
+    startPublish(async () => {
+      const result = await savePortfolioConsent({}, fd);
+      if (result.error) setPublishError(result.error);
+      else await finishOnboarding(stepsDone);
     });
   }
 
@@ -140,11 +157,11 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
       <div className="mb-6 flex items-center justify-between">
         <div className="flex-1">
           <h1 className="text-2xl font-semibold tracking-[-0.02em]">Set up your profile</h1>
-          <p className="mt-1 text-sm text-[var(--ink-muted)]">Optional · step {step} of 4</p>
+          <p className="mt-1 text-sm text-[var(--ink-muted)]">Optional · step {step} of 5</p>
           <div className="mt-2 h-1 w-40 overflow-hidden rounded-full bg-[var(--featured-surface)]">
             <div
               className="h-full rounded-full bg-[var(--blue)] transition-[width] duration-[400ms] ease-out"
-              style={{ width: `${(step / 4) * 100}%` }}
+              style={{ width: `${(step / 5) * 100}%` }}
             />
           </div>
         </div>
@@ -312,11 +329,31 @@ export default function OnboardingWizard({ profile }: { profile: OnboardingProfi
               </div>
             </div>
             <div className="mt-6 flex items-center justify-between">
-              <button type="button" onClick={onFinish} disabled={expPending || finishing} className="text-sm text-[var(--ink-muted)] underline disabled:opacity-50">
+              <button type="button" onClick={() => setStep(5)} disabled={expPending || finishing} className="text-sm text-[var(--ink-muted)] underline disabled:opacity-50">
                 Skip
               </button>
               <button type="submit" disabled={expPending || finishing} className="btn-primary !py-2.5">
-                {expPending || finishing ? "Saving…" : "Finish"}
+                {expPending || finishing ? "Saving…" : "Add & continue"}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {step === 5 && (
+          <form onSubmit={onSubmitPublish}>
+            <h2 className="mb-1 text-lg font-semibold">Make your portfolio public</h2>
+            <p className="mb-4 text-sm text-[var(--ink-muted)]">
+              Your link samehere.dev/profile/{profile.username} shows your intro, projects, experience, and education.
+              Activity and posts stay private. You can change this anytime in Edit profile.
+            </p>
+            {publishError && <p role="alert" className="mb-3 text-sm text-[var(--danger)]">{publishError}</p>}
+            <label className="flex items-center gap-2.5 text-sm text-[var(--ink)]">
+              <input type="checkbox" name="publish_portfolio" defaultChecked className="h-4 w-4 accent-[var(--ink)]" />
+              Make my portfolio public
+            </label>
+            <div className="mt-6 flex items-center justify-end">
+              <button type="submit" disabled={publishPending || finishing} className="btn-primary !py-2.5">
+                {publishPending || finishing ? "Saving…" : "Finish"}
               </button>
             </div>
           </form>
