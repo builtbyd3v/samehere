@@ -1664,18 +1664,21 @@ export type Database = {
           qualified_at: string | null
           referred_id: string
           referrer_id: string
+          reward_granted_at: string | null
         }
         Insert: {
           created_at?: string
           qualified_at?: string | null
           referred_id: string
           referrer_id: string
+          reward_granted_at?: string | null
         }
         Update: {
           created_at?: string
           qualified_at?: string | null
           referred_id?: string
           referrer_id?: string
+          reward_granted_at?: string | null
         }
         Relationships: [
           {
@@ -2397,6 +2400,10 @@ export type Database = {
           reposter_verified_student: boolean
           samehere_count: number
         }[]
+      }
+      get_referral_reward_progress: {
+        Args: never
+        Returns: { ready: number; rewards: number }[]
       }
       get_referral_stats: {
         Args: never

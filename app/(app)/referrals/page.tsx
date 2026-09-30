@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import ReferralShareCard from "@/components/referrals/ReferralShareCard";
 import { SITE_URL } from "@/lib/site";
-import { referralStatsFromRpc } from "@/lib/referrals";
+import { referralRewardLine, referralStatsFromRpc } from "@/lib/referrals";
 
 export default async function ReferralsPage() {
   const supabase = await createClient();
@@ -13,13 +13,16 @@ export default async function ReferralsPage() {
 
   const { data, error } = await supabase.rpc("get_referral_stats");
   const stats = referralStatsFromRpc(data, error, user.id);
+  const { data: rewardData, error: rewardError } = await supabase.rpc("get_referral_reward_progress");
+  const rewardLine = rewardError ? null : referralRewardLine(rewardData?.[0]);
 
   return (
     <main className="page-enter mx-auto max-w-xl px-5 py-10">
       <h1 className="mb-1 text-title font-semibold text-[var(--ink)]">Invite friends</h1>
       <p className="mb-6 text-sm text-[var(--ink-muted)]">
         Share your link. A referral is qualified after that person is active on samehere. 50 qualified unlocks the
-        Social Butterfly badge. 100 qualified unlocks a free semester of Pro.
+        Social Butterfly badge. 100 qualified unlocks a free semester of Pro. Every 3 friends who join and set
+        their stage earn you a month of Pro.
       </p>
       {stats.status === "unavailable" ? (
         <div className="card p-5 sm:p-6">
@@ -31,13 +34,16 @@ export default async function ReferralsPage() {
           </a>
         </div>
       ) : (
-        <ReferralShareCard
-          initialCode={stats.code}
-          origin={SITE_URL}
-          referralCount={stats.referralCount}
-          pendingCount={stats.pendingCount}
-          isCampusFounder={stats.isCampusFounder}
-        />
+        <>
+          <ReferralShareCard
+            initialCode={stats.code}
+            origin={SITE_URL}
+            referralCount={stats.referralCount}
+            pendingCount={stats.pendingCount}
+            isCampusFounder={stats.isCampusFounder}
+          />
+          {rewardLine && <p className="mt-4 text-sm text-[var(--muted)]">{rewardLine}</p>}
+        </>
       )}
     </main>
   );

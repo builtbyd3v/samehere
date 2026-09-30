@@ -27,3 +27,17 @@ describe("stuck_help notifications", () => {
     expect(label).toContain("stuck");
   });
 });
+
+describe("referral_reward notifications", () => {
+  const reward: NotificationRow = { ...row, type: "referral_reward", post_id: null };
+
+  it("links to the invite page", () => {
+    expect(notificationHref(reward)).toBe("/referrals");
+  });
+
+  it("names the reward without an em dash", () => {
+    const label = notificationLabel("referral_reward", "Ada");
+    expect(label).toContain("month of Pro");
+    expect(label).not.toContain("\u2014");
+  });
+});
