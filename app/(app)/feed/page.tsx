@@ -146,6 +146,7 @@ async function FeedHeader({ userId }: { userId: string | null }) {
           postCount={counts?.posts ?? 0}
           followingCount={counts?.following ?? 0}
           verifiedStudent={!!composerProfile?.verified_student}
+          stage={composerProfile?.stage ?? null}
         />
       )}
     </>
