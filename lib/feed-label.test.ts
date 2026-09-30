@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   FEED_FILTER_LABELS,
+  FEED_TABS,
+  activeFeedTab,
   FOLLOWING_SEED_MAX,
   feedPath,
   parseFeedView,
@@ -75,5 +77,36 @@ describe("stuckReplyPath", () => {
     expect(stuckReplyPath("11111111-1111-1111-1111-111111111111")).toBe(
       "/post/11111111-1111-1111-1111-111111111111?reply=1",
     );
+  });
+});
+
+describe("Your stage tab", () => {
+  it("builds /feed?tab=stage and lets a label win", () => {
+    expect(feedPath({ tab: "stage" })).toBe("/feed?tab=stage");
+    expect(feedPath({ tab: "stage", label: "learning" })).toBe("/feed?label=learning");
+  });
+
+  it("parses the stage tab by exact match only", () => {
+    expect(parseFeedView({ tab: "stage" })).toEqual({ tab: "stage", label: null });
+    expect(parseFeedView({ tab: "stage", label: "stuck" })).toEqual({ tab: "latest", label: "stuck" });
+    expect(parseFeedView({ tab: "Stage" })).toEqual({ tab: "latest", label: null });
+    expect(parseFeedView({ tab: "junk" })).toEqual({ tab: "latest", label: null });
+  });
+});
+
+describe("activeFeedTab", () => {
+  it("underlines the right tab", () => {
+    expect(activeFeedTab({ tab: "latest", label: null })).toBe("latest");
+    expect(activeFeedTab({ tab: "stage", label: null })).toBe("stage");
+    expect(activeFeedTab({ tab: "following", label: null })).toBe("following");
+    expect(activeFeedTab({ tab: "latest", label: "stuck" })).toBe("open");
+    expect(activeFeedTab({ tab: "latest", label: "learning" })).toBeNull();
+  });
+});
+
+describe("FEED_TABS", () => {
+  it("lists Latest, Your stage, Following, Open questions", () => {
+    expect(FEED_TABS.map((t) => t.href)).toEqual(["/feed", "/feed?tab=stage", "/feed?tab=following", "/feed?label=stuck"]);
+    expect(FEED_TABS.map((t) => t.key)).toEqual(["latest", "stage", "following", "open"]);
   });
 });
