@@ -3,7 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import posthog from "posthog-js";
 import { Button } from "@/components/ui/Button";
-import { parseRef } from "@/lib/referrals";
+import { parseRef, REF_COOKIE } from "@/lib/referrals";
 import { createClient } from "@/lib/supabase/client";
 
 function GoogleMark() {
@@ -38,6 +38,10 @@ export default function OAuthButtons({ variant }: { variant?: "signup" | "login"
     // await risks being dropped by the navigation.
     if (variant === "signup") {
       posthog.capture("signup_submitted", { has_ref: !!ref, ref, method: "oauth", provider });
+    }
+    if (variant === "signup" && ref) {
+      // Carries the ref through the provider round trip; read once by app/auth/callback.
+      document.cookie = `${REF_COOKIE}=${ref}; Max-Age=900; Path=/; SameSite=Lax`;
     }
     const supabase = createClient();
     await supabase.auth.signInWithOAuth({
