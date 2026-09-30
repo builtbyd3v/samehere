@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+/* Fonts come from next/font in app/layout.tsx (variables set on <body>).
+   `inline` makes each utility read the variable where it is used. */
+@theme inline {
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-serif: var(--font-instrument-serif), ui-serif, Georgia, serif;
+}
+
 /* x.ai-style tokens. Dark is the default canvas; .light is the coherent inverse.
    Landing scopes a darker card/border set via .landing-xai. */
 html {
@@ -209,7 +217,7 @@ summary {
   }
 }
 
-/* Figtree only. Display face was unused on live surfaces. */
+/* Type: Geist (font-sans), Geist Mono (font-mono), Instrument Serif italic (font-serif). See DESIGN.md. */
 
 /* Tactile "paper" depth — warm-tinted soft shadow (never pure black) so cards
    sit on the cream like paper on a desk. Wow-surfaces only; calm surfaces keep
