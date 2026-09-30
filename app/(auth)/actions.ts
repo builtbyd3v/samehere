@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createHash } from "node:crypto";
+import { parseRef } from "@/lib/referrals";
 import { createClient } from "@/lib/supabase/server";
 import { usernameError } from "@/lib/utils/validation";
 
@@ -17,7 +18,7 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   const username = String(formData.get("username") ?? "").trim().toLowerCase();
-  const refCode = String(formData.get("ref_code") ?? "").trim().toLowerCase();
+  const refCode = parseRef(formData.get("ref_code")) ?? "";
 
   if (!email) return { error: "Enter your email address." };
   const uErr = usernameError(username);

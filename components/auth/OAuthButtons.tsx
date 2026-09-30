@@ -3,6 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import posthog from "posthog-js";
 import { Button } from "@/components/ui/Button";
+import { parseRef } from "@/lib/referrals";
 import { createClient } from "@/lib/supabase/client";
 
 function GoogleMark() {
@@ -29,13 +30,14 @@ function GitHubMark() {
 // in app/auth/callback/route.ts after the provider redirects back.
 export default function OAuthButtons({ variant }: { variant?: "signup" | "login" }) {
   const refFromLink = useSearchParams().get("ref") ?? "";
+  const ref = parseRef(refFromLink);
 
   async function start(provider: "google" | "github") {
     // Capture before kicking off the redirect: signInWithOAuth calls
     // window.location.assign internally, so anything queued after the
     // await risks being dropped by the navigation.
     if (variant === "signup") {
-      posthog.capture("signup_submitted", { has_ref: !!refFromLink, method: "oauth", provider });
+      posthog.capture("signup_submitted", { has_ref: !!ref, ref, method: "oauth", provider });
     }
     const supabase = createClient();
     await supabase.auth.signInWithOAuth({
