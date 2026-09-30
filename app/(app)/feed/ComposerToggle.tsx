@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import posthog from "posthog-js";
 import { Plus, X } from "lucide-react";
 import AvatarBase from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { COMPOSER_LABELS, COMPOSER_LABEL_COPY, CONTEXT_LABEL_DOT, type ContextLabel } from "@/lib/context-label";
+import { STAGE_LABELS, stageMomentDraft, type StageMoment } from "@/lib/stage";
+import { consumeStageMoment } from "./actions";
 
 const PostComposer = dynamic(() => import("@/components/feed/PostComposer"), {
   loading: () => (
@@ -19,13 +21,21 @@ type ComposerToggleProps = {
   avatarUrl: string | null;
   username: string;
   isSuspended: boolean;
+  stageMoment: StageMoment | null;
 };
 
-export default function ComposerToggle({ isPro, avatarUrl, username, isSuspended }: ComposerToggleProps) {
-  const [open, setOpen] = useState<null | { label: ContextLabel | null }>(null);
+export default function ComposerToggle({ isPro, avatarUrl, username, isSuspended, stageMoment }: ComposerToggleProps) {
+  const [open, setOpen] = useState<null | { label: ContextLabel | null; moment: StageMoment | null }>(null);
+  // Copied once: consumeStageMoment deletes the cookie, the route re-renders
+  // with stageMoment = null, and the prompt must survive that.
+  const [moment, setMoment] = useState(stageMoment);
+
+  useEffect(() => {
+    if (moment) void consumeStageMoment();
+  }, [moment]);
 
   function openWith(label: ContextLabel | null) {
-    setOpen({ label });
+    setOpen({ label, moment: null });
     if (label) posthog.capture("composer_shortcut_used", { label });
   }
 
@@ -45,13 +55,35 @@ export default function ComposerToggle({ isPro, avatarUrl, username, isSuspended
             <X size={16} strokeWidth={2} aria-hidden />
           </button>
         </div>
-        <PostComposer isPro={isPro} autoFocus initialLabel={open.label} />
+        <PostComposer isPro={isPro} autoFocus initialLabel={open.label} moment={open.moment} />
       </div>
     );
   }
 
   return (
     <>
+      {moment && (
+        <div className="flex flex-col gap-3 border-b border-[var(--hairline)] py-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-[var(--muted)]">
+            <span className="text-[var(--ink)]">You moved to {STAGE_LABELS[moment.to]}.</span> Want to post about it?
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                setOpen({ label: stageMomentDraft(moment).label, moment });
+                setMoment(null);
+              }}
+            >
+              Write a post
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setMoment(null)}>
+              Not now
+            </Button>
+          </div>
+        </div>
+      )}
       <div className="hidden gap-3.5 border-b border-[var(--hairline)] py-5 lg:flex">
         <AvatarBase src={avatarUrl} seed={username || "you"} name={username} className="size-9 shrink-0 rounded-full text-small" pro={isPro} />
         <div className="flex min-w-0 flex-1 flex-col gap-3.5">

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { POST_SELECT, PAGE, withEngagement, type PostRow } from "@/components/feed/PostCard";
 import { attachSignedMedia, verifyMediaLimits } from "@/lib/media";
@@ -14,9 +15,28 @@ import { TEXT_LIMITS, textLimitError } from "@/lib/utils/validation";
 import { contextLabelError, parseContextLabel } from "@/lib/context-label";
 import { fetchLabeledPosts } from "@/lib/feed-labeled";
 import { parseTeamEventFields, teamEventError } from "@/lib/team-event";
-import { parseStage } from "@/lib/stage";
+import { STAGE_MOMENT_COOKIE, parseStage, parseStageMoment } from "@/lib/stage";
 
 export type ComposerState = { error?: string; ok?: boolean };
+
+// Called once by the feed when it shows the stage-moment prompt. Clearing the
+// cookie here makes the prompt one-time even if the student ignores it.
+export async function consumeStageMoment(): Promise<void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const store = await cookies();
+  const moment = parseStageMoment(store.get(STAGE_MOMENT_COOKIE)?.value);
+  store.delete(STAGE_MOMENT_COOKIE);
+  if (user && moment) {
+    getPostHogServerClient()?.capture({
+      distinctId: user.id,
+      event: "stage_moment_prompt_shown",
+      properties: { from: moment.from, to: moment.to },
+    });
+  }
+}
 
 // Next page for "Load more": posts (+ quote-reposts + plain reposts) strictly
 // older than the cursor (created_at of the last row shown). Keyset pagination
@@ -229,6 +249,15 @@ export async function createPost(_prev: ComposerState, formData: FormData): Prom
       has_team_event: Boolean(event.team_event_name || event.team_event_date || event.team_event_mode),
     },
   });
+  const momentFrom = parseStage(formData.get("moment_from"));
+  const momentTo = parseStage(formData.get("moment_to"));
+  if (momentFrom && momentTo && momentFrom !== momentTo) {
+    posthog?.capture({
+      distinctId: user.id,
+      event: "stage_moment_posted",
+      properties: { from: momentFrom, to: momentTo, context_label, edited: !content.startsWith("Moved from ") },
+    });
+  }
 
   // The posts_notify_stuck_helpers trigger already ran inside the insert.
   if (context_label === "stuck" && posthog) {

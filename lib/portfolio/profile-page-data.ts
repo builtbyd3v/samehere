@@ -234,14 +234,16 @@ export async function loadPublicProfilePage(client: PortfolioClient, username: s
   if (!profile) return null;
 
   const countsPromise = client.rpc("get_public_profile_counts", { p_profile_id: profile.id });
+  const helpedPromise = client.rpc("helped_students_count", { p_profile_id: profile.id });
   const bundlePromise = loadPublicPortfolioBundle(client, username);
-  const { data: countRows } = await countsPromise;
+  const [{ data: countRows }, { data: helpedRaw }] = await Promise.all([countsPromise, helpedPromise]);
   const counts = countRows?.[0] ?? { posts: 0, followers: 0, following: 0 };
+  const helped = Number(helpedRaw ?? 0);
   const displayName = profile.display_name ?? profile.username;
   const schoolLine = schoolMajorLine(profile.school, profile.major);
   const bannerUrl = profile.banner_url;
   const accentColor = profile.accent_color;
-  return { profile, counts, bundlePromise, displayName, schoolLine, bannerUrl, accentColor };
+  return { profile, counts, helped, bundlePromise, displayName, schoolLine, bannerUrl, accentColor };
 }
 
 /** Logged-in load: every value the viewer page renders. */
@@ -272,6 +274,7 @@ export async function loadViewerProfilePage({
     ownerGithub,
     ownerGithubDays,
     ownerExpEdu,
+    helpedRes,
   ] = await Promise.all([
     supabase.from("profile_school").select("school").eq("profile_id", profile.id).maybeSingle(),
     supabase.rpc("get_profile_counts", { p_profile_id: profile.id }),
@@ -300,10 +303,12 @@ export async function loadViewerProfilePage({
             .order("start_date", { ascending: false, nullsFirst: false }),
         ])
       : Promise.resolve(null),
+    supabase.rpc("helped_students_count", { p_profile_id: profile.id }),
   ]);
 
   const school = schoolRes.data?.school ?? null;
   const counts = countRes.data?.[0] ?? { posts: 0, followers: 0, following: 0 };
+  const helped = Number(helpedRes.data ?? 0);
   const isAcceptedFollower = relRes.data?.status === "accepted";
 
   const isBlocked = !!(blockedIdsRes.data ?? []).includes(profile.id);
@@ -379,6 +384,7 @@ export async function loadViewerProfilePage({
 
   return {
     counts,
+    helped,
     isAcceptedFollower,
     isBlocked,
     amIBlocking,

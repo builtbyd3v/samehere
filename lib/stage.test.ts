@@ -5,9 +5,13 @@ import {
   FOCUS_LABELS,
   STAGES,
   STAGE_LABELS,
+  encodeStageMoment,
   parseFocusAreas,
   parseStage,
+  parseStageMoment,
   stageError,
+  stageMomentDraft,
+  stageMomentFrom,
 } from "./stage";
 
 const MIGRATION = "supabase/migrations/20261001100000_profiles_stage_focus.sql";
@@ -61,6 +65,33 @@ describe("parseFocusAreas", () => {
 
   it("treats a non-array as empty", () => {
     expect(parseFocusAreas("web")).toEqual({ ok: true, data: [] });
+  });
+});
+
+describe("stage moments", () => {
+  it("only a change between two real stages is a moment", () => {
+    expect(stageMomentFrom(null, "building")).toBeNull();
+    expect(stageMomentFrom("learning", "learning")).toBeNull();
+    expect(stageMomentFrom("internship_search", "interning")).toEqual({ from: "internship_search", to: "interning" });
+    expect(stageMomentFrom("nope", "interning")).toBeNull();
+  });
+
+  it("round-trips the cookie value and rejects junk", () => {
+    const m = { from: "internship_search", to: "interning" } as const;
+    expect(parseStageMoment(encodeStageMoment(m))).toEqual(m);
+    expect(parseStageMoment("interning.interning")).toBeNull();
+    expect(parseStageMoment("a.b")).toBeNull();
+    expect(parseStageMoment("learning.building.x")).toBeNull();
+    expect(parseStageMoment(undefined)).toBeNull();
+  });
+
+  it("drafts a post, labeled only when the new stage is building", () => {
+    expect(stageMomentDraft({ from: "learning", to: "building" }).label).toBe("building");
+    const { content, label } = stageMomentDraft({ from: "internship_search", to: "interning" });
+    expect(label).toBeNull();
+    expect(content).toContain("Hunting internships");
+    expect(content).toContain("Interning");
+    expect(content).not.toContain(String.fromCharCode(0x2014));
   });
 });
 

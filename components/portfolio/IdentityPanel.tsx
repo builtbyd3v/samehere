@@ -25,6 +25,7 @@ type IdentityPanelProps = {
   inviteDm: boolean;
   links: { github: string | null; linkedin: string | null; website: string | null } | null;
   counts?: { posts: number; followers: number; following: number };
+  helped?: number; // distinct students whose Stuck post this person answered (plan 019)
   nameAs?: "h1" | "h3"; // h3 when embedded in another page (landing examples)
   actions: ReactNode;
 };
@@ -65,6 +66,7 @@ export default function IdentityPanel({
   inviteDm,
   links,
   counts,
+  helped = 0,
   nameAs = "h1",
   actions,
 }: IdentityPanelProps) {
@@ -140,6 +142,12 @@ export default function IdentityPanel({
       <div className="flex flex-wrap items-center gap-2">{actions}</div>
 
       {links && <ResumeLinks {...links} />}
+
+      {helped > 0 && (
+        <p className="text-sm tabular-nums text-[var(--muted)]">
+          Helped <Count n={helped} one="student" many="students" />
+        </p>
+      )}
 
       {counts && (
         <p className="text-small tabular-nums text-[var(--faint)]">

@@ -7,6 +7,7 @@ import { consentWrite, parseOnboardingSource, parseStepsDone } from "@/lib/onboa
 import { getPostHogServerClient } from "@/lib/posthog-server";
 import { getOwnerSettings, parseOpenTo, saveOwnerSettings } from "@/lib/portfolio/owner";
 import { parseFocusAreas, parseStage } from "@/lib/stage";
+import { rememberStageMoment } from "@/lib/stage-moment";
 
 // Step 2 shows display name and bio only, so it writes only those two
 // (the full Edit profile action would also clear goals and a Pro theme).
@@ -41,11 +42,13 @@ export async function saveOnboardingStage(_prev: EditState, formData: FormData):
   const openTo = parseOpenTo(formData.getAll("open_to"));
   if (!openTo.ok) return { error: openTo.unavailable ? openTo.message : openTo.error };
 
+  const { data: before } = await supabase.from("profiles").select("stage").eq("id", user.id).maybeSingle();
   const { error } = await supabase
     .from("profiles")
     .update({ stage, focus_areas: focus.data, open_to: openTo.data })
     .eq("id", user.id);
   if (error) return { error: "Could not save. Try again." };
+  await rememberStageMoment(before?.stage ?? null, stage);
 
   getPostHogServerClient()?.capture({
     distinctId: user.id,
