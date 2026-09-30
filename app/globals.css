@@ -445,7 +445,8 @@ summary {
  * 24 + 240 + 28 + 100 + 600 + 28 + 340 + 24.
  * ------------------------------------------------------------------- */
 @media (min-width: 1280px) {
-  .app-shell:has([data-feed-page]) .shell-rspacer {
+  .app-shell:has([data-feed-page]) .shell-rspacer,
+  .app-shell:has([data-profile-page]) .shell-rspacer {
     display: none;
   }
 }

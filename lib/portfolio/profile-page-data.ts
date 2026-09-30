@@ -193,6 +193,40 @@ export function resolveShowPosts({
       : !isBlocked && (portfolioUnavailable || (projection?.publish_posts ?? false) || !bundleOk);
 }
 
+/** Intro fields a logged-out visitor may see (gated by `publish_intro`). */
+export function publicProfileIntro(
+  profile: {
+    id: string;
+    username: string;
+    display_name: string | null;
+    bio: string | null;
+    goals: string | null;
+    open_to: string[] | null;
+    study_mode?: string | null;
+    stage?: string | null;
+    focus_areas?: string[] | null;
+    is_private: boolean;
+  },
+  projection: PublicPortfolioProjection | null
+) {
+  return profileIntro(
+    {
+      id: profile.id,
+      username: profile.username,
+      display_name: profile.display_name,
+      bio: profile.bio,
+      goals: profile.goals,
+      open_to: profile.open_to,
+      study_mode: "study_mode" in profile ? profile.study_mode ?? null : null,
+      stage: profile.stage ?? null,
+      focus_areas: profile.focus_areas ?? null,
+      is_private: profile.is_private,
+    },
+    projection,
+    "public"
+  );
+}
+
 /** Logged-out load. `null` when there is no such public profile. */
 export async function loadPublicProfilePage(client: PortfolioClient, username: string) {
   const { data: profileRows } = await client.rpc("get_public_profile", { p_username: username });
@@ -302,7 +336,6 @@ export async function loadViewerProfilePage({
 
   const canCite = canCiteExpEdu({ contentHidden, isOwner, previewPublic, projection });
   const tagline = canCite ? currentExpEduTagline(experience, education) : "";
-  const metaLine = tagline || schoolMajorLine(school, profile.major);
 
   const pro = isPro(profile);
   const bannerUrl = pro ? profile.banner_url : null;
@@ -361,7 +394,6 @@ export async function loadViewerProfilePage({
     logoByName,
     school,
     tagline,
-    metaLine,
     pro,
     bannerUrl,
     theme,
