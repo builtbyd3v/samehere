@@ -24,6 +24,8 @@ export type SearchPerson = {
   study_mode: string | null;
   year: string | null;
   major: string | null;
+  stage: string | null;
+  focus_areas: string[] | null;
 };
 
 export type SearchProject = {
@@ -92,6 +94,8 @@ export type SearchHrefOpts = {
   major?: string | null;
   mode?: string | null;
   label?: string | null;
+  stage?: string | null;
+  focus?: string | null;
 };
 
 export function searchHref({
@@ -103,9 +107,13 @@ export function searchHref({
   major,
   mode,
   label,
+  stage,
+  focus,
 }: SearchHrefOpts): string {
   const params = new URLSearchParams();
   if (q) params.set("q", q);
+  if (stage) params.set("stage", stage);
+  if (focus) params.set("focus", focus);
   if (tag) params.set("tag", tag);
   if (year) params.set("year", year);
   if (major) params.set("major", major);
@@ -155,6 +163,8 @@ export type SearchPeopleOpts = {
   year?: string | null;
   major?: string | null;
   studyMode?: string | null;
+  stage?: string | null;
+  focus?: string | null;
 };
 
 export async function searchPeople(
@@ -165,7 +175,7 @@ export async function searchPeople(
   opts: SearchPeopleOpts = {},
 ): Promise<SearchPerson[]> {
   const hasQuery = tokensFor(query).length > 0;
-  const hasFilters = Boolean(opts.openTo || opts.year || opts.major || opts.studyMode);
+  const hasFilters = Boolean(opts.openTo || opts.year || opts.major || opts.studyMode || opts.stage || opts.focus);
   if (!hasQuery && !hasFilters) return [];
   const { data, error } = await supabase.rpc("search_people", {
     p_query: query,
@@ -175,6 +185,8 @@ export async function searchPeople(
     p_year: opts.year ?? undefined,
     p_major: opts.major ?? undefined,
     p_study_mode: opts.studyMode ?? undefined,
+    p_stage: opts.stage ?? undefined,
+    p_focus: opts.focus ?? undefined,
   });
   if (error || !data) return [];
   return data;

@@ -39,6 +39,8 @@ export default async function SearchPage({
     major?: string;
     mode?: string;
     label?: string;
+    stage?: string;
+    focus?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -75,6 +77,8 @@ export default async function SearchPage({
     major: filters.major,
     mode: filters.mode,
     label: filters.label,
+    stage: filters.stage,
+    focus: filters.focus,
   };
 
   if (!hasQuery && !browsing) {
