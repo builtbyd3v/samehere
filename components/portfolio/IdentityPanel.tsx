@@ -71,7 +71,7 @@ export default function IdentityPanel({
 
   return (
     <div className="flex flex-col gap-[18px] xl:gap-5">
-      <div className="w-fit rounded-full bg-[linear-gradient(145deg,rgba(255,255,255,0.4),color-mix(in_srgb,var(--profile-accent,#4f9fe8)_40%,transparent))] p-0.5">
+      <div className="w-fit rounded-full bg-[linear-gradient(145deg,rgba(255,255,255,0.4),color-mix(in_srgb,var(--profile-accent,var(--accent))_40%,transparent))] p-0.5">
         <Avatar
           src={avatarUrl}
           seed={username}
