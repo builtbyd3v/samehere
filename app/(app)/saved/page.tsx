@@ -108,7 +108,7 @@ export default async function SavedPage() {
         {items.length === 0 ? (
           <EmptyState
             title="No saved posts yet"
-            description="Bookmark posts from the feed to find them here later."
+            description="Tap the bookmark on any post to keep it here."
             action={{ label: "Go to feed", href: "/feed" }}
           />
         ) : (

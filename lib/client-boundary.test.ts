@@ -13,6 +13,7 @@ const SERVER_LEAVES = [
   "components/ui/Backdrop.tsx",
   "components/ui/Reveal.tsx",
   "components/ui/UnderlineTabs.tsx",
+  "components/ui/EmptyState.tsx",
   "components/auth/AuthShell.tsx",
   "components/profile/ProfileHoverLink.tsx",
   "components/feed/QuotedRepostCard.tsx",
