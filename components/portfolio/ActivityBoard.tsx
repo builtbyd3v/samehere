@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { LazyMotion, domMax, m } from "motion/react";
 import ContributionHeatmap, { type HeatmapDay } from "@/components/profile/ContributionHeatmap";
+import GithubLiveSync from "@/components/portfolio/GithubLiveSync";
 import { MANUAL_PROJECT_PATH } from "@/lib/github/config";
 import { usePrefersReducedMotion } from "@/lib/landing/usePrefersReducedMotion";
 import {
@@ -145,6 +146,7 @@ export default function ActivityBoard({
               Manage GitHub
             </Link>
           ) : null}
+          {isOwner && connection?.status === "connected" ? <GithubLiveSync lastSyncedAt={connection.last_synced_at} /> : null}
         </div>
         {filter === "samehere" && samehereKnown && streak && (streak.current_streak > 0 || streak.longest_streak > 0) && (
           <p className="text-sm text-[var(--ink-muted)]">

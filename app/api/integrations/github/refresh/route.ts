@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireOwner } from "@/lib/portfolio/http";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { githubOAuthConfigured, MANUAL_PROJECT_PATH } from "@/lib/github/config";
+import { githubOAuthConfigured, MANUAL_PROJECT_PATH, OWNER_REFRESH_THROTTLE_MS } from "@/lib/github/config";
 import { tryCryptoFromEnv } from "@/lib/github/store";
 import { accessTokenForConnection } from "@/lib/github/tokens";
 import { syncConnectionContributions, type SyncConnection } from "@/lib/github/sync";
@@ -40,7 +40,7 @@ export async function POST() {
       key: crypto.key,
       keyVersion: crypto.keyVersion,
     });
-    const result = await syncConnectionContributions(admin, { connection, token: live.accessToken });
+    const result = await syncConnectionContributions(admin, { connection, token: live.accessToken, throttleMs: OWNER_REFRESH_THROTTLE_MS });
     if (!result.ok && result.kind === "throttled") {
       return NextResponse.json({ error: result.message }, { status: 429 });
     }

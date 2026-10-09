@@ -29,6 +29,7 @@ export const GITHUB_ANALYSIS_USD_PER_OUTPUT_TOKEN_ENV = "GITHUB_ANALYSIS_USD_PER
 
 export const DEFAULT_SYNC_BATCH_LIMIT = 10;
 export const DEFAULT_REFRESH_THROTTLE_MS = 10 * 60 * 1000;
+export const OWNER_REFRESH_THROTTLE_MS = 60 * 1000;
 
 export function envFlagEnabled(value: string | undefined, fallback = true): boolean {
   if (value === undefined || value === "") return fallback;

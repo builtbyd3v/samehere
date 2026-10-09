@@ -16,7 +16,7 @@ import { formatTeamEventLine, parseTeamEventMode } from "@/lib/team-event";
 import { feedPath, stuckReplyPath } from "@/lib/feed-label";
 
 export const POST_SELECT =
-  "id, content, created_at, user_id, media, hidden, context_label, team_event_name, team_event_date, team_event_mode, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, is_private, is_pro, is_founder, is_campus_founder, verified_student, is_bot, profile_school(school)), reactions(count), reposts(count), comments(count)";
+  "id, content, created_at, user_id, media, hidden, context_label, team_event_name, team_event_date, team_event_mode, author:profiles!posts_user_id_fkey(username, display_name, avatar_url, is_private, is_pro, is_founder, is_campus_founder, verified_student, is_bot, profile_school(school)), reactions(count), reposts(count), comments!comments_post_id_fkey(count)";
 
 export const PAGE = 20;
 

@@ -83,7 +83,8 @@ export async function storeEncryptedTokens(
           aad,
         })
       : "",
-    p_expires_at: input.tokens.expiresAt ?? "",
+    // note: generated Args type marks every param non-null; SQL takes NULL for a non-expiring OAuth App token.
+    p_expires_at: input.tokens.expiresAt as string,
     p_key_version: input.keyVersion,
   });
   if (result.error) throw new Error(result.error.message || "Could not store GitHub credentials.");
